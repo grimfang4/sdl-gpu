@@ -9,7 +9,7 @@ int main(int argc, char* argv[])
 	
 	printf("Renderer: %s\n", GPU_GetRendererString());
 	
-	GPU_Image* image = GPU_LoadImage("test.bmp");
+	GPU_Image* image = GPU_LoadImage("scaling/test.bmp");
 	if(image == NULL)
 		return -1;
 	
