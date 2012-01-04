@@ -38,13 +38,6 @@ link_libraries (
 # The SDL_gpu library.
 add_subdirectory(source)
 
-if(SDL_gpu_BUILD_SHARED)
-endif(SDL_gpu_BUILD_SHARED)
-
-if(SDL_gpu_BUILD_STATIC)
-find_package(OpenGL REQUIRED)
-find_package(SDL REQUIRED)
-endif(SDL_gpu_BUILD_STATIC)
 
 if(SDL_gpu_BUILD_EXAMPLES)
   add_subdirectory(demos)
