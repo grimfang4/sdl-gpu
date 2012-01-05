@@ -57,7 +57,7 @@ int main(int argc, char* argv[])
 			vely = -vely;
 		}
 		
-		GPU_Clear();
+		GPU_Clear(screen);
 		
 		GPU_Blit(image, NULL, screen, x, y);
 		

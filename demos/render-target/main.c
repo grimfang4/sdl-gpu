@@ -13,6 +13,19 @@ int main(int argc, char* argv[])
 	if(image == NULL)
 		return -1;
 	
+	GPU_Image* image2 = GPU_LoadImage("data/test2.bmp");
+	if(image2 == NULL)
+		return -1;
+	
+	GPU_Target* target = GPU_LoadTarget(image);  // 502
+	if(target == NULL)
+		return -1;
+	
+	// Draw the second image onto the first
+	GPU_BlitScale(image2, NULL, target, 0, 0, 0.3f, 0.3f);
+	
+	
+	
 	Uint8 done = 0;
 	SDL_Event event;
 	while(!done)
@@ -30,7 +43,7 @@ int main(int argc, char* argv[])
 		
 		GPU_Clear(screen);
 		
-		GPU_BlitRotate(image, NULL, screen, screen->w/2, screen->h/2, SDL_GetTicks()/50.0f);
+		GPU_Blit(image, NULL, screen, 50, 50);
 		
 		GPU_Flip();
 		SDL_Delay(1);

@@ -13,8 +13,7 @@ typedef struct GPU_Image
 
 typedef struct GPU_Target
 {
-	// I think this shouldn't even hold a surface, just w, h, and a renderer-specific render target
-	SDL_Surface* surface;
+	GLuint handle;
 	Uint16 w, h;
 } GPU_Target;
 
@@ -27,7 +26,8 @@ const char* GPU_GetRendererString(void);
 GPU_Image* GPU_LoadImage(const char* filename);
 void GPU_FreeImage(GPU_Image* image);
 
-GPU_Target* GPU_LoadTarget(SDL_Surface* surface);
+GPU_Target* GPU_GetDisplayTarget(void);
+GPU_Target* GPU_LoadTarget(GPU_Image* image);
 void GPU_FreeTarget(GPU_Target* target);
 
 int GPU_Blit(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y);
@@ -35,7 +35,7 @@ int GPU_BlitRotate(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x
 int GPU_BlitScale(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y, float scaleX, float scaleY);
 int GPU_BlitTransform(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y, float angle, float scaleX, float scaleY);
 
-void GPU_Clear(void);
+void GPU_Clear(GPU_Target* target);
 void GPU_Flip(void);
 
 

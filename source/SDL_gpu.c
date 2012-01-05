@@ -44,15 +44,20 @@ GPU_Target* GPU_Init(Uint16 w, Uint16 h, Uint32 flags)
 	glLoadIdentity();
 	
 	glEnable( GL_TEXTURE_2D );
+
 	
-	display = GPU_LoadTarget(screen);
+	if(display == NULL)
+		display = (GPU_Target*)malloc(sizeof(GPU_Target));
+
+	display->handle = 0;
+	display->w = screen->w;
+	display->h = screen->h;
 	
 	return display;
 }
 
 void GPU_Quit(void)
 {
-	// GPU_FreeTarget(display);  // Don't free the display surface.  SDL_Quit() does it.
 	free(display);
 	display = NULL;
 	
@@ -151,24 +156,45 @@ void GPU_FreeImage(GPU_Image* image)
 	free(image);
 }
 
-
-GPU_Target* GPU_LoadTarget(SDL_Surface* surface)
+GPU_Target* GPU_GetDisplayTarget(void)
 {
+	return display;
+}
+
+
+GPU_Target* GPU_LoadTarget(GPU_Image* image)
+{
+	GLuint handle;
+	// Create framebuffer object
+	glGenFramebuffersEXT(1, &handle);
+	glBindFramebuffer(GL_FRAMEBUFFER_EXT, handle);
+	
+	// Attach the texture to it
+	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, image->handle, 0); // 502
+	
+	GLenum status = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
+	if(status != GL_FRAMEBUFFER_COMPLETE_EXT)
+		return NULL;
+	
+	glBindFramebuffer(GL_FRAMEBUFFER_EXT, 0);
+	
 	GPU_Target* result = (GPU_Target*)malloc(sizeof(GPU_Target));
-	result->surface = surface;
-	result->w = surface->w;
-	result->h = surface->h;
+	
+	result->handle = handle;
+	result->w = image->w;
+	result->h = image->h;
 	
 	return result;
 }
 
 
+
 void GPU_FreeTarget(GPU_Target* target)
 {
-	if(target == NULL)
+	if(target == NULL || target == display)
 		return;
 	
-	SDL_FreeSurface(target->surface);
+	glDeleteFramebuffers(1, &target->handle);
 	
 	free(target);
 }
@@ -183,6 +209,11 @@ int GPU_Blit(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint
 	
 	// Bind the texture to which subsequent calls refer
 	glBindTexture( GL_TEXTURE_2D, src->handle );
+	
+	// Bind the FBO
+	glBindFramebuffer(GL_FRAMEBUFFER_EXT, dest->handle);
+	glPushAttrib(GL_VIEWPORT_BIT);
+	//glViewport(0,0, dest->w, dest->h);
 	
 	float x1, y1, x2, y2;
 	float dx1, dy1, dx2, dy2;
@@ -207,6 +238,17 @@ int GPU_Blit(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint
 		dy2 = y + srcrect->h;
 	}
 	
+	if(dest != display)
+	{
+		dy1 = display->h - y;
+		dy2 = display->h - y;
+		
+		if(srcrect == NULL)
+			dy2 -= src->h;
+		else
+			dy2 -= srcrect->h;
+	}
+	
 	glBegin( GL_QUADS );
 		//Bottom-left vertex (corner)
 		glTexCoord2f( x1, y1 );
@@ -224,6 +266,9 @@ int GPU_Blit(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint
 		glTexCoord2f( x1, y2 );
 		glVertex3f( dx1, dy2, 0.f );
 	glEnd();
+	
+	glPopAttrib();
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 }
 
 
@@ -256,6 +301,11 @@ int GPU_BlitScale(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x,
 	// Bind the texture to which subsequent calls refer
 	glBindTexture( GL_TEXTURE_2D, src->handle );
 	
+	// Bind the FBO
+	glBindFramebuffer(GL_FRAMEBUFFER_EXT, dest->handle);
+	glPushAttrib(GL_VIEWPORT_BIT);
+	//glViewport(0,0,dest->w, dest->h);
+	
 	float x1, y1, x2, y2;
 	float dx1, dy1, dx2, dy2;
 	dx1 = x;
@@ -279,6 +329,17 @@ int GPU_BlitScale(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x,
 		dy2 = y + srcrect->h*scaleY;
 	}
 	
+	if(dest != display)
+	{
+		dy1 = display->h - y;
+		dy2 = display->h - y;
+		
+		if(srcrect == NULL)
+			dy2 -= src->h*scaleY;
+		else
+			dy2 -= srcrect->h*scaleY;
+	}
+	
 	glBegin( GL_QUADS );
 		//Bottom-left vertex (corner)
 		glTexCoord2f( x1, y1 );
@@ -296,6 +357,9 @@ int GPU_BlitScale(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x,
 		glTexCoord2f( x1, y2 );
 		glVertex3f( dx1, dy2, 0.f );
 	glEnd();
+	
+	glPopAttrib();
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 }
 
 int GPU_BlitTransform(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y, float angle, float scaleX, float scaleY)
@@ -319,9 +383,19 @@ int GPU_BlitTransform(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint1
 	return result;
 }
 
-void GPU_Clear(void)
+void GPU_Clear(GPU_Target* target)
 {
+	if(target == NULL)
+		return;
+	
+	glBindFramebuffer(GL_FRAMEBUFFER_EXT, target->handle);
+	glPushAttrib(GL_VIEWPORT_BIT);
+	glViewport(0,0,target->w, target->h);
+	
 	glClear(GL_COLOR_BUFFER_BIT);
+	
+	glPopAttrib();
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 }
 
 void GPU_Flip(void)
