@@ -156,6 +156,8 @@ GPU_Target* GPU_LoadTarget(SDL_Surface* surface)
 {
 	GPU_Target* result = (GPU_Target*)malloc(sizeof(GPU_Target));
 	result->surface = surface;
+	result->w = surface->w;
+	result->h = surface->h;
 	
 	return result;
 }
@@ -173,7 +175,7 @@ void GPU_FreeTarget(GPU_Target* target)
 
 
 
-int GPU_Blit(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, SDL_Rect* destrect)
+int GPU_Blit(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y)
 {
 	if(src == NULL || dest == NULL)
 		return -1;
@@ -183,12 +185,17 @@ int GPU_Blit(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, SDL_Rect* dest
 	glBindTexture( GL_TEXTURE_2D, src->handle );
 	
 	float x1, y1, x2, y2;
+	float dx1, dy1, dx2, dy2;
+	dx1 = x;
+	dy1 = y;
 	if(srcrect == NULL)
 	{
 		x1 = 0;
 		y1 = 0;
 		x2 = 1;
 		y2 = 1;
+		dx2 = x + src->w;
+		dy2 = y + src->h;
 	}
 	else
 	{
@@ -196,40 +203,125 @@ int GPU_Blit(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, SDL_Rect* dest
 		y1 = srcrect->y/(float)src->h;
 		x2 = (srcrect->x + srcrect->w)/(float)src->w;
 		y2 = (srcrect->y + srcrect->h)/(float)src->h;
-	}
-	float dx1, dy1, dx2, dy2;
-	if(destrect == NULL)
-	{
-		dx1 = 0;
-		dy1 = 0;
-		dx2 = x2;
-		dy2 = y2;
-	}
-	else
-	{
-		dx1 = destrect->x;
-		dy1 = destrect->y;
-		dx2 = destrect->x + destrect->w;
-		dy2 = destrect->y + destrect->h;
+		dx2 = x + srcrect->w;
+		dy2 = y + srcrect->h;
 	}
 	
 	glBegin( GL_QUADS );
 		//Bottom-left vertex (corner)
 		glTexCoord2f( x1, y1 );
-		glVertex3f( destrect->x, destrect->y, 0.0f );
+		glVertex3f( dx1, dy1, 0.0f );
 	
 		//Bottom-right vertex (corner)
 		glTexCoord2f( x2, y1 );
-		glVertex3f( destrect->x + destrect->w, destrect->y, 0.f );
+		glVertex3f( dx2, dy1, 0.f );
 	
 		//Top-right vertex (corner)
 		glTexCoord2f( x2, y2 );
-		glVertex3f( destrect->x + destrect->w, destrect->y + destrect->h, 0.f );
+		glVertex3f( dx2, dy2, 0.f );
 	
 		//Top-left vertex (corner)
 		glTexCoord2f( x1, y2 );
-		glVertex3f( destrect->x, destrect->y + destrect->h, 0.f );
+		glVertex3f( dx1, dy2, 0.f );
 	glEnd();
+}
+
+
+int GPU_BlitRotate(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y, float angle)
+{
+	if(src == NULL || dest == NULL)
+		return -1;
+	
+	glPushMatrix();
+	
+	glTranslatef(x, y, 0);
+	glRotatef(angle, 0, 0, 1);
+	if(srcrect != NULL)
+		glTranslatef(-srcrect->w/2, -srcrect->h/2, 0);
+	else
+		glTranslatef(-src->w/2, -src->h/2, 0);
+	
+	int result = GPU_Blit(src, srcrect, dest, 0, 0);
+	
+	glPopMatrix();
+	
+	return result;
+}
+
+int GPU_BlitScale(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y, float scaleX, float scaleY)
+{
+	if(src == NULL || dest == NULL)
+		return -1;
+	
+	// Bind the texture to which subsequent calls refer
+	glBindTexture( GL_TEXTURE_2D, src->handle );
+	
+	float x1, y1, x2, y2;
+	float dx1, dy1, dx2, dy2;
+	dx1 = x;
+	dy1 = y;
+	if(srcrect == NULL)
+	{
+		x1 = 0;
+		y1 = 0;
+		x2 = 1;
+		y2 = 1;
+		dx2 = x + src->w*scaleX;
+		dy2 = y + src->h*scaleY;
+	}
+	else
+	{
+		x1 = srcrect->x/(float)src->w;
+		y1 = srcrect->y/(float)src->h;
+		x2 = (srcrect->x + srcrect->w)/(float)src->w;
+		y2 = (srcrect->y + srcrect->h)/(float)src->h;
+		dx2 = x + srcrect->w*scaleX;
+		dy2 = y + srcrect->h*scaleY;
+	}
+	
+	glBegin( GL_QUADS );
+		//Bottom-left vertex (corner)
+		glTexCoord2f( x1, y1 );
+		glVertex3f( dx1, dy1, 0.0f );
+	
+		//Bottom-right vertex (corner)
+		glTexCoord2f( x2, y1 );
+		glVertex3f( dx2, dy1, 0.f );
+	
+		//Top-right vertex (corner)
+		glTexCoord2f( x2, y2 );
+		glVertex3f( dx2, dy2, 0.f );
+	
+		//Top-left vertex (corner)
+		glTexCoord2f( x1, y2 );
+		glVertex3f( dx1, dy2, 0.f );
+	glEnd();
+}
+
+int GPU_BlitTransform(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y, float angle, float scaleX, float scaleY)
+{
+	if(src == NULL || dest == NULL)
+		return -1;
+	
+	glPushMatrix();
+	
+	glRotatef(0, 0, 1, angle);
+	
+	if(srcrect != NULL)
+		glTranslatef(-srcrect->w/2, -srcrect->h/2, 0);
+	else
+		glTranslatef(-src->w/2, -src->h/2, 0);
+	
+	int result = GPU_BlitScale(src, srcrect, dest, x, y, scaleX, scaleY);
+	
+	glPopMatrix();
+	
+	return result;
+}
+
+void GPU_Clear(void)
+{
+	glClear(GL_COLOR_BUFFER_BIT);
 }
 
 void GPU_Flip(void)
