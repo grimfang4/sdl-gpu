@@ -29,10 +29,9 @@ int main(int argc, char* argv[])
 			}
 		}
 		
-		GPU_Clear();
+		GPU_Clear(screen);
 		
-		SDL_Rect srcrect = {0, 0, 100, 100};
-		GPU_BlitScale(image, &srcrect, screen, screen->w/2, screen->h/2, 2.5*sin(SDL_GetTicks()/1000.0f), 2.5*sin(SDL_GetTicks()/1200.0f));
+		GPU_BlitScale(image, NULL, screen, screen->w/2, screen->h/2, 2.5*sin(SDL_GetTicks()/1000.0f), 2.5*sin(SDL_GetTicks()/1200.0f));
 		
 		GPU_Flip();
 		SDL_Delay(1);

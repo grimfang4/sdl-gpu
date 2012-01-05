@@ -1,9 +1,12 @@
 include_directories (${SDL_gpu_SOURCE_DIR})
 add_executable(scale-demo scale/main.c)
-target_link_libraries (scale-demo SDL_gpu) 
+target_link_libraries (scale-demo SDL_gpu)
 
 add_executable(sprite-demo sprite/main.c)
-target_link_libraries (sprite-demo SDL_gpu) 
+target_link_libraries (sprite-demo SDL_gpu)
 
 add_executable(rotate-demo rotate/main.c)
-target_link_libraries (rotate-demo SDL_gpu) 
+target_link_libraries (rotate-demo SDL_gpu)
+
+add_executable(render-target-demo render-target/main.c)
+target_link_libraries (render-target-demo SDL_gpu)
