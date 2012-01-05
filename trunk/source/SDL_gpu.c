@@ -44,6 +44,7 @@ GPU_Target* GPU_Init(Uint16 w, Uint16 h, Uint32 flags)
 	glLoadIdentity();
 	
 	glEnable( GL_TEXTURE_2D );
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	
 	if(display == NULL)
@@ -126,6 +127,7 @@ GPU_Image* GPU_LoadImage(const char* filename)
 		// Set the texture's stretching properties
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 	
 		// Edit the texture object's image data using the information SDL_Surface gives us
 		glTexImage2D( GL_TEXTURE_2D, 0, nOfColors, surface->w, surface->h, 0,
