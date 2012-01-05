@@ -13,13 +13,14 @@ int main(int argc, char* argv[])
 	if(image == NULL)
 		return -1;
 	
-	float frameTimeAvg = 1.0f;
+	
+	Uint32 startTime = SDL_GetTicks();
+	long frameCount = 0;
 	
 	Uint8 done = 0;
 	SDL_Event event;
 	while(!done)
 	{
-		Uint32 frameStart = SDL_GetTicks();
 		while(SDL_PollEvent(&event))
 		{
 			if(event.type == SDL_QUIT)
@@ -37,10 +38,12 @@ int main(int argc, char* argv[])
 		
 		GPU_Flip();
 		
-		frameTimeAvg = (frameTimeAvg + (SDL_GetTicks() - frameStart)/1000.0f)/2;
+		frameCount++;
+		if(frameCount%500 == 0)
+			printf("Average FPS: %.2f\n", 1000.0f*frameCount/(SDL_GetTicks() - startTime));
 	}
 	
-	printf("Average FPS: %.2f\n", 1/frameTimeAvg);
+	printf("Average FPS: %.2f\n", 1000.0f*frameCount/(SDL_GetTicks() - startTime));
 	
 	GPU_FreeImage(image);
 	GPU_Quit();

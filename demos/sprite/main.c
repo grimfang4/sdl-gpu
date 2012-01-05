@@ -13,18 +13,33 @@ int main(int argc, char* argv[])
 	if(image == NULL)
 		return -1;
 	
-	float x = 0, y = 0;
-	float velx = 50.0f, vely = 70.0f;
 	
 	float dt = 0.010f;
 	
-	float frameTimeAvg = 1.0f;
+	Uint32 startTime = SDL_GetTicks();
+	long frameCount = 0;
+	
+	int maxSprites = 50;
+	int numSprites = 1;
+	
+	float x[maxSprites];
+	float y[maxSprites];
+	float velx[maxSprites];
+	float vely[maxSprites];
+	int i;
+	for(i = 0; i < maxSprites; i++)
+	{
+		x[i] = rand()%screen->w;
+		y[i] = rand()%screen->h;
+		velx[i] = 10 + rand()%screen->w/10;
+		vely[i] = 10 + rand()%screen->h/10;
+	}
+	
 	
 	Uint8 done = 0;
 	SDL_Event event;
 	while(!done)
 	{
-		Uint32 frameStart = SDL_GetTicks();
 		while(SDL_PollEvent(&event))
 		{
 			if(event.type == SDL_QUIT)
@@ -33,43 +48,61 @@ int main(int argc, char* argv[])
 			{
 				if(event.key.keysym.sym == SDLK_ESCAPE)
 					done = 1;
+				else if(event.key.keysym.sym == SDLK_EQUALS || event.key.keysym.sym == SDLK_PLUS)
+				{
+					if(numSprites < maxSprites)
+						numSprites++;
+				}
+				else if(event.key.keysym.sym == SDLK_MINUS)
+				{
+					if(numSprites > 0)
+						numSprites--;
+				}
 			}
 		}
 		
-		x += velx*dt;
-		y += vely*dt;
-		if(x < 0)
+		for(i = 0; i < numSprites; i++)
 		{
-			x = 0;
-			velx = -velx;
-		}
-		else if(x + image->w > screen->w)
-		{
-			x = screen->w - image->w;
-			velx = -velx;
-		}
-		
-		if(y < 0)
-		{
-			y = 0;
-			vely = -vely;
-		}
-		else if(y + image->h > screen->h)
-		{
-			y = screen->h - image->h;
-			vely = -vely;
+			x[i] += velx[i]*dt;
+			y[i] += vely[i]*dt;
+			if(x[i] < 0)
+			{
+				x[i] = 0;
+				velx[i] = -velx[i];
+			}
+			else if(x[i] + image->w > screen->w)
+			{
+				x[i] = screen->w - image->w;
+				velx[i] = -velx[i];
+			}
+			
+			if(y[i] < 0)
+			{
+				y[i] = 0;
+				vely[i] = -vely[i];
+			}
+			else if(y[i] + image->h > screen->h)
+			{
+				y[i] = screen->h - image->h;
+				vely[i] = -vely[i];
+			}
 		}
 		
 		GPU_Clear(screen);
 		
-		GPU_Blit(image, NULL, screen, x, y);
+		for(i = 0; i < numSprites; i++)
+		{
+			GPU_Blit(image, NULL, screen, x[i], y[i]);
+		}
 		
 		GPU_Flip();
 		
-		frameTimeAvg = (frameTimeAvg + (SDL_GetTicks() - frameStart)/1000.0f)/2;
+		frameCount++;
+		if(frameCount%500 == 0)
+			printf("Average FPS: %.2f\n", 1000.0f*frameCount/(SDL_GetTicks() - startTime));
 	}
 	
-	printf("Average FPS: %.2f\n", 1/frameTimeAvg);
+	printf("Average FPS: %.2f\n", 1000.0f*frameCount/(SDL_GetTicks() - startTime));
 	
 	GPU_FreeImage(image);
 	GPU_Quit();
