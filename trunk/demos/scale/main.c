@@ -1,5 +1,6 @@
 #include "SDL.h"
 #include "SDL_gpu.h"
+#include <math.h>
 
 int main(int argc, char* argv[])
 {
@@ -9,7 +10,7 @@ int main(int argc, char* argv[])
 	
 	printf("Renderer: %s\n", GPU_GetRendererString());
 	
-	GPU_Image* image = GPU_LoadImage("scaling/test.bmp");
+	GPU_Image* image = GPU_LoadImage("data/test.bmp");
 	if(image == NULL)
 		return -1;
 	
@@ -28,9 +29,10 @@ int main(int argc, char* argv[])
 			}
 		}
 		
+		GPU_Clear();
+		
 		SDL_Rect srcrect = {0, 0, 100, 100};
-		SDL_Rect destrect = {50, 50, 150, 150};
-		GPU_Blit(image, &srcrect, screen, &destrect);
+		GPU_BlitScale(image, &srcrect, screen, screen->w/2, screen->h/2, 2.5*sin(SDL_GetTicks()/1000.0f), 2.5*sin(SDL_GetTicks()/1200.0f));
 		
 		GPU_Flip();
 		SDL_Delay(1);
