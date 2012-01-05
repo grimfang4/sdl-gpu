@@ -18,11 +18,13 @@ int main(int argc, char* argv[])
 	float velx = 50.0f, vely = 70.0f;
 	
 	float dt = 0.010f;
+	float frameTimeAvg = 1.0f;
 	
 	Uint8 done = 0;
 	SDL_Event event;
 	while(!done)
 	{
+		Uint32 frameStart = SDL_GetTicks();
 		while(SDL_PollEvent(&event))
 		{
 			if(event.type == SDL_QUIT)
@@ -70,8 +72,11 @@ int main(int argc, char* argv[])
 		glDisable(GL_BLEND);
 		
 		GPU_Flip();
-		SDL_Delay(1);
+		
+		frameTimeAvg = (frameTimeAvg + (SDL_GetTicks() - frameStart)/1000.0f)/2;
 	}
+	
+	printf("Average FPS: %.2f\n", 1/frameTimeAvg);
 	
 	GPU_FreeImage(image);
 	GPU_Quit();
