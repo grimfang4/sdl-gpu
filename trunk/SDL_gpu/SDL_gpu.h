@@ -35,6 +35,11 @@ int GPU_BlitRotate(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x
 int GPU_BlitScale(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y, float scaleX, float scaleY);
 int GPU_BlitTransform(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y, float angle, float scaleX, float scaleY);
 
+void GPU_SetBlending(Uint8 enable);
+void GPU_SetColor(SDL_Color* color);
+void GPU_SetRGB(Uint8 r, Uint8 g, Uint8 b);
+void GPU_SetRGBA(Uint8 r, Uint8 g, Uint8 b, Uint8 a);
+
 void GPU_Clear(GPU_Target* target);
 void GPU_Flip(void);
 

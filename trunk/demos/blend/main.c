@@ -67,10 +67,11 @@ int main(int argc, char* argv[])
 		GPU_Blit(image, NULL, screen, 150, 50);
 		GPU_Blit(image, NULL, screen, 350, 250);
 		
-		glEnable(GL_BLEND);
-		glColor4f(1.0, 1.0, 1.0, 0.5 + 0.5*sin(SDL_GetTicks()/1000.0f));
+		GPU_SetBlending(1);
+		
+		GPU_SetRGBA(255, 255, 255, 127.5f + 127.5f*sin(SDL_GetTicks()/1000.0f));
 		GPU_Blit(image, NULL, screen, x, y);
-		glDisable(GL_BLEND);
+		GPU_SetBlending(0);
 		
 		GPU_Flip();
 		
