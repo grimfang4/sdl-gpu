@@ -385,6 +385,36 @@ int GPU_BlitTransform(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint1
 	return result;
 }
 
+
+
+void GPU_SetBlending(Uint8 enable)
+{
+	if(enable)
+		glEnable(GL_BLEND);
+	else
+		glDisable(GL_BLEND);
+}
+
+
+void GPU_SetColor(SDL_Color* color)
+{
+	if(color == NULL)
+		glColor4ub(0, 0, 0, 255);
+	else
+		glColor4ub(color->r, color->g, color->b, color->unused);
+}
+
+void GPU_SetRGB(Uint8 r, Uint8 g, Uint8 b)
+{
+	glColor4ub(r, g, b, 255);
+}
+
+void GPU_SetRGBA(Uint8 r, Uint8 g, Uint8 b, Uint8 a)
+{
+	glColor4ub(r, g, b, a);
+}
+
+
 void GPU_Clear(GPU_Target* target)
 {
 	if(target == NULL)
