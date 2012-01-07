@@ -22,6 +22,7 @@ option(SDL_gpuShapes_BUILD_EXAMPLES "Build SDL_gpuShapes examples" ON)
 
 set(SDL_gpu_VERSION 0.0.1)
 set(SDL_gpuShapes_VERSION 0.0.1)
+set(SOIL_VERSION 7.26.07)
 
 
 find_package(OpenGL REQUIRED)
@@ -37,11 +38,13 @@ include_directories(${SDL_INCLUDE_DIR})
 include_directories(${OPENGL_INCLUDE_DIR})
 include_directories(SDL_gpu)
 include_directories(SDL_gpuShapes)
+include_directories(SOIL)
 
 link_libraries (
    ${SDL_LIBRARY}
    ${OPENGL_LIBRARIES}
    SDLmain # Not included in SDL_LIBRARY variable
+	SOIL
 )
 
 # The SDL_gpu library.
@@ -49,6 +52,9 @@ add_subdirectory(SDL_gpu)
 
 # The SDL_gpuShapes library.
 add_subdirectory(SDL_gpuShapes)
+
+# The SOIL (static) library.
+add_subdirectory(SOIL)
 
 
 if(SDL_gpu_BUILD_EXAMPLES)

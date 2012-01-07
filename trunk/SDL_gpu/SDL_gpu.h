@@ -40,6 +40,8 @@ void GPU_SetColor(SDL_Color* color);
 void GPU_SetRGB(Uint8 r, Uint8 g, Uint8 b);
 void GPU_SetRGBA(Uint8 r, Uint8 g, Uint8 b, Uint8 a);
 
+void GPU_MakeColorTransparent(GPU_Image* image, SDL_Color color);
+
 void GPU_Clear(GPU_Target* target);
 void GPU_Flip(void);
 
