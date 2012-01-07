@@ -1,5 +1,6 @@
 #include "SDL_gpu.h"
 #include "SDL_opengl.h"
+#include "SOIL.h"
 
 static GPU_Target* display = NULL;
 
@@ -79,66 +80,23 @@ GPU_Image* GPU_LoadImage(const char* filename)
 {
 	
 	GLuint texture;			// This is a handle to our texture object
-	SDL_Surface *surface;	// This surface will tell us the details of the image
 	GLenum texture_format;
-	GLint  nOfColors;
-	Uint16 w, h;
+	GLuint w, h;
 	
-	if ( (surface = SDL_LoadBMP(filename)) ) { 
 	
-		// Check that the image's width is a power of 2
-		if ( (surface->w & (surface->w - 1)) != 0 ) {
-			printf("warning: image's width is not a power of 2\n");
-		}
+	texture = SOIL_load_OGL_texture(filename, SOIL_LOAD_AUTO, 0, 0);
+	if(texture == 0)
+		return NULL;
 	
-		// Also check if the height is a power of 2
-		if ( (surface->h & (surface->h - 1)) != 0 ) {
-			printf("warning: image's height is not a power of 2\n");
-		}
-		
-		w = surface->w;
-		h = surface->h;
+	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &texture_format);
+	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &w);
+	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &h);
 	
-		// get the number of channels in the SDL surface
-		nOfColors = surface->format->BytesPerPixel;
-		if (nOfColors == 4)     // contains an alpha channel
-		{
-				if (surface->format->Rmask == 0x000000ff)
-						texture_format = GL_RGBA;
-				else
-						texture_format = GL_BGRA;
-		} else if (nOfColors == 3)     // no alpha channel
-		{
-				if (surface->format->Rmask == 0x000000ff)
-						texture_format = GL_RGB;
-				else
-						texture_format = GL_BGR;
-		} else {
-				printf("warning: the image is not truecolor..  this will probably break\n");
-				// this error should not go unhandled
-		}
-	
-		// Have OpenGL generate a texture object handle for us
-		glGenTextures( 1, &texture );
-	
-		// Bind the texture object
-		glBindTexture( GL_TEXTURE_2D, texture );
-	
-		// Set the texture's stretching properties
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-	
-		// Edit the texture object's image data using the information SDL_Surface gives us
-		glTexImage2D( GL_TEXTURE_2D, 0, nOfColors, surface->w, surface->h, 0,
-						texture_format, GL_UNSIGNED_BYTE, surface->pixels );
-	} 
-	else {
-		printf("SDL could not load image: %s\n", SDL_GetError());
-	}    
-	
-	// Free the SDL_Surface
-	SDL_FreeSurface( surface );
+	// Set the texture's stretching properties
+	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
 	
 	GPU_Image* result = (GPU_Image*)malloc(sizeof(GPU_Image));
 	result->handle = texture;
@@ -413,6 +371,50 @@ void GPU_SetRGBA(Uint8 r, Uint8 g, Uint8 b, Uint8 a)
 {
 	glColor4ub(r, g, b, a);
 }
+
+
+
+void GPU_MakeColorTransparent(GPU_Image* image, SDL_Color color)
+{
+	if(image == NULL)
+		return;
+	
+	glBindTexture( GL_TEXTURE_2D, image->handle );
+
+	GLint textureWidth, textureHeight;
+
+	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &textureWidth);
+	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &textureHeight);
+
+	// FIXME: Does not take into account GL_PACK_ALIGNMENT
+	GLubyte *buffer = (GLubyte *)malloc(textureWidth*textureHeight*4);
+
+	glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+
+	int x,y,i;
+	for(y = 0; y < textureHeight; y++)
+	{
+		for(x = 0; x < textureWidth; x++)
+		{
+			i = ((y*textureWidth) + x)*4;
+			if(buffer[i] == color.r && buffer[i+1] == color.g && buffer[i+2] == color.b)
+				buffer[i+3] = 0;
+		}
+	}
+	
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, textureWidth, textureHeight, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+ 
+
+	free(buffer);
+}
+
+
+
+
+
+
+
+
 
 
 void GPU_Clear(GPU_Target* target)
