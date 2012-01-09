@@ -2,27 +2,83 @@
 #define _SDL_GPU_H__
 
 #include "SDL.h"
-#include "SDL_opengl.h"
+
+
+
 
 typedef struct GPU_Image
 {
-	GLuint handle;
-	GLenum format;
+	void* data;
 	Uint16 w, h;
 } GPU_Image;
 
+
 typedef struct GPU_Target
 {
-	GLuint handle;
+	void* data;
 	Uint16 w, h;
 } GPU_Target;
 
-GPU_Target* GPU_Init(Uint16 w, Uint16 h, Uint32 flags);
+
+struct GPU_Renderer;
+
+typedef struct GPU_Renderer
+{
+	char* id;
+	
+	GPU_Target* display;
+	
+	GPU_Target* (*Init)(struct GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags);
+	void (*Quit)(struct GPU_Renderer* renderer);
+
+	GPU_Image* (*LoadImage)(struct GPU_Renderer* renderer, const char* filename);
+	void (*FreeImage)(struct GPU_Renderer* renderer, GPU_Image* image);
+
+	GPU_Target* (*GetDisplayTarget)(struct GPU_Renderer* renderer);
+	GPU_Target* (*LoadTarget)(struct GPU_Renderer* renderer, GPU_Image* image);
+	void (*FreeTarget)(struct GPU_Renderer* renderer, GPU_Target* target);
+
+	int (*Blit)(struct GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y);
+	int (*BlitRotate)(struct GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y, float angle);
+	int (*BlitScale)(struct GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y, float scaleX, float scaleY);
+	int (*BlitTransform)(struct GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y, float angle, float scaleX, float scaleY);
+
+	void (*SetBlending)(struct GPU_Renderer* renderer, Uint8 enable);
+	void (*SetRGBA)(struct GPU_Renderer* renderer, Uint8 r, Uint8 g, Uint8 b, Uint8 a);
+
+	void (*MakeRGBTransparent)(struct GPU_Renderer* renderer, GPU_Image* image, Uint8 r, Uint8 g, Uint8 b);
+
+	void (*Clear)(struct GPU_Renderer* renderer, GPU_Target* target);
+	void (*Flip)(struct GPU_Renderer* renderer);
+	
+	void* data;
+	
+} GPU_Renderer;
+
+
+// Setup calls
+GPU_Target* GPU_Init(const char* renderer_id, Uint16 w, Uint16 h, Uint32 flags);
+void GPU_CloseCurrentRenderer(void);
 void GPU_Quit(void);
 
+void GPU_SetError(const char* fmt, ...);
 const char* GPU_GetErrorString(void);
-const char* GPU_GetRendererString(void);
 
+
+
+// Renderer controls
+const char* GPU_GetCurrentRendererID(void);
+const char* GPU_GetDefaultRendererID(void);
+
+GPU_Renderer* GPU_AddRenderer(const char* id);
+void GPU_RemoveRenderer(const char* id);
+
+GPU_Renderer* GPU_GetRendererByID(const char* id);
+void GPU_SetCurrentRenderer(const char* id);
+
+
+
+// Defined by renderer
 GPU_Image* GPU_LoadImage(const char* filename);
 void GPU_FreeImage(GPU_Image* image);
 

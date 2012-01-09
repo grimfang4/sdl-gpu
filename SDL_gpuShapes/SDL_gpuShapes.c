@@ -1,194 +1,142 @@
-#include "SDL_gpu.h"
+#include "SDL_gpuShapes.h"
+#include <string.h>
 
-#define BEGIN \
-	if(target == NULL) \
-		return; \
-	 \
-	/* Bind the FBO */ \
-	glBindFramebuffer(GL_FRAMEBUFFER_EXT, target->handle);
+#include "../OpenGL/SDL_gpuShapes_OpenGL.h"
 
-#define END \
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+
+static GPU_ShapeRenderer* shapeRenderer = NULL;
+
+static void (*freeShapeRendererFn)(GPU_ShapeRenderer* renderer) = NULL;
+
+void GPU_LoadShapeRenderer(void)
+{
+	// Free the old one
+	if(shapeRenderer != NULL)
+	{
+		freeShapeRendererFn(shapeRenderer);
+		shapeRenderer = NULL;
+		freeShapeRendererFn = NULL;
+	}
+	
+	const char* rendererID = GPU_GetCurrentRendererID();
+	GPU_Renderer* renderer = GPU_GetRendererByID(rendererID);
+	if(renderer == NULL)
+		return;
+	
+	if(strcmp(rendererID, "OpenGL"))
+	{
+		GPU_ShapeRenderer* sr = GPU_CreateShapeRenderer_OpenGL();
+		if(sr == NULL)
+			return;
+		sr->renderer = renderer;
+		freeShapeRendererFn = &GPU_FreeShapeRenderer_OpenGL;
+	}
+	
+}
+
 
 
 void GPU_Pixel(GPU_Target* target, Sint16 x, Sint16 y, SDL_Color color)
 {
-	BEGIN;
+	if(shapeRenderer == NULL || shapeRenderer->Pixel == NULL)
+		return;
 	
-	glColor4ub(color.r, color.g, color.b, color.unused);
-	
-	glBegin(GL_POINTS);
-	glVertex3f(x, y, 0);
-	glEnd();
-	
-	END;
+	shapeRenderer->Pixel(shapeRenderer, target, x, y, color);
 }
 
 void GPU_Line(GPU_Target* target, Sint16 x1, Sint16 y1, Sint16 x2, Sint16 y2, SDL_Color color)
 {
-	BEGIN;
+	if(shapeRenderer == NULL || shapeRenderer->Line == NULL)
+		return;
 	
-	glColor4ub(color.r, color.g, color.b, color.unused);
-	
-	glBegin(GL_LINES);
-	glVertex3f(x1, y1, 0);
-	glVertex3f(x2, y2, 0);
-	glEnd();
-	
-	END;
+	shapeRenderer->Line(shapeRenderer, target, x1, y1, x2, y2, color);
 }
 
 
 void GPU_Arc(GPU_Target* target, Sint16 x, Sint16 y, float radius, float startAngle, float endAngle, SDL_Color color)
 {
-	BEGIN;
+	if(shapeRenderer == NULL || shapeRenderer->Arc == NULL)
+		return;
 	
-	glColor4ub(color.r, color.g, color.b, color.unused);
-	
-	END;
+	shapeRenderer->Arc(shapeRenderer, target, x, y, radius, startAngle, endAngle, color);
 }
 
 void GPU_Circle(GPU_Target* target, Sint16 x, Sint16 y, float radius, SDL_Color color)
 {
-	BEGIN;
+	if(shapeRenderer == NULL || shapeRenderer->Circle == NULL)
+		return;
 	
-	glColor4ub(color.r, color.g, color.b, color.unused);
-	
-	END;
+	shapeRenderer->Circle(shapeRenderer, target, x, y, radius, color);
 }
 
 void GPU_CircleFilled(GPU_Target* target, Sint16 x, Sint16 y, float radius, SDL_Color color)
 {
-	BEGIN;
+	if(shapeRenderer == NULL || shapeRenderer->CircleFilled == NULL)
+		return;
 	
-	glColor4ub(color.r, color.g, color.b, color.unused);
-	
-	END;
+	shapeRenderer->CircleFilled(shapeRenderer, target, x, y, radius, color);
 }
 
 void GPU_Tri(GPU_Target* target, Sint16 x1, Sint16 y1, Sint16 x2, Sint16 y2, Sint16 x3, Sint16 y3, SDL_Color color)
 {
-	BEGIN;
+	if(shapeRenderer == NULL || shapeRenderer->Tri == NULL)
+		return;
 	
-	glColor4ub(color.r, color.g, color.b, color.unused);
-	
-	glBegin(GL_LINE_LOOP);
-	glVertex3f(x1, y1, 0);
-	glVertex3f(x2, y2, 0);
-	glVertex3f(x3, y3, 0);
-	glEnd();
-	
-	END;
+	shapeRenderer->Tri(shapeRenderer, target, x1, y1, x2, y2, x3, y3, color);
 }
 
 void GPU_TriFilled(GPU_Target* target, Sint16 x1, Sint16 y1, Sint16 x2, Sint16 y2, Sint16 x3, Sint16 y3, SDL_Color color)
 {
-	BEGIN;
+	if(shapeRenderer == NULL || shapeRenderer->TriFilled == NULL)
+		return;
 	
-	glColor4ub(color.r, color.g, color.b, color.unused);
-	
-	glBegin(GL_TRIANGLE_STRIP);
-	glVertex3f(x1, y1, 0);
-	glVertex3f(x2, y2, 0);
-	glVertex3f(x3, y3, 0);
-	glEnd();
-	
-	END;
+	shapeRenderer->TriFilled(shapeRenderer, target, x1, y1, x2, y2, x3, y3, color);
 }
 
 void GPU_Rect(GPU_Target* target, Sint16 x1, Sint16 y1, Sint16 x2, Sint16 y2, SDL_Color color)
 {
-	BEGIN;
+	if(shapeRenderer == NULL || shapeRenderer->Rect == NULL)
+		return;
 	
-	glColor4ub(color.r, color.g, color.b, color.unused);
-	
-	glBegin(GL_LINE_LOOP);
-	glVertex3f(x1, y1, 0);
-	glVertex3f(x1, y2, 0);
-	glVertex3f(x2, y2, 0);
-	glVertex3f(x2, y1, 0);
-	glEnd();
-	
-	END;
+	shapeRenderer->Rect(shapeRenderer, target, x1, y1, x2, y2, color);
 }
 
 void GPU_RectFilled(GPU_Target* target, Sint16 x1, Sint16 y1, Sint16 x2, Sint16 y2, SDL_Color color)
 {
-	BEGIN;
+	if(shapeRenderer == NULL || shapeRenderer->RectFilled == NULL)
+		return;
 	
-	glColor4ub(color.r, color.g, color.b, color.unused);
-	
-	glBegin(GL_TRIANGLE_STRIP);
-	glVertex3f(x1, y1, 0);
-	glVertex3f(x1, y2, 0);
-	glVertex3f(x2, y1, 0);
-	glVertex3f(x2, y2, 0);
-	glEnd();
-	
-	END;
+	shapeRenderer->RectFilled(shapeRenderer, target, x1, y1, x2, y2, color);
 }
 
 void GPU_RectRound(GPU_Target* target, Sint16 x1, Sint16 y1, Sint16 x2, Sint16 y2, float radius, SDL_Color color)
 {
-	BEGIN;
+	if(shapeRenderer == NULL || shapeRenderer->RectRound == NULL)
+		return;
 	
-	glColor4ub(color.r, color.g, color.b, color.unused);
-	
-	glBegin(GL_LINE_LOOP);
-	glVertex3f(x1, y1, 0);
-	glVertex3f(x1, y2, 0);
-	glVertex3f(x2, y2, 0);
-	glVertex3f(x2, y1, 0);
-	glEnd();
-	
-	END;
+	shapeRenderer->RectRound(shapeRenderer, target, x1, y1, x2, y2, radius, color);
 }
 
 void GPU_RectRoundFilled(GPU_Target* target, Sint16 x1, Sint16 y1, Sint16 x2, Sint16 y2, float radius, SDL_Color color)
 {
-	BEGIN;
+	if(shapeRenderer == NULL || shapeRenderer->RectRoundFilled == NULL)
+		return;
 	
-	glColor4ub(color.r, color.g, color.b, color.unused);
-	
-	glBegin(GL_TRIANGLE_STRIP);
-	glVertex3f(x1, y1, 0);
-	glVertex3f(x1, y2, 0);
-	glVertex3f(x2, y1, 0);
-	glVertex3f(x2, y2, 0);
-	glEnd();
-	
-	END;
+	shapeRenderer->RectRoundFilled(shapeRenderer, target, x1, y1, x2, y2, radius, color);
 }
 
 void GPU_Polygon(GPU_Target* target, Uint16 n, float* vertices, SDL_Color color)
 {
-	BEGIN;
+	if(shapeRenderer == NULL || shapeRenderer->Polygon == NULL)
+		return;
 	
-	glColor4ub(color.r, color.g, color.b, color.unused);
-	
-	int i;
-	glBegin(GL_LINE_LOOP);
-	for(i = 0; i < 2*n; i+=2)
-	{
-		glVertex3f(vertices[i], vertices[i+1], 0);
-	}
-	glEnd();
-	
-	END;
+	shapeRenderer->Polygon(shapeRenderer, target, n, vertices, color);
 }
 
 void GPU_PolygonFilled(GPU_Target* target, Uint16 n, float* vertices, SDL_Color color)
 {
-	BEGIN;
+	if(shapeRenderer == NULL || shapeRenderer->PolygonFilled == NULL)
+		return;
 	
-	glColor4ub(color.r, color.g, color.b, color.unused);
-	int i;
-	glBegin(GL_POLYGON);
-	for(i = 0; i < 2*n; i+=2)
-	{
-		glVertex3f(vertices[i], vertices[i+1], 0);
-	}
-	glEnd();
-	
-	END;
+	shapeRenderer->PolygonFilled(shapeRenderer, target, n, vertices, color);
 }

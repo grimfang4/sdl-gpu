@@ -4,11 +4,11 @@
 
 int main(int argc, char* argv[])
 {
-	GPU_Target* screen = GPU_Init(800, 600, 0);
+	GPU_Target* screen = GPU_Init(NULL, 800, 600, 0);
 	if(screen == NULL)
 		return -1;
 	
-	printf("Renderer: %s\n", GPU_GetRendererString());
+	printf("Renderer: %s\n", GPU_GetCurrentRendererID());
 	
 	GPU_Image* image = GPU_LoadImage("data/test3.png");
 	if(image == NULL)

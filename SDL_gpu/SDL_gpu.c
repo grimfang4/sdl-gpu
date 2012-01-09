@@ -1,69 +1,84 @@
 #include "SDL_gpu.h"
-#include "SDL_opengl.h"
-#include "SOIL.h"
+#include "SDL_gpu_Renderer.h"
 
-static GPU_Target* display = NULL;
+static GPU_Renderer* current_renderer = NULL;
 
-GPU_Target* GPU_Init(Uint16 w, Uint16 h, Uint32 flags)
+const char* GPU_GetCurrentRendererID(void)
 {
-	if(SDL_Init(SDL_INIT_VIDEO) < 0)
-	{
+	if(current_renderer == NULL)
 		return NULL;
+	return current_renderer->id;
+}
+
+void GPU_SetCurrentRenderer(const char* id)
+{
+	current_renderer = GPU_GetRendererByID(id);
+}
+
+GPU_Target* GPU_Init(const char* renderer_id, Uint16 w, Uint16 h, Uint32 flags)
+{
+	GPU_InitRendererRegister();
+	
+	if(renderer_id == NULL)
+	{
+		renderer_id = GPU_GetDefaultRendererID();
+		if(renderer_id == NULL)
+			return NULL;
 	}
 	
-	if(flags & SDL_DOUBLEBUF)
-		SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-	flags &= ~SDL_DOUBLEBUF;
 	
-	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
+	if(GPU_GetNumActiveRenderers() == 0)
+	{
+		if(SDL_Init(SDL_INIT_VIDEO) < 0)
+		{
+			return NULL;
+		}
+	}
 	
-	SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
-	SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
-	SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
-	SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
 	
-	flags |= SDL_OPENGL;
-	
-	SDL_Surface* screen = SDL_SetVideoMode(w, h, 0, flags);
-	
-	if(screen == NULL)
+	GPU_Renderer* renderer = GPU_GetRendererByID(renderer_id);
+	if(renderer == NULL)
+		renderer = GPU_AddRenderer(renderer_id);
+	if(renderer == NULL || renderer->Init == NULL)
 		return NULL;
 	
-	glEnable( GL_TEXTURE_2D );
-	glClearColor( 0.0f, 0.0f, 0.0f, 0.0f );
+	GPU_SetCurrentRenderer(renderer->id);
 	
-	glViewport( 0, 0, w, h);
-	
-	glClear( GL_COLOR_BUFFER_BIT );
-	
-	glMatrixMode( GL_PROJECTION );
-	glLoadIdentity();
-	
-	glOrtho(0.0f, w, h, 0.0f, -1.0f, 1.0f);
-	
-	glMatrixMode( GL_MODELVIEW );
-	glLoadIdentity();
-	
-	glEnable( GL_TEXTURE_2D );
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	return renderer->Init(renderer, w, h, flags);
+}
 
+void GPU_CloseCurrentRenderer(void)
+{
+	if(current_renderer == NULL)
+		return;
 	
-	if(display == NULL)
-		display = (GPU_Target*)malloc(sizeof(GPU_Target));
-
-	display->handle = 0;
-	display->w = screen->w;
-	display->h = screen->h;
+	if(current_renderer->Quit == NULL)
+		current_renderer->Quit(current_renderer);
+	GPU_RemoveRenderer(current_renderer->id);
+	current_renderer = NULL;
 	
-	return display;
+	if(GPU_GetNumActiveRenderers() == 0)
+		SDL_Quit();
 }
 
 void GPU_Quit(void)
 {
-	free(display);
-	display = NULL;
+	// FIXME: Remove all renderers
+	if(current_renderer == NULL)
+		return;
 	
-	SDL_Quit();
+	if(current_renderer->Quit == NULL)
+		current_renderer->Quit(current_renderer);
+	GPU_RemoveRenderer(current_renderer->id);
+	
+	if(GPU_GetNumActiveRenderers() == 0)
+		SDL_Quit();
+}
+
+void GPU_SetError(const char* fmt, ...)
+{
+	// FIXME: Parse varargs here
+	SDL_SetError("%s", fmt);
 }
 
 const char* GPU_GetErrorString(void)
@@ -71,341 +86,130 @@ const char* GPU_GetErrorString(void)
 	return SDL_GetError();
 }
 
-const char* GPU_GetRendererString(void)
-{
-	return "OpenGL";
-}
-
 GPU_Image* GPU_LoadImage(const char* filename)
 {
+	if(current_renderer == NULL || current_renderer->LoadImage == NULL)
+		return;
 	
-	GLuint texture;			// This is a handle to our texture object
-	GLenum texture_format;
-	GLuint w, h;
-	
-	
-	texture = SOIL_load_OGL_texture(filename, SOIL_LOAD_AUTO, 0, 0);
-	if(texture == 0)
-		return NULL;
-	
-	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &texture_format);
-	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &w);
-	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &h);
-	
-	// Set the texture's stretching properties
-	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-
-	
-	GPU_Image* result = (GPU_Image*)malloc(sizeof(GPU_Image));
-	result->handle = texture;
-	result->format = texture_format;
-	result->w = w;
-	result->h = h;
-	
-	return result;
+	return current_renderer->LoadImage(current_renderer, filename);
 }
 
 void GPU_FreeImage(GPU_Image* image)
 {
-	if(image == NULL)
+	if(current_renderer == NULL || current_renderer->FreeImage == NULL)
 		return;
 	
-	glDeleteTextures( 1, &image->handle);
-	free(image);
+	return current_renderer->FreeImage(current_renderer, image);
 }
 
 GPU_Target* GPU_GetDisplayTarget(void)
 {
-	return display;
+	if(current_renderer == NULL || current_renderer->GetDisplayTarget == NULL)
+		return NULL;
+	
+	return current_renderer->GetDisplayTarget(current_renderer);
 }
 
 
 GPU_Target* GPU_LoadTarget(GPU_Image* image)
 {
-	GLuint handle;
-	// Create framebuffer object
-	glGenFramebuffersEXT(1, &handle);
-	glBindFramebuffer(GL_FRAMEBUFFER_EXT, handle);
-	
-	// Attach the texture to it
-	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, image->handle, 0); // 502
-	
-	GLenum status = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
-	if(status != GL_FRAMEBUFFER_COMPLETE_EXT)
+	if(current_renderer == NULL || current_renderer->LoadTarget == NULL)
 		return NULL;
 	
-	glBindFramebuffer(GL_FRAMEBUFFER_EXT, 0);
-	
-	GPU_Target* result = (GPU_Target*)malloc(sizeof(GPU_Target));
-	
-	result->handle = handle;
-	result->w = image->w;
-	result->h = image->h;
-	
-	return result;
+	return current_renderer->LoadTarget(current_renderer, image);
 }
 
 
 
 void GPU_FreeTarget(GPU_Target* target)
 {
-	if(target == NULL || target == display)
+	if(current_renderer == NULL || current_renderer->FreeTarget == NULL)
 		return;
 	
-	glDeleteFramebuffers(1, &target->handle);
-	
-	free(target);
+	current_renderer->FreeTarget(current_renderer, target);
 }
 
 
 
 int GPU_Blit(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y)
 {
-	if(src == NULL || dest == NULL)
-		return -1;
+	if(current_renderer == NULL || current_renderer->Blit == NULL)
+		return -2;
 	
-	
-	// Bind the texture to which subsequent calls refer
-	glBindTexture( GL_TEXTURE_2D, src->handle );
-	
-	// Bind the FBO
-	glBindFramebuffer(GL_FRAMEBUFFER_EXT, dest->handle);
-	glPushAttrib(GL_VIEWPORT_BIT);
-	//glViewport(0,0, dest->w, dest->h);
-	
-	float x1, y1, x2, y2;
-	float dx1, dy1, dx2, dy2;
-	dx1 = x;
-	dy1 = y;
-	if(srcrect == NULL)
-	{
-		x1 = 0;
-		y1 = 0;
-		x2 = 1;
-		y2 = 1;
-		dx2 = x + src->w;
-		dy2 = y + src->h;
-	}
-	else
-	{
-		x1 = srcrect->x/(float)src->w;
-		y1 = srcrect->y/(float)src->h;
-		x2 = (srcrect->x + srcrect->w)/(float)src->w;
-		y2 = (srcrect->y + srcrect->h)/(float)src->h;
-		dx2 = x + srcrect->w;
-		dy2 = y + srcrect->h;
-	}
-	
-	if(dest != display)
-	{
-		dy1 = display->h - y;
-		dy2 = display->h - y;
-		
-		if(srcrect == NULL)
-			dy2 -= src->h;
-		else
-			dy2 -= srcrect->h;
-	}
-	
-	glBegin( GL_QUADS );
-		//Bottom-left vertex (corner)
-		glTexCoord2f( x1, y1 );
-		glVertex3f( dx1, dy1, 0.0f );
-	
-		//Bottom-right vertex (corner)
-		glTexCoord2f( x2, y1 );
-		glVertex3f( dx2, dy1, 0.f );
-	
-		//Top-right vertex (corner)
-		glTexCoord2f( x2, y2 );
-		glVertex3f( dx2, dy2, 0.f );
-	
-		//Top-left vertex (corner)
-		glTexCoord2f( x1, y2 );
-		glVertex3f( dx1, dy2, 0.f );
-	glEnd();
-	
-	glPopAttrib();
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+	return current_renderer->Blit(current_renderer, src, srcrect, dest, x, y);
 }
 
 
 int GPU_BlitRotate(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y, float angle)
 {
-	if(src == NULL || dest == NULL)
-		return -1;
+	if(current_renderer == NULL || current_renderer->BlitRotate == NULL)
+		return -2;
 	
-	glPushMatrix();
-	
-	glTranslatef(x, y, 0);
-	glRotatef(angle, 0, 0, 1);
-	if(srcrect != NULL)
-		glTranslatef(-srcrect->w/2, -srcrect->h/2, 0);
-	else
-		glTranslatef(-src->w/2, -src->h/2, 0);
-	
-	int result = GPU_Blit(src, srcrect, dest, 0, 0);
-	
-	glPopMatrix();
-	
-	return result;
+	return current_renderer->BlitRotate(current_renderer, src, srcrect, dest, x, y, angle);
 }
 
 int GPU_BlitScale(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y, float scaleX, float scaleY)
 {
-	if(src == NULL || dest == NULL)
-		return -1;
+	if(current_renderer == NULL || current_renderer->BlitScale == NULL)
+		return -2;
 	
-	// Bind the texture to which subsequent calls refer
-	glBindTexture( GL_TEXTURE_2D, src->handle );
-	
-	// Bind the FBO
-	glBindFramebuffer(GL_FRAMEBUFFER_EXT, dest->handle);
-	glPushAttrib(GL_VIEWPORT_BIT);
-	//glViewport(0,0,dest->w, dest->h);
-	
-	float x1, y1, x2, y2;
-	float dx1, dy1, dx2, dy2;
-	dx1 = x;
-	dy1 = y;
-	if(srcrect == NULL)
-	{
-		x1 = 0;
-		y1 = 0;
-		x2 = 1;
-		y2 = 1;
-		dx2 = x + src->w*scaleX;
-		dy2 = y + src->h*scaleY;
-	}
-	else
-	{
-		x1 = srcrect->x/(float)src->w;
-		y1 = srcrect->y/(float)src->h;
-		x2 = (srcrect->x + srcrect->w)/(float)src->w;
-		y2 = (srcrect->y + srcrect->h)/(float)src->h;
-		dx2 = x + srcrect->w*scaleX;
-		dy2 = y + srcrect->h*scaleY;
-	}
-	
-	if(dest != display)
-	{
-		dy1 = display->h - y;
-		dy2 = display->h - y;
-		
-		if(srcrect == NULL)
-			dy2 -= src->h*scaleY;
-		else
-			dy2 -= srcrect->h*scaleY;
-	}
-	
-	glBegin( GL_QUADS );
-		//Bottom-left vertex (corner)
-		glTexCoord2f( x1, y1 );
-		glVertex3f( dx1, dy1, 0.0f );
-	
-		//Bottom-right vertex (corner)
-		glTexCoord2f( x2, y1 );
-		glVertex3f( dx2, dy1, 0.f );
-	
-		//Top-right vertex (corner)
-		glTexCoord2f( x2, y2 );
-		glVertex3f( dx2, dy2, 0.f );
-	
-		//Top-left vertex (corner)
-		glTexCoord2f( x1, y2 );
-		glVertex3f( dx1, dy2, 0.f );
-	glEnd();
-	
-	glPopAttrib();
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+	return current_renderer->BlitScale(current_renderer, src, srcrect, dest, x, y, scaleX, scaleY);
 }
 
 int GPU_BlitTransform(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y, float angle, float scaleX, float scaleY)
 {
-	if(src == NULL || dest == NULL)
-		return -1;
+	if(current_renderer == NULL || current_renderer->BlitTransform == NULL)
+		return -2;
 	
-	glPushMatrix();
-	
-	glRotatef(0, 0, 1, angle);
-	
-	if(srcrect != NULL)
-		glTranslatef(-srcrect->w/2, -srcrect->h/2, 0);
-	else
-		glTranslatef(-src->w/2, -src->h/2, 0);
-	
-	int result = GPU_BlitScale(src, srcrect, dest, x, y, scaleX, scaleY);
-	
-	glPopMatrix();
-	
-	return result;
+	return current_renderer->BlitTransform(current_renderer, src, srcrect, dest, x, y, angle, scaleX, scaleY);
 }
 
 
 
 void GPU_SetBlending(Uint8 enable)
 {
-	if(enable)
-		glEnable(GL_BLEND);
-	else
-		glDisable(GL_BLEND);
+	if(current_renderer == NULL || current_renderer->SetBlending == NULL)
+		return;
+	
+	return current_renderer->SetBlending(current_renderer, enable);
 }
 
 
 void GPU_SetColor(SDL_Color* color)
 {
+	if(current_renderer == NULL || current_renderer->SetRGBA == NULL)
+		return;
+	
 	if(color == NULL)
-		glColor4ub(0, 0, 0, 255);
+		current_renderer->SetRGBA(current_renderer, 0, 0, 0, 255);
 	else
-		glColor4ub(color->r, color->g, color->b, color->unused);
+		current_renderer->SetRGBA(current_renderer, color->r, color->g, color->b, color->unused);
 }
 
 void GPU_SetRGB(Uint8 r, Uint8 g, Uint8 b)
 {
-	glColor4ub(r, g, b, 255);
+	if(current_renderer == NULL || current_renderer->SetRGBA == NULL)
+		return;
+	
+	current_renderer->SetRGBA(current_renderer, r, g, b, 255);
 }
 
 void GPU_SetRGBA(Uint8 r, Uint8 g, Uint8 b, Uint8 a)
 {
-	glColor4ub(r, g, b, a);
+	if(current_renderer == NULL || current_renderer->SetRGBA == NULL)
+		return;
+	
+	current_renderer->SetRGBA(current_renderer, r, g, b, a);
 }
 
 
 
 void GPU_MakeColorTransparent(GPU_Image* image, SDL_Color color)
 {
-	if(image == NULL)
+	if(current_renderer == NULL || current_renderer->MakeRGBTransparent == NULL)
 		return;
 	
-	glBindTexture( GL_TEXTURE_2D, image->handle );
-
-	GLint textureWidth, textureHeight;
-
-	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &textureWidth);
-	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &textureHeight);
-
-	// FIXME: Does not take into account GL_PACK_ALIGNMENT
-	GLubyte *buffer = (GLubyte *)malloc(textureWidth*textureHeight*4);
-
-	glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
-
-	int x,y,i;
-	for(y = 0; y < textureHeight; y++)
-	{
-		for(x = 0; x < textureWidth; x++)
-		{
-			i = ((y*textureWidth) + x)*4;
-			if(buffer[i] == color.r && buffer[i+1] == color.g && buffer[i+2] == color.b)
-				buffer[i+3] = 0;
-		}
-	}
-	
-	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, textureWidth, textureHeight, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
- 
-
-	free(buffer);
+	current_renderer->MakeRGBTransparent(current_renderer, image, color.r, color.g, color.b);
 }
 
 
@@ -419,21 +223,17 @@ void GPU_MakeColorTransparent(GPU_Image* image, SDL_Color color)
 
 void GPU_Clear(GPU_Target* target)
 {
-	if(target == NULL)
+	if(current_renderer == NULL || current_renderer->Clear == NULL)
 		return;
 	
-	glBindFramebuffer(GL_FRAMEBUFFER_EXT, target->handle);
-	glPushAttrib(GL_VIEWPORT_BIT);
-	glViewport(0,0,target->w, target->h);
-	
-	glClear(GL_COLOR_BUFFER_BIT);
-	
-	glPopAttrib();
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+	current_renderer->Clear(current_renderer, target);
 }
 
 void GPU_Flip(void)
 {
-	SDL_GL_SwapBuffers();
+	if(current_renderer == NULL || current_renderer->Flip == NULL)
+		return;
+	
+	current_renderer->Flip(current_renderer);
 }
 

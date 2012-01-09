@@ -1,7 +1,12 @@
 set(SDL_gpuShapes_SRCS
 	SDL_gpuShapes.c
+	../OpenGL/SDL_gpuShapes_OpenGL.c
 )
 set(SDL_gpuShapes_HDRS
+	SDL_gpuShapes.h
+	../OpenGL/SDL_gpuShapes_OpenGL.h
+)
+set(SDL_gpuShapes_install_HDRS
 	SDL_gpuShapes.h
 )
 
@@ -35,7 +40,7 @@ source_group(Common FILES ${SDL_gpuShapes_SRCS} ${SDL_gpuShapes_HDRS})
 
 if(SDL_gpuShapes_INSTALL)
 	# install headers
-	install(FILES ${SDL_gpuShapes_HDRS} DESTINATION include/SDL)
+	install(FILES ${SDL_gpuShapes_install_HDRS} DESTINATION include/SDL)
 
 	# install libraries
 	if(SDL_gpuShapes_BUILD_SHARED)
