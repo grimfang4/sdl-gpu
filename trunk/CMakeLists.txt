@@ -47,6 +47,8 @@ link_libraries (
 	SOIL
 )
 
+add_definitions("-g -Wall -std=c99 -pedantic")
+
 # The SDL_gpu library.
 add_subdirectory(SDL_gpu)
 

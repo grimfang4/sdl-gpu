@@ -1,7 +1,14 @@
 set(SDL_gpu_SRCS
 	SDL_gpu.c
+	SDL_gpu_Renderer.c
+	../OpenGL/SDL_gpu_OpenGL.c
 )
 set(SDL_gpu_HDRS
+	SDL_gpu.h
+	SDL_gpu_Renderer.h
+	../OpenGL/SDL_gpu_OpenGL.h
+)
+set(SDL_gpu_install_HDRS
 	SDL_gpu.h
 )
 
@@ -35,7 +42,7 @@ source_group(Common FILES ${SDL_gpu_SRCS} ${SDL_gpu_HDRS})
 
 if(SDL_gpu_INSTALL)
 	# install headers
-	install(FILES ${SDL_gpu_HDRS} DESTINATION include/SDL)
+	install(FILES ${SDL_gpu_install_HDRS} DESTINATION include/SDL)
 
 	# install libraries
 	if(SDL_gpu_BUILD_SHARED)

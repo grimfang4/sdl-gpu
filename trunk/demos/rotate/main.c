@@ -3,16 +3,15 @@
 
 int main(int argc, char* argv[])
 {
-	GPU_Target* screen = GPU_Init(800, 600, 0);
+	GPU_Target* screen = GPU_Init(NULL, 800, 600, 0);
 	if(screen == NULL)
 		return -1;
 	
-	printf("Renderer: %s\n", GPU_GetRendererString());
+	printf("Renderer: %s\n", GPU_GetCurrentRendererID());
 	
 	GPU_Image* image = GPU_LoadImage("data/test.bmp");
 	if(image == NULL)
 		return -1;
-	
 	
 	Uint32 startTime = SDL_GetTicks();
 	long frameCount = 0;

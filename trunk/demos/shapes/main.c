@@ -5,11 +5,11 @@
 
 int main(int argc, char* argv[])
 {
-	GPU_Target* screen = GPU_Init(800, 600, 0);
+	GPU_Target* screen = GPU_Init(NULL, 800, 600, 0);
 	if(screen == NULL)
 		return -1;
 	
-	printf("Renderer: %s\n", GPU_GetRendererString());
+	printf("Renderer: %s\n", GPU_GetCurrentRendererID());
 	
 	Uint32 startTime = SDL_GetTicks();
 	long frameCount = 0;
@@ -117,7 +117,7 @@ int main(int argc, char* argv[])
 	for(i = 0; i < numPolys; i++)
 	{
 		pn[i] = rand()%8;
-		pv[i] = (float*)malloc(pn[i]*sizeof(float));
+		pv[i] = (float*)malloc(2*pn[i]*sizeof(float));
 		int j;
 		for(j = 0; j < pn[i]*2; j+=2)
 		{
