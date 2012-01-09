@@ -9,6 +9,8 @@ int main(int argc, char* argv[])
 	if(screen == NULL)
 		return -1;
 	
+	GPU_LoadShapeRenderer();
+	
 	printf("Renderer: %s\n", GPU_GetCurrentRendererID());
 	
 	Uint32 startTime = SDL_GetTicks();
