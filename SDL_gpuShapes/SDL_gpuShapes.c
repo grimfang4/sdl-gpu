@@ -13,7 +13,8 @@ void GPU_LoadShapeRenderer(void)
 	// Free the old one
 	if(shapeRenderer != NULL)
 	{
-		freeShapeRendererFn(shapeRenderer);
+		if(freeShapeRendererFn != NULL)
+			freeShapeRendererFn(shapeRenderer);
 		shapeRenderer = NULL;
 		freeShapeRendererFn = NULL;
 	}
@@ -23,12 +24,13 @@ void GPU_LoadShapeRenderer(void)
 	if(renderer == NULL)
 		return;
 	
-	if(strcmp(rendererID, "OpenGL"))
+	if(strcmp(rendererID, "OpenGL") == 0)
 	{
 		GPU_ShapeRenderer* sr = GPU_CreateShapeRenderer_OpenGL();
 		if(sr == NULL)
 			return;
 		sr->renderer = renderer;
+		shapeRenderer = sr;
 		freeShapeRendererFn = &GPU_FreeShapeRenderer_OpenGL;
 	}
 	
