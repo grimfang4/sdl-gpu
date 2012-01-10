@@ -9,7 +9,7 @@ add_executable(rotate-demo rotate/main.c)
 target_link_libraries (rotate-demo SDL_gpu)
 
 add_executable(render-target-demo render-target/main.c)
-target_link_libraries (render-target-demo SDL_gpu)
+target_link_libraries (render-target-demo SDL_gpu SDL_gpuShapes)
 
 add_executable(blend-demo blend/main.c)
 target_link_libraries (blend-demo SDL_gpu)

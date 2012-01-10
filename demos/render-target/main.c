@@ -1,5 +1,6 @@
 #include "SDL.h"
 #include "SDL_gpu.h"
+#include "SDL_gpuShapes.h"
 
 void printRenderers(void)
 {
@@ -32,12 +33,16 @@ int main(int argc, char* argv[])
 	if(image2 == NULL)
 		return -1;
 	
-	GPU_Target* target = GPU_LoadTarget(image);  // 502
+	GPU_Target* target = GPU_LoadTarget(image);
 	if(target == NULL)
 		return -1;
 	
 	// Draw the second image onto the first
 	GPU_BlitScale(image2, NULL, target, 0, 0, 0.3f, 0.3f);
+	
+	SDL_Color circleColor = {255, 0, 0, 255};
+	SDL_Color circleColor2 = {0, 0, 255, 255};
+	GPU_CircleFilled(target, 70, 70, 20, circleColor);
 	
 	
 	Uint32 startTime = SDL_GetTicks();
@@ -61,6 +66,8 @@ int main(int argc, char* argv[])
 		GPU_Clear(screen);
 		
 		GPU_Blit(image, NULL, screen, 50, 50);
+		
+		GPU_CircleFilled(screen, 70, 70, 20, circleColor2);
 		
 		GPU_Flip();
 		
