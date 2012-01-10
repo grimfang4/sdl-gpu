@@ -1,9 +1,12 @@
 #include "SDL_gpu_Renderer.h"
 #include <string.h>
 
+
 #include "../OpenGL/SDL_gpu_OpenGL_internal.h"
+#include "../Direct3D/SDL_gpu_Direct3D_internal.h"
+
 #define MAX_ACTIVE_RENDERERS 10
-#define MAX_REGISTERED_RENDERERS 1
+#define MAX_REGISTERED_RENDERERS 2
 
 // TODO: Add list of initialized renderers that need to be cleaned up at GPU_Quit().
 // TODO: Add map<const char*, GPU_Renderer*> to hold all registered (potential) renderers.
@@ -101,13 +104,19 @@ void GPU_RegisterRenderers()
 	
 	const char* id = "OpenGL";
 	rendererRegister[i].id = (char*)malloc(strlen(id) + 1);
-	strcpy(rendererRegister[i].id, "OpenGL");
+	strcpy(rendererRegister[i].id, id);
 	rendererRegister[i].createFn = &GPU_CreateRenderer_OpenGL;
 	rendererRegister[i].freeFn = &GPU_FreeRenderer_OpenGL;
-	i++;
 	
+	i++;
 	if(i >= MAX_REGISTERED_RENDERERS)
 		return;
+	
+	id = "Direct3D";
+	rendererRegister[i].id = (char*)malloc(strlen(id) + 1);
+	strcpy(rendererRegister[i].id, id);
+	rendererRegister[i].createFn = &GPU_CreateRenderer_Direct3D;
+	rendererRegister[i].freeFn = &GPU_FreeRenderer_Direct3D;
 }
 
 
@@ -144,7 +153,8 @@ GPU_Renderer* GPU_CreateRenderer(const char* id)
 		
 		if(strcmp(id, rendererRegister[i].id) == 0)
 		{
-			result = GPU_CreateRenderer_OpenGL();
+			if(rendererRegister[i].createFn != NULL)
+				result = rendererRegister[i].createFn();
 			break;
 		}
 	}

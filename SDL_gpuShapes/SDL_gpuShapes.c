@@ -2,6 +2,7 @@
 #include <string.h>
 
 #include "../OpenGL/SDL_gpuShapes_OpenGL_internal.h"
+#include "../Direct3D/SDL_gpuShapes_Direct3D_internal.h"
 
 
 static GPU_ShapeRenderer* shapeRenderer = NULL;
@@ -32,6 +33,16 @@ void GPU_LoadShapeRenderer(void)
 		sr->renderer = renderer;
 		shapeRenderer = sr;
 		freeShapeRendererFn = &GPU_FreeShapeRenderer_OpenGL;
+	}
+	
+	if(strcmp(rendererID, "Direct3D") == 0)
+	{
+		GPU_ShapeRenderer* sr = GPU_CreateShapeRenderer_Direct3D();
+		if(sr == NULL)
+			return;
+		sr->renderer = renderer;
+		shapeRenderer = sr;
+		freeShapeRendererFn = &GPU_FreeShapeRenderer_Direct3D;
 	}
 	
 }

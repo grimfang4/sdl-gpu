@@ -79,13 +79,13 @@ static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags
 	return renderer->display;
 }
 
-void Quit(GPU_Renderer* renderer)
+static void Quit(GPU_Renderer* renderer)
 {
 	free(renderer->display);
 	renderer->display = NULL;
 }
 
-GPU_Image* LoadImage(GPU_Renderer* renderer, const char* filename)
+static GPU_Image* LoadImage(GPU_Renderer* renderer, const char* filename)
 {
 	
 	GLuint texture;			// This is a handle to our texture object
@@ -120,7 +120,7 @@ GPU_Image* LoadImage(GPU_Renderer* renderer, const char* filename)
 	return result;
 }
 
-void FreeImage(GPU_Renderer* renderer, GPU_Image* image)
+static void FreeImage(GPU_Renderer* renderer, GPU_Image* image)
 {
 	if(image == NULL)
 		return;
@@ -130,13 +130,13 @@ void FreeImage(GPU_Renderer* renderer, GPU_Image* image)
 	free(image);
 }
 
-GPU_Target* GetDisplayTarget(GPU_Renderer* renderer)
+static GPU_Target* GetDisplayTarget(GPU_Renderer* renderer)
 {
 	return renderer->display;
 }
 
 
-GPU_Target* LoadTarget(GPU_Renderer* renderer, GPU_Image* image)
+static GPU_Target* LoadTarget(GPU_Renderer* renderer, GPU_Image* image)
 {
 	GLuint handle;
 	// Create framebuffer object
@@ -170,7 +170,7 @@ GPU_Target* LoadTarget(GPU_Renderer* renderer, GPU_Image* image)
 
 
 
-void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
+static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
 {
 	if(target == NULL || target == renderer->display)
 		return;
@@ -182,7 +182,7 @@ void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
 
 
 
-int Blit(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y)
+static int Blit(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y)
 {
 	if(src == NULL || dest == NULL)
 		return -1;
@@ -267,7 +267,7 @@ int Blit(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* 
 }
 
 
-int BlitRotate(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y, float angle)
+static int BlitRotate(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y, float angle)
 {
 	if(src == NULL || dest == NULL)
 		return -1;
@@ -290,7 +290,7 @@ int BlitRotate(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Ta
 	return result;
 }
 
-int BlitScale(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y, float scaleX, float scaleY)
+static int BlitScale(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y, float scaleX, float scaleY)
 {
 	if(src == NULL || dest == NULL)
 		return -1;
@@ -373,7 +373,7 @@ int BlitScale(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Tar
 	return 0;
 }
 
-int BlitTransform(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y, float angle, float scaleX, float scaleY)
+static int BlitTransform(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y, float angle, float scaleX, float scaleY)
 {
 	if(src == NULL || dest == NULL)
 		return -1;
@@ -398,7 +398,7 @@ int BlitTransform(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU
 
 
 
-void SetBlending(GPU_Renderer* renderer, Uint8 enable)
+static void SetBlending(GPU_Renderer* renderer, Uint8 enable)
 {
 	if(enable)
 		glEnable(GL_BLEND);
@@ -407,14 +407,14 @@ void SetBlending(GPU_Renderer* renderer, Uint8 enable)
 }
 
 
-void SetRGBA(GPU_Renderer* renderer, Uint8 r, Uint8 g, Uint8 b, Uint8 a)
+static void SetRGBA(GPU_Renderer* renderer, Uint8 r, Uint8 g, Uint8 b, Uint8 a)
 {
 	glColor4ub(r, g, b, a);
 }
 
 
 
-void MakeRGBTransparent(GPU_Renderer* renderer, GPU_Image* image, Uint8 r, Uint8 g, Uint8 b)
+static void MakeRGBTransparent(GPU_Renderer* renderer, GPU_Image* image, Uint8 r, Uint8 g, Uint8 b)
 {
 	if(image == NULL)
 		return;
@@ -459,7 +459,7 @@ void MakeRGBTransparent(GPU_Renderer* renderer, GPU_Image* image, Uint8 r, Uint8
 
 
 
-void Clear(GPU_Renderer* renderer, GPU_Target* target)
+static void Clear(GPU_Renderer* renderer, GPU_Target* target)
 {
 	if(target == NULL)
 		return;
@@ -489,7 +489,7 @@ void Clear(GPU_Renderer* renderer, GPU_Target* target)
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 }
 
-void Flip(GPU_Renderer* renderer)
+static void Flip(GPU_Renderer* renderer)
 {
 	SDL_GL_SwapBuffers();
 }
