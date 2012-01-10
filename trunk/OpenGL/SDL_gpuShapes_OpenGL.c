@@ -26,6 +26,8 @@ typedef struct ShapeRendererData_OpenGL
 #define BEGIN \
 	if(target == NULL) \
 		return; \
+	if(renderer->renderer != target->renderer) \
+		return; \
 	 \
 	/* Bind the FBO */ \
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, ((TargetData_OpenGL*)target->data)->handle); \

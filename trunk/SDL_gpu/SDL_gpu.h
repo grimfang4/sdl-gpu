@@ -9,8 +9,12 @@ extern "C" {
 #endif
 
 
+
+struct GPU_Renderer;
+
 typedef struct GPU_Image
 {
+	struct GPU_Renderer* renderer;
 	void* data;
 	Uint16 w, h;
 } GPU_Image;
@@ -18,13 +22,11 @@ typedef struct GPU_Image
 
 typedef struct GPU_Target
 {
+	struct GPU_Renderer* renderer;
 	void* data;
 	Uint16 w, h;
 	SDL_Rect clip_rect;
 } GPU_Target;
-
-
-struct GPU_Renderer;
 
 typedef struct GPU_Renderer
 {
@@ -85,6 +87,7 @@ void GPU_RemoveRenderer(const char* id);
 
 GPU_Renderer* GPU_GetRendererByID(const char* id);
 void GPU_SetCurrentRenderer(const char* id);
+GPU_Renderer* GPU_GetCurrentRenderer(void);
 
 
 
