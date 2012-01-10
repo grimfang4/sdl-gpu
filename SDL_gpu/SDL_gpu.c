@@ -89,7 +89,7 @@ const char* GPU_GetErrorString(void)
 GPU_Image* GPU_LoadImage(const char* filename)
 {
 	if(current_renderer == NULL || current_renderer->LoadImage == NULL)
-		return;
+		return NULL;
 	
 	return current_renderer->LoadImage(current_renderer, filename);
 }
@@ -99,7 +99,7 @@ void GPU_FreeImage(GPU_Image* image)
 	if(current_renderer == NULL || current_renderer->FreeImage == NULL)
 		return;
 	
-	return current_renderer->FreeImage(current_renderer, image);
+	current_renderer->FreeImage(current_renderer, image);
 }
 
 GPU_Target* GPU_GetDisplayTarget(void)
@@ -166,12 +166,36 @@ int GPU_BlitTransform(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint1
 
 
 
+void GPU_SetClip(GPU_Target* target, Sint16 x, Sint16 y, Uint16 w, Uint16 h)
+{
+	if(target == NULL)
+		return;
+	
+	target->clip_rect.x = x;
+	target->clip_rect.y = y;
+	target->clip_rect.w = w;
+	target->clip_rect.h = h;
+}
+
+void GPU_ResetClip(GPU_Target* target)
+{
+	if(target == NULL)
+		return;
+	
+	target->clip_rect.x = 0;
+	target->clip_rect.y = 0;
+	target->clip_rect.w = target->w;
+	target->clip_rect.h = target->h;
+}
+
+
+
 void GPU_SetBlending(Uint8 enable)
 {
 	if(current_renderer == NULL || current_renderer->SetBlending == NULL)
 		return;
 	
-	return current_renderer->SetBlending(current_renderer, enable);
+	current_renderer->SetBlending(current_renderer, enable);
 }
 
 
