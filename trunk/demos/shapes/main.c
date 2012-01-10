@@ -26,6 +26,8 @@ int main(int argc, char* argv[])
 	
 	printf("Using renderer: %s\n", GPU_GetCurrentRendererID());
 	
+	GPU_LoadShapeRenderer();
+	
 	Uint32 startTime = SDL_GetTicks();
 	long frameCount = 0;
 	
