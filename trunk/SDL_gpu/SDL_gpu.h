@@ -17,6 +17,7 @@ typedef struct GPU_Target
 {
 	void* data;
 	Uint16 w, h;
+	SDL_Rect clip_rect;
 } GPU_Target;
 
 
@@ -70,6 +71,12 @@ const char* GPU_GetErrorString(void);
 const char* GPU_GetCurrentRendererID(void);
 const char* GPU_GetDefaultRendererID(void);
 
+int GPU_GetNumActiveRenderers(void);
+void GPU_GetActiveRendererList(const char** renderers_array);
+
+int GPU_GetNumRegisteredRenderers(void);
+void GPU_GetRegisteredRendererList(const char** renderers_array);
+
 GPU_Renderer* GPU_AddRenderer(const char* id);
 void GPU_RemoveRenderer(const char* id);
 
@@ -90,6 +97,9 @@ int GPU_Blit(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint
 int GPU_BlitRotate(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y, float angle);
 int GPU_BlitScale(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y, float scaleX, float scaleY);
 int GPU_BlitTransform(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y, float angle, float scaleX, float scaleY);
+
+void GPU_SetClip(GPU_Target* target, Sint16 x, Sint16 y, Uint16 w, Uint16 h);
+void GPU_ResetClip(GPU_Target* target);
 
 void GPU_SetBlending(Uint8 enable);
 void GPU_SetColor(SDL_Color* color);

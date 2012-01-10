@@ -52,6 +52,10 @@ static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags
 	((TargetData_OpenGL*)renderer->display->data)->handle = 0;
 	renderer->display->w = screen->w;
 	renderer->display->h = screen->h;
+	renderer->display->clip_rect.x = 0;
+	renderer->display->clip_rect.y = 0;
+	renderer->display->clip_rect.w = screen->w;
+	renderer->display->clip_rect.h = screen->h;
 	
 	return renderer->display;
 }
@@ -136,6 +140,11 @@ GPU_Target* LoadTarget(GPU_Renderer* renderer, GPU_Image* image)
 	result->w = image->w;
 	result->h = image->h;
 	
+	result->clip_rect.x = 0;
+	result->clip_rect.y = 0;
+	result->clip_rect.w = image->w;
+	result->clip_rect.h = image->h;
+	
 	return result;
 }
 
@@ -164,6 +173,14 @@ int Blit(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* 
 	
 	// Bind the FBO
 	glBindFramebuffer(GL_FRAMEBUFFER_EXT, ((TargetData_OpenGL*)dest->data)->handle);
+	
+	Uint8 doClip = (dest->clip_rect.x > 0 || dest->clip_rect.y > 0 || dest->clip_rect.w < dest->w || dest->clip_rect.h < dest->h);
+	if(doClip)
+	{
+		glEnable(GL_SCISSOR_TEST);
+		int y = (renderer->display == dest? renderer->display->h - (dest->clip_rect.y + dest->clip_rect.h) : dest->clip_rect.y);
+		glScissor(dest->clip_rect.x, y, dest->clip_rect.w, dest->clip_rect.h);
+	}
 	
 	float x1, y1, x2, y2;
 	float dx1, dy1, dx2, dy2;
@@ -217,6 +234,11 @@ int Blit(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* 
 		glVertex3f( dx1, dy2, 0.f );
 	glEnd();
 	
+	if(doClip)
+	{
+		glDisable(GL_SCISSOR_TEST);
+	}
+	
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 	
 	return 0;
@@ -254,6 +276,14 @@ int BlitScale(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Tar
 	
 	// Bind the FBO
 	glBindFramebuffer(GL_FRAMEBUFFER_EXT, ((TargetData_OpenGL*)dest->data)->handle);
+	
+	Uint8 doClip = (dest->clip_rect.x > 0 || dest->clip_rect.y > 0 || dest->clip_rect.w < dest->w || dest->clip_rect.h < dest->h);
+	if(doClip)
+	{
+		glEnable(GL_SCISSOR_TEST);
+		int y = (renderer->display == dest? renderer->display->h - (dest->clip_rect.y + dest->clip_rect.h) : dest->clip_rect.y);
+		glScissor(dest->clip_rect.x, y, dest->clip_rect.w, dest->clip_rect.h);
+	}
 	
 	float x1, y1, x2, y2;
 	float dx1, dy1, dx2, dy2;
@@ -306,6 +336,11 @@ int BlitScale(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Tar
 		glTexCoord2f( x1, y2 );
 		glVertex3f( dx1, dy2, 0.f );
 	glEnd();
+	
+	if(doClip)
+	{
+		glDisable(GL_SCISSOR_TEST);
+	}
 	
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 	
@@ -403,7 +438,20 @@ void Clear(GPU_Renderer* renderer, GPU_Target* target)
 	glPushAttrib(GL_VIEWPORT_BIT);
 	glViewport(0,0,target->w, target->h);
 	
+	Uint8 doClip = (target->clip_rect.x > 0 || target->clip_rect.y > 0 || target->clip_rect.w < target->w || target->clip_rect.h < target->h);
+	if(doClip)
+	{
+		glEnable(GL_SCISSOR_TEST);
+		int y = (renderer->display == target? renderer->display->h - (target->clip_rect.y + target->clip_rect.h) : target->clip_rect.y);
+		glScissor(target->clip_rect.x, y, target->clip_rect.w, target->clip_rect.h);
+	}
+	
 	glClear(GL_COLOR_BUFFER_BIT);
+	
+	if(doClip)
+	{
+		glDisable(GL_SCISSOR_TEST);
+	}
 	
 	glPopAttrib();
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);

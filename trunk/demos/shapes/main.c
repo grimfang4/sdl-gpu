@@ -19,7 +19,6 @@ int main(int argc, char* argv[])
 	int shapeType = 0;
 	int numShapeTypes = 13;
 	
-	
 	int i;
 	
 	int numColors = 20;
@@ -31,6 +30,11 @@ int main(int argc, char* argv[])
 		colors[i].b = rand()%256;
 		colors[i].unused = rand()%256;
 	}
+	
+	
+	GPU_Image* img = GPU_LoadImage("data/test.bmp");
+	GPU_Target* imgTarget = GPU_LoadTarget(img);
+	GPU_Line(imgTarget, 0, 0, 50, 50, colors[0]);
 	
 	int numPixels = numColors;
 	int px[numPixels];
@@ -233,6 +237,8 @@ int main(int argc, char* argv[])
 				}
 				break;
 		}
+		
+		GPU_Blit(img, NULL, screen, 0,0);
 		
 		GPU_Flip();
 		

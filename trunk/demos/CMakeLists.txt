@@ -16,3 +16,6 @@ target_link_libraries (blend-demo SDL_gpu)
 
 add_executable(shapes-demo shapes/main.c)
 target_link_libraries (shapes-demo SDL_gpu SDL_gpuShapes)
+
+add_executable(clip-demo clip/main.c)
+target_link_libraries (clip-demo SDL_gpu SDL_gpuShapes)

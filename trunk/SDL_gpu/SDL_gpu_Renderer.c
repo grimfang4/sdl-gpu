@@ -20,8 +20,13 @@ static Uint8 initialized = 0;
 static GPU_Renderer* rendererMap[MAX_ACTIVE_RENDERERS];
 static RendererRegistration rendererRegister[MAX_REGISTERED_RENDERERS];
 
+
+void GPU_InitRendererRegister(void);
+
 int GPU_GetNumActiveRenderers(void)
 {
+	GPU_InitRendererRegister();
+
 	int count = 0;
 	int i;
 	for(i = 0; i < MAX_ACTIVE_RENDERERS; i++)
@@ -31,6 +36,56 @@ int GPU_GetNumActiveRenderers(void)
 	}
 	return count;
 }
+
+void GPU_GetActiveRendererList(const char** renderers_array)
+{
+	GPU_InitRendererRegister();
+
+	int count = 0;
+	
+	int i;
+	for(i = 0; i < MAX_ACTIVE_RENDERERS; i++)
+	{
+		if(rendererMap[i] != NULL)
+		{
+			renderers_array[count] = rendererMap[i]->id;
+			count++;
+		}
+	}
+}
+
+
+int GPU_GetNumRegisteredRenderers(void)
+{
+	GPU_InitRendererRegister();
+
+	int count = 0;
+	int i;
+	for(i = 0; i < MAX_REGISTERED_RENDERERS; i++)
+	{
+		if(rendererRegister[i].id != NULL)
+			count++;
+	}
+	return count;
+}
+
+void GPU_GetRegisteredRendererList(const char** renderers_array)
+{
+	GPU_InitRendererRegister();
+
+	int count = 0;
+	
+	int i;
+	for(i = 0; i < MAX_REGISTERED_RENDERERS; i++)
+	{
+		if(rendererRegister[i].id != NULL)
+		{
+			renderers_array[count] = rendererRegister[i].id;
+			count++;
+		}
+	}
+}
+
 
 const char* GPU_GetDefaultRendererID(void)
 {
