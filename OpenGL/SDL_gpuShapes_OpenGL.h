@@ -1,9 +1,16 @@
 #ifndef _SDL_GPUSHAPES_OPENGL_H__
 #define _SDL_GPUSHAPES_OPENGL_H__
 
+#include "SDL_gpuShapes.h"
+#include "SDL_gpu_OpenGL.h"
+#include "SDL_opengl.h"
 
-GPU_ShapeRenderer* GPU_CreateShapeRenderer_OpenGL(void);
-void GPU_FreeShapeRenderer_OpenGL(GPU_ShapeRenderer* renderer);
+typedef struct ShapeRendererData_OpenGL
+{
+	GLuint handle;
+	// What else?
+} ShapeRendererData_OpenGL;
+
 
 
 

@@ -5,9 +5,11 @@ set(SDL_gpuShapes_SRCS
 set(SDL_gpuShapes_HDRS
 	SDL_gpuShapes.h
 	../OpenGL/SDL_gpuShapes_OpenGL.h
+	../OpenGL/SDL_gpuShapes_OpenGL_internal.h
 )
 set(SDL_gpuShapes_install_HDRS
 	SDL_gpuShapes.h
+	../OpenGL/SDL_gpuShapes_OpenGL.h
 )
 
 if(SDL_gpuShapes_BUILD_SHARED)
@@ -44,13 +46,13 @@ if(SDL_gpuShapes_INSTALL)
 
 	# install libraries
 	if(SDL_gpuShapes_BUILD_SHARED)
-		install(TARGETS SDL_gpuShapes_shared EXPORT SDL_gpuShapes-targets DESTINATION .)
+		install(TARGETS SDL_gpuShapes_shared EXPORT SDL_gpuShapes-targets DESTINATION lib)
 	endif()
 	if(SDL_gpuShapes_BUILD_STATIC)
-		install(TARGETS SDL_gpuShapes EXPORT SDL_gpuShapes-targets DESTINATION .)
+		install(TARGETS SDL_gpuShapes EXPORT SDL_gpuShapes-targets DESTINATION lib)
 	endif()
 
 	# install build system hooks for third-party apps
-	install(EXPORT SDL_gpuShapes-targets DESTINATION ./SDL_gpuShapes)
-	install(FILES SDL_gpuShapesConfig.cmake DESTINATION ./SDL_gpuShapes)
+	#install(EXPORT SDL_gpuShapes-targets DESTINATION ./SDL_gpuShapes)
+	#install(FILES SDL_gpuShapesConfig.cmake DESTINATION ./SDL_gpuShapes)
 endif(SDL_gpuShapes_INSTALL)
