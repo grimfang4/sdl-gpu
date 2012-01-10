@@ -2,11 +2,31 @@
 #include "SDL_opengl.h"
 #include "SOIL.h"
 
+#ifdef WINDOWS
+#include "windows.h"
+#define GL_EXT_LOAD wglGetProcAddress
+#else
+#include "GL/glx.h"
+#define GL_EXT_LOAD glXGetProcAddress
+#endif
 
-
+PFNGLGENFRAMEBUFFERSEXTPROC glGenFramebuffersEXT = NULL;
+PFNGLBINDFRAMEBUFFEREXTPROC glBindFramebufferEXT = NULL;
+PFNGLFRAMEBUFFERTEXTURE2DEXTPROC glFramebufferTexture2DEXT = NULL;
+PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC glCheckFramebufferStatusEXT = NULL;
+PFNGLDELETEFRAMEBUFFERSEXTPROC glDeleteFramebuffersEXT = NULL;
 
 static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags)
 {
+	if(glGenFramebuffersEXT == NULL)
+	{
+		glGenFramebuffersEXT = (PFNGLGENFRAMEBUFFERSEXTPROC) GL_EXT_LOAD((const GLubyte*)"glGenFramebuffersEXT");
+		glBindFramebufferEXT = (PFNGLBINDFRAMEBUFFEREXTPROC) GL_EXT_LOAD((const GLubyte*)"glBindFramebufferEXT");
+		glFramebufferTexture2DEXT = (PFNGLFRAMEBUFFERTEXTURE2DEXTPROC) GL_EXT_LOAD((const GLubyte*)"glFramebufferTexture2DEXT");
+		glCheckFramebufferStatusEXT = (PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC) GL_EXT_LOAD((const GLubyte*)"glCheckFramebufferStatusEXT");
+		glDeleteFramebuffersEXT = (PFNGLDELETEFRAMEBUFFERSEXTPROC) GL_EXT_LOAD((const GLubyte*)"glDeleteFramebuffersEXT");
+	}
+	
 	if(flags & SDL_DOUBLEBUF)
 		SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 	flags &= ~SDL_DOUBLEBUF;
@@ -94,7 +114,6 @@ GPU_Image* LoadImage(GPU_Renderer* renderer, const char* filename)
 	data->handle = texture;
 	data->format = texture_format;
 	
-	printf("Result w,h: %d, %d\n", w, h);
 	result->w = w;
 	result->h = h;
 	
@@ -122,7 +141,7 @@ GPU_Target* LoadTarget(GPU_Renderer* renderer, GPU_Image* image)
 	GLuint handle;
 	// Create framebuffer object
 	glGenFramebuffersEXT(1, &handle);
-	glBindFramebuffer(GL_FRAMEBUFFER_EXT, handle);
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, handle);
 	
 	// Attach the texture to it
 	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, ((ImageData_OpenGL*)image->data)->handle, 0); // 502
@@ -131,7 +150,7 @@ GPU_Target* LoadTarget(GPU_Renderer* renderer, GPU_Image* image)
 	if(status != GL_FRAMEBUFFER_COMPLETE_EXT)
 		return NULL;
 	
-	glBindFramebuffer(GL_FRAMEBUFFER_EXT, 0);
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 	
 	GPU_Target* result = (GPU_Target*)malloc(sizeof(GPU_Target));
 	TargetData_OpenGL* data = (TargetData_OpenGL*)malloc(sizeof(TargetData_OpenGL));
@@ -155,7 +174,7 @@ void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
 	if(target == NULL || target == renderer->display)
 		return;
 	
-	glDeleteFramebuffers(1, &((TargetData_OpenGL*)target->data)->handle);
+	glDeleteFramebuffersEXT(1, &((TargetData_OpenGL*)target->data)->handle);
 	
 	free(target);
 }
@@ -172,7 +191,7 @@ int Blit(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* 
 	glBindTexture( GL_TEXTURE_2D, ((ImageData_OpenGL*)src->data)->handle );
 	
 	// Bind the FBO
-	glBindFramebuffer(GL_FRAMEBUFFER_EXT, ((TargetData_OpenGL*)dest->data)->handle);
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, ((TargetData_OpenGL*)dest->data)->handle);
 	
 	Uint8 doClip = (dest->clip_rect.x > 0 || dest->clip_rect.y > 0 || dest->clip_rect.w < dest->w || dest->clip_rect.h < dest->h);
 	if(doClip)
@@ -275,7 +294,7 @@ int BlitScale(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Tar
 	glBindTexture( GL_TEXTURE_2D, ((ImageData_OpenGL*)src->data)->handle );
 	
 	// Bind the FBO
-	glBindFramebuffer(GL_FRAMEBUFFER_EXT, ((TargetData_OpenGL*)dest->data)->handle);
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, ((TargetData_OpenGL*)dest->data)->handle);
 	
 	Uint8 doClip = (dest->clip_rect.x > 0 || dest->clip_rect.y > 0 || dest->clip_rect.w < dest->w || dest->clip_rect.h < dest->h);
 	if(doClip)
@@ -434,7 +453,7 @@ void Clear(GPU_Renderer* renderer, GPU_Target* target)
 	if(target == NULL)
 		return;
 	
-	glBindFramebuffer(GL_FRAMEBUFFER_EXT, ((TargetData_OpenGL*)target->data)->handle);
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, ((TargetData_OpenGL*)target->data)->handle);
 	glPushAttrib(GL_VIEWPORT_BIT);
 	glViewport(0,0,target->w, target->h);
 	

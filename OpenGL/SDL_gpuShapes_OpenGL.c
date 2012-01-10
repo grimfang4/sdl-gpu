@@ -28,7 +28,7 @@ typedef struct ShapeRendererData_OpenGL
 		return; \
 	 \
 	/* Bind the FBO */ \
-	glBindFramebuffer(GL_FRAMEBUFFER_EXT, ((TargetData_OpenGL*)target->data)->handle); \
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, ((TargetData_OpenGL*)target->data)->handle); \
 	glPushAttrib(GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
 
 #define END \

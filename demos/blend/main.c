@@ -14,7 +14,7 @@ int main(int argc, char* argv[])
 	if(image == NULL)
 		return -1;
 	
-	SDL_Color transColor = {255, 255, 255};
+	//SDL_Color transColor = {255, 255, 255};
 	//GPU_MakeColorTransparent(image, transColor);
 	
 	float x = 0, y = 0;
