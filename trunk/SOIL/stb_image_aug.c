@@ -2339,6 +2339,7 @@ static int parse_png_file(png *z, int scan, int req_comp)
                #ifndef STBI_NO_FAILURE_STRINGS
                // not threadsafe
                static char invalid_chunk[] = "XXXX chunk not known";
+			   (void)invalid_chunk;
                invalid_chunk[0] = (uint8) (c.type >> 24);
                invalid_chunk[1] = (uint8) (c.type >> 16);
                invalid_chunk[2] = (uint8) (c.type >>  8);

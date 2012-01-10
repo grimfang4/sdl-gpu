@@ -4,6 +4,9 @@
 #include "SDL.h"
 
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 
 typedef struct GPU_Image
@@ -111,7 +114,9 @@ void GPU_MakeColorTransparent(GPU_Image* image, SDL_Color color);
 void GPU_Clear(GPU_Target* target);
 void GPU_Flip(void);
 
-
+#ifdef __cplusplus
+}
+#endif
 
 
 

@@ -99,7 +99,9 @@ void GPU_RegisterRenderers()
 	if(i >= MAX_REGISTERED_RENDERERS)
 		return;
 	
-	rendererRegister[i].id = strdup("OpenGL");
+	const char* id = "OpenGL";
+	rendererRegister[i].id = (char*)malloc(strlen(id) + 1);
+	strcpy(rendererRegister[i].id, "OpenGL");
 	rendererRegister[i].createFn = &GPU_CreateRenderer_OpenGL;
 	rendererRegister[i].freeFn = &GPU_FreeRenderer_OpenGL;
 	i++;
