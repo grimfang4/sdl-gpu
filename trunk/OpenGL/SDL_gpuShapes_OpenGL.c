@@ -29,9 +29,20 @@ typedef struct ShapeRendererData_OpenGL
 	 \
 	/* Bind the FBO */ \
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, ((TargetData_OpenGL*)target->data)->handle); \
-	glPushAttrib(GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
+	glPushAttrib(GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT); \
+	Uint8 doClip = (target->clip_rect.x > 0 || target->clip_rect.y > 0 || target->clip_rect.w < target->w || target->clip_rect.h < target->h); \
+	if(doClip) \
+	{ \
+		glEnable(GL_SCISSOR_TEST); \
+		int y = (renderer->renderer->display == target? renderer->renderer->display->h - (target->clip_rect.y + target->clip_rect.h) : target->clip_rect.y); \
+		glScissor(target->clip_rect.x, y, target->clip_rect.w, target->clip_rect.h); \
+	}
 
 #define END \
+	if(doClip) \
+	{ \
+		glDisable(GL_SCISSOR_TEST); \
+	} \
 	glPopAttrib(); \
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 
