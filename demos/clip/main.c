@@ -1,5 +1,6 @@
 #include "SDL.h"
 #include "SDL_gpu.h"
+#include "SDL_gpuShapes.h"
 
 void printRenderers(void)
 {
@@ -49,6 +50,8 @@ int main(int argc, char* argv[])
 		velx[i] = 10 + rand()%screen->w/10;
 		vely[i] = 10 + rand()%screen->h/10;
 	}
+	
+	SDL_Color lineColor = {255, 0, 0, 255};
 	
 	GPU_SetClip(screen, 40, 40, 600, 300);
 	
@@ -111,6 +114,9 @@ int main(int argc, char* argv[])
 		{
 			GPU_Blit(image, NULL, screen, x[i], y[i]);
 		}
+		
+		GPU_Line(screen, 0, 0, screen->w, screen->h, lineColor);
+		GPU_Line(screen, 0, screen->h, screen->w, 0, lineColor);
 		
 		GPU_Flip();
 		
