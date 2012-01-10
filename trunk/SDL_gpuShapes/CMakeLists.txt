@@ -1,15 +1,19 @@
 set(SDL_gpuShapes_SRCS
 	SDL_gpuShapes.c
 	../OpenGL/SDL_gpuShapes_OpenGL.c
+	../Direct3D/SDL_gpuShapes_Direct3D.c
 )
 set(SDL_gpuShapes_HDRS
 	SDL_gpuShapes.h
 	../OpenGL/SDL_gpuShapes_OpenGL.h
 	../OpenGL/SDL_gpuShapes_OpenGL_internal.h
+	../Direct3D/SDL_gpuShapes_Direct3D.h
+	../Direct3D/SDL_gpuShapes_Direct3D_internal.h
 )
 set(SDL_gpuShapes_install_HDRS
 	SDL_gpuShapes.h
 	../OpenGL/SDL_gpuShapes_OpenGL.h
+	../Direct3D/SDL_gpuShapes_Direct3D.h
 )
 
 if(SDL_gpuShapes_BUILD_SHARED)

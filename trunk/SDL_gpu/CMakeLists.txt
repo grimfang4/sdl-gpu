@@ -2,16 +2,20 @@ set(SDL_gpu_SRCS
 	SDL_gpu.c
 	SDL_gpu_Renderer.c
 	../OpenGL/SDL_gpu_OpenGL.c
+	../Direct3D/SDL_gpu_Direct3D.c
 )
 set(SDL_gpu_HDRS
 	SDL_gpu.h
 	SDL_gpu_Renderer.h
 	../OpenGL/SDL_gpu_OpenGL.h
 	../OpenGL/SDL_gpu_OpenGL_internal.h
+	../Direct3D/SDL_gpu_Direct3D.h
+	../Direct3D/SDL_gpu_Direct3D_internal.h
 )
 set(SDL_gpu_install_HDRS
 	SDL_gpu.h
 	../OpenGL/SDL_gpu_OpenGL.h
+	../Direct3D/SDL_gpu_Direct3D.h
 )
 
 if(SDL_gpu_BUILD_SHARED)
