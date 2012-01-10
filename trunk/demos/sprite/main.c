@@ -1,13 +1,28 @@
 #include "SDL.h"
 #include "SDL_gpu.h"
 
+void printRenderers(void)
+{
+	const char* renderers[GPU_GetNumRegisteredRenderers()];
+	GPU_GetRegisteredRendererList(renderers);
+	
+	printf("Available renderers:\n");
+	int i;
+	for(i = 0; i < GPU_GetNumRegisteredRenderers(); i++)
+	{
+		printf("%d) %s\n", i+1, renderers[i]);
+	}
+}
+
 int main(int argc, char* argv[])
 {
+	printRenderers();
+	
 	GPU_Target* screen = GPU_Init(NULL, 800, 600, 0);
 	if(screen == NULL)
 		return -1;
 	
-	printf("Renderer: %s\n", GPU_GetCurrentRendererID());
+	printf("Using renderer: %s\n", GPU_GetCurrentRendererID());
 	
 	GPU_Image* image = GPU_LoadImage("data/test.bmp");
 	if(image == NULL)
