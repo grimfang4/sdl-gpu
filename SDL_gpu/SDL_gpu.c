@@ -15,6 +15,11 @@ void GPU_SetCurrentRenderer(const char* id)
 	current_renderer = GPU_GetRendererByID(id);
 }
 
+GPU_Renderer* GPU_GetCurrentRenderer(void)
+{
+	return current_renderer;
+}
+
 GPU_Target* GPU_Init(const char* renderer_id, Uint16 w, Uint16 h, Uint32 flags)
 {
 	GPU_InitRendererRegister();

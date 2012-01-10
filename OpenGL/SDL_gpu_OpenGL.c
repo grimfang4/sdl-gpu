@@ -70,6 +70,7 @@ static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags
 	renderer->display->data = (TargetData_OpenGL*)malloc(sizeof(TargetData_OpenGL));
 
 	((TargetData_OpenGL*)renderer->display->data)->handle = 0;
+	renderer->display->renderer = renderer;
 	renderer->display->w = screen->w;
 	renderer->display->h = screen->h;
 	renderer->display->clip_rect.x = 0;
@@ -111,6 +112,7 @@ GPU_Image* LoadImage(GPU_Renderer* renderer, const char* filename)
 	GPU_Image* result = (GPU_Image*)malloc(sizeof(GPU_Image));
 	ImageData_OpenGL* data = (ImageData_OpenGL*)malloc(sizeof(ImageData_OpenGL));
 	result->data = data;
+	result->renderer = renderer;
 	data->handle = texture;
 	data->format = texture_format;
 	
@@ -156,6 +158,7 @@ GPU_Target* LoadTarget(GPU_Renderer* renderer, GPU_Image* image)
 	TargetData_OpenGL* data = (TargetData_OpenGL*)malloc(sizeof(TargetData_OpenGL));
 	result->data = data;
 	data->handle = handle;
+	result->renderer = renderer;
 	result->w = image->w;
 	result->h = image->h;
 	
@@ -185,6 +188,8 @@ int Blit(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* 
 {
 	if(src == NULL || dest == NULL)
 		return -1;
+	if(renderer != src->renderer || renderer != dest->renderer)
+		return -2;
 	
 	
 	// Bind the texture to which subsequent calls refer
@@ -268,6 +273,8 @@ int BlitRotate(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Ta
 {
 	if(src == NULL || dest == NULL)
 		return -1;
+	if(renderer != src->renderer || renderer != dest->renderer)
+		return -2;
 	
 	glPushMatrix();
 	
@@ -289,6 +296,8 @@ int BlitScale(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Tar
 {
 	if(src == NULL || dest == NULL)
 		return -1;
+	if(renderer != src->renderer || renderer != dest->renderer)
+		return -2;
 	
 	// Bind the texture to which subsequent calls refer
 	glBindTexture( GL_TEXTURE_2D, ((ImageData_OpenGL*)src->data)->handle );
@@ -370,6 +379,8 @@ int BlitTransform(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU
 {
 	if(src == NULL || dest == NULL)
 		return -1;
+	if(renderer != src->renderer || renderer != dest->renderer)
+		return -2;
 	
 	glPushMatrix();
 	
@@ -408,6 +419,8 @@ void SetRGBA(GPU_Renderer* renderer, Uint8 r, Uint8 g, Uint8 b, Uint8 a)
 void MakeRGBTransparent(GPU_Renderer* renderer, GPU_Image* image, Uint8 r, Uint8 g, Uint8 b)
 {
 	if(image == NULL)
+		return;
+	if(renderer != image->renderer)
 		return;
 	
 	glBindTexture( GL_TEXTURE_2D, ((ImageData_OpenGL*)image->data)->handle );
@@ -451,6 +464,8 @@ void MakeRGBTransparent(GPU_Renderer* renderer, GPU_Image* image, Uint8 r, Uint8
 void Clear(GPU_Renderer* renderer, GPU_Target* target)
 {
 	if(target == NULL)
+		return;
+	if(renderer != target->renderer)
 		return;
 	
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, ((TargetData_OpenGL*)target->data)->handle);
