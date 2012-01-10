@@ -1,6 +1,5 @@
-#include "SDL_gpuShapes.h"
-#include "SDL_gpu_OpenGL.h"
-#include "SDL_opengl.h"
+#include "SDL_gpu_OpenGL_internal.h"
+#include "SDL_gpuShapes_OpenGL_internal.h"
 #include <math.h>
 
 #ifndef DEGPERRAD 
@@ -12,13 +11,6 @@
 #endif
 
 void Circle(GPU_ShapeRenderer* renderer, GPU_Target* target, Sint16 x, Sint16 y, float radius, SDL_Color color);
-
-// FIXME: This should move into a file which users can use...
-typedef struct ShapeRendererData_OpenGL
-{
-	GLuint handle;
-	// What else?
-} ShapeRendererData_OpenGL;
 
 
 
@@ -392,6 +384,19 @@ void RectRound(GPU_ShapeRenderer* renderer, GPU_Target* target, Sint16 x1, Sint1
 
 void RectRoundFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, Sint16 x1, Sint16 y1, Sint16 x2, Sint16 y2, float radius, SDL_Color color)
 {
+	if(y2 < y1)
+	{
+		Sint16 temp = y2;
+		y2 = y1;
+		y1 = temp;
+	}
+	if(x2 < x1)
+	{
+		Sint16 temp = x2;
+		x2 = x1;
+		x1 = temp;
+	}
+	
 	Sint16 minX = (x1 < x2? x1 : x2) + (Sint16)(radius);
     Sint16 maxX = (x1 > x2? x1 : x2) - (Sint16)(radius);
     Sint16 minY = (y1 < y2? y1 : y2) + (Sint16)(radius);

@@ -3,9 +3,8 @@
 
 #include "SDL_gpu.h"
 #include "SDL_opengl.h"
-#include "GL/glext.h"
 
-// FIXME: This should move into a file which users can use...
+
 typedef struct RendererData_OpenGL
 {
 	GLuint handle;
@@ -22,17 +21,6 @@ typedef struct TargetData_OpenGL
 {
 	GLuint handle;
 } TargetData_OpenGL;
-
-
-GPU_Renderer* GPU_CreateRenderer_OpenGL(void);
-void GPU_FreeRenderer_OpenGL(GPU_Renderer* renderer);
-
-// GL extensions
-extern PFNGLGENFRAMEBUFFERSEXTPROC glGenFramebuffersEXT;
-extern PFNGLBINDFRAMEBUFFEREXTPROC glBindFramebufferEXT;
-extern PFNGLFRAMEBUFFERTEXTURE2DEXTPROC glFramebufferTexture2DEXT;
-extern PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC glCheckFramebufferStatusEXT;
-extern PFNGLDELETEFRAMEBUFFERSEXTPROC glDeleteFramebuffersEXT;
 
 
 #endif

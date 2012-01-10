@@ -7,9 +7,11 @@ set(SDL_gpu_HDRS
 	SDL_gpu.h
 	SDL_gpu_Renderer.h
 	../OpenGL/SDL_gpu_OpenGL.h
+	../OpenGL/SDL_gpu_OpenGL_internal.h
 )
 set(SDL_gpu_install_HDRS
 	SDL_gpu.h
+	../OpenGL/SDL_gpu_OpenGL.h
 )
 
 if(SDL_gpu_BUILD_SHARED)
@@ -46,13 +48,13 @@ if(SDL_gpu_INSTALL)
 
 	# install libraries
 	if(SDL_gpu_BUILD_SHARED)
-		install(TARGETS SDL_gpu_shared EXPORT SDL_gpu-targets DESTINATION .)
+		install(TARGETS SDL_gpu_shared EXPORT SDL_gpu-targets DESTINATION lib)
 	endif()
 	if(SDL_gpu_BUILD_STATIC)
-		install(TARGETS SDL_gpu EXPORT SDL_gpu-targets DESTINATION .)
+		install(TARGETS SDL_gpu EXPORT SDL_gpu-targets DESTINATION lib)
 	endif()
 
 	# install build system hooks for third-party apps
-	install(EXPORT SDL_gpu-targets DESTINATION ./SDL_gpu)
-	install(FILES SDL_gpuConfig.cmake DESTINATION ./SDL_gpu)
+	#install(EXPORT SDL_gpu-targets DESTINATION ./SDL_gpu)
+	#install(FILES SDL_gpuConfig.cmake DESTINATION ./SDL_gpu)
 endif(SDL_gpu_INSTALL)

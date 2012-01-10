@@ -1,9 +1,7 @@
-#include "SDL_gpu_OpenGL.h"
-#include "SDL_opengl.h"
+#include "SDL_gpu_OpenGL_internal.h"
 #include "SOIL.h"
 
-#ifdef WINDOWS
-#include "windows.h"
+#ifdef _WIN32
 #define GL_EXT_LOAD wglGetProcAddress
 #else
 #include "GL/glx.h"
