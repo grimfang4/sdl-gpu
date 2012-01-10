@@ -1,7 +1,7 @@
 #include "SDL.h"
 #include "SDL_gpu.h"
 
-int main(int argc, char* argv[])
+void printRenderers(void)
 {
 	const char* renderers[GPU_GetNumRegisteredRenderers()];
 	GPU_GetRegisteredRendererList(renderers);
@@ -12,6 +12,11 @@ int main(int argc, char* argv[])
 	{
 		printf("%d) %s\n", i+1, renderers[i]);
 	}
+}
+
+int main(int argc, char* argv[])
+{
+	printRenderers();
 	
 	GPU_Target* screen = GPU_Init(NULL, 800, 600, 0);
 	if(screen == NULL)
@@ -36,6 +41,7 @@ int main(int argc, char* argv[])
 	float y[maxSprites];
 	float velx[maxSprites];
 	float vely[maxSprites];
+	int i;
 	for(i = 0; i < maxSprites; i++)
 	{
 		x[i] = rand()%screen->w;

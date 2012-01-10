@@ -3,15 +3,28 @@
 #include "SDL_gpuShapes.h"
 #include <math.h>
 
+void printRenderers(void)
+{
+	const char* renderers[GPU_GetNumRegisteredRenderers()];
+	GPU_GetRegisteredRendererList(renderers);
+	
+	printf("Available renderers:\n");
+	int i;
+	for(i = 0; i < GPU_GetNumRegisteredRenderers(); i++)
+	{
+		printf("%d) %s\n", i+1, renderers[i]);
+	}
+}
+
 int main(int argc, char* argv[])
 {
+	printRenderers();
+	
 	GPU_Target* screen = GPU_Init(NULL, 800, 600, 0);
 	if(screen == NULL)
 		return -1;
 	
-	GPU_LoadShapeRenderer();
-	
-	printf("Renderer: %s\n", GPU_GetCurrentRendererID());
+	printf("Using renderer: %s\n", GPU_GetCurrentRendererID());
 	
 	Uint32 startTime = SDL_GetTicks();
 	long frameCount = 0;
@@ -32,9 +45,9 @@ int main(int argc, char* argv[])
 	}
 	
 	
-	GPU_Image* img = GPU_LoadImage("data/test.bmp");
-	GPU_Target* imgTarget = GPU_LoadTarget(img);
-	GPU_Line(imgTarget, 0, 0, 50, 50, colors[0]);
+	//GPU_Image* img = GPU_LoadImage("data/test.bmp");
+	//GPU_Target* imgTarget = GPU_LoadTarget(img);
+	//GPU_Line(imgTarget, 0, 0, 50, 50, colors[0]);
 	
 	int numPixels = numColors;
 	int px[numPixels];
@@ -238,7 +251,7 @@ int main(int argc, char* argv[])
 				break;
 		}
 		
-		GPU_Blit(img, NULL, screen, 0,0);
+		//GPU_Blit(img, NULL, screen, 0,0);
 		
 		GPU_Flip();
 		
