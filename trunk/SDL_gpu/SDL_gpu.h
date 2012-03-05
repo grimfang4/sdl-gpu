@@ -37,7 +37,9 @@ typedef struct GPU_Renderer
 	GPU_Target* (*Init)(struct GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags);
 	void (*Quit)(struct GPU_Renderer* renderer);
 
+	GPU_Image* (*CreateImage)(struct GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint8 bits_per_pixel);
 	GPU_Image* (*LoadImage)(struct GPU_Renderer* renderer, const char* filename);
+	GPU_Image* (*CopyImage)(struct GPU_Renderer* renderer, GPU_Image* image);
 	void (*FreeImage)(struct GPU_Renderer* renderer, GPU_Image* image);
 
 	GPU_Target* (*GetDisplayTarget)(struct GPU_Renderer* renderer);
@@ -53,8 +55,11 @@ typedef struct GPU_Renderer
 	void (*SetRGBA)(struct GPU_Renderer* renderer, Uint8 r, Uint8 g, Uint8 b, Uint8 a);
 
 	void (*MakeRGBTransparent)(struct GPU_Renderer* renderer, GPU_Image* image, Uint8 r, Uint8 g, Uint8 b);
+	
+	SDL_Color (*GetPixel)(struct GPU_Renderer* renderer, GPU_Target* target, Sint16 x, Sint16 y);
 
 	void (*Clear)(struct GPU_Renderer* renderer, GPU_Target* target);
+	void (*ClearRGBA)(struct GPU_Renderer* renderer, GPU_Target* target, Uint8 r, Uint8 g, Uint8 b, Uint8 a);
 	void (*Flip)(struct GPU_Renderer* renderer);
 	
 	void* data;
@@ -92,7 +97,10 @@ GPU_Renderer* GPU_GetCurrentRenderer(void);
 
 
 // Defined by renderer
+
+GPU_Image* GPU_CreateImage(Uint16 w, Uint16 h, Uint8 bits_per_pixel);
 GPU_Image* GPU_LoadImage(const char* filename);
+GPU_Image* GPU_CopyImage(GPU_Image* image);
 void GPU_FreeImage(GPU_Image* image);
 
 GPU_Target* GPU_GetDisplayTarget(void);
@@ -114,7 +122,10 @@ void GPU_SetRGBA(Uint8 r, Uint8 g, Uint8 b, Uint8 a);
 
 void GPU_MakeColorTransparent(GPU_Image* image, SDL_Color color);
 
+SDL_Color GPU_GetPixel(GPU_Target* target, Sint16 x, Sint16 y);
+
 void GPU_Clear(GPU_Target* target);
+void GPU_ClearRGBA(GPU_Target* target, Uint8 r, Uint8 g, Uint8 b, Uint8 a);
 void GPU_Flip(void);
 
 #ifdef __cplusplus

@@ -1,4 +1,10 @@
 include_directories (${SDL_gpu_SOURCE_DIR})
+add_executable(create-demo create/main.c)
+target_link_libraries (create-demo SDL_gpu)
+
+add_executable(get-pixel-demo get-pixel/main.c)
+target_link_libraries (get-pixel-demo SDL_gpu)
+
 add_executable(scale-demo scale/main.c)
 target_link_libraries (scale-demo SDL_gpu)
 
