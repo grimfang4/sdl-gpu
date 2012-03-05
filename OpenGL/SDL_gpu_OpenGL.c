@@ -85,6 +85,51 @@ static void Quit(GPU_Renderer* renderer)
 	renderer->display = NULL;
 }
 
+static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint8 bits_per_pixel)
+{
+	GLuint texture;
+	GLint texture_format;
+	int channels = 4;
+	switch(bits_per_pixel)
+	{
+		case 8: channels = 3;
+		break;
+		case 16: channels = 3;
+		break;
+		case 24: channels = 3;
+		break;
+	}
+	
+	unsigned char* pixels = (unsigned char*)malloc(w*h*channels);
+	memset(pixels, 0, w*h*channels);
+	
+	texture = SOIL_create_OGL_texture(pixels, w, h, channels, 0, 0);
+	if(texture == 0)
+	{
+		free(pixels);
+		return NULL;
+	}
+	
+	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &texture_format);
+	
+	// Set the texture's stretching properties
+	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+	
+	GPU_Image* result = (GPU_Image*)malloc(sizeof(GPU_Image));
+	ImageData_OpenGL* data = (ImageData_OpenGL*)malloc(sizeof(ImageData_OpenGL));
+	result->data = data;
+	result->renderer = renderer;
+	data->handle = texture;
+	data->format = texture_format;
+	
+	result->w = w;
+	result->h = h;
+	
+	return result;
+}
+
 static GPU_Image* LoadImage(GPU_Renderer* renderer, const char* filename)
 {
 	
@@ -116,6 +161,25 @@ static GPU_Image* LoadImage(GPU_Renderer* renderer, const char* filename)
 	
 	result->w = w;
 	result->h = h;
+	
+	return result;
+}
+
+static GPU_Image* CopyImage(GPU_Renderer* renderer, GPU_Image* image)
+{
+	Uint8 old_blend = 1;
+	if(old_blend)
+		renderer->SetBlending(renderer, 0);
+	
+	// FIXME: GPU_Image needs a bits_per_pixel or whatever (bytes_per_pixel, channels, etc.) so the format can be copied
+	GPU_Image* result = renderer->CreateImage(renderer, image->w, image->h, 32);
+	
+	GPU_Target* tgt = renderer->LoadTarget(renderer, result);
+	renderer->Blit(renderer, image, NULL, tgt, 0, 0);
+	renderer->FreeTarget(renderer, tgt);
+	
+	if(old_blend)
+		renderer->SetBlending(renderer, 1);
 	
 	return result;
 }
@@ -156,6 +220,7 @@ static GPU_Target* LoadTarget(GPU_Renderer* renderer, GPU_Image* image)
 	TargetData_OpenGL* data = (TargetData_OpenGL*)malloc(sizeof(TargetData_OpenGL));
 	result->data = data;
 	data->handle = handle;
+	data->format = ((ImageData_OpenGL*)image->data)->format;
 	result->renderer = renderer;
 	result->w = image->w;
 	result->h = image->h;
@@ -451,6 +516,30 @@ static void MakeRGBTransparent(GPU_Renderer* renderer, GPU_Image* image, Uint8 r
 }
 
 
+static SDL_Color GetPixel(GPU_Renderer* renderer, GPU_Target* target, Sint16 x, Sint16 y)
+{
+	SDL_Color result = {0,0,0,0};
+	if(target == NULL)
+		return result;
+	if(renderer != target->renderer)
+		return result;
+	
+	// Bind the FBO
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, ((TargetData_OpenGL*)target->data)->handle);
+	
+	unsigned char pixels[4];
+	glReadPixels(x, y, 1, 1, ((TargetData_OpenGL*)target->data)->format, GL_UNSIGNED_BYTE, pixels);
+	
+	result.r = pixels[0];
+	result.g = pixels[1];
+	result.b = pixels[2];
+	result.unused = pixels[3];
+	
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+	
+	return result;
+}
+
 
 
 
@@ -478,6 +567,41 @@ static void Clear(GPU_Renderer* renderer, GPU_Target* target)
 		glScissor(target->clip_rect.x, y, target->clip_rect.w, target->clip_rect.h);
 	}
 	
+	glPushAttrib(GL_COLOR_BUFFER_BIT);
+	glClearColor(0,0,0,0);
+	glClear(GL_COLOR_BUFFER_BIT);
+	glPopAttrib();
+	
+	if(doClip)
+	{
+		glDisable(GL_SCISSOR_TEST);
+	}
+	
+	glPopAttrib();
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+}
+
+
+static void ClearRGBA(GPU_Renderer* renderer, GPU_Target* target, Uint8 r, Uint8 g, Uint8 b, Uint8 a)
+{
+	if(target == NULL)
+		return;
+	if(renderer != target->renderer)
+		return;
+	
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, ((TargetData_OpenGL*)target->data)->handle);
+	glPushAttrib(GL_VIEWPORT_BIT);
+	glViewport(0,0,target->w, target->h);
+	
+	Uint8 doClip = (target->clip_rect.x > 0 || target->clip_rect.y > 0 || target->clip_rect.w < target->w || target->clip_rect.h < target->h);
+	if(doClip)
+	{
+		glEnable(GL_SCISSOR_TEST);
+		int y = (renderer->display == target? renderer->display->h - (target->clip_rect.y + target->clip_rect.h) : target->clip_rect.y);
+		glScissor(target->clip_rect.x, y, target->clip_rect.w, target->clip_rect.h);
+	}
+	
+	glClearColor(r/255.0f, g/255.0f, b/255.0f, a/255.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 	
 	if(doClip)
@@ -509,7 +633,9 @@ GPU_Renderer* GPU_CreateRenderer_OpenGL(void)
 	
 	renderer->Init = &Init;
 	renderer->Quit = &Quit;
+	renderer->CreateImage = &CreateImage;
 	renderer->LoadImage = &LoadImage;
+	renderer->CopyImage = &CopyImage;
 	renderer->FreeImage = &FreeImage;
 	
 	renderer->GetDisplayTarget = &GetDisplayTarget;
@@ -525,8 +651,10 @@ GPU_Renderer* GPU_CreateRenderer_OpenGL(void)
 	renderer->SetRGBA = &SetRGBA;
 	
 	renderer->MakeRGBTransparent = &MakeRGBTransparent;
+	renderer->GetPixel = &GetPixel;
 	
 	renderer->Clear = &Clear;
+	renderer->ClearRGBA = &ClearRGBA;
 	renderer->Flip = &Flip;
 	
 	return renderer;

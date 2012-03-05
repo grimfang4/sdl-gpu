@@ -91,12 +91,28 @@ const char* GPU_GetErrorString(void)
 	return SDL_GetError();
 }
 
+GPU_Image* GPU_CreateImage(Uint16 w, Uint16 h, Uint8 bits_per_pixel)
+{
+	if(current_renderer == NULL || current_renderer->CreateImage == NULL)
+		return NULL;
+	
+	return current_renderer->CreateImage(current_renderer, w, h, bits_per_pixel);
+}
+
 GPU_Image* GPU_LoadImage(const char* filename)
 {
 	if(current_renderer == NULL || current_renderer->LoadImage == NULL)
 		return NULL;
 	
 	return current_renderer->LoadImage(current_renderer, filename);
+}
+
+GPU_Image* GPU_CopyImage(GPU_Image* image)
+{
+	if(current_renderer == NULL || current_renderer->CopyImage == NULL)
+		return NULL;
+	
+	return current_renderer->CopyImage(current_renderer, image);
 }
 
 void GPU_FreeImage(GPU_Image* image)
@@ -241,6 +257,16 @@ void GPU_MakeColorTransparent(GPU_Image* image, SDL_Color color)
 	current_renderer->MakeRGBTransparent(current_renderer, image, color.r, color.g, color.b);
 }
 
+SDL_Color GPU_GetPixel(GPU_Target* target, Sint16 x, Sint16 y)
+{
+	if(current_renderer == NULL || current_renderer->GetPixel == NULL)
+	{
+		SDL_Color c = {0,0,0,0};
+		return c;
+	}
+	
+	return current_renderer->GetPixel(current_renderer, target, x, y);
+}
 
 
 
@@ -256,6 +282,14 @@ void GPU_Clear(GPU_Target* target)
 		return;
 	
 	current_renderer->Clear(current_renderer, target);
+}
+
+void GPU_ClearRGBA(GPU_Target* target, Uint8 r, Uint8 g, Uint8 b, Uint8 a)
+{
+	if(current_renderer == NULL || current_renderer->ClearRGBA == NULL)
+		return;
+	
+	current_renderer->ClearRGBA(current_renderer, target, r, g, b, a);
 }
 
 void GPU_Flip(void)

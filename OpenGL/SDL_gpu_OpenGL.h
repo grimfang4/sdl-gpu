@@ -20,6 +20,7 @@ typedef struct ImageData_OpenGL
 typedef struct TargetData_OpenGL
 {
 	GLuint handle;
+	GLenum format;
 } TargetData_OpenGL;
 
 
