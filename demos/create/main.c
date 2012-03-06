@@ -56,9 +56,9 @@ int main(int argc, char* argv[])
 		
 		GPU_Clear(screen);
 		
-		GPU_Blit(image, NULL, screen, 50, 50);
-		GPU_Blit(image1, NULL, screen, 200, 200);
-		GPU_Blit(image2, NULL, screen, 350, 350);
+		GPU_Blit(image, NULL, screen, 150, 150);
+		GPU_Blit(image1, NULL, screen, 300, 300);
+		GPU_Blit(image2, NULL, screen, 450, 450);
 		
 		GPU_Flip();
 		

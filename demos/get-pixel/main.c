@@ -55,7 +55,7 @@ int main(int argc, char* argv[])
 		
 		GPU_ClearRGBA(screen, c.r, c.g, c.b, c.unused);
 		
-		GPU_Blit(image, NULL, screen, 50, 50);
+		GPU_Blit(image, NULL, screen, image->w/2 + 50, image->h/2 + 50);
 		
 		GPU_Flip();
 		

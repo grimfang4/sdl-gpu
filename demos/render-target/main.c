@@ -1,6 +1,7 @@
 #include "SDL.h"
 #include "SDL_gpu.h"
 #include "SDL_gpuShapes.h"
+#include <math.h>
 
 void printRenderers(void)
 {
@@ -33,20 +34,25 @@ int main(int argc, char* argv[])
 	if(image2 == NULL)
 		return -1;
 	
+	GPU_Image* image3 = GPU_LoadImage("data/test.bmp");
+	if(image3 == NULL)
+		return -1;
+	
 	GPU_Target* target = GPU_LoadTarget(image);
 	if(target == NULL)
 		return -1;
 	
-	// Draw the second image onto the first
-	GPU_BlitScale(image2, NULL, target, 0, 0, 0.3f, 0.3f);
 	
-	SDL_Color circleColor = {255, 0, 0, 255};
-	SDL_Color circleColor2 = {0, 0, 255, 255};
-	GPU_CircleFilled(target, 70, 70, 20, circleColor);
+	SDL_Color circleColor = {255, 0, 0, 128};
+	SDL_Color circleColor2 = {0, 0, 255, 128};
 	
 	
 	Uint32 startTime = SDL_GetTicks();
 	long frameCount = 0;
+	
+	Uint8* keystates = SDL_GetKeyState(NULL);
+	int x = 0;
+	int y = 0;
 	
 	Uint8 done = 0;
 	SDL_Event event;
@@ -63,17 +69,39 @@ int main(int argc, char* argv[])
 			}
 		}
 		
+		if(keystates[SDLK_UP])
+			y -= 1;
+		else if(keystates[SDLK_DOWN])
+			y += 1;
+		if(keystates[SDLK_LEFT])
+			x -= 1;
+		else if(keystates[SDLK_RIGHT])
+			x += 1;
+		
 		GPU_Clear(screen);
 		
-		GPU_Blit(image, NULL, screen, 50, 50);
+		GPU_Clear(target);
+		GPU_Blit(image3, NULL, target, image3->w/2, image3->h/2);
 		
-		GPU_CircleFilled(screen, 70, 70, 20, circleColor2);
+		//GPU_BlitScale(image2, NULL, target, x, y, 0.7f, 0.7f);
+		GPU_BlitScale(image2, NULL, target, target->w/2, target->h/2, 0.7f, 0.7f);
+		//GPU_BlitRotate(image2, NULL, target, x, y, 360*sin(SDL_GetTicks()/1000.0f));
+		GPU_BlitTransform(image2, NULL, target, x, y, 360*sin(SDL_GetTicks()/1000.0f), 0.7f*sin(SDL_GetTicks()/2000.0f), 0.7f*sin(SDL_GetTicks()/2000.0f));
+		
+		GPU_CircleFilled(target, 70, 70, 20, circleColor);
+	
+		GPU_Blit(image, NULL, screen, image->w/2 + 50, image->h/2 + 50);
+		
+		GPU_CircleFilled(screen, 50 + 70, 50 + 70, 20, circleColor2);
 		
 		GPU_Flip();
 		
 		frameCount++;
 		if(frameCount%500 == 0)
+		{
 			printf("Average FPS: %.2f\n", 1000.0f*frameCount/(SDL_GetTicks() - startTime));
+			printf("x,y: (%d, %d)\n", x, y);
+		}
 	}
 	
 	printf("Average FPS: %.2f\n", 1000.0f*frameCount/(SDL_GetTicks() - startTime));

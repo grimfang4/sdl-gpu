@@ -61,6 +61,8 @@ static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags
 	
 	glEnable( GL_TEXTURE_2D );
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	
+	glEnable(GL_BLEND);
 
 	
 	if(renderer->display == NULL)
@@ -168,7 +170,8 @@ static GPU_Image* LoadImage(GPU_Renderer* renderer, const char* filename)
 
 static GPU_Image* CopyImage(GPU_Renderer* renderer, GPU_Image* image)
 {
-	Uint8 old_blend = 1;
+	GLboolean old_blend;
+	glGetBooleanv(GL_BLEND, &old_blend);
 	if(old_blend)
 		renderer->SetBlending(renderer, 0);
 	
@@ -176,7 +179,7 @@ static GPU_Image* CopyImage(GPU_Renderer* renderer, GPU_Image* image)
 	GPU_Image* result = renderer->CreateImage(renderer, image->w, image->h, 32);
 	
 	GPU_Target* tgt = renderer->LoadTarget(renderer, result);
-	renderer->Blit(renderer, image, NULL, tgt, 0, 0);
+	renderer->Blit(renderer, image, NULL, tgt, tgt->w/2, tgt->h/2);
 	renderer->FreeTarget(renderer, tgt);
 	
 	if(old_blend)
@@ -297,21 +300,27 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_T
 		dy2 = y + srcrect->h/2;
 	}
 	
+	// FIXME: Texture on texture isn't working...
 	if(dest != renderer->display)
 	{
-		dy1 = renderer->display->h - y;
-		dy2 = renderer->display->h - y;
 		
 		if(srcrect == NULL)
 		{
-			dy1 += src->h/2;
-			dy2 -= src->h/2;
+			//dy1 += src->h/2;
+			//dy2 -= src->h/2;
+			dy1 = y - src->h/2;
+			dy2 = y + src->h/2;
 		}
 		else
 		{
-			dy1 += srcrect->h/2;
-			dy2 -= srcrect->h/2;
+			//dy1 += srcrect->h/2;
+			//dy2 -= srcrect->h/2;
+			dy1 = y - srcrect->h/2;
+			dy2 = y + srcrect->h/2;
 		}
+		
+		dy1 = renderer->display->h - dy1;
+		dy2 = renderer->display->h - dy2;
 	}
 	
 	glBegin( GL_QUADS );
@@ -352,8 +361,9 @@ static int BlitRotate(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect,
 	
 	glPushMatrix();
 	
-	glTranslatef(x, y, 0);
+	glTranslatef(x, (dest == renderer->display? y : renderer->display->h-y), 0);
 	glRotatef(angle, 0, 0, 1);
+	glTranslatef(0, (dest == renderer->display? 0 : -renderer->display->h), 0);
 	
 	int result = GPU_Blit(src, srcrect, dest, 0, 0);
 	
@@ -371,7 +381,7 @@ static int BlitScale(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, 
 	
 	glPushMatrix();
 	
-	glTranslatef(x, y, 0);
+	glTranslatef(x, (dest == renderer->display? y : renderer->display->h*(1-scaleY) - y), 0);
 	glScalef(scaleX, scaleY, 1.0f);
 	
 	int result = GPU_Blit(src, srcrect, dest, 0, 0);
@@ -390,9 +400,10 @@ static int BlitTransform(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcre
 	
 	glPushMatrix();
 	
-	glTranslatef(x, y, 0);
+	glTranslatef(x, (dest == renderer->display? y : renderer->display->h - y), 0);
 	glRotatef(angle, 0, 0, 1);
 	glScalef(scaleX, scaleY, 1.0f);
+	glTranslatef(0, (dest == renderer->display? 0 : -renderer->display->h), 0);
 	
 	int result = GPU_Blit(src, srcrect, dest, 0, 0);
 	
@@ -462,6 +473,8 @@ static SDL_Color GetPixel(GPU_Renderer* renderer, GPU_Target* target, Sint16 x, 
 	if(target == NULL)
 		return result;
 	if(renderer != target->renderer)
+		return result;
+	if(x < 0 || y < 0 || x >= target->w || y >= target->h)
 		return result;
 	
 	// Bind the FBO
