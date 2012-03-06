@@ -493,6 +493,27 @@ static SDL_Color GetPixel(GPU_Renderer* renderer, GPU_Target* target, Sint16 x, 
 	return result;
 }
 
+static void SetImageFilter(GPU_Renderer* renderer, GPU_Image* image, GPU_FilterEnum filter)
+{
+	if(image == NULL)
+		return;
+	if(renderer != image->renderer)
+		return;
+	
+	glBindTexture( GL_TEXTURE_2D, ((ImageData_OpenGL*)image->data)->handle );
+	
+	if(filter == GPU_NEAREST)
+	{
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	}
+	else if(filter == GPU_LINEAR)
+	{
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	}
+}
+
 
 
 
@@ -605,6 +626,7 @@ GPU_Renderer* GPU_CreateRenderer_OpenGL(void)
 	
 	renderer->MakeRGBTransparent = &MakeRGBTransparent;
 	renderer->GetPixel = &GetPixel;
+	renderer->SetImageFilter = &SetImageFilter;
 	
 	renderer->Clear = &Clear;
 	renderer->ClearRGBA = &ClearRGBA;

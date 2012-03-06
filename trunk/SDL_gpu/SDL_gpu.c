@@ -268,6 +268,14 @@ SDL_Color GPU_GetPixel(GPU_Target* target, Sint16 x, Sint16 y)
 	return current_renderer->GetPixel(current_renderer, target, x, y);
 }
 
+void GPU_SetImageFilter(GPU_Image* image, GPU_FilterEnum filter)
+{
+	if(current_renderer == NULL || current_renderer->SetImageFilter == NULL)
+		return;
+	
+	current_renderer->SetImageFilter(current_renderer, image, filter);
+}
+
 
 
 
