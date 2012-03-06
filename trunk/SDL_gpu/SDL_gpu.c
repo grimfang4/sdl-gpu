@@ -115,6 +115,14 @@ GPU_Image* GPU_CopyImage(GPU_Image* image)
 	return current_renderer->CopyImage(current_renderer, image);
 }
 
+GPU_Image* GPU_CopyImageFromSurface(SDL_Surface* surface)
+{
+	if(current_renderer == NULL || current_renderer->CopyImageFromSurface == NULL)
+		return NULL;
+	
+	return current_renderer->CopyImageFromSurface(current_renderer, surface);
+}
+
 void GPU_FreeImage(GPU_Image* image)
 {
 	if(current_renderer == NULL || current_renderer->FreeImage == NULL)
