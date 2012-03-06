@@ -8,6 +8,9 @@ target_link_libraries (get-pixel-demo SDL_gpu)
 add_executable(scale-demo scale/main.c)
 target_link_libraries (scale-demo SDL_gpu)
 
+add_executable(transform-demo transform/main.c)
+target_link_libraries (transform-demo SDL_gpu)
+
 add_executable(sprite-demo sprite/main.c)
 target_link_libraries (sprite-demo SDL_gpu)
 

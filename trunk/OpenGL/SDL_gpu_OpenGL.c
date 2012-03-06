@@ -1,5 +1,6 @@
 #include "SDL_gpu_OpenGL_internal.h"
 #include "SOIL.h"
+#include <math.h>
 
 #ifdef _WIN32
 #define GL_EXT_LOAD wglGetProcAddress
@@ -279,8 +280,10 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_T
 		y1 = 0;
 		x2 = 1;
 		y2 = 1;
-		dx2 = x + src->w;
-		dy2 = y + src->h;
+		dx1 = x - src->w/2;
+		dy1 = y - src->h/2;
+		dx2 = x + src->w/2;
+		dy2 = y + src->h/2;
 	}
 	else
 	{
@@ -288,8 +291,10 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_T
 		y1 = srcrect->y/(float)src->h;
 		x2 = (srcrect->x + srcrect->w)/(float)src->w;
 		y2 = (srcrect->y + srcrect->h)/(float)src->h;
-		dx2 = x + srcrect->w;
-		dy2 = y + srcrect->h;
+		dx1 = x - srcrect->w/2;
+		dy1 = y - srcrect->h/2;
+		dx2 = x + srcrect->w/2;
+		dy2 = y + srcrect->h/2;
 	}
 	
 	if(dest != renderer->display)
@@ -298,9 +303,15 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_T
 		dy2 = renderer->display->h - y;
 		
 		if(srcrect == NULL)
-			dy2 -= src->h;
+		{
+			dy1 += src->h/2;
+			dy2 -= src->h/2;
+		}
 		else
-			dy2 -= srcrect->h;
+		{
+			dy1 += srcrect->h/2;
+			dy2 -= srcrect->h/2;
+		}
 	}
 	
 	glBegin( GL_QUADS );
@@ -343,10 +354,6 @@ static int BlitRotate(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect,
 	
 	glTranslatef(x, y, 0);
 	glRotatef(angle, 0, 0, 1);
-	if(srcrect != NULL)
-		glTranslatef(-srcrect->w/2, -srcrect->h/2, 0);
-	else
-		glTranslatef(-src->w/2, -src->h/2, 0);
 	
 	int result = GPU_Blit(src, srcrect, dest, 0, 0);
 	
@@ -362,80 +369,16 @@ static int BlitScale(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, 
 	if(renderer != src->renderer || renderer != dest->renderer)
 		return -2;
 	
-	// Bind the texture to which subsequent calls refer
-	glBindTexture( GL_TEXTURE_2D, ((ImageData_OpenGL*)src->data)->handle );
+	glPushMatrix();
 	
-	// Bind the FBO
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, ((TargetData_OpenGL*)dest->data)->handle);
+	glTranslatef(x, y, 0);
+	glScalef(scaleX, scaleY, 1.0f);
 	
-	Uint8 doClip = (dest->clip_rect.x > 0 || dest->clip_rect.y > 0 || dest->clip_rect.w < dest->w || dest->clip_rect.h < dest->h);
-	if(doClip)
-	{
-		glEnable(GL_SCISSOR_TEST);
-		int y = (renderer->display == dest? renderer->display->h - (dest->clip_rect.y + dest->clip_rect.h) : dest->clip_rect.y);
-		glScissor(dest->clip_rect.x, y, dest->clip_rect.w, dest->clip_rect.h);
-	}
+	int result = GPU_Blit(src, srcrect, dest, 0, 0);
 	
-	float x1, y1, x2, y2;
-	float dx1, dy1, dx2, dy2;
-	dx1 = x;
-	dy1 = y;
-	if(srcrect == NULL)
-	{
-		x1 = 0;
-		y1 = 0;
-		x2 = 1;
-		y2 = 1;
-		dx2 = x + src->w*scaleX;
-		dy2 = y + src->h*scaleY;
-	}
-	else
-	{
-		x1 = srcrect->x/(float)src->w;
-		y1 = srcrect->y/(float)src->h;
-		x2 = (srcrect->x + srcrect->w)/(float)src->w;
-		y2 = (srcrect->y + srcrect->h)/(float)src->h;
-		dx2 = x + srcrect->w*scaleX;
-		dy2 = y + srcrect->h*scaleY;
-	}
+	glPopMatrix();
 	
-	if(dest != renderer->display)
-	{
-		dy1 = renderer->display->h - y;
-		dy2 = renderer->display->h - y;
-		
-		if(srcrect == NULL)
-			dy2 -= src->h*scaleY;
-		else
-			dy2 -= srcrect->h*scaleY;
-	}
-	
-	glBegin( GL_QUADS );
-		//Bottom-left vertex (corner)
-		glTexCoord2f( x1, y1 );
-		glVertex3f( dx1, dy1, 0.0f );
-	
-		//Bottom-right vertex (corner)
-		glTexCoord2f( x2, y1 );
-		glVertex3f( dx2, dy1, 0.f );
-	
-		//Top-right vertex (corner)
-		glTexCoord2f( x2, y2 );
-		glVertex3f( dx2, dy2, 0.f );
-	
-		//Top-left vertex (corner)
-		glTexCoord2f( x1, y2 );
-		glVertex3f( dx1, dy2, 0.f );
-	glEnd();
-	
-	if(doClip)
-	{
-		glDisable(GL_SCISSOR_TEST);
-	}
-	
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
-	
-	return 0;
+	return result;
 }
 
 static int BlitTransform(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y, float angle, float scaleX, float scaleY)
@@ -447,14 +390,11 @@ static int BlitTransform(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcre
 	
 	glPushMatrix();
 	
-	glRotatef(0, 0, 1, angle);
+	glTranslatef(x, y, 0);
+	glRotatef(angle, 0, 0, 1);
+	glScalef(scaleX, scaleY, 1.0f);
 	
-	if(srcrect != NULL)
-		glTranslatef(-srcrect->w/2, -srcrect->h/2, 0);
-	else
-		glTranslatef(-src->w/2, -src->h/2, 0);
-	
-	int result = GPU_BlitScale(src, srcrect, dest, x, y, scaleX, scaleY);
+	int result = GPU_Blit(src, srcrect, dest, 0, 0);
 	
 	glPopMatrix();
 	
