@@ -4,6 +4,10 @@
 #include "SDL_gpu.h"
 
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 struct GPU_ShapeRenderer;
 
@@ -71,6 +75,11 @@ void GPU_Polygon(GPU_Target* target, Uint16 n, float* vertices, SDL_Color color)
 void GPU_PolygonFilled(GPU_Target* target, Uint16 n, float* vertices, SDL_Color color);
 
 
+
+
+#ifdef __cplusplus
+}
+#endif
 
 
 #endif

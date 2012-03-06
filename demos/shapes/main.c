@@ -146,6 +146,7 @@ int main(int argc, char* argv[])
 		}
 	}
 	
+	Uint8 blend = 0;
 	
 	Uint8 done = 0;
 	SDL_Event event;
@@ -164,6 +165,11 @@ int main(int argc, char* argv[])
 					shapeType++;
 					if(shapeType >= numShapeTypes)
 						shapeType = 0;
+				}
+				else if(event.key.keysym.sym == SDLK_b)
+				{
+					blend = !blend;
+					GPU_SetBlending(blend);
 				}
 			}
 		}
