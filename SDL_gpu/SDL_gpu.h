@@ -28,6 +28,10 @@ typedef struct GPU_Target
 	SDL_Rect clip_rect;
 } GPU_Target;
 
+typedef unsigned int GPU_FilterEnum;
+static const GPU_FilterEnum GPU_NEAREST = 0;
+static const GPU_FilterEnum GPU_LINEAR = 1;
+
 typedef struct GPU_Renderer
 {
 	char* id;
@@ -57,6 +61,8 @@ typedef struct GPU_Renderer
 	void (*MakeRGBTransparent)(struct GPU_Renderer* renderer, GPU_Image* image, Uint8 r, Uint8 g, Uint8 b);
 	
 	SDL_Color (*GetPixel)(struct GPU_Renderer* renderer, GPU_Target* target, Sint16 x, Sint16 y);
+	
+	void (*SetImageFilter)(struct GPU_Renderer* renderer, GPU_Image* image, GPU_FilterEnum filter);
 
 	void (*Clear)(struct GPU_Renderer* renderer, GPU_Target* target);
 	void (*ClearRGBA)(struct GPU_Renderer* renderer, GPU_Target* target, Uint8 r, Uint8 g, Uint8 b, Uint8 a);
@@ -121,8 +127,8 @@ void GPU_SetRGB(Uint8 r, Uint8 g, Uint8 b);
 void GPU_SetRGBA(Uint8 r, Uint8 g, Uint8 b, Uint8 a);
 
 void GPU_MakeColorTransparent(GPU_Image* image, SDL_Color color);
-
 SDL_Color GPU_GetPixel(GPU_Target* target, Sint16 x, Sint16 y);
+void GPU_SetImageFilter(GPU_Image* image, GPU_FilterEnum filter);
 
 void GPU_Clear(GPU_Target* target);
 void GPU_ClearRGBA(GPU_Target* target, Uint8 r, Uint8 g, Uint8 b, Uint8 a);
