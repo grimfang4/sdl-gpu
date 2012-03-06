@@ -30,7 +30,9 @@ static void Circle(GPU_ShapeRenderer* renderer, GPU_Target* target, Sint16 x, Si
 		glEnable(GL_SCISSOR_TEST); \
 		int y = (renderer->renderer->display == target? renderer->renderer->display->h - (target->clip_rect.y + target->clip_rect.h) : target->clip_rect.y); \
 		glScissor(target->clip_rect.x, y, target->clip_rect.w, target->clip_rect.h); \
-	}
+	} \
+	 \
+	glDisable( GL_TEXTURE_2D );
 
 #define END \
 	if(doClip) \
@@ -38,7 +40,8 @@ static void Circle(GPU_ShapeRenderer* renderer, GPU_Target* target, Sint16 x, Si
 		glDisable(GL_SCISSOR_TEST); \
 	} \
 	glPopAttrib(); \
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0); \
+	glEnable( GL_TEXTURE_2D );
 
 	
 #define INVERT_Y(y) \
