@@ -188,6 +188,78 @@ static GPU_Image* CopyImage(GPU_Renderer* renderer, GPU_Image* image)
 	return result;
 }
 
+static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surface)
+{
+	if(surface == NULL)
+		return NULL;
+	
+	// From gpwiki.org
+	GLuint texture;			// This is a handle to our texture object
+	GLenum texture_format;
+	GLint  nOfColors;
+	int w, h;
+	
+	// Check that the image's width is a power of 2
+	/*if ( (surface->w & (surface->w - 1)) != 0 ) {
+		printf("warning: image.bmp's width is not a power of 2\n");
+	}
+
+	// Also check if the height is a power of 2
+	if ( (surface->h & (surface->h - 1)) != 0 ) {
+		printf("warning: image.bmp's height is not a power of 2\n");
+	}*/
+
+	// get the number of channels in the SDL surface
+	nOfColors = surface->format->BytesPerPixel;
+	if (nOfColors == 4)     // contains an alpha channel
+	{
+			if (surface->format->Rmask == 0x000000ff)
+					texture_format = GL_RGBA;
+			else
+					texture_format = GL_BGRA;
+	} else if (nOfColors == 3)     // no alpha channel
+	{
+			if (surface->format->Rmask == 0x000000ff)
+					texture_format = GL_RGB;
+			else
+					texture_format = GL_BGR;
+	} else {
+			//printf("warning: the image is not truecolor..  this will probably break\n");
+			return NULL;
+	}
+
+	// Have OpenGL generate a texture object handle for us
+	glGenTextures( 1, &texture );
+
+	// Bind the texture object
+	glBindTexture( GL_TEXTURE_2D, texture );
+
+	// Set the texture's stretching properties
+	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
+	// Edit the texture object's image data using the information SDL_Surface gives us
+	glTexImage2D( GL_TEXTURE_2D, 0, nOfColors, surface->w, surface->h, 0,
+					texture_format, GL_UNSIGNED_BYTE, surface->pixels );
+	
+	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &w);
+	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &h);
+	
+	GPU_Image* result = (GPU_Image*)malloc(sizeof(GPU_Image));
+	ImageData_OpenGL* data = (ImageData_OpenGL*)malloc(sizeof(ImageData_OpenGL));
+	result->data = data;
+	result->renderer = renderer;
+	data->handle = texture;
+	data->format = texture_format;
+	
+	result->w = w;
+	result->h = h;
+	
+	return result;
+}
+
+
 static void FreeImage(GPU_Renderer* renderer, GPU_Image* image)
 {
 	if(image == NULL)
@@ -610,6 +682,7 @@ GPU_Renderer* GPU_CreateRenderer_OpenGL(void)
 	renderer->CreateImage = &CreateImage;
 	renderer->LoadImage = &LoadImage;
 	renderer->CopyImage = &CopyImage;
+	renderer->CopyImageFromSurface = &CopyImageFromSurface;
 	renderer->FreeImage = &FreeImage;
 	
 	renderer->GetDisplayTarget = &GetDisplayTarget;
