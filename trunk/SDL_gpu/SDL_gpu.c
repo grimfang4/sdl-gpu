@@ -257,6 +257,16 @@ void GPU_SetRGBA(Uint8 r, Uint8 g, Uint8 b, Uint8 a)
 
 
 
+
+void GPU_ReplaceColor(GPU_Image* image, SDL_Color from, SDL_Color to)
+{
+	if(current_renderer == NULL || current_renderer->ReplaceRGB == NULL)
+		return;
+	
+	current_renderer->ReplaceRGB(current_renderer, image, from.r, from.g, from.b, to.r, to.g, to.b);
+}
+
+
 void GPU_MakeColorTransparent(GPU_Image* image, SDL_Color color)
 {
 	if(current_renderer == NULL || current_renderer->MakeRGBTransparent == NULL)

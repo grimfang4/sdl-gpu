@@ -76,7 +76,7 @@ static void Pixel(GPU_ShapeRenderer* renderer, GPU_Target* target, Sint16 x, Sin
 	glColor4ub(color.r, color.g, color.b, color.unused);
 	
 	glBegin(GL_POINTS);
-	glVertex3f(x, y, 0);
+	glVertex3i(x, y, 0);
 	glEnd();
 	
 	END;
@@ -92,8 +92,8 @@ static void Line(GPU_ShapeRenderer* renderer, GPU_Target* target, Sint16 x1, Sin
 	glColor4ub(color.r, color.g, color.b, color.unused);
 	
 	glBegin(GL_LINES);
-	glVertex3f(x1, y1, 0);
-	glVertex3f(x2, y2, 0);
+	glVertex3i(x1, y1, 0);
+	glVertex3i(x2, y2, 0);
 	glEnd();
 	
 	END;
@@ -162,12 +162,12 @@ static void Arc(GPU_ShapeRenderer* renderer, GPU_Target* target, Sint16 x, Sint1
 	float t = startAngle;
 	float dt = (1 - (endAngle - startAngle)/360) * 5;  // A segment every 5 degrees of a full circle
 	float dx, dy;
-	glBegin(GL_LINES);
+	glBegin(GL_LINE_STRIP);
 	dx = radius*cos(t*RADPERDEG);
 	dy = radius*sin(t*RADPERDEG);
+	glVertex3f(x+dx, y+dy, 0);
 	while(t < endAngle)
 	{
-		glVertex3f(x+dx, y+dy, 0);
 		t += dt;
 		dx = radius*cos(t*RADPERDEG);
 		dy = radius*sin(t*RADPERDEG);
@@ -321,9 +321,9 @@ static void Tri(GPU_ShapeRenderer* renderer, GPU_Target* target, Sint16 x1, Sint
 	glColor4ub(color.r, color.g, color.b, color.unused);
 	
 	glBegin(GL_LINE_LOOP);
-	glVertex3f(x1, y1, 0);
-	glVertex3f(x2, y2, 0);
-	glVertex3f(x3, y3, 0);
+	glVertex3i(x1, y1, 0);
+	glVertex3i(x2, y2, 0);
+	glVertex3i(x3, y3, 0);
 	glEnd();
 	
 	END;
@@ -340,9 +340,9 @@ static void TriFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, Sint16 x1
 	glColor4ub(color.r, color.g, color.b, color.unused);
 	
 	glBegin(GL_TRIANGLE_STRIP);
-	glVertex3f(x1, y1, 0);
-	glVertex3f(x2, y2, 0);
-	glVertex3f(x3, y3, 0);
+	glVertex3i(x1, y1, 0);
+	glVertex3i(x2, y2, 0);
+	glVertex3i(x3, y3, 0);
 	glEnd();
 	
 	END;
@@ -358,10 +358,10 @@ static void Rect(GPU_ShapeRenderer* renderer, GPU_Target* target, Sint16 x1, Sin
 	glColor4ub(color.r, color.g, color.b, color.unused);
 	
 	glBegin(GL_LINE_LOOP);
-	glVertex3f(x1, y1, 0);
-	glVertex3f(x1, y2, 0);
-	glVertex3f(x2, y2, 0);
-	glVertex3f(x2, y1, 0);
+	glVertex3i(x1, y1, 0);
+	glVertex3i(x1, y2, 0);
+	glVertex3i(x2, y2, 0);
+	glVertex3i(x2, y1, 0);
 	glEnd();
 	
 	END;
@@ -377,10 +377,10 @@ static void RectFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, Sint16 x
 	glColor4ub(color.r, color.g, color.b, color.unused);
 	
 	glBegin(GL_TRIANGLE_STRIP);
-	glVertex3f(x1, y1, 0);
-	glVertex3f(x1, y2, 0);
-	glVertex3f(x2, y1, 0);
-	glVertex3f(x2, y2, 0);
+	glVertex3i(x1, y1, 0);
+	glVertex3i(x1, y2, 0);
+	glVertex3i(x2, y1, 0);
+	glVertex3i(x2, y2, 0);
 	glEnd();
 	
 	END;

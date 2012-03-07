@@ -59,6 +59,8 @@ typedef struct GPU_Renderer
 	void (*SetBlending)(struct GPU_Renderer* renderer, Uint8 enable);
 	void (*SetRGBA)(struct GPU_Renderer* renderer, Uint8 r, Uint8 g, Uint8 b, Uint8 a);
 
+	void (*ReplaceRGB)(struct GPU_Renderer* renderer, GPU_Image* image, Uint8 from_r, Uint8 from_g, Uint8 from_b, Uint8 to_r, Uint8 to_g, Uint8 to_b);
+	
 	void (*MakeRGBTransparent)(struct GPU_Renderer* renderer, GPU_Image* image, Uint8 r, Uint8 g, Uint8 b);
 	
 	SDL_Color (*GetPixel)(struct GPU_Renderer* renderer, GPU_Target* target, Sint16 x, Sint16 y);
@@ -128,6 +130,7 @@ void GPU_SetColor(SDL_Color* color);
 void GPU_SetRGB(Uint8 r, Uint8 g, Uint8 b);
 void GPU_SetRGBA(Uint8 r, Uint8 g, Uint8 b, Uint8 a);
 
+void GPU_ReplaceColor(GPU_Image* image, SDL_Color from, SDL_Color to);
 void GPU_MakeColorTransparent(GPU_Image* image, SDL_Color color);
 SDL_Color GPU_GetPixel(GPU_Target* target, Sint16 x, Sint16 y);
 void GPU_SetImageFilter(GPU_Image* image, GPU_FilterEnum filter);
