@@ -56,6 +56,24 @@ if(shapeRenderer == NULL) \
 }
 
 
+float GPU_SetThickness(float thickness)
+{
+	CHECK_RENDERER(1.0f);
+	if(shapeRenderer->SetThickness == NULL)
+		return 1.0f;
+	
+	return shapeRenderer->SetThickness(shapeRenderer, thickness);
+}
+
+float GPU_GetThickness(void)
+{
+	CHECK_RENDERER(1.0f);
+	if(shapeRenderer->GetThickness == NULL)
+		return 1.0f;
+	
+	return shapeRenderer->GetThickness(shapeRenderer);
+}
+
 void GPU_Pixel(GPU_Target* target, Sint16 x, Sint16 y, SDL_Color color)
 {
 	CHECK_RENDERER();

@@ -2,6 +2,10 @@
 #include "SDL_gpuShapes_OpenGL_internal.h"
 #include <math.h>
 
+#ifndef M_PI
+#define M_PI 3.14159265f
+#endif
+
 #ifndef DEGPERRAD 
 #define DEGPERRAD 57.2957795f
 #endif
@@ -47,6 +51,21 @@ static void Circle(GPU_ShapeRenderer* renderer, GPU_Target* target, Sint16 x, Si
 #define INVERT_Y(y) \
 	if(renderer->renderer->display != target) \
 		(y) = renderer->renderer->display->h - (y);
+
+static float SetThickness(GPU_ShapeRenderer* renderer, float thickness)
+{
+	float old;
+	glGetFloatv(GL_LINE_WIDTH, &old);
+	glLineWidth(thickness);
+	return old;
+}
+
+static float GetThickness(GPU_ShapeRenderer* renderer)
+{
+	float old;
+	glGetFloatv(GL_LINE_WIDTH, &old);
+	return old;
+}
 
 static void Pixel(GPU_ShapeRenderer* renderer, GPU_Target* target, Sint16 x, Sint16 y, SDL_Color color)
 {
@@ -249,12 +268,12 @@ static void Circle(GPU_ShapeRenderer* renderer, GPU_Target* target, Sint16 x, Si
 	float t = 0;
 	float dt = 5;  // A segment every 5 degrees of a full circle
 	float dx, dy;
-	glBegin(GL_LINES);
+	glBegin(GL_LINE_LOOP);
 	dx = radius*cos(t*RADPERDEG);
 	dy = radius*sin(t*RADPERDEG);
+	glVertex3f(x+dx, y+dy, 0);
 	while(t < 360)
 	{
-		glVertex3f(x+dx, y+dy, 0);
 		t += dt;
 		dx = radius*cos(t*RADPERDEG);
 		dy = radius*sin(t*RADPERDEG);
@@ -275,13 +294,12 @@ static void CircleFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, Sint16
 	float t = 0;
 	float dt = 5;  // A segment every 5 degrees of a full circle
 	float dx, dy;
-	glBegin(GL_TRIANGLE_FAN);
-	glVertex3f(x, y, 0);
+	glBegin(GL_POLYGON);
 	dx = radius*cos(t*RADPERDEG);
 	dy = radius*sin(t*RADPERDEG);
+	glVertex3f(x+dx, y+dy, 0);
 	while(t < 360)
 	{
-		glVertex3f(x+dx, y+dy, 0);
 		t += dt;
 		dx = radius*cos(t*RADPERDEG);
 		dy = radius*sin(t*RADPERDEG);
@@ -369,20 +387,47 @@ static void RectFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, Sint16 x
 }
 
 static void RectRound(GPU_ShapeRenderer* renderer, GPU_Target* target, Sint16 x1, Sint16 y1, Sint16 x2, Sint16 y2, float radius, SDL_Color color)
-{	
-	Sint16 minX = (x1 < x2? x1 : x2) + (Sint16)(radius);
-    Sint16 maxX = (x1 > x2? x1 : x2) - (Sint16)(radius);
-    Sint16 minY = (y1 < y2? y1 : y2) + (Sint16)(radius);
-    Sint16 maxY = (y1 > y2? y1 : y2) - (Sint16)(radius);
-    Line(renderer, target, minX,y1,maxX,y1,color);
-    Line(renderer, target, minX,y2,maxX,y2,color);
-    Line(renderer, target, x1,minY,x1,maxY,color);
-    Line(renderer, target, x2,minY,x2,maxY,color);
+{
+	if(y2 < y1)
+	{
+		Sint16 temp = y2;
+		y2 = y1;
+		y1 = temp;
+	}
+	if(x2 < x1)
+	{
+		Sint16 temp = x2;
+		x2 = x1;
+		x1 = temp;
+	}
 	
-	Arc(renderer, target, minX, minY, radius, 180, 270, color);
-	Arc(renderer, target, maxX, minY, radius, 270, 360, color);
-	Arc(renderer, target, maxX, maxY, radius, 0, 90, color);
-	Arc(renderer, target, minX, maxY, radius, 90, 180, color);
+	BEGIN;
+	
+	INVERT_Y(y1);
+	INVERT_Y(y2);
+	
+	glColor4ub(color.r, color.g, color.b, color.unused);
+	
+	glBegin(GL_LINE_LOOP);
+		glVertex2i(x1+radius,y1);
+		glVertex2i(x2-radius,y1);
+		for(float i=(float)M_PI*1.5f;i<M_PI*2;i+=0.1f)
+			glVertex2f(x2-radius+cos(i)*radius,y1+radius+sin(i)*radius);
+		glVertex2i(x2,y1+radius);
+		glVertex2i(x2,y2-radius);
+		for(float i=0;i<(float)M_PI*0.5f;i+=0.1f)
+			glVertex2f(x2-radius+cos(i)*radius,y2-radius+sin(i)*radius);
+		glVertex2i(x2-radius,y2);
+		glVertex2i(x1+radius,y2);
+		for(float i=(float)M_PI*0.5f;i<M_PI;i+=0.1f)
+			glVertex2f(x1+radius+cos(i)*radius,y2-radius+sin(i)*radius);
+		glVertex2i(x1,y2-radius);
+		glVertex2i(x1,y1+radius);
+		for(float i=(float)M_PI;i<M_PI*1.5f;i+=0.1f)
+			glVertex2f(x1+radius+cos(i)*radius,y1+radius+sin(i)*radius);
+	glEnd();
+	
+	END;
 }
 
 static void RectRoundFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, Sint16 x1, Sint16 y1, Sint16 x2, Sint16 y2, float radius, SDL_Color color)
@@ -400,41 +445,33 @@ static void RectRoundFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, Sin
 		x1 = temp;
 	}
 	
-	Sint16 minX = (x1 < x2? x1 : x2) + (Sint16)(radius);
-    Sint16 maxX = (x1 > x2? x1 : x2) - (Sint16)(radius);
-    Sint16 minY = (y1 < y2? y1 : y2) + (Sint16)(radius);
-    Sint16 maxY = (y1 > y2? y1 : y2) - (Sint16)(radius);
+	BEGIN;
 	
-    // Center
-    SDL_Rect area;
-    area.x=minX;
-    area.y=minY;
-    area.w=maxX-minX;
-    area.h=maxY-minY;
-    RectFilled(renderer, target,area.x, area.y, area.x+area.w, area.y+area.h, color);
-    // Top
-    area.x= minX;
-    area.y= y1;
-    area.w= maxX-minX;
-    area.h= (Sint16)(radius);
-    RectFilled(renderer, target,area.x, area.y, area.x+area.w, area.y+area.h, color);
-    // Bottom
-    area.y= y2-(Sint16)(radius);
-    RectFilled(renderer, target,area.x, area.y, area.x+area.w, area.y+area.h, color);
-    // Left
-    area.x= x1;
-    area.y= minY-1;
-    area.w= (Sint16)(radius);
-    area.h= maxY-minY+1;
-    RectFilled(renderer, target,area.x, area.y, area.x+area.w, area.y+area.h, color);
-    // Right
-    area.x= x2-(Sint16)(radius);
-    RectFilled(renderer, target,area.x, area.y, area.x+area.w, area.y+area.h, color);
+	INVERT_Y(y1);
+	INVERT_Y(y2);
 	
-	ArcFilled(renderer, target, minX, minY, radius, 180, 270, color);
-	ArcFilled(renderer, target, maxX, minY, radius, 270, 360, color);
-	ArcFilled(renderer, target, maxX, maxY, radius, 0, 90, color);
-	ArcFilled(renderer, target, minX, maxY, radius, 90, 180, color);
+	glColor4ub(color.r, color.g, color.b, color.unused);
+	
+	glBegin(GL_POLYGON);
+		glVertex2i(x1+radius,y1);
+		glVertex2i(x2-radius,y1);
+		for(float i=(float)M_PI*1.5f;i<M_PI*2;i+=0.1f)
+			glVertex2f(x2-radius+cos(i)*radius,y1+radius+sin(i)*radius);
+		glVertex2i(x2,y1+radius);
+		glVertex2i(x2,y2-radius);
+		for(float i=0;i<(float)M_PI*0.5f;i+=0.1f)
+			glVertex2f(x2-radius+cos(i)*radius,y2-radius+sin(i)*radius);
+		glVertex2i(x2-radius,y2);
+		glVertex2i(x1+radius,y2);
+		for(float i=(float)M_PI*0.5f;i<M_PI;i+=0.1f)
+			glVertex2f(x1+radius+cos(i)*radius,y2-radius+sin(i)*radius);
+		glVertex2i(x1,y2-radius);
+		glVertex2i(x1,y1+radius);
+		for(float i=(float)M_PI;i<M_PI*1.5f;i+=0.1f)
+			glVertex2f(x1+radius+cos(i)*radius,y1+radius+sin(i)*radius);
+	glEnd();
+	
+	END;
 }
 
 static void Polygon(GPU_ShapeRenderer* renderer, GPU_Target* target, Uint16 n, float* vertices, SDL_Color color)
@@ -493,6 +530,8 @@ GPU_ShapeRenderer* GPU_CreateShapeRenderer_OpenGL(void)
 	
 	renderer->data = (ShapeRendererData_OpenGL*)malloc(sizeof(ShapeRendererData_OpenGL));
 	
+	renderer->SetThickness = &SetThickness;
+	renderer->GetThickness = &GetThickness;
 	renderer->Pixel = &Pixel;
 	renderer->Line = &Line;
 	renderer->Arc = &Arc;
