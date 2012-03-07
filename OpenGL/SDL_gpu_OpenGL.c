@@ -497,6 +497,47 @@ static void SetRGBA(GPU_Renderer* renderer, Uint8 r, Uint8 g, Uint8 b, Uint8 a)
 }
 
 
+static void ReplaceRGB(GPU_Renderer* renderer, GPU_Image* image, Uint8 from_r, Uint8 from_g, Uint8 from_b, Uint8 to_r, Uint8 to_g, Uint8 to_b)
+{
+	if(image == NULL)
+		return;
+	if(renderer != image->renderer)
+		return;
+	
+	glBindTexture( GL_TEXTURE_2D, ((ImageData_OpenGL*)image->data)->handle );
+
+	GLint textureWidth, textureHeight;
+
+	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &textureWidth);
+	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &textureHeight);
+
+	// FIXME: Does not take into account GL_PACK_ALIGNMENT
+	GLubyte *buffer = (GLubyte *)malloc(textureWidth*textureHeight*4);
+
+	glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+
+	int x,y,i;
+	for(y = 0; y < textureHeight; y++)
+	{
+		for(x = 0; x < textureWidth; x++)
+		{
+			i = ((y*textureWidth) + x)*4;
+			if(buffer[i] == from_r && buffer[i+1] == from_g && buffer[i+2] == from_b)
+			{
+				buffer[i] = to_r;
+				buffer[i+1] = to_g;
+				buffer[i+2] = to_b;
+			}
+		}
+	}
+	
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, textureWidth, textureHeight, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+ 
+
+	free(buffer);
+}
+
+
 
 static void MakeRGBTransparent(GPU_Renderer* renderer, GPU_Image* image, Uint8 r, Uint8 g, Uint8 b)
 {
@@ -693,6 +734,7 @@ GPU_Renderer* GPU_CreateRenderer_OpenGL(void)
 	renderer->SetBlending = &SetBlending;
 	renderer->SetRGBA = &SetRGBA;
 	
+	renderer->ReplaceRGB = &ReplaceRGB;
 	renderer->MakeRGBTransparent = &MakeRGBTransparent;
 	renderer->GetPixel = &GetPixel;
 	renderer->SetImageFilter = &SetImageFilter;
