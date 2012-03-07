@@ -15,6 +15,9 @@ typedef struct GPU_ShapeRenderer
 {
 	GPU_Renderer* renderer;
 	
+	float (*SetThickness)(struct GPU_ShapeRenderer* shapeRenderer, float thickness);
+	float (*GetThickness)(struct GPU_ShapeRenderer* shapeRenderer);
+	
 	void (*Pixel)(struct GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, Sint16 x, Sint16 y, SDL_Color color);
 
 	void (*Line)(struct GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, Sint16 x1, Sint16 y1, Sint16 x2, Sint16 y2, SDL_Color color);
@@ -47,6 +50,10 @@ typedef struct GPU_ShapeRenderer
 
 // Call this after setting a GPU_Renderer (e.g after GPU_Init())
 void GPU_LoadShapeRenderer(void);
+
+float GPU_SetThickness(float thickness);
+
+float GPU_GetThickness(void);
 
 void GPU_Pixel(GPU_Target* target, Sint16 x, Sint16 y, SDL_Color color);
 
