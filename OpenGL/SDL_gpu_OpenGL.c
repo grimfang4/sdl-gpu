@@ -63,6 +63,7 @@ static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	
 	glEnable(GL_BLEND);
+    glTranslatef(0.375f, 0.375f, 0.0f);
 
 	
 	if(renderer->display == NULL)
@@ -372,21 +373,16 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_T
 		dy2 = y + srcrect->h/2;
 	}
 	
-	// FIXME: Texture on texture isn't working...
 	if(dest != renderer->display)
 	{
 		
 		if(srcrect == NULL)
 		{
-			//dy1 += src->h/2;
-			//dy2 -= src->h/2;
 			dy1 = y - src->h/2;
 			dy2 = y + src->h/2;
 		}
 		else
 		{
-			//dy1 += srcrect->h/2;
-			//dy2 -= srcrect->h/2;
 			dy1 = y - srcrect->h/2;
 			dy2 = y + srcrect->h/2;
 		}
