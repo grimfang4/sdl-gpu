@@ -1,3 +1,9 @@
+// Hacks to fix compile errors due to polluted namespace
+#ifdef _WIN32
+#define _WINUSER_H
+#define _WINGDI_H
+#endif
+
 #include "SDL_gpu_OpenGL_internal.h"
 #include "SDL_gpuShapes_OpenGL_internal.h"
 #include <math.h>

@@ -1,12 +1,20 @@
+// Hacks to fix compile errors due to polluted namespace
+#ifdef _WIN32
+#define _WINUSER_H
+#define _WINGDI_H
+#endif
+
 #include "SDL_gpu_OpenGL_internal.h"
 #include "SOIL.h"
 #include <math.h>
 
 #ifdef _WIN32
 #define GL_EXT_LOAD wglGetProcAddress
+#define GL_STR_CAST LPCSTR
 #else
 #include "GL/glx.h"
 #define GL_EXT_LOAD glXGetProcAddress
+#define GL_STR_CAST const GLubyte*
 #endif
 
 PFNGLGENFRAMEBUFFERSEXTPROC glGenFramebuffersEXT = NULL;
@@ -17,15 +25,6 @@ PFNGLDELETEFRAMEBUFFERSEXTPROC glDeleteFramebuffersEXT = NULL;
 
 static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags)
 {
-	if(glGenFramebuffersEXT == NULL)
-	{
-		glGenFramebuffersEXT = (PFNGLGENFRAMEBUFFERSEXTPROC) GL_EXT_LOAD((const GLubyte*)"glGenFramebuffersEXT");
-		glBindFramebufferEXT = (PFNGLBINDFRAMEBUFFEREXTPROC) GL_EXT_LOAD((const GLubyte*)"glBindFramebufferEXT");
-		glFramebufferTexture2DEXT = (PFNGLFRAMEBUFFERTEXTURE2DEXTPROC) GL_EXT_LOAD((const GLubyte*)"glFramebufferTexture2DEXT");
-		glCheckFramebufferStatusEXT = (PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC) GL_EXT_LOAD((const GLubyte*)"glCheckFramebufferStatusEXT");
-		glDeleteFramebuffersEXT = (PFNGLDELETEFRAMEBUFFERSEXTPROC) GL_EXT_LOAD((const GLubyte*)"glDeleteFramebuffersEXT");
-	}
-	
 	if(flags & SDL_DOUBLEBUF)
 		SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 	flags &= ~SDL_DOUBLEBUF;
@@ -43,6 +42,15 @@ static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags
 	
 	if(screen == NULL)
 		return NULL;
+    
+	if(glGenFramebuffersEXT == NULL)
+	{
+		glGenFramebuffersEXT = (PFNGLGENFRAMEBUFFERSEXTPROC) GL_EXT_LOAD((GL_STR_CAST)"glGenFramebuffersEXT");
+		glBindFramebufferEXT = (PFNGLBINDFRAMEBUFFEREXTPROC) GL_EXT_LOAD((GL_STR_CAST)"glBindFramebufferEXT");
+		glFramebufferTexture2DEXT = (PFNGLFRAMEBUFFERTEXTURE2DEXTPROC) GL_EXT_LOAD((GL_STR_CAST)"glFramebufferTexture2DEXT");
+		glCheckFramebufferStatusEXT = (PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC) GL_EXT_LOAD((GL_STR_CAST)"glCheckFramebufferStatusEXT");
+		glDeleteFramebuffersEXT = (PFNGLDELETEFRAMEBUFFERSEXTPROC) GL_EXT_LOAD((GL_STR_CAST)"glDeleteFramebuffersEXT");
+	}
 	
 	glEnable( GL_TEXTURE_2D );
 	glClearColor( 0.0f, 0.0f, 0.0f, 0.0f );

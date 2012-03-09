@@ -73,6 +73,8 @@ int main(int argc, char* argv[])
 	GPU_FreeImage(image1);
 	GPU_FreeImage(image2);
 	GPU_Quit();
+	
+	return 0;
 }
 
 
