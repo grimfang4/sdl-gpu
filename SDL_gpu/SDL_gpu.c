@@ -91,12 +91,12 @@ const char* GPU_GetErrorString(void)
 	return SDL_GetError();
 }
 
-GPU_Image* GPU_CreateImage(Uint16 w, Uint16 h, Uint8 bits_per_pixel)
+GPU_Image* GPU_CreateImage(Uint16 w, Uint16 h, Uint8 channels)
 {
 	if(current_renderer == NULL || current_renderer->CreateImage == NULL)
 		return NULL;
 	
-	return current_renderer->CreateImage(current_renderer, w, h, bits_per_pixel);
+	return current_renderer->CreateImage(current_renderer, w, h, channels);
 }
 
 GPU_Image* GPU_LoadImage(const char* filename)

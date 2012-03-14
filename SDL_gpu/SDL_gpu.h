@@ -17,6 +17,7 @@ typedef struct GPU_Image
 	struct GPU_Renderer* renderer;
 	void* data;
 	Uint16 w, h;
+	int channels;
 } GPU_Image;
 
 
@@ -41,7 +42,7 @@ typedef struct GPU_Renderer
 	GPU_Target* (*Init)(struct GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags);
 	void (*Quit)(struct GPU_Renderer* renderer);
 
-	GPU_Image* (*CreateImage)(struct GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint8 bits_per_pixel);
+	GPU_Image* (*CreateImage)(struct GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint8 channels);
 	GPU_Image* (*LoadImage)(struct GPU_Renderer* renderer, const char* filename);
 	GPU_Image* (*CopyImage)(struct GPU_Renderer* renderer, GPU_Image* image);
 	GPU_Image* (*CopyImageFromSurface)(struct GPU_Renderer* renderer, SDL_Surface* surface);
@@ -109,7 +110,7 @@ GPU_Renderer* GPU_GetCurrentRenderer(void);
 
 // Defined by renderer
 
-GPU_Image* GPU_CreateImage(Uint16 w, Uint16 h, Uint8 bits_per_pixel);
+GPU_Image* GPU_CreateImage(Uint16 w, Uint16 h, Uint8 channels);
 GPU_Image* GPU_LoadImage(const char* filename);
 GPU_Image* GPU_CopyImage(GPU_Image* image);
 GPU_Image* GPU_CopyImageFromSurface(SDL_Surface* surface);

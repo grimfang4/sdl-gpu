@@ -97,20 +97,13 @@ static void Quit(GPU_Renderer* renderer)
 	renderer->display = NULL;
 }
 
-static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint8 bits_per_pixel)
+static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint8 channels)
 {
+	if(channels < 3 || channels > 4)
+		return NULL;
+	
 	GLuint texture;
 	GLint texture_format;
-	int channels = 4;
-	switch(bits_per_pixel)
-	{
-		case 8: channels = 3;
-		break;
-		case 16: channels = 3;
-		break;
-		case 24: channels = 3;
-		break;
-	}
 	
 	unsigned char* pixels = (unsigned char*)malloc(w*h*channels);
 	memset(pixels, 0, w*h*channels);
@@ -135,6 +128,7 @@ static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint8 
 	ImageData_OpenGL* data = (ImageData_OpenGL*)malloc(sizeof(ImageData_OpenGL));
 	result->data = data;
 	result->renderer = renderer;
+	result->channels = channels;
 	data->handle = texture;
 	data->format = texture_format;
 	
@@ -172,6 +166,28 @@ static GPU_Image* LoadImage(GPU_Renderer* renderer, const char* filename)
 	ImageData_OpenGL* data = (ImageData_OpenGL*)malloc(sizeof(ImageData_OpenGL));
 	result->data = data;
 	result->renderer = renderer;
+	
+	int channels = 0;
+	switch(texture_format)
+	{
+	case GL_LUMINANCE:
+		channels = 1;
+		break;
+	case GL_LUMINANCE_ALPHA:
+		channels = 2;
+		break;
+	case GL_BGR:
+	case GL_RGB:
+		channels = 3;
+		break;
+	case GL_BGRA:
+	case GL_RGBA:
+		channels = 4;
+		break;
+	}
+	
+	result->channels = channels;
+	
 	data->handle = texture;
 	data->format = texture_format;
 	
@@ -188,8 +204,7 @@ static GPU_Image* CopyImage(GPU_Renderer* renderer, GPU_Image* image)
 	if(old_blend)
 		renderer->SetBlending(renderer, 0);
 	
-	// FIXME: GPU_Image needs a bits_per_pixel or whatever (bytes_per_pixel, channels, etc.) so the format can be copied
-	GPU_Image* result = renderer->CreateImage(renderer, image->w, image->h, 32);
+	GPU_Image* result = renderer->CreateImage(renderer, image->w, image->h, image->channels);
 	
 	GPU_Target* tgt = renderer->LoadTarget(renderer, result);
 	renderer->Blit(renderer, image, NULL, tgt, tgt->w/2, tgt->h/2);
@@ -265,6 +280,28 @@ static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surf
 	ImageData_OpenGL* data = (ImageData_OpenGL*)malloc(sizeof(ImageData_OpenGL));
 	result->data = data;
 	result->renderer = renderer;
+	
+	int channels = 0;
+	switch(texture_format)
+	{
+	case GL_LUMINANCE:
+		channels = 1;
+		break;
+	case GL_LUMINANCE_ALPHA:
+		channels = 2;
+		break;
+	case GL_BGR:
+	case GL_RGB:
+		channels = 3;
+		break;
+	case GL_BGRA:
+	case GL_RGBA:
+		channels = 4;
+		break;
+	}
+	
+	result->channels = channels;
+	
 	data->handle = texture;
 	data->format = texture_format;
 	
@@ -513,7 +550,7 @@ static void SetRGBA(GPU_Renderer* renderer, Uint8 r, Uint8 g, Uint8 b, Uint8 a)
 
 static void ReplaceRGB(GPU_Renderer* renderer, GPU_Image* image, Uint8 from_r, Uint8 from_g, Uint8 from_b, Uint8 to_r, Uint8 to_g, Uint8 to_b)
 {
-	if(image == NULL)
+	if(image == NULL || image->channels < 3)
 		return;
 	if(renderer != image->renderer)
 		return;
@@ -524,18 +561,20 @@ static void ReplaceRGB(GPU_Renderer* renderer, GPU_Image* image, Uint8 from_r, U
 
 	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &textureWidth);
 	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &textureHeight);
+	
+	GLenum texture_format = ((ImageData_OpenGL*)image->data)->format;
 
 	// FIXME: Does not take into account GL_PACK_ALIGNMENT
-	GLubyte *buffer = (GLubyte *)malloc(textureWidth*textureHeight*4);
+	GLubyte *buffer = (GLubyte *)malloc(textureWidth*textureHeight*image->channels);
 
-	glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+	glGetTexImage(GL_TEXTURE_2D, 0, texture_format, GL_UNSIGNED_BYTE, buffer);
 
 	int x,y,i;
 	for(y = 0; y < textureHeight; y++)
 	{
 		for(x = 0; x < textureWidth; x++)
 		{
-			i = ((y*textureWidth) + x)*4;
+			i = ((y*textureWidth) + x)*image->channels;
 			if(buffer[i] == from_r && buffer[i+1] == from_g && buffer[i+2] == from_b)
 			{
 				buffer[i] = to_r;
@@ -545,7 +584,7 @@ static void ReplaceRGB(GPU_Renderer* renderer, GPU_Image* image, Uint8 from_r, U
 		}
 	}
 	
-	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, textureWidth, textureHeight, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, textureWidth, textureHeight, texture_format, GL_UNSIGNED_BYTE, buffer);
  
 
 	free(buffer);
@@ -555,7 +594,7 @@ static void ReplaceRGB(GPU_Renderer* renderer, GPU_Image* image, Uint8 from_r, U
 
 static void MakeRGBTransparent(GPU_Renderer* renderer, GPU_Image* image, Uint8 r, Uint8 g, Uint8 b)
 {
-	if(image == NULL)
+	if(image == NULL || image->channels < 4)
 		return;
 	if(renderer != image->renderer)
 		return;
@@ -690,7 +729,7 @@ static int clamp(int value, int low, int high)
 
 static void ShiftHSV(GPU_Renderer* renderer, GPU_Image* image, int hue, int saturation, int value)
 {
-	if(image == NULL)
+	if(image == NULL || image->channels < 3)
 		return;
 	if(renderer != image->renderer)
 		return;
@@ -703,18 +742,20 @@ static void ShiftHSV(GPU_Renderer* renderer, GPU_Image* image, int hue, int satu
 	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &textureHeight);
 
 	// FIXME: Does not take into account GL_PACK_ALIGNMENT
-	GLubyte *buffer = (GLubyte *)malloc(textureWidth*textureHeight*4);
+	GLubyte *buffer = (GLubyte *)malloc(textureWidth*textureHeight*image->channels);
+	
+	GLenum texture_format = ((ImageData_OpenGL*)image->data)->format;
 
-	glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+	glGetTexImage(GL_TEXTURE_2D, 0, texture_format, GL_UNSIGNED_BYTE, buffer);
 
 	int x,y,i;
 	for(y = 0; y < textureHeight; y++)
 	{
 		for(x = 0; x < textureWidth; x++)
 		{
-			i = ((y*textureWidth) + x)*4;
+			i = ((y*textureWidth) + x)*image->channels;
 			
-			if(buffer[i+3] == 0)
+			if(image->channels == 4 && buffer[i+3] == 0)
 				continue;
 			
 			int r = buffer[i];
@@ -743,7 +784,7 @@ static void ShiftHSV(GPU_Renderer* renderer, GPU_Image* image, int hue, int satu
 		}
 	}
 	
-	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, textureWidth, textureHeight, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, textureWidth, textureHeight, texture_format, GL_UNSIGNED_BYTE, buffer);
  
 
 	free(buffer);

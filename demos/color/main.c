@@ -34,6 +34,14 @@ int main(int argc, char* argv[])
 	SDL_Color yellow = {246, 255, 0};
 	GPU_MakeColorTransparent(image1, yellow);
 	
+	GPU_Image* image1a = GPU_CopyImage(image);
+	
+	SDL_Color red = {200, 0, 0};
+	GPU_ReplaceColor(image1a, yellow, red);
+	
+	
+	
+	
 	GPU_Image* image2 = GPU_CopyImage(image);
 	
 	GPU_ShiftHSV(image2, 100, 0, 0);
@@ -68,6 +76,7 @@ int main(int argc, char* argv[])
 		
 		GPU_Blit(image, NULL, screen, 150, 150);
 		GPU_Blit(image1, NULL, screen, 300, 150);
+		GPU_Blit(image1a, NULL, screen, 450, 150);
 		GPU_Blit(image2, NULL, screen, 150, 300);
 		GPU_Blit(image3, NULL, screen, 300, 300);
 		GPU_Blit(image4, NULL, screen, 450, 300);
@@ -83,6 +92,7 @@ int main(int argc, char* argv[])
 	
 	GPU_FreeImage(image);
 	GPU_FreeImage(image1);
+	GPU_FreeImage(image1a);
 	GPU_FreeImage(image2);
 	GPU_FreeImage(image3);
 	GPU_FreeImage(image4);
