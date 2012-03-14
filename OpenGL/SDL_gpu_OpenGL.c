@@ -589,6 +589,166 @@ static void MakeRGBTransparent(GPU_Renderer* renderer, GPU_Image* image, Uint8 r
 	free(buffer);
 }
 
+#define MIN(a,b,c) (a<b && a<c? a : (b<c? b : c))
+#define MAX(a,b,c) (a>b && a>c? a : (b>c? b : c))
+
+
+static void rgb_to_hsv(int red, int green, int blue, int* hue, int* sat, int* val)
+{
+	float r = red/255.0f;
+	float g = green/255.0f;
+	float b = blue/255.0f;
+	
+	float h, s, v;
+	
+	float min, max, delta;
+	min = MIN( r, g, b );
+	max = MAX( r, g, b );
+	
+	v = max;				// v
+	delta = max - min;
+	if( max != 0 && min != max)
+	{
+		s = delta / max;		// s
+		
+		if( r == max )
+			h = ( g - b ) / delta;		// between yellow & magenta
+		else if( g == max )
+			h = 2 + ( b - r ) / delta;	// between cyan & yellow
+		else
+			h = 4 + ( r - g ) / delta;	// between magenta & cyan
+		h *= 60;				// degrees
+		if( h < 0 )
+			h += 360;
+	}
+	else {
+		// r = g = b = 0		// s = 0, v is undefined
+		s = 0;
+		h = 0;// really undefined: -1
+	}
+	
+	*hue = h * 256.0f/360.0f;
+	*sat = s * 255;
+	*val = v * 255;
+}
+
+static void hsv_to_rgb(int hue, int sat, int val, int* r, int* g, int* b)
+{
+	float h = hue/255.0f;
+    float s = sat/255.0f;
+    float v = val/255.0f;
+    
+    int H = floor(h*5.999f);
+    float chroma = v*s;
+    float x = chroma * (1 - fabs(fmod(h*5.999f, 2) - 1));
+    
+    unsigned char R = 0, G = 0, B = 0;
+    switch(H)
+    {
+        case 0:
+            R = 255*chroma;
+            G = 255*x;
+        break;
+        case 1:
+            R = 255*x;
+            G = 255*chroma;
+        break;
+        case 2:
+            G = 255*chroma;
+            B = 255*x;
+        break;
+        case 3:
+            G = 255*x;
+            B = 255*chroma;
+        break;
+        case 4:
+            R = 255*x;
+            B = 255*chroma;
+        break;
+        case 5:
+            R = 255*chroma;
+            B = 255*x;
+        break;
+    }
+    
+    unsigned char m = 255*(v - chroma);
+    
+	*r = R+m;
+	*g = G+m;
+	*b = B+m;
+}
+
+static int clamp(int value, int low, int high)
+{
+	if(value <= low)
+		return low;
+	if(value >= high)
+		return high;
+	return value;
+}
+
+
+static void ShiftHSV(GPU_Renderer* renderer, GPU_Image* image, int hue, int saturation, int value)
+{
+	if(image == NULL)
+		return;
+	if(renderer != image->renderer)
+		return;
+	
+	glBindTexture( GL_TEXTURE_2D, ((ImageData_OpenGL*)image->data)->handle );
+
+	GLint textureWidth, textureHeight;
+
+	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &textureWidth);
+	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &textureHeight);
+
+	// FIXME: Does not take into account GL_PACK_ALIGNMENT
+	GLubyte *buffer = (GLubyte *)malloc(textureWidth*textureHeight*4);
+
+	glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+
+	int x,y,i;
+	for(y = 0; y < textureHeight; y++)
+	{
+		for(x = 0; x < textureWidth; x++)
+		{
+			i = ((y*textureWidth) + x)*4;
+			
+			if(buffer[i+3] == 0)
+				continue;
+			
+			int r = buffer[i];
+			int g = buffer[i+1];
+			int b = buffer[i+2];
+			int h, s, v;
+			rgb_to_hsv(r, g, b, &h, &s, &v);
+			h += hue;
+			s += saturation;
+			v += value;
+			// Wrap hue
+			while(h < 0)
+				h += 256;
+			while(h > 255)
+				h -= 256;
+			
+			// Clamp
+			s = clamp(s, 0, 255);
+			v = clamp(v, 0, 255);
+			
+			hsv_to_rgb(h, s, v, &r, &g, &b);
+			
+			buffer[i] = r;
+			buffer[i+1] = g;
+			buffer[i+2] = b;
+		}
+	}
+	
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, textureWidth, textureHeight, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+ 
+
+	free(buffer);
+}
+
 
 static SDL_Color GetPixel(GPU_Renderer* renderer, GPU_Target* target, Sint16 x, Sint16 y)
 {
@@ -722,6 +882,10 @@ static void Flip(GPU_Renderer* renderer)
 GPU_Renderer* GPU_CreateRenderer_OpenGL(void)
 {
 	GPU_Renderer* renderer = (GPU_Renderer*)malloc(sizeof(GPU_Renderer));
+	if(renderer == NULL)
+		return NULL;
+	
+	memset(renderer, 0, sizeof(GPU_Renderer));
 	
 	renderer->id = "OpenGL";
 	renderer->display = NULL;
@@ -750,6 +914,7 @@ GPU_Renderer* GPU_CreateRenderer_OpenGL(void)
 	
 	renderer->ReplaceRGB = &ReplaceRGB;
 	renderer->MakeRGBTransparent = &MakeRGBTransparent;
+	renderer->ShiftHSV = &ShiftHSV;
 	renderer->GetPixel = &GetPixel;
 	renderer->SetImageFilter = &SetImageFilter;
 	
