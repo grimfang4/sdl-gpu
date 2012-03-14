@@ -275,6 +275,14 @@ void GPU_MakeColorTransparent(GPU_Image* image, SDL_Color color)
 	current_renderer->MakeRGBTransparent(current_renderer, image, color.r, color.g, color.b);
 }
 
+void GPU_ShiftHSV(GPU_Image* image, int hue, int saturation, int value)
+{
+	if(current_renderer == NULL || current_renderer->ShiftHSV == NULL)
+		return;
+	
+	current_renderer->ShiftHSV(current_renderer, image, hue, saturation, value);
+}
+
 SDL_Color GPU_GetPixel(GPU_Target* target, Sint16 x, Sint16 y)
 {
 	if(current_renderer == NULL || current_renderer->GetPixel == NULL)
