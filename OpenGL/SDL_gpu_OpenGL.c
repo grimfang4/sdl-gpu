@@ -797,6 +797,79 @@ static void ShiftHSV(GPU_Renderer* renderer, GPU_Image* image, int hue, int satu
 }
 
 
+static void ShiftHSVExcept(GPU_Renderer* renderer, GPU_Image* image, int hue, int saturation, int value, int notHue, int notSat, int notVal, int range)
+{
+	if(image == NULL || image->channels < 3)
+		return;
+	if(renderer != image->renderer)
+		return;
+	
+	glBindTexture( GL_TEXTURE_2D, ((ImageData_OpenGL*)image->data)->handle );
+
+	GLint textureWidth, textureHeight;
+
+	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &textureWidth);
+	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &textureHeight);
+
+	// FIXME: Does not take into account GL_PACK_ALIGNMENT
+	GLubyte *buffer = (GLubyte *)malloc(textureWidth*textureHeight*image->channels);
+	
+	GLenum texture_format = ((ImageData_OpenGL*)image->data)->format;
+
+	glGetTexImage(GL_TEXTURE_2D, 0, texture_format, GL_UNSIGNED_BYTE, buffer);
+
+	int x,y,i;
+	for(y = 0; y < textureHeight; y++)
+	{
+		for(x = 0; x < textureWidth; x++)
+		{
+			i = ((y*textureWidth) + x)*image->channels;
+			
+			if(image->channels == 4 && buffer[i+3] == 0)
+				continue;
+			
+			int r = buffer[i];
+			int g = buffer[i+1];
+			int b = buffer[i+2];
+			
+			int h, s, v;
+			rgb_to_hsv(r, g, b, &h, &s, &v);
+			
+			if(notHue - range <= h && notHue + range >= h
+				&& notSat - range <= s && notSat + range >= s
+				&& notVal - range <= v && notVal + range >= v)
+				continue;
+			
+			h += hue;
+			s += saturation;
+			v += value;
+			// Wrap hue
+			while(h < 0)
+				h += 256;
+			while(h > 255)
+				h -= 256;
+			
+			// Clamp
+			s = clamp(s, 0, 255);
+			v = clamp(v, 0, 255);
+			
+			hsv_to_rgb(h, s, v, &r, &g, &b);
+			
+			buffer[i] = r;
+			buffer[i+1] = g;
+			buffer[i+2] = b;
+		}
+	}
+	
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, textureWidth, textureHeight, texture_format, GL_UNSIGNED_BYTE, buffer);
+ 
+
+	free(buffer);
+}
+
+
+
+
 static SDL_Color GetPixel(GPU_Renderer* renderer, GPU_Target* target, Sint16 x, Sint16 y)
 {
 	SDL_Color result = {0,0,0,0};
@@ -962,6 +1035,7 @@ GPU_Renderer* GPU_CreateRenderer_OpenGL(void)
 	renderer->ReplaceRGB = &ReplaceRGB;
 	renderer->MakeRGBTransparent = &MakeRGBTransparent;
 	renderer->ShiftHSV = &ShiftHSV;
+	renderer->ShiftHSVExcept = &ShiftHSVExcept;
 	renderer->GetPixel = &GetPixel;
 	renderer->SetImageFilter = &SetImageFilter;
 	
