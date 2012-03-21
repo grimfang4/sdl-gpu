@@ -66,6 +66,8 @@ typedef struct GPU_Renderer
 	
 	void (*ShiftHSV)(struct GPU_Renderer* renderer, GPU_Image* image, int hue, int saturation, int value);
 	
+	void (*ShiftHSVExcept)(struct GPU_Renderer* renderer, GPU_Image* image, int hue, int saturation, int value, int notHue, int notSat, int notVal, int range);
+	
 	SDL_Color (*GetPixel)(struct GPU_Renderer* renderer, GPU_Target* target, Sint16 x, Sint16 y);
 	
 	void (*SetImageFilter)(struct GPU_Renderer* renderer, GPU_Image* image, GPU_FilterEnum filter);
@@ -136,6 +138,7 @@ void GPU_SetRGBA(Uint8 r, Uint8 g, Uint8 b, Uint8 a);
 void GPU_ReplaceColor(GPU_Image* image, SDL_Color from, SDL_Color to);
 void GPU_MakeColorTransparent(GPU_Image* image, SDL_Color color);
 void GPU_ShiftHSV(GPU_Image* image, int hue, int saturation, int value);
+void GPU_ShiftHSVExcept(GPU_Image* image, int hue, int saturation, int value, int notHue, int notSat, int notVal, int range);
 SDL_Color GPU_GetPixel(GPU_Target* target, Sint16 x, Sint16 y);
 void GPU_SetImageFilter(GPU_Image* image, GPU_FilterEnum filter);
 

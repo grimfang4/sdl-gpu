@@ -283,6 +283,14 @@ void GPU_ShiftHSV(GPU_Image* image, int hue, int saturation, int value)
 	current_renderer->ShiftHSV(current_renderer, image, hue, saturation, value);
 }
 
+void GPU_ShiftHSVExcept(GPU_Image* image, int hue, int saturation, int value, int notHue, int notSat, int notVal, int range)
+{
+	if(current_renderer == NULL || current_renderer->ShiftHSVExcept == NULL)
+		return;
+	
+	current_renderer->ShiftHSVExcept(current_renderer, image, hue, saturation, value, notHue, notSat, notVal, range);
+}
+
 SDL_Color GPU_GetPixel(GPU_Target* target, Sint16 x, Sint16 y)
 {
 	if(current_renderer == NULL || current_renderer->GetPixel == NULL)
