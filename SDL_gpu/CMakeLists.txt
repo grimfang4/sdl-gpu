@@ -3,6 +3,10 @@ set(SDL_gpu_SRCS
 	SDL_gpu_Renderer.c
 	../OpenGL/SDL_gpu_OpenGL.c
 	../Direct3D/SDL_gpu_Direct3D.c
+	SOIL/SOIL.c
+	SOIL/image_DXT.c
+	SOIL/image_helper.c
+	SOIL/stb_image_aug.c
 )
 set(SDL_gpu_HDRS
 	SDL_gpu.h
@@ -11,6 +15,12 @@ set(SDL_gpu_HDRS
 	../OpenGL/SDL_gpu_OpenGL_internal.h
 	../Direct3D/SDL_gpu_Direct3D.h
 	../Direct3D/SDL_gpu_Direct3D_internal.h
+	SOIL/SOIL.h
+	SOIL/image_DXT.h
+	SOIL/image_helper.h
+	SOIL/stb_image_aug.h
+	SOIL/stbi_DDS_aug.h
+	SOIL/stbi_DDS_aug_c.h
 )
 set(SDL_gpu_install_HDRS
 	SDL_gpu.h

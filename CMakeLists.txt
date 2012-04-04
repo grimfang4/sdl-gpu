@@ -37,14 +37,13 @@ endif ( NOT SDL_FOUND )
 include_directories(${SDL_INCLUDE_DIR})
 include_directories(${OPENGL_INCLUDE_DIR})
 include_directories(SDL_gpu)
+include_directories(SDL_gpu/SOIL)
 include_directories(SDL_gpuShapes)
-include_directories(SOIL)
 
 link_libraries (
    ${SDL_LIBRARY}
    ${OPENGL_LIBRARIES}
    SDLmain # Not included in SDL_LIBRARY variable
-	SOIL
 )
 
 add_definitions("-g -Wall -std=c99 -pedantic")
@@ -54,9 +53,6 @@ add_subdirectory(SDL_gpu)
 
 # The SDL_gpuShapes library.
 add_subdirectory(SDL_gpuShapes)
-
-# The SOIL (static) library.
-add_subdirectory(SOIL)
 
 
 if(SDL_gpu_BUILD_EXAMPLES)

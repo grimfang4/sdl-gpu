@@ -27,6 +27,14 @@ BUILDING
 
 SDL_gpu uses CMake (www.cmake.org) to coordinate the library compile process.  CMake is available as a GUI program or on the command line.
 
+For Linux systems, run CMake in the base directory:
+cmake -G "Unix Makefiles"
+make
+sudo make install
+
+For Linux systems, changing the default installation directory can be done like so:
+cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX=/usr
+
 
 =========
 INCLUDING
