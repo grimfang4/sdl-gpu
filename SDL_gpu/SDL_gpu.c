@@ -160,7 +160,7 @@ void GPU_FreeTarget(GPU_Target* target)
 
 
 
-int GPU_Blit(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y)
+int GPU_Blit(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y)
 {
 	if(current_renderer == NULL || current_renderer->Blit == NULL)
 		return -2;
@@ -169,7 +169,7 @@ int GPU_Blit(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint
 }
 
 
-int GPU_BlitRotate(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y, float angle)
+int GPU_BlitRotate(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float angle)
 {
 	if(current_renderer == NULL || current_renderer->BlitRotate == NULL)
 		return -2;
@@ -177,7 +177,7 @@ int GPU_BlitRotate(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x
 	return current_renderer->BlitRotate(current_renderer, src, srcrect, dest, x, y, angle);
 }
 
-int GPU_BlitScale(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y, float scaleX, float scaleY)
+int GPU_BlitScale(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float scaleX, float scaleY)
 {
 	if(current_renderer == NULL || current_renderer->BlitScale == NULL)
 		return -2;
@@ -185,7 +185,7 @@ int GPU_BlitScale(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x,
 	return current_renderer->BlitScale(current_renderer, src, srcrect, dest, x, y, scaleX, scaleY);
 }
 
-int GPU_BlitTransform(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y, float angle, float scaleX, float scaleY)
+int GPU_BlitTransform(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float angle, float scaleX, float scaleY)
 {
 	if(current_renderer == NULL || current_renderer->BlitTransform == NULL)
 		return -2;
