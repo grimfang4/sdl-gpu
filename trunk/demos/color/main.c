@@ -97,6 +97,8 @@ int main(int argc, char* argv[])
 	GPU_FreeImage(image3);
 	GPU_FreeImage(image4);
 	GPU_Quit();
+	
+	return 0;
 }
 
 
