@@ -32,6 +32,7 @@ typedef struct GPU_Target
 typedef unsigned int GPU_FilterEnum;
 static const GPU_FilterEnum GPU_NEAREST = 0;
 static const GPU_FilterEnum GPU_LINEAR = 1;
+static const GPU_FilterEnum GPU_LINEAR_MIPMAP = 2;
 
 typedef struct GPU_Renderer
 {
