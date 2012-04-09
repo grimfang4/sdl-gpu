@@ -31,3 +31,6 @@ target_link_libraries (clip-demo SDL_gpu SDL_gpuShapes)
 
 add_executable(color-demo color/main.c)
 target_link_libraries (color-demo SDL_gpu)
+
+add_executable(mipmap-demo mipmap/main.c)
+target_link_libraries (mipmap-demo SDL_gpu)

@@ -194,6 +194,32 @@ int GPU_BlitTransform(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint1
 }
 
 
+float GPU_SetZ(float z)
+{
+	if(current_renderer == NULL || current_renderer->SetZ == NULL)
+		return 0.0f;
+	
+	return current_renderer->SetZ(current_renderer, z);
+}
+
+float GPU_GetZ(void)
+{
+	if(current_renderer == NULL || current_renderer->GetZ == NULL)
+		return 0.0f;
+	
+	return current_renderer->GetZ(current_renderer);
+}
+
+void GPU_GenerateMipmaps(GPU_Image* image)
+{
+	if(current_renderer == NULL || current_renderer->GenerateMipmaps == NULL)
+		return;
+	
+	current_renderer->GenerateMipmaps(current_renderer, image);
+}
+
+
+
 
 void GPU_SetClip(GPU_Target* target, Sint16 x, Sint16 y, Uint16 w, Uint16 h)
 {

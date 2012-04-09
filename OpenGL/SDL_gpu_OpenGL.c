@@ -133,6 +133,7 @@ static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint8 
 	result->channels = channels;
 	data->handle = texture;
 	data->format = texture_format;
+	data->hasMipmaps = 0;
 	
 	result->w = w;
 	result->h = h;
@@ -194,6 +195,7 @@ static GPU_Image* LoadImage(GPU_Renderer* renderer, const char* filename)
 	
 	data->handle = texture;
 	data->format = texture_format;
+	data->hasMipmaps = 0;
 	
 	result->w = w;
 	result->h = h;
@@ -310,6 +312,7 @@ static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surf
 	
 	data->handle = texture;
 	data->format = texture_format;
+	data->hasMipmaps = 0;
 	
 	result->w = w;
 	result->h = h;
@@ -535,6 +538,39 @@ static int BlitTransform(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcre
 	glPopMatrix();
 	
 	return result;
+}
+
+static float SetZ(GPU_Renderer* renderer, float z)
+{
+	if(renderer == NULL)
+		return 0.0f;
+	
+	float oldZ = ((RendererData_OpenGL*)(renderer->data))->z;
+	((RendererData_OpenGL*)(renderer->data))->z = z;
+	
+	return oldZ;
+}
+
+static float GetZ(GPU_Renderer* renderer)
+{
+	if(renderer == NULL)
+		return 0.0f;
+	return ((RendererData_OpenGL*)(renderer->data))->z;
+}
+
+static void GenerateMipmaps(GPU_Renderer* renderer, GPU_Image* image)
+{
+	if(image == NULL)
+		return;
+	
+	glBindTexture( GL_TEXTURE_2D, ((ImageData_OpenGL*)image->data)->handle );
+	glGenerateMipmap(GL_TEXTURE_2D);
+	((ImageData_OpenGL*)image->data)->hasMipmaps = 1;
+	
+	GLint filter;
+	glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, &filter);
+	if(filter == GL_LINEAR)
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
 }
 
 
@@ -912,7 +948,10 @@ static void SetImageFilter(GPU_Renderer* renderer, GPU_Image* image, GPU_FilterE
 	}
 	else if(filter == GPU_LINEAR)
 	{
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		if(((ImageData_OpenGL*)image->data)->hasMipmaps)
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
+		else
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	}
 }
@@ -1028,6 +1067,10 @@ GPU_Renderer* GPU_CreateRenderer_OpenGL(void)
 	renderer->BlitRotate = &BlitRotate;
 	renderer->BlitScale = &BlitScale;
 	renderer->BlitTransform = &BlitTransform;
+	
+	renderer->SetZ = &SetZ;
+	renderer->GetZ = &GetZ;
+	renderer->GenerateMipmaps = &GenerateMipmaps;
 	
 	renderer->SetBlending = &SetBlending;
 	renderer->SetRGBA = &SetRGBA;

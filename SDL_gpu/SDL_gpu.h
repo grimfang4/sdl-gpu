@@ -56,6 +56,11 @@ typedef struct GPU_Renderer
 	int (*BlitRotate)(struct GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y, float angle);
 	int (*BlitScale)(struct GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y, float scaleX, float scaleY);
 	int (*BlitTransform)(struct GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y, float angle, float scaleX, float scaleY);
+	
+	float (*SetZ)(struct GPU_Renderer* renderer, float z);
+	float (*GetZ)(struct GPU_Renderer* renderer);
+	
+	void (*GenerateMipmaps)(struct GPU_Renderer* renderer, GPU_Image* image);
 
 	void (*SetBlending)(struct GPU_Renderer* renderer, Uint8 enable);
 	void (*SetRGBA)(struct GPU_Renderer* renderer, Uint8 r, Uint8 g, Uint8 b, Uint8 a);
@@ -126,6 +131,11 @@ int GPU_Blit(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint
 int GPU_BlitRotate(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y, float angle);
 int GPU_BlitScale(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y, float scaleX, float scaleY);
 int GPU_BlitTransform(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y, float angle, float scaleX, float scaleY);
+
+float GPU_SetZ(float z);
+float GPU_GetZ(void);
+
+void GPU_GenerateMipmaps(GPU_Image* image);
 
 void GPU_SetClip(GPU_Target* target, Sint16 x, Sint16 y, Uint16 w, Uint16 h);
 void GPU_ResetClip(GPU_Target* target);
