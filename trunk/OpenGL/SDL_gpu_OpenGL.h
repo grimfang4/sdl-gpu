@@ -8,13 +8,14 @@
 typedef struct RendererData_OpenGL
 {
 	GLuint handle;
-	// What else?
+	float z;
 } RendererData_OpenGL;
 
 typedef struct ImageData_OpenGL
 {
 	GLuint handle;
 	GLenum format;
+	GLboolean hasMipmaps;
 } ImageData_OpenGL;
 
 typedef struct TargetData_OpenGL
