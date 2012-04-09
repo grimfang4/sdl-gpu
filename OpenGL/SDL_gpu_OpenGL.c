@@ -9,6 +9,9 @@
 #include <math.h>
 
 #ifdef _WIN32
+PROC WINAPI wglGetProcAddress(
+  LPCSTR lpszProc
+);
 #define GL_EXT_LOAD wglGetProcAddress
 #define GL_STR_CAST LPCSTR
 #else
@@ -22,6 +25,7 @@ PFNGLBINDFRAMEBUFFEREXTPROC glBindFramebufferEXT = NULL;
 PFNGLFRAMEBUFFERTEXTURE2DEXTPROC glFramebufferTexture2DEXT = NULL;
 PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC glCheckFramebufferStatusEXT = NULL;
 PFNGLDELETEFRAMEBUFFERSEXTPROC glDeleteFramebuffersEXT = NULL;
+PFNGLGENERATEMIPMAPEXTPROC glGenerateMipmapEXT = NULL;
 
 static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags)
 {
@@ -50,6 +54,7 @@ static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags
 		glFramebufferTexture2DEXT = (PFNGLFRAMEBUFFERTEXTURE2DEXTPROC) GL_EXT_LOAD((GL_STR_CAST)"glFramebufferTexture2DEXT");
 		glCheckFramebufferStatusEXT = (PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC) GL_EXT_LOAD((GL_STR_CAST)"glCheckFramebufferStatusEXT");
 		glDeleteFramebuffersEXT = (PFNGLDELETEFRAMEBUFFERSEXTPROC) GL_EXT_LOAD((GL_STR_CAST)"glDeleteFramebuffersEXT");
+		glGenerateMipmapEXT = (PFNGLGENERATEMIPMAPEXTPROC) GL_EXT_LOAD((GL_STR_CAST)"glGenerateMipmapEXT");
 	}
 	
 	glEnable( GL_TEXTURE_2D );
@@ -564,7 +569,7 @@ static void GenerateMipmaps(GPU_Renderer* renderer, GPU_Image* image)
 		return;
 	
 	glBindTexture( GL_TEXTURE_2D, ((ImageData_OpenGL*)image->data)->handle );
-	glGenerateMipmap(GL_TEXTURE_2D);
+	glGenerateMipmapEXT(GL_TEXTURE_2D);
 	((ImageData_OpenGL*)image->data)->hasMipmaps = 1;
 	
 	GLint filter;
@@ -941,27 +946,30 @@ static void SetImageFilter(GPU_Renderer* renderer, GPU_Image* image, GPU_FilterE
 	
 	glBindTexture( GL_TEXTURE_2D, ((ImageData_OpenGL*)image->data)->handle );
 	
-	if(filter == GPU_NEAREST)
-	{
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	}
-	else if(filter == GPU_LINEAR)
+	GLenum minFilter = GL_NEAREST;
+	GLenum magFilter = GL_NEAREST;
+	
+	if(filter == GPU_LINEAR)
 	{
 		if(((ImageData_OpenGL*)image->data)->hasMipmaps)
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
+			minFilter = GL_NEAREST_MIPMAP_LINEAR;
 		else
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			minFilter = GL_LINEAR;
+        
+		magFilter = GL_LINEAR;
 	}
 	else if(filter == GPU_LINEAR_MIPMAP)
 	{
 		if(((ImageData_OpenGL*)image->data)->hasMipmaps)
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+			minFilter = GL_LINEAR_MIPMAP_LINEAR;
 		else
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			minFilter = GL_LINEAR;
+        
+		magFilter = GL_LINEAR;
 	}
+	
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magFilter);
 }
 
 
