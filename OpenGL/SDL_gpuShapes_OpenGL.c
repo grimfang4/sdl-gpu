@@ -20,7 +20,7 @@
 #define RADPERDEG 0.0174532925f
 #endif
 
-static void Circle(GPU_ShapeRenderer* renderer, GPU_Target* target, Sint16 x, Sint16 y, float radius, SDL_Color color);
+static void Circle(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, float y, float radius, SDL_Color color);
 
 
 
@@ -30,6 +30,7 @@ static void Circle(GPU_ShapeRenderer* renderer, GPU_Target* target, Sint16 x, Si
 		return; \
 	if(renderer->renderer != target->renderer) \
 		return; \
+	float z = ((RendererData_OpenGL*)renderer->data)->z;	\
 	 \
 	/* Bind the FBO */ \
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, ((TargetData_OpenGL*)target->data)->handle); \
@@ -72,7 +73,7 @@ static float GetThickness(GPU_ShapeRenderer* renderer)
 	return old;
 }
 
-static void Pixel(GPU_ShapeRenderer* renderer, GPU_Target* target, Sint16 x, Sint16 y, SDL_Color color)
+static void Pixel(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, float y, SDL_Color color)
 {
 	BEGIN;
 	
@@ -81,13 +82,13 @@ static void Pixel(GPU_ShapeRenderer* renderer, GPU_Target* target, Sint16 x, Sin
 	glColor4ub(color.r, color.g, color.b, color.unused);
 	
 	glBegin(GL_POINTS);
-	glVertex3i(x, y, 0);
+	glVertex3f(x, y, z);
 	glEnd();
 	
 	END;
 }
 
-static void Line(GPU_ShapeRenderer* renderer, GPU_Target* target, Sint16 x1, Sint16 y1, Sint16 x2, Sint16 y2, SDL_Color color)
+static void Line(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color)
 {
 	BEGIN;
 	
@@ -97,15 +98,15 @@ static void Line(GPU_ShapeRenderer* renderer, GPU_Target* target, Sint16 x1, Sin
 	glColor4ub(color.r, color.g, color.b, color.unused);
 	
 	glBegin(GL_LINES);
-	glVertex3i(x1, y1, 0);
-	glVertex3i(x2, y2, 0);
+	glVertex3f(x1, y1, z);
+	glVertex3f(x2, y2, z);
 	glEnd();
 	
 	END;
 }
 
 
-static void Arc(GPU_ShapeRenderer* renderer, GPU_Target* target, Sint16 x, Sint16 y, float radius, float startAngle, float endAngle, SDL_Color color)
+static void Arc(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, float y, float radius, float startAngle, float endAngle, SDL_Color color)
 {
     float originalSA = startAngle;
 
@@ -170,13 +171,13 @@ static void Arc(GPU_ShapeRenderer* renderer, GPU_Target* target, Sint16 x, Sint1
 	glBegin(GL_LINE_STRIP);
 	dx = radius*cos(t*RADPERDEG);
 	dy = radius*sin(t*RADPERDEG);
-	glVertex3f(x+dx, y+dy, 0);
+	glVertex3f(x+dx, y+dy, z);
 	while(t < endAngle)
 	{
 		t += dt;
 		dx = radius*cos(t*RADPERDEG);
 		dy = radius*sin(t*RADPERDEG);
-		glVertex3f(x+dx, y+dy, 0);
+		glVertex3f(x+dx, y+dy, z);
 	}
 	glEnd();
 	
@@ -184,7 +185,7 @@ static void Arc(GPU_ShapeRenderer* renderer, GPU_Target* target, Sint16 x, Sint1
 }
 
 
-static void ArcFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, Sint16 x, Sint16 y, float radius, float startAngle, float endAngle, SDL_Color color)
+static void ArcFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, float y, float radius, float startAngle, float endAngle, SDL_Color color)
 {
     float originalSA = startAngle;
 
@@ -247,23 +248,23 @@ static void ArcFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, Sint16 x,
 	float dt = (1 - (endAngle - startAngle)/360) * 5;  // A segment every 5 degrees of a full circle
 	float dx, dy;
 	glBegin(GL_TRIANGLE_FAN);
-	glVertex3f(x, y, 0);
+	glVertex3f(x, y, z);
 	dx = radius*cos(t*RADPERDEG);
 	dy = radius*sin(t*RADPERDEG);
 	while(t < endAngle)
 	{
-		glVertex3f(x+dx, y+dy, 0);
+		glVertex3f(x+dx, y+dy, z);
 		t += dt;
 		dx = radius*cos(t*RADPERDEG);
 		dy = radius*sin(t*RADPERDEG);
-		glVertex3f(x+dx, y+dy, 0);
+		glVertex3f(x+dx, y+dy, z);
 	}
 	glEnd();
 	
 	END;
 }
 
-static void Circle(GPU_ShapeRenderer* renderer, GPU_Target* target, Sint16 x, Sint16 y, float radius, SDL_Color color)
+static void Circle(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, float y, float radius, SDL_Color color)
 {
 	BEGIN;
 	
@@ -276,20 +277,20 @@ static void Circle(GPU_ShapeRenderer* renderer, GPU_Target* target, Sint16 x, Si
 	glBegin(GL_LINE_LOOP);
 	dx = radius*cos(t*RADPERDEG);
 	dy = radius*sin(t*RADPERDEG);
-	glVertex3f(x+dx, y+dy, 0);
+	glVertex3f(x+dx, y+dy, z);
 	while(t < 360)
 	{
 		t += dt;
 		dx = radius*cos(t*RADPERDEG);
 		dy = radius*sin(t*RADPERDEG);
-		glVertex3f(x+dx, y+dy, 0);
+		glVertex3f(x+dx, y+dy, z);
 	}
 	glEnd();
 	
 	END;
 }
 
-static void CircleFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, Sint16 x, Sint16 y, float radius, SDL_Color color)
+static void CircleFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, float y, float radius, SDL_Color color)
 {
 	BEGIN;
 	
@@ -302,20 +303,20 @@ static void CircleFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, Sint16
 	glBegin(GL_POLYGON);
 	dx = radius*cos(t*RADPERDEG);
 	dy = radius*sin(t*RADPERDEG);
-	glVertex3f(x+dx, y+dy, 0);
+	glVertex3f(x+dx, y+dy, z);
 	while(t < 360)
 	{
 		t += dt;
 		dx = radius*cos(t*RADPERDEG);
 		dy = radius*sin(t*RADPERDEG);
-		glVertex3f(x+dx, y+dy, 0);
+		glVertex3f(x+dx, y+dy, z);
 	}
 	glEnd();
 	
 	END;
 }
 
-static void Tri(GPU_ShapeRenderer* renderer, GPU_Target* target, Sint16 x1, Sint16 y1, Sint16 x2, Sint16 y2, Sint16 x3, Sint16 y3, SDL_Color color)
+static void Tri(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, float x3, float y3, SDL_Color color)
 {
 	BEGIN;
 	
@@ -326,15 +327,15 @@ static void Tri(GPU_ShapeRenderer* renderer, GPU_Target* target, Sint16 x1, Sint
 	glColor4ub(color.r, color.g, color.b, color.unused);
 	
 	glBegin(GL_LINE_LOOP);
-	glVertex3i(x1, y1, 0);
-	glVertex3i(x2, y2, 0);
-	glVertex3i(x3, y3, 0);
+	glVertex3f(x1, y1, z);
+	glVertex3f(x2, y2, z);
+	glVertex3f(x3, y3, z);
 	glEnd();
 	
 	END;
 }
 
-static void TriFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, Sint16 x1, Sint16 y1, Sint16 x2, Sint16 y2, Sint16 x3, Sint16 y3, SDL_Color color)
+static void TriFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, float x3, float y3, SDL_Color color)
 {
 	BEGIN;
 	
@@ -345,15 +346,15 @@ static void TriFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, Sint16 x1
 	glColor4ub(color.r, color.g, color.b, color.unused);
 	
 	glBegin(GL_TRIANGLE_STRIP);
-	glVertex3i(x1, y1, 0);
-	glVertex3i(x2, y2, 0);
-	glVertex3i(x3, y3, 0);
+	glVertex3f(x1, y1, z);
+	glVertex3f(x2, y2, z);
+	glVertex3f(x3, y3, z);
 	glEnd();
 	
 	END;
 }
 
-static void Rect(GPU_ShapeRenderer* renderer, GPU_Target* target, Sint16 x1, Sint16 y1, Sint16 x2, Sint16 y2, SDL_Color color)
+static void Rect(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color)
 {
 	BEGIN;
 	
@@ -363,16 +364,16 @@ static void Rect(GPU_ShapeRenderer* renderer, GPU_Target* target, Sint16 x1, Sin
 	glColor4ub(color.r, color.g, color.b, color.unused);
 	
 	glBegin(GL_LINE_LOOP);
-	glVertex3i(x1, y1, 0);
-	glVertex3i(x1, y2, 0);
-	glVertex3i(x2, y2, 0);
-	glVertex3i(x2, y1, 0);
+	glVertex3f(x1, y1, z);
+	glVertex3f(x1, y2, z);
+	glVertex3f(x2, y2, z);
+	glVertex3f(x2, y1, z);
 	glEnd();
 	
 	END;
 }
 
-static void RectFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, Sint16 x1, Sint16 y1, Sint16 x2, Sint16 y2, SDL_Color color)
+static void RectFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color)
 {
 	BEGIN;
 	
@@ -382,26 +383,26 @@ static void RectFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, Sint16 x
 	glColor4ub(color.r, color.g, color.b, color.unused);
 	
 	glBegin(GL_TRIANGLE_STRIP);
-	glVertex3i(x1, y1, 0);
-	glVertex3i(x1, y2, 0);
-	glVertex3i(x2, y1, 0);
-	glVertex3i(x2, y2, 0);
+	glVertex3f(x1, y1, z);
+	glVertex3f(x1, y2, z);
+	glVertex3f(x2, y1, z);
+	glVertex3f(x2, y2, z);
 	glEnd();
 	
 	END;
 }
 
-static void RectRound(GPU_ShapeRenderer* renderer, GPU_Target* target, Sint16 x1, Sint16 y1, Sint16 x2, Sint16 y2, float radius, SDL_Color color)
+static void RectRound(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, float radius, SDL_Color color)
 {
 	if(y2 < y1)
 	{
-		Sint16 temp = y2;
+		float temp = y2;
 		y2 = y1;
 		y1 = temp;
 	}
 	if(x2 < x1)
 	{
-		Sint16 temp = x2;
+		float temp = x2;
 		x2 = x1;
 		x1 = temp;
 	}
@@ -414,38 +415,38 @@ static void RectRound(GPU_ShapeRenderer* renderer, GPU_Target* target, Sint16 x1
 	glColor4ub(color.r, color.g, color.b, color.unused);
 	
 	glBegin(GL_LINE_LOOP);
-		glVertex2i(x1+radius,y1);
-		glVertex2i(x2-radius,y1);
+		glVertex3f(x1+radius,y1, z);
+		glVertex3f(x2-radius,y1, z);
 		for(float i=(float)M_PI*1.5f;i<M_PI*2;i+=0.1f)
-			glVertex2f(x2-radius+cos(i)*radius,y1+radius+sin(i)*radius);
-		glVertex2i(x2,y1+radius);
-		glVertex2i(x2,y2-radius);
+			glVertex3f(x2-radius+cos(i)*radius,y1+radius+sin(i)*radius, z);
+		glVertex3f(x2,y1+radius, z);
+		glVertex3f(x2,y2-radius, z);
 		for(float i=0;i<(float)M_PI*0.5f;i+=0.1f)
-			glVertex2f(x2-radius+cos(i)*radius,y2-radius+sin(i)*radius);
-		glVertex2i(x2-radius,y2);
-		glVertex2i(x1+radius,y2);
+			glVertex3f(x2-radius+cos(i)*radius,y2-radius+sin(i)*radius, z);
+		glVertex3f(x2-radius,y2, z);
+		glVertex3f(x1+radius,y2, z);
 		for(float i=(float)M_PI*0.5f;i<M_PI;i+=0.1f)
-			glVertex2f(x1+radius+cos(i)*radius,y2-radius+sin(i)*radius);
-		glVertex2i(x1,y2-radius);
-		glVertex2i(x1,y1+radius);
+			glVertex3f(x1+radius+cos(i)*radius,y2-radius+sin(i)*radius, z);
+		glVertex3f(x1,y2-radius, z);
+		glVertex3f(x1,y1+radius, z);
 		for(float i=(float)M_PI;i<M_PI*1.5f;i+=0.1f)
-			glVertex2f(x1+radius+cos(i)*radius,y1+radius+sin(i)*radius);
+			glVertex3f(x1+radius+cos(i)*radius,y1+radius+sin(i)*radius, z);
 	glEnd();
 	
 	END;
 }
 
-static void RectRoundFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, Sint16 x1, Sint16 y1, Sint16 x2, Sint16 y2, float radius, SDL_Color color)
+static void RectRoundFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, float radius, SDL_Color color)
 {
 	if(y2 < y1)
 	{
-		Sint16 temp = y2;
+		float temp = y2;
 		y2 = y1;
 		y1 = temp;
 	}
 	if(x2 < x1)
 	{
-		Sint16 temp = x2;
+		float temp = x2;
 		x2 = x1;
 		x1 = temp;
 	}
@@ -458,22 +459,22 @@ static void RectRoundFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, Sin
 	glColor4ub(color.r, color.g, color.b, color.unused);
 	
 	glBegin(GL_POLYGON);
-		glVertex2i(x1+radius,y1);
-		glVertex2i(x2-radius,y1);
+		glVertex3f(x1+radius,y1, z);
+		glVertex3f(x2-radius,y1, z);
 		for(float i=(float)M_PI*1.5f;i<M_PI*2;i+=0.1f)
-			glVertex2f(x2-radius+cos(i)*radius,y1+radius+sin(i)*radius);
-		glVertex2i(x2,y1+radius);
-		glVertex2i(x2,y2-radius);
+			glVertex3f(x2-radius+cos(i)*radius,y1+radius+sin(i)*radius, z);
+		glVertex3f(x2,y1+radius, z);
+		glVertex3f(x2,y2-radius, z);
 		for(float i=0;i<(float)M_PI*0.5f;i+=0.1f)
-			glVertex2f(x2-radius+cos(i)*radius,y2-radius+sin(i)*radius);
-		glVertex2i(x2-radius,y2);
-		glVertex2i(x1+radius,y2);
+			glVertex3f(x2-radius+cos(i)*radius,y2-radius+sin(i)*radius, z);
+		glVertex3f(x2-radius,y2, z);
+		glVertex3f(x1+radius,y2, z);
 		for(float i=(float)M_PI*0.5f;i<M_PI;i+=0.1f)
-			glVertex2f(x1+radius+cos(i)*radius,y2-radius+sin(i)*radius);
-		glVertex2i(x1,y2-radius);
-		glVertex2i(x1,y1+radius);
+			glVertex3f(x1+radius+cos(i)*radius,y2-radius+sin(i)*radius, z);
+		glVertex3f(x1,y2-radius, z);
+		glVertex3f(x1,y1+radius, z);
 		for(float i=(float)M_PI;i<M_PI*1.5f;i+=0.1f)
-			glVertex2f(x1+radius+cos(i)*radius,y1+radius+sin(i)*radius);
+			glVertex3f(x1+radius+cos(i)*radius,y1+radius+sin(i)*radius, z);
 	glEnd();
 	
 	END;
@@ -493,7 +494,7 @@ static void Polygon(GPU_ShapeRenderer* renderer, GPU_Target* target, Uint16 n, f
 		
 		INVERT_Y(y);
 		
-		glVertex3f(vertices[i], y, 0);
+		glVertex3f(vertices[i], y, z);
 	}
 	glEnd();
 	
@@ -513,7 +514,7 @@ static void PolygonFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, Uint1
 		
 		INVERT_Y(y);
 		
-		glVertex3f(vertices[i], y, 0);
+		glVertex3f(vertices[i], y, z);
 	}
 	glEnd();
 	

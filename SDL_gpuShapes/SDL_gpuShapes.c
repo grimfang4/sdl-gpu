@@ -74,7 +74,7 @@ float GPU_GetThickness(void)
 	return shapeRenderer->GetThickness(shapeRenderer);
 }
 
-void GPU_Pixel(GPU_Target* target, Sint16 x, Sint16 y, SDL_Color color)
+void GPU_Pixel(GPU_Target* target, float x, float y, SDL_Color color)
 {
 	CHECK_RENDERER();
 	if(shapeRenderer->Pixel == NULL)
@@ -83,7 +83,7 @@ void GPU_Pixel(GPU_Target* target, Sint16 x, Sint16 y, SDL_Color color)
 	shapeRenderer->Pixel(shapeRenderer, target, x, y, color);
 }
 
-void GPU_Line(GPU_Target* target, Sint16 x1, Sint16 y1, Sint16 x2, Sint16 y2, SDL_Color color)
+void GPU_Line(GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color)
 {
 	CHECK_RENDERER();
 	if(shapeRenderer->Line == NULL)
@@ -93,7 +93,7 @@ void GPU_Line(GPU_Target* target, Sint16 x1, Sint16 y1, Sint16 x2, Sint16 y2, SD
 }
 
 
-void GPU_Arc(GPU_Target* target, Sint16 x, Sint16 y, float radius, float startAngle, float endAngle, SDL_Color color)
+void GPU_Arc(GPU_Target* target, float x, float y, float radius, float startAngle, float endAngle, SDL_Color color)
 {
 	CHECK_RENDERER();
 	if(shapeRenderer->Arc == NULL)
@@ -102,7 +102,7 @@ void GPU_Arc(GPU_Target* target, Sint16 x, Sint16 y, float radius, float startAn
 	shapeRenderer->Arc(shapeRenderer, target, x, y, radius, startAngle, endAngle, color);
 }
 
-void GPU_Circle(GPU_Target* target, Sint16 x, Sint16 y, float radius, SDL_Color color)
+void GPU_Circle(GPU_Target* target, float x, float y, float radius, SDL_Color color)
 {
 	CHECK_RENDERER();
 	if(shapeRenderer->Circle == NULL)
@@ -111,7 +111,7 @@ void GPU_Circle(GPU_Target* target, Sint16 x, Sint16 y, float radius, SDL_Color 
 	shapeRenderer->Circle(shapeRenderer, target, x, y, radius, color);
 }
 
-void GPU_CircleFilled(GPU_Target* target, Sint16 x, Sint16 y, float radius, SDL_Color color)
+void GPU_CircleFilled(GPU_Target* target, float x, float y, float radius, SDL_Color color)
 {
 	CHECK_RENDERER();
 	if(shapeRenderer->CircleFilled == NULL)
@@ -120,7 +120,7 @@ void GPU_CircleFilled(GPU_Target* target, Sint16 x, Sint16 y, float radius, SDL_
 	shapeRenderer->CircleFilled(shapeRenderer, target, x, y, radius, color);
 }
 
-void GPU_Tri(GPU_Target* target, Sint16 x1, Sint16 y1, Sint16 x2, Sint16 y2, Sint16 x3, Sint16 y3, SDL_Color color)
+void GPU_Tri(GPU_Target* target, float x1, float y1, float x2, float y2, float x3, float y3, SDL_Color color)
 {
 	CHECK_RENDERER();
 	if(shapeRenderer->Tri == NULL)
@@ -129,7 +129,7 @@ void GPU_Tri(GPU_Target* target, Sint16 x1, Sint16 y1, Sint16 x2, Sint16 y2, Sin
 	shapeRenderer->Tri(shapeRenderer, target, x1, y1, x2, y2, x3, y3, color);
 }
 
-void GPU_TriFilled(GPU_Target* target, Sint16 x1, Sint16 y1, Sint16 x2, Sint16 y2, Sint16 x3, Sint16 y3, SDL_Color color)
+void GPU_TriFilled(GPU_Target* target, float x1, float y1, float x2, float y2, float x3, float y3, SDL_Color color)
 {
 	CHECK_RENDERER();
 	if(shapeRenderer->TriFilled == NULL)
@@ -138,7 +138,7 @@ void GPU_TriFilled(GPU_Target* target, Sint16 x1, Sint16 y1, Sint16 x2, Sint16 y
 	shapeRenderer->TriFilled(shapeRenderer, target, x1, y1, x2, y2, x3, y3, color);
 }
 
-void GPU_Rect(GPU_Target* target, Sint16 x1, Sint16 y1, Sint16 x2, Sint16 y2, SDL_Color color)
+void GPU_Rect(GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color)
 {
 	CHECK_RENDERER();
 	if(shapeRenderer->Rect == NULL)
@@ -147,7 +147,7 @@ void GPU_Rect(GPU_Target* target, Sint16 x1, Sint16 y1, Sint16 x2, Sint16 y2, SD
 	shapeRenderer->Rect(shapeRenderer, target, x1, y1, x2, y2, color);
 }
 
-void GPU_RectFilled(GPU_Target* target, Sint16 x1, Sint16 y1, Sint16 x2, Sint16 y2, SDL_Color color)
+void GPU_RectFilled(GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color)
 {
 	CHECK_RENDERER();
 	if(shapeRenderer->RectFilled == NULL)
@@ -156,7 +156,7 @@ void GPU_RectFilled(GPU_Target* target, Sint16 x1, Sint16 y1, Sint16 x2, Sint16 
 	shapeRenderer->RectFilled(shapeRenderer, target, x1, y1, x2, y2, color);
 }
 
-void GPU_RectRound(GPU_Target* target, Sint16 x1, Sint16 y1, Sint16 x2, Sint16 y2, float radius, SDL_Color color)
+void GPU_RectRound(GPU_Target* target, float x1, float y1, float x2, float y2, float radius, SDL_Color color)
 {
 	CHECK_RENDERER();
 	if(shapeRenderer->RectRound == NULL)
@@ -165,7 +165,7 @@ void GPU_RectRound(GPU_Target* target, Sint16 x1, Sint16 y1, Sint16 x2, Sint16 y
 	shapeRenderer->RectRound(shapeRenderer, target, x1, y1, x2, y2, radius, color);
 }
 
-void GPU_RectRoundFilled(GPU_Target* target, Sint16 x1, Sint16 y1, Sint16 x2, Sint16 y2, float radius, SDL_Color color)
+void GPU_RectRoundFilled(GPU_Target* target, float x1, float y1, float x2, float y2, float radius, SDL_Color color)
 {
 	CHECK_RENDERER();
 	if(shapeRenderer->RectRoundFilled == NULL)
