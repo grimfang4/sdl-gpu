@@ -34,18 +34,17 @@ static void Circle(GPU_ShapeRenderer* renderer, GPU_Target* target, Sint16 x, Si
 	/* Bind the FBO */ \
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, ((TargetData_OpenGL*)target->data)->handle); \
 	glPushAttrib(GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT); \
-	Uint8 doClip = (target->clip_rect.x > 0 || target->clip_rect.y > 0 || target->clip_rect.w < target->w || target->clip_rect.h < target->h); \
-	if(doClip) \
+	if(target->useClip) \
 	{ \
 		glEnable(GL_SCISSOR_TEST); \
-		int y = (renderer->renderer->display == target? renderer->renderer->display->h - (target->clip_rect.y + target->clip_rect.h) : target->clip_rect.y); \
-		glScissor(target->clip_rect.x, y, target->clip_rect.w, target->clip_rect.h); \
+		int y = (renderer->renderer->display == target? renderer->renderer->display->h - (target->clipRect.y + target->clipRect.h) : target->clipRect.y); \
+		glScissor(target->clipRect.x, y, target->clipRect.w, target->clipRect.h); \
 	} \
 	 \
 	glDisable( GL_TEXTURE_2D );
 
 #define END \
-	if(doClip) \
+	if(target->useClip) \
 	{ \
 		glDisable(GL_SCISSOR_TEST); \
 	} \
