@@ -88,10 +88,12 @@ static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags
 	renderer->display->renderer = renderer;
 	renderer->display->w = screen->w;
 	renderer->display->h = screen->h;
-	renderer->display->clip_rect.x = 0;
-	renderer->display->clip_rect.y = 0;
-	renderer->display->clip_rect.w = screen->w;
-	renderer->display->clip_rect.h = screen->h;
+	
+	renderer->display->useClip = 0;
+	renderer->display->clipRect.x = 0;
+	renderer->display->clipRect.y = 0;
+	renderer->display->clipRect.w = screen->w;
+	renderer->display->clipRect.h = screen->h;
 	
 	return renderer->display;
 }
@@ -218,8 +220,25 @@ static GPU_Image* CopyImage(GPU_Renderer* renderer, GPU_Image* image)
 	GPU_Image* result = renderer->CreateImage(renderer, image->w, image->h, image->channels);
 	
 	GPU_Target* tgt = renderer->LoadTarget(renderer, result);
+	
+	// Clear the clipRect
+	SDL_Rect clip;
+	Uint8 useClip = tgt->useClip;
+	if(useClip)
+	{
+		clip = tgt->clipRect;
+		GPU_ClearClip(tgt);
+	}
+	
 	renderer->Blit(renderer, image, NULL, tgt, tgt->w/2, tgt->h/2);
 	renderer->FreeTarget(renderer, tgt);
+	
+	if(useClip)
+	{
+		tgt->useClip = 1;
+		tgt->clipRect = clip;
+	}
+	
 	
 	if(old_blend)
 		renderer->SetBlending(renderer, 1);
@@ -367,10 +386,11 @@ static GPU_Target* LoadTarget(GPU_Renderer* renderer, GPU_Image* image)
 	result->w = image->w;
 	result->h = image->h;
 	
-	result->clip_rect.x = 0;
-	result->clip_rect.y = 0;
-	result->clip_rect.w = image->w;
-	result->clip_rect.h = image->h;
+	result->useClip = 0;
+	result->clipRect.x = 0;
+	result->clipRect.y = 0;
+	result->clipRect.w = image->w;
+	result->clipRect.h = image->h;
 	
 	return result;
 }
@@ -403,12 +423,11 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_T
 	// Bind the FBO
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, ((TargetData_OpenGL*)dest->data)->handle);
 	
-	Uint8 doClip = (dest->clip_rect.x > 0 || dest->clip_rect.y > 0 || dest->clip_rect.w < dest->w || dest->clip_rect.h < dest->h);
-	if(doClip)
+	if(dest->useClip)
 	{
 		glEnable(GL_SCISSOR_TEST);
-		int y = (renderer->display == dest? renderer->display->h - (dest->clip_rect.y + dest->clip_rect.h) : dest->clip_rect.y);
-		glScissor(dest->clip_rect.x, y, dest->clip_rect.w, dest->clip_rect.h);
+		int y = (renderer->display == dest? renderer->display->h - (dest->clipRect.y + dest->clipRect.h) : dest->clipRect.y);
+		glScissor(dest->clipRect.x, y, dest->clipRect.w, dest->clipRect.h);
 	}
 	
 	float x1, y1, x2, y2;
@@ -474,7 +493,7 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_T
 		glVertex3f( dx1, dy2, 0.f );
 	glEnd();
 	
-	if(doClip)
+	if(dest->useClip)
 	{
 		glDisable(GL_SCISSOR_TEST);
 	}
@@ -991,12 +1010,11 @@ static void Clear(GPU_Renderer* renderer, GPU_Target* target)
 	glPushAttrib(GL_VIEWPORT_BIT);
 	glViewport(0,0,target->w, target->h);
 	
-	Uint8 doClip = (target->clip_rect.x > 0 || target->clip_rect.y > 0 || target->clip_rect.w < target->w || target->clip_rect.h < target->h);
-	if(doClip)
+	if(target->useClip)
 	{
 		glEnable(GL_SCISSOR_TEST);
-		int y = (renderer->display == target? renderer->display->h - (target->clip_rect.y + target->clip_rect.h) : target->clip_rect.y);
-		glScissor(target->clip_rect.x, y, target->clip_rect.w, target->clip_rect.h);
+		int y = (renderer->display == target? renderer->display->h - (target->clipRect.y + target->clipRect.h) : target->clipRect.y);
+		glScissor(target->clipRect.x, y, target->clipRect.w, target->clipRect.h);
 	}
 	
 	glPushAttrib(GL_COLOR_BUFFER_BIT);
@@ -1004,7 +1022,7 @@ static void Clear(GPU_Renderer* renderer, GPU_Target* target)
 	glClear(GL_COLOR_BUFFER_BIT);
 	glPopAttrib();
 	
-	if(doClip)
+	if(target->useClip)
 	{
 		glDisable(GL_SCISSOR_TEST);
 	}
@@ -1025,18 +1043,17 @@ static void ClearRGBA(GPU_Renderer* renderer, GPU_Target* target, Uint8 r, Uint8
 	glPushAttrib(GL_VIEWPORT_BIT);
 	glViewport(0,0,target->w, target->h);
 	
-	Uint8 doClip = (target->clip_rect.x > 0 || target->clip_rect.y > 0 || target->clip_rect.w < target->w || target->clip_rect.h < target->h);
-	if(doClip)
+	if(target->useClip)
 	{
 		glEnable(GL_SCISSOR_TEST);
-		int y = (renderer->display == target? renderer->display->h - (target->clip_rect.y + target->clip_rect.h) : target->clip_rect.y);
-		glScissor(target->clip_rect.x, y, target->clip_rect.w, target->clip_rect.h);
+		int y = (renderer->display == target? renderer->display->h - (target->clipRect.y + target->clipRect.h) : target->clipRect.y);
+		glScissor(target->clipRect.x, y, target->clipRect.w, target->clipRect.h);
 	}
 	
 	glClearColor(r/255.0f, g/255.0f, b/255.0f, a/255.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 	
-	if(doClip)
+	if(target->useClip)
 	{
 		glDisable(GL_SCISSOR_TEST);
 	}

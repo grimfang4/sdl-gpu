@@ -221,26 +221,53 @@ void GPU_GenerateMipmaps(GPU_Image* image)
 
 
 
-void GPU_SetClip(GPU_Target* target, Sint16 x, Sint16 y, Uint16 w, Uint16 h)
+SDL_Rect GPU_SetClipRect(GPU_Target* target, SDL_Rect rect)
 {
 	if(target == NULL)
-		return;
+	{
+		SDL_Rect r = {0,0,0,0};
+		return r;
+	}
 	
-	target->clip_rect.x = x;
-	target->clip_rect.y = y;
-	target->clip_rect.w = w;
-	target->clip_rect.h = h;
+	target->useClip = 1;
+	
+	SDL_Rect r = target->clipRect;
+	
+	target->clipRect = rect;
+	
+	return r;
 }
 
-void GPU_ResetClip(GPU_Target* target)
+SDL_Rect GPU_SetClip(GPU_Target* target, Sint16 x, Sint16 y, Uint16 w, Uint16 h)
+{
+	if(target == NULL)
+	{
+		SDL_Rect r = {0,0,0,0};
+		return r;
+	}
+	
+	target->useClip = 1;
+	
+	SDL_Rect r = target->clipRect;
+	
+	target->clipRect.x = x;
+	target->clipRect.y = y;
+	target->clipRect.w = w;
+	target->clipRect.h = h;
+	
+	return r;
+}
+
+void GPU_ClearClip(GPU_Target* target)
 {
 	if(target == NULL)
 		return;
 	
-	target->clip_rect.x = 0;
-	target->clip_rect.y = 0;
-	target->clip_rect.w = target->w;
-	target->clip_rect.h = target->h;
+	target->useClip = 0;
+	target->clipRect.x = 0;
+	target->clipRect.y = 0;
+	target->clipRect.w = target->w;
+	target->clipRect.h = target->h;
 }
 
 

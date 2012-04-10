@@ -26,7 +26,8 @@ typedef struct GPU_Target
 	struct GPU_Renderer* renderer;
 	void* data;
 	Uint16 w, h;
-	SDL_Rect clip_rect;
+	Uint8 useClip;
+	SDL_Rect clipRect;
 } GPU_Target;
 
 typedef unsigned int GPU_FilterEnum;
@@ -138,8 +139,9 @@ float GPU_GetZ(void);
 
 void GPU_GenerateMipmaps(GPU_Image* image);
 
-void GPU_SetClip(GPU_Target* target, Sint16 x, Sint16 y, Uint16 w, Uint16 h);
-void GPU_ResetClip(GPU_Target* target);
+SDL_Rect GPU_SetClipRect(GPU_Target* target, SDL_Rect rect);
+SDL_Rect GPU_SetClip(GPU_Target* target, Sint16 x, Sint16 y, Uint16 w, Uint16 h);
+void GPU_ClearClip(GPU_Target* target);
 
 void GPU_SetBlending(Uint8 enable);
 void GPU_SetColor(SDL_Color* color);
