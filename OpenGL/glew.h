@@ -90,6 +90,9 @@
 #error glATI.h included before glew.h
 #endif
 
+// **Modified** Added `#define GLEW_STATIC` for internal build into a static lib
+#define GLEW_STATIC
+
 #define __gl_h_
 #define __GL_H__
 #define __X_GL_H
