@@ -2,7 +2,6 @@
 #define _SDL_GPU_OPENGL_H__
 
 #include "SDL_gpu.h"
-#include "SDL_opengl.h"
 
 
 typedef struct RendererData_OpenGL

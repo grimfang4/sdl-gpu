@@ -1,6 +1,7 @@
 #ifndef _SDL_GPUSHAPES_OPENGL_INTERNAL_H__
 #define _SDL_GPUSHAPES_OPENGL_INTERNAL_H__
 
+#include "glew.h"
 #include "SDL_gpuShapes_OpenGL.h"
 
 GPU_ShapeRenderer* GPU_CreateShapeRenderer_OpenGL(void);

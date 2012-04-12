@@ -3,7 +3,6 @@
 
 #include "SDL_gpuShapes.h"
 #include "SDL_gpu_OpenGL.h"
-#include "SDL_opengl.h"
 
 typedef struct ShapeRendererData_OpenGL
 {

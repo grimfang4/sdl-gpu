@@ -8,25 +8,6 @@
 #include "SOIL.h"
 #include <math.h>
 
-#ifdef _WIN32
-PROC WINAPI wglGetProcAddress(
-  LPCSTR lpszProc
-);
-#define GL_EXT_LOAD wglGetProcAddress
-#define GL_STR_CAST LPCSTR
-#else
-#include "GL/glx.h"
-#define GL_EXT_LOAD glXGetProcAddress
-#define GL_STR_CAST const GLubyte*
-#endif
-
-PFNGLGENFRAMEBUFFERSEXTPROC glGenFramebuffersEXT = NULL;
-PFNGLBINDFRAMEBUFFEREXTPROC glBindFramebufferEXT = NULL;
-PFNGLFRAMEBUFFERTEXTURE2DEXTPROC glFramebufferTexture2DEXT = NULL;
-PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC glCheckFramebufferStatusEXT = NULL;
-PFNGLDELETEFRAMEBUFFERSEXTPROC glDeleteFramebuffersEXT = NULL;
-PFNGLGENERATEMIPMAPEXTPROC glGenerateMipmapEXT = NULL;
-
 static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags)
 {
 	if(flags & SDL_DOUBLEBUF)
@@ -47,14 +28,11 @@ static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags
 	if(screen == NULL)
 		return NULL;
     
-	if(glGenFramebuffersEXT == NULL)
+	GLenum err = glewInit();
+	if (GLEW_OK != err)
 	{
-		glGenFramebuffersEXT = (PFNGLGENFRAMEBUFFERSEXTPROC) GL_EXT_LOAD((GL_STR_CAST)"glGenFramebuffersEXT");
-		glBindFramebufferEXT = (PFNGLBINDFRAMEBUFFEREXTPROC) GL_EXT_LOAD((GL_STR_CAST)"glBindFramebufferEXT");
-		glFramebufferTexture2DEXT = (PFNGLFRAMEBUFFERTEXTURE2DEXTPROC) GL_EXT_LOAD((GL_STR_CAST)"glFramebufferTexture2DEXT");
-		glCheckFramebufferStatusEXT = (PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC) GL_EXT_LOAD((GL_STR_CAST)"glCheckFramebufferStatusEXT");
-		glDeleteFramebuffersEXT = (PFNGLDELETEFRAMEBUFFERSEXTPROC) GL_EXT_LOAD((GL_STR_CAST)"glDeleteFramebuffersEXT");
-		glGenerateMipmapEXT = (PFNGLGENERATEMIPMAPEXTPROC) GL_EXT_LOAD((GL_STR_CAST)"glGenerateMipmapEXT");
+		/* Problem: glewInit failed, something is seriously wrong. */
+		fprintf(stderr, "Error: %s\n", glewGetErrorString(err));
 	}
 	
 	glEnable( GL_TEXTURE_2D );
@@ -363,19 +341,22 @@ static GPU_Target* GetDisplayTarget(GPU_Renderer* renderer)
 
 static GPU_Target* LoadTarget(GPU_Renderer* renderer, GPU_Image* image)
 {
-	GLuint handle;
-	// Create framebuffer object
-	glGenFramebuffersEXT(1, &handle);
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, handle);
-	
-	// Attach the texture to it
-	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, ((ImageData_OpenGL*)image->data)->handle, 0); // 502
-	
-	GLenum status = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
-	if(status != GL_FRAMEBUFFER_COMPLETE_EXT)
+	if(renderer == NULL || image == NULL)
 		return NULL;
 	
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+	GLuint handle;
+	// Create framebuffer object
+	glGenFramebuffers(1, &handle);
+	glBindFramebuffer(GL_FRAMEBUFFER, handle);
+	
+	// Attach the texture to it
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ((ImageData_OpenGL*)image->data)->handle, 0);
+	
+	GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+	if(status != GL_FRAMEBUFFER_COMPLETE)
+		return NULL;
+	
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	
 	GPU_Target* result = (GPU_Target*)malloc(sizeof(GPU_Target));
 	TargetData_OpenGL* data = (TargetData_OpenGL*)malloc(sizeof(TargetData_OpenGL));
@@ -402,7 +383,7 @@ static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
 	if(target == NULL || target == renderer->display)
 		return;
 	
-	glDeleteFramebuffersEXT(1, &((TargetData_OpenGL*)target->data)->handle);
+	glDeleteFramebuffers(1, &((TargetData_OpenGL*)target->data)->handle);
 	
 	free(target);
 }
@@ -421,7 +402,7 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_T
 	glBindTexture( GL_TEXTURE_2D, ((ImageData_OpenGL*)src->data)->handle );
 	
 	// Bind the FBO
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, ((TargetData_OpenGL*)dest->data)->handle);
+	glBindFramebuffer(GL_FRAMEBUFFER, ((TargetData_OpenGL*)dest->data)->handle);
 	
 	if(dest->useClip)
 	{
@@ -482,15 +463,15 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_T
 	
 		//Bottom-right vertex (corner)
 		glTexCoord2f( x2, y1 );
-		glVertex3f( dx2, dy1, 0.f );
+		glVertex3f( dx2, dy1, 0.0f );
 	
 		//Top-right vertex (corner)
 		glTexCoord2f( x2, y2 );
-		glVertex3f( dx2, dy2, 0.f );
+		glVertex3f( dx2, dy2, 0.0f );
 	
 		//Top-left vertex (corner)
 		glTexCoord2f( x1, y2 );
-		glVertex3f( dx1, dy2, 0.f );
+		glVertex3f( dx1, dy2, 0.0f );
 	glEnd();
 	
 	if(dest->useClip)
@@ -498,7 +479,7 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_T
 		glDisable(GL_SCISSOR_TEST);
 	}
 	
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	
 	return 0;
 }
@@ -588,7 +569,7 @@ static void GenerateMipmaps(GPU_Renderer* renderer, GPU_Image* image)
 		return;
 	
 	glBindTexture( GL_TEXTURE_2D, ((ImageData_OpenGL*)image->data)->handle );
-	glGenerateMipmapEXT(GL_TEXTURE_2D);
+	glGenerateMipmap(GL_TEXTURE_2D);
 	((ImageData_OpenGL*)image->data)->hasMipmaps = 1;
 	
 	GLint filter;
@@ -941,7 +922,7 @@ static SDL_Color GetPixel(GPU_Renderer* renderer, GPU_Target* target, Sint16 x, 
 		return result;
 	
 	// Bind the FBO
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, ((TargetData_OpenGL*)target->data)->handle);
+	glBindFramebuffer(GL_FRAMEBUFFER, ((TargetData_OpenGL*)target->data)->handle);
 	
 	unsigned char pixels[4];
 	glReadPixels(x, y, 1, 1, ((TargetData_OpenGL*)target->data)->format, GL_UNSIGNED_BYTE, pixels);
@@ -951,7 +932,7 @@ static SDL_Color GetPixel(GPU_Renderer* renderer, GPU_Target* target, Sint16 x, 
 	result.b = pixels[2];
 	result.unused = pixels[3];
 	
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	
 	return result;
 }
@@ -1006,7 +987,7 @@ static void Clear(GPU_Renderer* renderer, GPU_Target* target)
 	if(renderer != target->renderer)
 		return;
 	
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, ((TargetData_OpenGL*)target->data)->handle);
+	glBindFramebuffer(GL_FRAMEBUFFER, ((TargetData_OpenGL*)target->data)->handle);
 	glPushAttrib(GL_VIEWPORT_BIT);
 	glViewport(0,0,target->w, target->h);
 	
@@ -1028,7 +1009,7 @@ static void Clear(GPU_Renderer* renderer, GPU_Target* target)
 	}
 	
 	glPopAttrib();
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 
@@ -1039,7 +1020,7 @@ static void ClearRGBA(GPU_Renderer* renderer, GPU_Target* target, Uint8 r, Uint8
 	if(renderer != target->renderer)
 		return;
 	
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, ((TargetData_OpenGL*)target->data)->handle);
+	glBindFramebuffer(GL_FRAMEBUFFER, ((TargetData_OpenGL*)target->data)->handle);
 	glPushAttrib(GL_VIEWPORT_BIT);
 	glViewport(0,0,target->w, target->h);
 	
@@ -1059,7 +1040,7 @@ static void ClearRGBA(GPU_Renderer* renderer, GPU_Target* target, Uint8 r, Uint8
 	}
 	
 	glPopAttrib();
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 static void Flip(GPU_Renderer* renderer)

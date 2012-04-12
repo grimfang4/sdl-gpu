@@ -29,7 +29,7 @@ int main(int argc, char* argv[])
 	if(image == NULL)
 		return -1;
 	
-	GPU_Image* image1 = GPU_CreateImage(200, 200, 32);
+	GPU_Image* image1 = GPU_CreateImage(200, 200, 4);
 	GPU_Target* image1_tgt = GPU_LoadTarget(image1);
 	GPU_ClearRGBA(image1_tgt, 0, 0, 255, 255);
 	GPU_FreeTarget(image1_tgt);
