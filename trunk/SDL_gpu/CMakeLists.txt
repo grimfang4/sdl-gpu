@@ -15,6 +15,8 @@ set(SDL_gpu_HDRS
 	../OpenGL/SDL_gpu_OpenGL.h
 	../OpenGL/SDL_gpu_OpenGL_internal.h
 	../OpenGL/glew.h
+	../OpenGL/glxew.h
+	../OpenGL/wglew.h
 	../Direct3D/SDL_gpu_Direct3D.h
 	../Direct3D/SDL_gpu_Direct3D_internal.h
 	SOIL/SOIL.h

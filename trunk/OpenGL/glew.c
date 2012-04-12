@@ -29,11 +29,12 @@
 ** THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include <GL/glew.h>
+// **Modified** Removed system paths for glew headers.
+#include "glew.h"
 #if defined(_WIN32)
-#  include <GL/wglew.h>
+#  include "wglew.h"
 #elif !defined(__APPLE__) || defined(GLEW_APPLE_GLX)
-#  include <GL/glxew.h>
+#  include "glxew.h"
 #endif
 
 /*
