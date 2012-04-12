@@ -2,6 +2,7 @@ set(SDL_gpu_SRCS
 	SDL_gpu.c
 	SDL_gpu_Renderer.c
 	../OpenGL/SDL_gpu_OpenGL.c
+	../OpenGL/glew.c
 	../Direct3D/SDL_gpu_Direct3D.c
 	SOIL/SOIL.c
 	SOIL/image_DXT.c
@@ -13,6 +14,7 @@ set(SDL_gpu_HDRS
 	SDL_gpu_Renderer.h
 	../OpenGL/SDL_gpu_OpenGL.h
 	../OpenGL/SDL_gpu_OpenGL_internal.h
+	../OpenGL/glew.h
 	../Direct3D/SDL_gpu_Direct3D.h
 	../Direct3D/SDL_gpu_Direct3D_internal.h
 	SOIL/SOIL.h
