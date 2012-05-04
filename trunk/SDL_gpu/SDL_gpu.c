@@ -52,6 +52,31 @@ GPU_Target* GPU_Init(const char* renderer_id, Uint16 w, Uint16 h, Uint32 flags)
 	return renderer->Init(renderer, w, h, flags);
 }
 
+int GPU_ToggleFullscreen(void)
+{
+	if(current_renderer == NULL || current_renderer->ToggleFullscreen == NULL)
+		return 0;
+	
+	return current_renderer->ToggleFullscreen(current_renderer);
+}
+
+int GPU_SetDisplayResolution(Uint16 w, Uint16 h)
+{
+	if(current_renderer == NULL || current_renderer->SetDisplayResolution == NULL || w == 0 || h == 0)
+		return 0;
+	
+	return current_renderer->SetDisplayResolution(current_renderer, w, h);
+}
+
+
+void GPU_SetVirtualResolution(Uint16 w, Uint16 h)
+{
+	if(current_renderer == NULL || current_renderer->SetVirtualResolution == NULL || w == 0 || h == 0)
+		return;
+	
+	current_renderer->SetVirtualResolution(current_renderer, w, h);
+}
+
 void GPU_CloseCurrentRenderer(void)
 {
 	if(current_renderer == NULL)
@@ -89,6 +114,19 @@ void GPU_SetError(const char* fmt, ...)
 const char* GPU_GetErrorString(void)
 {
 	return SDL_GetError();
+}
+
+
+void GPU_GetVirtualCoords(float* x, float* y, float displayX, float displayY)
+{
+	SDL_Surface* surf = SDL_GetVideoSurface();
+	if(current_renderer == NULL || current_renderer->display == NULL || surf == NULL)
+		return;
+	
+	if(x != NULL)
+		*x = (displayX*current_renderer->display->w)/surf->w;
+	if(y != NULL)
+		*y = (displayY*current_renderer->display->h)/surf->h;
 }
 
 GPU_Image* GPU_CreateImage(Uint16 w, Uint16 h, Uint8 channels)

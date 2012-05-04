@@ -42,8 +42,12 @@ typedef struct GPU_Renderer
 	GPU_Target* display;
 	
 	GPU_Target* (*Init)(struct GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags);
+	int (*SetDisplayResolution)(struct GPU_Renderer* renderer, Uint16 w, Uint16 h);
+	void (*SetVirtualResolution)(struct GPU_Renderer* renderer, Uint16 w, Uint16 h);
 	void (*Quit)(struct GPU_Renderer* renderer);
-
+	
+	int (*ToggleFullscreen)(struct GPU_Renderer* renderer);
+	
 	GPU_Image* (*CreateImage)(struct GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint8 channels);
 	GPU_Image* (*LoadImage)(struct GPU_Renderer* renderer, const char* filename);
 	GPU_Image* (*CopyImage)(struct GPU_Renderer* renderer, GPU_Image* image);
@@ -90,12 +94,16 @@ typedef struct GPU_Renderer
 
 // Setup calls
 GPU_Target* GPU_Init(const char* renderer_id, Uint16 w, Uint16 h, Uint32 flags);
+int GPU_SetDisplayResolution(Uint16 w, Uint16 h);
+void GPU_SetVirtualResolution(Uint16 w, Uint16 h);
 void GPU_CloseCurrentRenderer(void);
 void GPU_Quit(void);
 
 void GPU_SetError(const char* fmt, ...);
 const char* GPU_GetErrorString(void);
 
+void GPU_GetVirtualCoords(float* x, float* y, float displayX, float displayY);
+int GPU_ToggleFullscreen(void);
 
 
 // Renderer controls

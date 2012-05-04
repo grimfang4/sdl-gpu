@@ -43,7 +43,7 @@ include_directories(SDL_gpuShapes)
 link_libraries (
    ${SDL_LIBRARY}
    ${OPENGL_LIBRARIES}
-   SDLmain # Not included in SDL_LIBRARY variable
+   #SDLmain # Not included in SDL_LIBRARY variable
 )
 
 add_definitions("-g -Wall -std=c99 -pedantic")
