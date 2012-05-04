@@ -39,7 +39,9 @@ static void Circle(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, flo
 	{ \
 		glEnable(GL_SCISSOR_TEST); \
 		int y = (renderer->renderer->display == target? renderer->renderer->display->h - (target->clipRect.y + target->clipRect.h) : target->clipRect.y); \
-		glScissor(target->clipRect.x, y, target->clipRect.w, target->clipRect.h); \
+		float xFactor = ((float)SDL_GetVideoSurface()->w)/renderer->renderer->display->w; \
+		float yFactor = ((float)SDL_GetVideoSurface()->h)/renderer->renderer->display->h; \
+		glScissor(target->clipRect.x * xFactor, y * yFactor, target->clipRect.w * xFactor, target->clipRect.h * yFactor); \
 	} \
 	 \
 	glDisable( GL_TEXTURE_2D );
