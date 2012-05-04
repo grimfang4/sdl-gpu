@@ -76,11 +76,90 @@ static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags
 	return renderer->display;
 }
 
+static int SetDisplayResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
+{
+	if(renderer->display == NULL)
+		return 0;
+	
+    SDL_Surface* surf = SDL_GetVideoSurface();
+	Uint32 flags = surf->flags;
+	
+	Uint16 virtualW = renderer->display->w;
+	Uint16 virtualH = renderer->display->h;
+	
+	SDL_Surface* screen = SDL_SetVideoMode(w, h, 0, flags);
+	// There's a bug in SDL.  This is a workaround.  Let's resize again:
+	screen = SDL_SetVideoMode(w, h, 0, flags);
+	
+	if(screen == NULL)
+		return 0;
+    
+	glEnable( GL_TEXTURE_2D );
+	glClearColor( 0.0f, 0.0f, 0.0f, 0.0f );
+	
+	glViewport( 0, 0, w, h);
+	
+	glClear( GL_COLOR_BUFFER_BIT );
+	
+	glMatrixMode( GL_PROJECTION );
+	glLoadIdentity();
+	
+	glOrtho(0.0f, virtualW, virtualH, 0.0f, -1.0f, 1.0f);
+	
+	glMatrixMode( GL_MODELVIEW );
+	glLoadIdentity();
+	
+	glEnable( GL_TEXTURE_2D );
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	
+	glEnable(GL_BLEND);
+    glTranslatef(0.375f, 0.375f, 0.0f);
+
+	// Update display
+	GPU_ClearClip(renderer->display);
+	//renderer->display->clipRect.w = screen->w;
+	//renderer->display->clipRect.h = screen->h;
+	
+	return 1;
+}
+
+static void SetVirtualResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
+{
+	if(renderer->display == NULL)
+		return;
+	
+	renderer->display->w = w;
+	renderer->display->h = h;
+	
+	glMatrixMode( GL_PROJECTION );
+	glLoadIdentity();
+	
+	glOrtho(0.0f, w, h, 0.0f, -1.0f, 1.0f);
+	
+	glMatrixMode( GL_MODELVIEW );
+}
+
 static void Quit(GPU_Renderer* renderer)
 {
 	free(renderer->display);
 	renderer->display = NULL;
 }
+
+
+
+static int ToggleFullscreen(GPU_Renderer* renderer)
+{
+    SDL_Surface* surf = SDL_GetVideoSurface();
+    if(SDL_WM_ToggleFullScreen(surf))
+		return 1;
+	
+	Uint16 w = surf->w;
+	Uint16 h = surf->h;
+	surf->flags ^= SDL_FULLSCREEN;
+	
+	return SetDisplayResolution(renderer, w, h);
+}
+
 
 static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint8 channels)
 {
@@ -408,7 +487,9 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_T
 	{
 		glEnable(GL_SCISSOR_TEST);
 		int y = (renderer->display == dest? renderer->display->h - (dest->clipRect.y + dest->clipRect.h) : dest->clipRect.y);
-		glScissor(dest->clipRect.x, y, dest->clipRect.w, dest->clipRect.h);
+		float xFactor = ((float)SDL_GetVideoSurface()->w)/renderer->display->w;
+		float yFactor = ((float)SDL_GetVideoSurface()->h)/renderer->display->h;
+		glScissor(dest->clipRect.x * xFactor, y * yFactor, dest->clipRect.w * xFactor, dest->clipRect.h * yFactor);
 	}
 	
 	float x1, y1, x2, y2;
@@ -995,7 +1076,9 @@ static void Clear(GPU_Renderer* renderer, GPU_Target* target)
 	{
 		glEnable(GL_SCISSOR_TEST);
 		int y = (renderer->display == target? renderer->display->h - (target->clipRect.y + target->clipRect.h) : target->clipRect.y);
-		glScissor(target->clipRect.x, y, target->clipRect.w, target->clipRect.h);
+		float xFactor = ((float)SDL_GetVideoSurface()->w)/renderer->display->w;
+		float yFactor = ((float)SDL_GetVideoSurface()->h)/renderer->display->h;
+		glScissor(target->clipRect.x * xFactor, y * yFactor, target->clipRect.w * xFactor, target->clipRect.h * yFactor);
 	}
 	
 	glPushAttrib(GL_COLOR_BUFFER_BIT);
@@ -1028,7 +1111,9 @@ static void ClearRGBA(GPU_Renderer* renderer, GPU_Target* target, Uint8 r, Uint8
 	{
 		glEnable(GL_SCISSOR_TEST);
 		int y = (renderer->display == target? renderer->display->h - (target->clipRect.y + target->clipRect.h) : target->clipRect.y);
-		glScissor(target->clipRect.x, y, target->clipRect.w, target->clipRect.h);
+		float xFactor = ((float)SDL_GetVideoSurface()->w)/renderer->display->w;
+		float yFactor = ((float)SDL_GetVideoSurface()->h)/renderer->display->h;
+		glScissor(target->clipRect.x * xFactor, y * yFactor, target->clipRect.w * xFactor, target->clipRect.h * yFactor);
 	}
 	
 	glClearColor(r/255.0f, g/255.0f, b/255.0f, a/255.0f);
@@ -1066,7 +1151,12 @@ GPU_Renderer* GPU_CreateRenderer_OpenGL(void)
 	renderer->data = (RendererData_OpenGL*)malloc(sizeof(RendererData_OpenGL));
 	
 	renderer->Init = &Init;
+	renderer->SetDisplayResolution = &SetDisplayResolution;
+	renderer->SetVirtualResolution = &SetVirtualResolution;
 	renderer->Quit = &Quit;
+	
+	renderer->ToggleFullscreen = &ToggleFullscreen;
+	
 	renderer->CreateImage = &CreateImage;
 	renderer->LoadImage = &LoadImage;
 	renderer->CopyImage = &CopyImage;
