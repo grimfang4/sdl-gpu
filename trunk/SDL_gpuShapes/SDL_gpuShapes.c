@@ -191,3 +191,13 @@ void GPU_PolygonFilled(GPU_Target* target, Uint16 n, float* vertices, SDL_Color 
 	
 	shapeRenderer->PolygonFilled(shapeRenderer, target, n, vertices, color);
 }
+
+
+void GPU_PolygonBlit(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* target, Uint16 n, float* vertices, float textureX, float textureY, float angle, float scaleX, float scaleY)
+{
+	CHECK_RENDERER();
+	if(shapeRenderer->PolygonBlit == NULL)
+		return;
+	
+	shapeRenderer->PolygonBlit(shapeRenderer, src, srcrect, target, n, vertices, textureX, textureY, angle, scaleX, scaleY);
+}

@@ -43,6 +43,8 @@ typedef struct GPU_ShapeRenderer
 	void (*Polygon)(struct GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, Uint16 n, float* vertices, SDL_Color color);
 
 	void (*PolygonFilled)(struct GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, Uint16 n, float* vertices, SDL_Color color);
+
+	void (*PolygonBlit)(struct GPU_ShapeRenderer* shapeRenderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* target, Uint16 n, float* vertices, float textureX, float textureY, float angle, float scaleX, float scaleY);
 	
 	void* data;
 	
@@ -80,6 +82,8 @@ void GPU_RectRoundFilled(GPU_Target* target, float x1, float y1, float x2, float
 void GPU_Polygon(GPU_Target* target, Uint16 n, float* vertices, SDL_Color color);
 
 void GPU_PolygonFilled(GPU_Target* target, Uint16 n, float* vertices, SDL_Color color);
+
+void GPU_PolygonBlit(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* target, Uint16 n, float* vertices, float textureX, float textureY, float angle, float scaleX, float scaleY);
 
 
 

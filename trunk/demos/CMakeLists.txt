@@ -34,3 +34,6 @@ target_link_libraries (color-demo SDL_gpu)
 
 add_executable(mipmap-demo mipmap/main.c)
 target_link_libraries (mipmap-demo SDL_gpu)
+
+add_executable(polygon-blit-demo polygon-blit/main.c)
+target_link_libraries (polygon-blit-demo SDL_gpu SDL_gpuShapes)

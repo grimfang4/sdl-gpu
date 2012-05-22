@@ -523,6 +523,41 @@ static void PolygonFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, Uint1
 	END;
 }
 
+static void PolygonBlit(GPU_ShapeRenderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* target, Uint16 n, float* vertices, float textureX, float textureY, float angle, float scaleX, float scaleY)
+{
+	BEGIN;
+	
+	glEnable( GL_TEXTURE_2D );
+	
+	// Bind the texture to which subsequent calls refer
+	glBindTexture( GL_TEXTURE_2D, ((ImageData_OpenGL*)src->data)->handle );
+	
+	// Set repeat mode
+	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
+	
+	// TODO: Add rotation of texture using 'angle'
+	// TODO: Use 'srcrect'
+	
+	int i;
+	glBegin(GL_POLYGON);
+	for(i = 0; i < 2*n; i+=2)
+	{
+		float x = vertices[i];
+		float y = vertices[i+1];
+		
+		glTexCoord2f((x - textureX)*scaleX/src->w, (y - textureY)*scaleY/src->h);
+		
+		INVERT_Y(y);
+		glVertex3f(x, y, z);
+	}
+	glEnd();
+	
+	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+	
+	END;
+}
 
 
 
@@ -553,6 +588,7 @@ GPU_ShapeRenderer* GPU_CreateShapeRenderer_OpenGL(void)
 	renderer->RectRoundFilled = &RectRoundFilled;
 	renderer->Polygon = &Polygon;
 	renderer->PolygonFilled = &PolygonFilled;
+	renderer->PolygonBlit = &PolygonBlit;
 	
 	return renderer;
 }
