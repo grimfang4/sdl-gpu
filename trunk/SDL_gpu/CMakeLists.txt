@@ -14,12 +14,9 @@ set(SDL_gpu_SRCS
 )
 set(SDL_gpu_HDRS
 	SDL_gpu.h
-	SDL_gpuShapes.h
 	SDL_gpu_Renderer.h
 	OpenGL/SDL_gpu_OpenGL.h
 	OpenGL/SDL_gpu_OpenGL_internal.h
-	OpenGL/SDL_gpuShapes_OpenGL.h
-	OpenGL/SDL_gpuShapes_OpenGL_internal.h
 	OpenGL/glew.h
 	OpenGL/glxew.h
 	OpenGL/wglew.h
@@ -31,15 +28,11 @@ set(SDL_gpu_HDRS
 	OpenGL/SOIL/stbi_DDS_aug_c.h
 	Direct3D/SDL_gpu_Direct3D.h
 	Direct3D/SDL_gpu_Direct3D_internal.h
-	Direct3D/SDL_gpuShapes_Direct3D.h
-	Direct3D/SDL_gpuShapes_Direct3D_internal.h
 )
 set(SDL_gpu_install_HDRS
 	SDL_gpu.h
 	OpenGL/SDL_gpu_OpenGL.h
-	OpenGL/SDL_gpuShapes_OpenGL.h
 	Direct3D/SDL_gpu_Direct3D.h
-	Direct3D/SDL_gpuShapes_Direct3D.h
 )
 
 if(SDL_gpu_BUILD_SHARED)
