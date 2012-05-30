@@ -1,6 +1,5 @@
 #include "SDL.h"
 #include "SDL_gpu.h"
-#include "SDL_gpuShapes.h"
 #include <math.h>
 
 void printRenderers(void)

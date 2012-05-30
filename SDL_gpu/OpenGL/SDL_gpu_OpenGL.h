@@ -24,4 +24,10 @@ typedef struct TargetData_OpenGL
 } TargetData_OpenGL;
 
 
+
+typedef struct ShapeRendererData_OpenGL
+{
+	GLuint handle;
+} ShapeRendererData_OpenGL;
+
 #endif

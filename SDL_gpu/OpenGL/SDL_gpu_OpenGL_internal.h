@@ -8,5 +8,8 @@
 GPU_Renderer* GPU_CreateRenderer_OpenGL(void);
 void GPU_FreeRenderer_OpenGL(GPU_Renderer* renderer);
 
+GPU_ShapeRenderer* GPU_CreateShapeRenderer_OpenGL(void);
+void GPU_FreeShapeRenderer_OpenGL(GPU_ShapeRenderer* renderer);
+
 
 #endif
