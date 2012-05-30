@@ -287,7 +287,13 @@ static GPU_Image* CopyImage(GPU_Renderer* renderer, GPU_Image* image)
 		GPU_ClearClip(tgt);
 	}
 	
+    Uint16 w = renderer->display->w;
+    Uint16 h = renderer->display->h;
+    
+    renderer->SetVirtualResolution(renderer, SDL_GetVideoSurface()->w, SDL_GetVideoSurface()->h);
 	renderer->Blit(renderer, image, NULL, tgt, tgt->w/2, tgt->h/2);
+    renderer->SetVirtualResolution(renderer, w, h);
+	
 	renderer->FreeTarget(renderer, tgt);
 	
 	if(useClip)
