@@ -533,6 +533,7 @@ static void PolygonBlit(GPU_ShapeRenderer* renderer, GPU_Image* src, SDL_Rect* s
 	glBindTexture( GL_TEXTURE_2D, ((ImageData_OpenGL*)src->data)->handle );
 	
 	// Set repeat mode
+	// FIXME: Save old mode and reset it later
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
 	
