@@ -1,5 +1,4 @@
 #include "SDL_gpu_Direct3D_internal.h"
-#include "SDL_gpuShapes_Direct3D_internal.h"
 
 
 

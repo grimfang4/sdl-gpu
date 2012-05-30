@@ -5,7 +5,6 @@
 #endif
 
 #include "SDL_gpu_OpenGL_internal.h"
-#include "SDL_gpuShapes_OpenGL_internal.h"
 #include <math.h>
 
 #ifndef M_PI

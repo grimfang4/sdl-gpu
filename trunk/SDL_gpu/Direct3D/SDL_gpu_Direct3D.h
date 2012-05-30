@@ -20,4 +20,10 @@ typedef struct TargetData_Direct3D
 } TargetData_Direct3D;
 
 
+typedef struct ShapeRendererData_Direct3D
+{
+	int handle;
+} ShapeRendererData_Direct3D;
+
+
 #endif
