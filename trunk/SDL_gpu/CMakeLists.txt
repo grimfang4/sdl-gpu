@@ -1,35 +1,45 @@
 set(SDL_gpu_SRCS
 	SDL_gpu.c
+	SDL_gpuShapes.c
 	SDL_gpu_Renderer.c
-	../OpenGL/SDL_gpu_OpenGL.c
-	../OpenGL/glew.c
-	../Direct3D/SDL_gpu_Direct3D.c
-	SOIL/SOIL.c
-	SOIL/image_DXT.c
-	SOIL/image_helper.c
-	SOIL/stb_image_aug.c
+	OpenGL/SDL_gpu_OpenGL.c
+	OpenGL/SDL_gpuShapes_OpenGL.c
+	OpenGL/glew.c
+	OpenGL/SOIL/SOIL.c
+	OpenGL/SOIL/image_DXT.c
+	OpenGL/SOIL/image_helper.c
+	OpenGL/SOIL/stb_image_aug.c
+	Direct3D/SDL_gpu_Direct3D.c
+	Direct3D/SDL_gpuShapes_Direct3D.c
 )
 set(SDL_gpu_HDRS
 	SDL_gpu.h
+	SDL_gpuShapes.h
 	SDL_gpu_Renderer.h
-	../OpenGL/SDL_gpu_OpenGL.h
-	../OpenGL/SDL_gpu_OpenGL_internal.h
-	../OpenGL/glew.h
-	../OpenGL/glxew.h
-	../OpenGL/wglew.h
-	../Direct3D/SDL_gpu_Direct3D.h
-	../Direct3D/SDL_gpu_Direct3D_internal.h
-	SOIL/SOIL.h
-	SOIL/image_DXT.h
-	SOIL/image_helper.h
-	SOIL/stb_image_aug.h
-	SOIL/stbi_DDS_aug.h
-	SOIL/stbi_DDS_aug_c.h
+	OpenGL/SDL_gpu_OpenGL.h
+	OpenGL/SDL_gpu_OpenGL_internal.h
+	OpenGL/SDL_gpuShapes_OpenGL.h
+	OpenGL/SDL_gpuShapes_OpenGL_internal.h
+	OpenGL/glew.h
+	OpenGL/glxew.h
+	OpenGL/wglew.h
+	OpenGL/SOIL/SOIL.h
+	OpenGL/SOIL/image_DXT.h
+	OpenGL/SOIL/image_helper.h
+	OpenGL/SOIL/stb_image_aug.h
+	OpenGL/SOIL/stbi_DDS_aug.h
+	OpenGL/SOIL/stbi_DDS_aug_c.h
+	Direct3D/SDL_gpu_Direct3D.h
+	Direct3D/SDL_gpu_Direct3D_internal.h
+	Direct3D/SDL_gpuShapes_Direct3D.h
+	Direct3D/SDL_gpuShapes_Direct3D_internal.h
 )
 set(SDL_gpu_install_HDRS
 	SDL_gpu.h
-	../OpenGL/SDL_gpu_OpenGL.h
-	../Direct3D/SDL_gpu_Direct3D.h
+	OpenGL/SDL_gpu_OpenGL.h
+	OpenGL/SDL_gpuShapes_OpenGL.h
+	Direct3D/SDL_gpu_Direct3D.h
+	Direct3D/SDL_gpuShapes_Direct3D.h
 )
 
 if(SDL_gpu_BUILD_SHARED)
