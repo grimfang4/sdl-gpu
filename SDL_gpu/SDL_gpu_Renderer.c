@@ -2,8 +2,8 @@
 #include <string.h>
 
 
-#include "../OpenGL/SDL_gpu_OpenGL_internal.h"
-#include "../Direct3D/SDL_gpu_Direct3D_internal.h"
+#include "OpenGL/SDL_gpu_OpenGL_internal.h"
+#include "Direct3D/SDL_gpu_Direct3D_internal.h"
 
 #define MAX_ACTIVE_RENDERERS 10
 #define MAX_REGISTERED_RENDERERS 2

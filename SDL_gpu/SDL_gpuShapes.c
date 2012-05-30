@@ -1,8 +1,8 @@
 #include "SDL_gpuShapes.h"
 #include <string.h>
 
-#include "../OpenGL/SDL_gpuShapes_OpenGL_internal.h"
-#include "../Direct3D/SDL_gpuShapes_Direct3D_internal.h"
+#include "OpenGL/SDL_gpuShapes_OpenGL_internal.h"
+#include "Direct3D/SDL_gpuShapes_Direct3D_internal.h"
 
 
 static GPU_ShapeRenderer* shapeRenderer = NULL;
