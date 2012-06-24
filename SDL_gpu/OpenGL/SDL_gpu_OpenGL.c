@@ -8,6 +8,16 @@
 #include "SOIL.h"
 #include <math.h>
 
+static Uint8 checkExtension(const char* str)
+{
+	if(!glewIsExtensionSupported(str))
+	{
+		fprintf(stderr, "Error: %s is not supported.\n", str);
+		return 0;
+	}
+	return 1;
+}
+
 static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags)
 {
 	if(flags & SDL_DOUBLEBUF)
@@ -35,6 +45,10 @@ static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags
 		fprintf(stderr, "Error: %s\n", glewGetErrorString(err));
 	}
 	
+	checkExtension("GL_EXT_framebuffer_object");
+	checkExtension("GL_ARB_framebuffer_object"); // glGenerateMipmap
+	checkExtension("GL_EXT_framebuffer_blit");
+    
 	glEnable( GL_TEXTURE_2D );
 	glClearColor( 0.0f, 0.0f, 0.0f, 0.0f );
 	
