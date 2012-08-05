@@ -216,6 +216,8 @@ static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint8 
 	result->w = w;
 	result->h = h;
 	
+	free(pixels);
+	
 	return result;
 }
 
@@ -484,6 +486,7 @@ static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
 	
 	glDeleteFramebuffers(1, &((TargetData_OpenGL*)target->data)->handle);
 	
+	free(target->data);
 	free(target);
 }
 
