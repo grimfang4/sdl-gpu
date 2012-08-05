@@ -29,7 +29,7 @@ static void Circle(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, flo
 		return; \
 	if(renderer->renderer != target->renderer) \
 		return; \
-	float z = ((RendererData_OpenGL*)renderer->data)->z;	\
+	float z = ((RendererData_OpenGL*)renderer->renderer->data)->z;	\
 	 \
 	/* Bind the FBO */ \
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, ((TargetData_OpenGL*)target->data)->handle); \
