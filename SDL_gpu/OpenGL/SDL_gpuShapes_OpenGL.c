@@ -80,7 +80,7 @@ static void Pixel(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, floa
 	
 	INVERT_Y(y);
 	
-	glColor4ub(color.r, color.g, color.b, color.unused);
+	glColor4f(color.r/255.01f, color.g/255.01f, color.b/255.01f, color.unused/255.01f);
 	
 	glBegin(GL_POINTS);
 	glVertex3f(x, y, z);
@@ -96,7 +96,7 @@ static void Line(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, floa
 	INVERT_Y(y1);
 	INVERT_Y(y2);
 	
-	glColor4ub(color.r, color.g, color.b, color.unused);
+	glColor4f(color.r/255.01f, color.g/255.01f, color.b/255.01f, color.unused/255.01f);
 	
 	glBegin(GL_LINES);
 	glVertex3f(x1, y1, z);
@@ -165,7 +165,7 @@ static void Arc(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, float 
 	
 	INVERT_Y(y);
 	
-	glColor4ub(color.r, color.g, color.b, color.unused);
+	glColor4f(color.r/255.01f, color.g/255.01f, color.b/255.01f, color.unused/255.01f);
 	float t = startAngle;
 	float dt = (1 - (endAngle - startAngle)/360) * 5;  // A segment every 5 degrees of a full circle
 	float dx, dy;
@@ -244,7 +244,7 @@ static void ArcFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, 
 	
 	INVERT_Y(y);
 	
-	glColor4ub(color.r, color.g, color.b, color.unused);
+	glColor4f(color.r/255.01f, color.g/255.01f, color.b/255.01f, color.unused/255.01f);
 	float t = startAngle;
 	float dt = (1 - (endAngle - startAngle)/360) * 5;  // A segment every 5 degrees of a full circle
 	float dx, dy;
@@ -271,7 +271,7 @@ static void Circle(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, flo
 	
 	INVERT_Y(y);
 	
-	glColor4ub(color.r, color.g, color.b, color.unused);
+	glColor4f(color.r/255.01f, color.g/255.01f, color.b/255.01f, color.unused/255.01f);
 	float t = 0;
 	float dt = 5;  // A segment every 5 degrees of a full circle
 	float dx, dy;
@@ -297,7 +297,7 @@ static void CircleFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float 
 	
 	INVERT_Y(y);
 	
-	glColor4ub(color.r, color.g, color.b, color.unused);
+	glColor4f(color.r/255.01f, color.g/255.01f, color.b/255.01f, color.unused/255.01f);
 	float t = 0;
 	float dt = 5;  // A segment every 5 degrees of a full circle
 	float dx, dy;
@@ -325,7 +325,7 @@ static void Tri(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, float
 	INVERT_Y(y2);
 	INVERT_Y(y3);
 	
-	glColor4ub(color.r, color.g, color.b, color.unused);
+	glColor4f(color.r/255.01f, color.g/255.01f, color.b/255.01f, color.unused/255.01f);
 	
 	glBegin(GL_LINE_LOOP);
 	glVertex3f(x1, y1, z);
@@ -344,7 +344,7 @@ static void TriFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1,
 	INVERT_Y(y2);
 	INVERT_Y(y3);
 	
-	glColor4ub(color.r, color.g, color.b, color.unused);
+	glColor4f(color.r/255.01f, color.g/255.01f, color.b/255.01f, color.unused/255.01f);
 	
 	glBegin(GL_TRIANGLE_STRIP);
 	glVertex3f(x1, y1, z);
@@ -362,7 +362,7 @@ static void Rect(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, floa
 	INVERT_Y(y1);
 	INVERT_Y(y2);
 	
-	glColor4ub(color.r, color.g, color.b, color.unused);
+	glColor4f(color.r/255.01f, color.g/255.01f, color.b/255.01f, color.unused/255.01f);
 	
 	glBegin(GL_LINE_LOOP);
 	glVertex3f(x1, y1, z);
@@ -381,7 +381,7 @@ static void RectFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1
 	INVERT_Y(y1);
 	INVERT_Y(y2);
 	
-	glColor4ub(color.r, color.g, color.b, color.unused);
+	glColor4f(color.r/255.01f, color.g/255.01f, color.b/255.01f, color.unused/255.01f);
 	
 	glBegin(GL_TRIANGLE_STRIP);
 	glVertex3f(x1, y1, z);
@@ -413,7 +413,7 @@ static void RectRound(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1,
 	INVERT_Y(y1);
 	INVERT_Y(y2);
 	
-	glColor4ub(color.r, color.g, color.b, color.unused);
+	glColor4f(color.r/255.01f, color.g/255.01f, color.b/255.01f, color.unused/255.01f);
 	
 	glBegin(GL_LINE_LOOP);
 		glVertex3f(x1+radius,y1, z);
@@ -457,7 +457,7 @@ static void RectRoundFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, flo
 	INVERT_Y(y1);
 	INVERT_Y(y2);
 	
-	glColor4ub(color.r, color.g, color.b, color.unused);
+	glColor4f(color.r/255.01f, color.g/255.01f, color.b/255.01f, color.unused/255.01f);
 	
 	glBegin(GL_POLYGON);
 		glVertex3f(x1+radius,y1, z);
@@ -485,7 +485,7 @@ static void Polygon(GPU_ShapeRenderer* renderer, GPU_Target* target, Uint16 n, f
 {
 	BEGIN;
 	
-	glColor4ub(color.r, color.g, color.b, color.unused);
+	glColor4f(color.r/255.01f, color.g/255.01f, color.b/255.01f, color.unused/255.01f);
 	
 	int i;
 	glBegin(GL_LINE_LOOP);
@@ -506,7 +506,7 @@ static void PolygonFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, Uint1
 {
 	BEGIN;
 	
-	glColor4ub(color.r, color.g, color.b, color.unused);
+	glColor4f(color.r/255.01f, color.g/255.01f, color.b/255.01f, color.unused/255.01f);
 	int i;
 	glBegin(GL_POLYGON);
 	for(i = 0; i < 2*n; i+=2)

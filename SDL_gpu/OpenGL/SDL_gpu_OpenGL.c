@@ -695,7 +695,7 @@ static void SetBlending(GPU_Renderer* renderer, Uint8 enable)
 
 static void SetRGBA(GPU_Renderer* renderer, Uint8 r, Uint8 g, Uint8 b, Uint8 a)
 {
-	glColor4ub(r, g, b, a);
+	glColor4f(r/255.01f, g/255.01f, b/255.01f, a/255.01f);
 }
 
 
