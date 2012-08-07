@@ -12,6 +12,9 @@ LATEST SOURCE
 SDL_gpu is hosted on Google Code (http://code.google.com/p/sdl-gpu).  You can check out the latest version of the source code with Subversion:
 svn checkout http://sdl-gpu.googlecode.com/svn/trunk/ sdl-gpu
 
+To check out everything, including the pre-generated documentation:
+svn checkout http://sdl-gpu.googlecode.com/svn/ sdl-gpu
+
 
 ============
 DEPENDENCIES
@@ -42,14 +45,13 @@ INCLUDING
 
 Add the include for SDL_gpu.h to your sources.  Link to SDL_gpu (libSDL_gpu.a).
 
-The include for the shapes library is SDL_gpuShapes.h and its lib is SDL_gpuShapes (libSDL_gpuShapes.a).
-
 
 =============
 DOCUMENTATION
 =============
 
-See the documentation directory in the source distribution.
+Documentation is automatically generated with Doxygen (http://sourceforge.net/projects/doxygen).
+Pre-generated documentation can be found in the repository's base documentation directory.
 
 
 
