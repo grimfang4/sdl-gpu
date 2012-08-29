@@ -37,3 +37,6 @@ target_link_libraries (mipmap-demo SDL_gpu)
 
 add_executable(polygon-blit-demo polygon-blit/main.c)
 target_link_libraries (polygon-blit-demo SDL_gpu)
+
+add_executable(camera-demo camera/main.c)
+target_link_libraries (camera-demo SDL_gpu)
