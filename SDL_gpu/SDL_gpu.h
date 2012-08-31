@@ -39,6 +39,14 @@ static const GPU_FilterEnum GPU_NEAREST = 0;
 static const GPU_FilterEnum GPU_LINEAR = 1;
 static const GPU_FilterEnum GPU_LINEAR_MIPMAP = 2;
 
+/*! Camera object that determines viewing transform. */
+typedef struct GPU_Camera
+{
+	float x, y, z;
+	float angle;
+	float zoom;
+} GPU_Camera;
+
 /*! Renderer object which specializes the API to a particular backend. */
 typedef struct GPU_Renderer
 {
@@ -47,6 +55,9 @@ typedef struct GPU_Renderer
 	
 	/*! Main display surface/framebuffer. */
 	GPU_Target* display;
+	
+	/*! Transforms for the global view. */
+	GPU_Camera camera;
 	
 	/*! Initializes SDL and SDL_gpu.  Creates a window and renderer context. */
 	GPU_Target* (*Init)(struct GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags);
@@ -63,6 +74,10 @@ typedef struct GPU_Renderer
 	/*! Enable/disable fullscreen mode.
 	 * On some platforms, this will destroy the renderer context and require that textures be reloaded. */
 	int (*ToggleFullscreen)(struct GPU_Renderer* renderer);
+
+	/*! Sets the renderer's current camera.  If cam is NULL, the default camera is used.
+	* \return The old camera. */
+	GPU_Camera (*SetCamera)(struct GPU_Renderer* renderer, GPU_Target* screen, GPU_Camera* cam);
 	
 	/*! Create a new, blank image.  Don't forget to GPU_FreeImage() it. */
 	GPU_Image* (*CreateImage)(struct GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint8 channels);
@@ -230,9 +245,18 @@ void GPU_SetCurrentRenderer(const char* id);
 /*! \return The current renderer */
 GPU_Renderer* GPU_GetCurrentRenderer(void);
 
+/*! \return A GPU_Camera with position (0, 0, -10), angle of 0, and zoom of 1. */
+GPU_Camera GPU_GetDefaultCamera(void);
+
+/*! \return The current camera of the current renderer. */
+GPU_Camera GPU_GetCamera(void);
 
 
 // Defined by renderer
+/*! Sets the current renderer's current camera.  If cam is NULL, the default camera is used.
+ * \return The old camera. */
+GPU_Camera GPU_SetCamera(GPU_Target* screen, GPU_Camera* cam);
+
 /*! Create a new, blank image.  Don't forget to GPU_FreeImage() it. */
 GPU_Image* GPU_CreateImage(Uint16 w, Uint16 h, Uint8 channels);
 

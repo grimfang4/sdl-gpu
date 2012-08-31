@@ -175,6 +175,62 @@ static int ToggleFullscreen(GPU_Renderer* renderer)
 }
 
 
+
+static GPU_Camera SetCamera(GPU_Renderer* renderer, GPU_Target* screen, GPU_Camera* cam)
+{
+	if(screen == NULL)
+		return renderer->camera;
+	
+	GPU_Camera result = renderer->camera;
+	
+	if(cam == NULL)
+	{
+		renderer->camera.x = 0.0f;
+		renderer->camera.y = 0.0f;
+		renderer->camera.z = -10.0f;
+		renderer->camera.angle = 0.0f;
+		renderer->camera.zoom = 1.0f;
+	}
+	else
+	{
+		renderer->camera = *cam;
+	}
+	
+	glMatrixMode( GL_PROJECTION );
+	glLoadIdentity();
+	
+	// I want to use x, y, and z
+	// The default z for objects is 0
+	// The default z for the camera is -10. (should be neg)
+	
+	/*float fieldOfView = 60.0f;
+	float fW = screen->w/2;
+	float fH = screen->h/2;
+	float aspect = fW/fH;
+	float zNear = atan(fH)/((float)(fieldOfView / 360.0f * 3.14159f));
+	float zFar = 255.0f;
+	glFrustum( 0.0f + renderer->camera.x, 2*fW + renderer->camera.x, 2*fH + renderer->camera.y, 0.0f + renderer->camera.y, zNear, zFar );*/
+	
+	glFrustum(0.0f + renderer->camera.x, screen->w + renderer->camera.x, screen->h + renderer->camera.y, 0.0f + renderer->camera.y, 0.01f, 1.01f);
+	
+	//glMatrixMode( GL_MODELVIEW );
+	//glLoadIdentity();
+	
+	
+	float offsetX = screen->w/2.0f;
+	float offsetY = screen->h/2.0f;
+	glTranslatef(offsetX, offsetY, -0.01);
+	glRotatef(renderer->camera.angle, 0, 0, 1);
+	glTranslatef(-offsetX, -offsetY, 0);
+	
+	glTranslatef(renderer->camera.x + offsetX, renderer->camera.y + offsetY, 0);
+	glScalef(renderer->camera.zoom, renderer->camera.zoom, 1.0f);
+	glTranslatef(-renderer->camera.x - offsetX, -renderer->camera.y - offsetY, 0);
+	
+	return result;
+}
+
+
 static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint8 channels)
 {
 	if(channels < 3 || channels > 4)
@@ -1170,6 +1226,7 @@ GPU_Renderer* GPU_CreateRenderer_OpenGL(void)
 	
 	renderer->id = "OpenGL";
 	renderer->display = NULL;
+	renderer->camera = GPU_GetDefaultCamera();
 	
 	renderer->data = (RendererData_OpenGL*)malloc(sizeof(RendererData_OpenGL));
 	
@@ -1179,6 +1236,7 @@ GPU_Renderer* GPU_CreateRenderer_OpenGL(void)
 	renderer->Quit = &Quit;
 	
 	renderer->ToggleFullscreen = &ToggleFullscreen;
+	renderer->SetCamera = &SetCamera;
 	
 	renderer->CreateImage = &CreateImage;
 	renderer->LoadImage = &LoadImage;
