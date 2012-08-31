@@ -129,6 +129,28 @@ void GPU_GetVirtualCoords(float* x, float* y, float displayX, float displayY)
 		*y = (displayY*current_renderer->display->h)/surf->h;
 }
 
+GPU_Camera GPU_GetDefaultCamera(void)
+{
+	GPU_Camera cam = {0.0f, 0.0f, -10.0f, 0.0f, 1.0f};
+	return cam;
+}
+
+// One camera for the whole renderer, not per-target since the use-case would be rare.
+GPU_Camera GPU_GetCamera(void)
+{
+	if(current_renderer == NULL)
+		return GPU_GetDefaultCamera();
+	return current_renderer->camera;
+}
+
+GPU_Camera GPU_SetCamera(GPU_Target* screen, GPU_Camera* cam)
+{
+	if(current_renderer == NULL || current_renderer->SetCamera == NULL)
+		return GPU_GetDefaultCamera();
+	
+	return current_renderer->SetCamera(current_renderer, screen, cam);
+}
+
 GPU_Image* GPU_CreateImage(Uint16 w, Uint16 h, Uint8 channels)
 {
 	if(current_renderer == NULL || current_renderer->CreateImage == NULL)
