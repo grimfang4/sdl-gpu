@@ -68,7 +68,6 @@ static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	
 	glEnable(GL_BLEND);
-    glTranslatef(0.375f, 0.375f, 0.0f);
 
 	
 	if(renderer->display == NULL)
