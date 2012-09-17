@@ -96,6 +96,8 @@ int main(int argc, char* argv[])
 	long frameCount = 0;
 	
 	
+	SDL_Color black = {0, 0, 0, 255};
+	
 	GPU_Image* img = GPU_LoadImage("data/test3.png");
 	
 	Uint8* keystates = SDL_GetKeyState(NULL);
@@ -133,6 +135,22 @@ int main(int argc, char* argv[])
 					printf("Angle: %.1f\n", camera.angle);
 					printScreenToWorld(x, y);
 					printWorldToScreen(50, 50);
+				}
+				else if(event.key.keysym.sym == SDLK_w)
+				{
+					camera.y -= 100;
+				}
+				else if(event.key.keysym.sym == SDLK_s)
+				{
+					camera.y += 100;
+				}
+				else if(event.key.keysym.sym == SDLK_a)
+				{
+					camera.x -= 100;
+				}
+				else if(event.key.keysym.sym == SDLK_d)
+				{
+					camera.x += 100;
 				}
 			}
 		}
@@ -182,6 +200,7 @@ int main(int argc, char* argv[])
 		
 		GPU_SetCamera(screen, &camera);
 		
+		GPU_Rect(screen, 0, 0, 800, 600, black);
 		GPU_Blit(img, NULL, screen, 50, 50);
 		GPU_Blit(img, NULL, screen, 320, 50);
 		GPU_Blit(img, NULL, screen, 50, 500);
