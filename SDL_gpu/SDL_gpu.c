@@ -60,6 +60,24 @@ int GPU_ToggleFullscreen(void)
 	return current_renderer->ToggleFullscreen(current_renderer);
 }
 
+void GPU_GetDisplayResolution(int* w, int* h)
+{
+	SDL_Surface* surf = SDL_GetVideoSurface();
+	if(surf == NULL)
+	{
+		if(w)
+			*w = 0;
+		if(h)
+			*h = 0;
+		return;
+	}
+	
+	if(w)
+		*w = surf->w;
+	if(h)
+		*h = surf->h;
+}
+
 int GPU_SetDisplayResolution(Uint16 w, Uint16 h)
 {
 	if(current_renderer == NULL || current_renderer->SetDisplayResolution == NULL || w == 0 || h == 0)
