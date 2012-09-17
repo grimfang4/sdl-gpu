@@ -126,7 +126,6 @@ static int SetDisplayResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	
 	glEnable(GL_BLEND);
-    glTranslatef(0.375f, 0.375f, 0.0f);
 
 	// Update display
 	GPU_ClearClip(renderer->display);
