@@ -20,9 +20,13 @@ static Uint8 checkExtension(const char* str)
 
 static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags)
 {
-	if(flags & SDL_DOUBLEBUF)
+	Uint8 useDoubleBuffering = flags & SDL_DOUBLEBUF;
+	if(useDoubleBuffering)
+	{
 		SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-	flags &= ~SDL_DOUBLEBUF;
+		flags &= ~SDL_DOUBLEBUF;
+	}
+	SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, 1);
 	
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
 	
