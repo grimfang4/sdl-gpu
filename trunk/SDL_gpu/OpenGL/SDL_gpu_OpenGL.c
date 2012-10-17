@@ -707,6 +707,28 @@ static int BlitTransform(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcre
 	return result;
 }
 
+static int BlitTransformX(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float pivot_x, float pivot_y, float angle, float scaleX, float scaleY)
+{
+	if(src == NULL || dest == NULL)
+		return -1;
+	if(renderer != src->renderer || renderer != dest->renderer)
+		return -2;
+	
+	glPushMatrix();
+	
+	glTranslatef(x + pivot_x, (dest == renderer->display? y + pivot_y : renderer->display->h - y - pivot_y), 0);
+	glRotatef(angle, 0, 0, 1);
+	glTranslatef(-pivot_x, (dest == renderer->display? -pivot_y : pivot_y), 0);
+	glScalef(scaleX, scaleY, 1.0f);
+	glTranslatef(0, (dest == renderer->display? 0 : -renderer->display->h), 0);
+	
+	int result = GPU_Blit(src, srcrect, dest, 0, 0);
+	
+	glPopMatrix();
+	
+	return result;
+}
+
 static float SetZ(GPU_Renderer* renderer, float z)
 {
 	if(renderer == NULL)
@@ -1254,6 +1276,7 @@ GPU_Renderer* GPU_CreateRenderer_OpenGL(void)
 	renderer->BlitRotate = &BlitRotate;
 	renderer->BlitScale = &BlitScale;
 	renderer->BlitTransform = &BlitTransform;
+	renderer->BlitTransformX = &BlitTransformX;
 	
 	renderer->SetZ = &SetZ;
 	renderer->GetZ = &GetZ;

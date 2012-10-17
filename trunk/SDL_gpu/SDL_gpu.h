@@ -133,6 +133,17 @@ typedef struct GPU_Renderer
 	 * \param scaleY Vertical stretch factor */
 	int (*BlitTransform)(struct GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float angle, float scaleX, float scaleY);
 	
+	/*! Scales, rotates around a pivot point, and draws the 'src' image to the 'dest' render target.
+	 * \param srcrect The region of the source image to use.
+	 * \param x Destination x-position
+	 * \param y Destination y-position
+	 * \param pivot_x Pivot x-position
+	 * \param pivot_y Pivot y-position
+	 * \param angle Rotation angle (in degrees)
+	 * \param scaleX Horizontal stretch factor
+	 * \param scaleY Vertical stretch factor */
+	int (*BlitTransformX)(struct GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float pivot_x, float pivot_y, float angle, float scaleX, float scaleY);
+	
 	/*! Sets the renderer's z-depth.
 	 * \return The previous z-depth */
 	float (*SetZ)(struct GPU_Renderer* renderer, float z);
@@ -313,6 +324,18 @@ int GPU_BlitScale(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, 
     * \param scaleX Horizontal stretch factor
     * \param scaleY Vertical stretch factor */
 int GPU_BlitTransform(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float angle, float scaleX, float scaleY);
+
+	
+/*! Scales, rotates around a pivot point, and draws the 'src' image to the 'dest' render target.
+	* \param srcrect The region of the source image to use.
+	* \param x Destination x-position
+	* \param y Destination y-position
+	* \param pivot_x Pivot x-position
+	* \param pivot_y Pivot y-position
+	* \param angle Rotation angle (in degrees)
+	* \param scaleX Horizontal stretch factor
+	* \param scaleY Vertical stretch factor */
+int GPU_BlitTransformX(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float pivot_x, float pivot_y, float angle, float scaleX, float scaleY);
 
 /*! Sets the renderer's z-depth.
     * \return The previous z-depth */

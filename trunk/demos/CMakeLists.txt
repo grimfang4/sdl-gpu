@@ -40,3 +40,6 @@ target_link_libraries (polygon-blit-demo SDL_gpu)
 
 add_executable(camera-demo camera/main.c)
 target_link_libraries (camera-demo SDL_gpu)
+
+add_executable(virtual-resolution-demo virtual-resolution/main.c)
+target_link_libraries (virtual-resolution-demo SDL_gpu)
