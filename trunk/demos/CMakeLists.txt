@@ -43,3 +43,6 @@ target_link_libraries (camera-demo SDL_gpu)
 
 add_executable(virtual-resolution-demo virtual-resolution/main.c)
 target_link_libraries (virtual-resolution-demo SDL_gpu)
+
+add_executable(transformx-demo transformx/main.c)
+target_link_libraries (transformx-demo SDL_gpu)

@@ -716,11 +716,21 @@ static int BlitTransformX(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcr
 	
 	glPushMatrix();
 	
-	glTranslatef(x + pivot_x, (dest == renderer->display? y + pivot_y : renderer->display->h - y - pivot_y), 0);
-	glRotatef(angle, 0, 0, 1);
-	glTranslatef(-pivot_x, (dest == renderer->display? -pivot_y : pivot_y), 0);
-	glScalef(scaleX, scaleY, 1.0f);
-	glTranslatef(0, (dest == renderer->display? 0 : -renderer->display->h), 0);
+	if(dest == renderer->display)
+	{
+		glTranslatef(x + pivot_x, y + pivot_y, 0);
+		glRotatef(angle, 0, 0, 1);
+		glTranslatef(-pivot_x, -pivot_y, 0);
+		glScalef(scaleX, scaleY, 1.0f);
+	}
+	else
+	{
+		glTranslatef(x + pivot_x, renderer->display->h - y - pivot_y, 0);
+		glRotatef(-angle, 0, 0, 1);
+		glTranslatef(-pivot_x, pivot_y, 0);
+		glScalef(scaleX, scaleY, 1.0f);
+		glTranslatef(0, -renderer->display->h, 0);
+	}
 	
 	int result = GPU_Blit(src, srcrect, dest, 0, 0);
 	
