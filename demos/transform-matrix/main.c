@@ -19,48 +19,6 @@ void printRenderers(void)
 	}
 }
 
-// Pre-multiply
-/*void scale(float* matrix3x3, float scale_x, float scale_y)
-{
-	matrix3x3[0] *= scale_x;
-	matrix3x3[1] *= scale_y;
-	matrix3x3[3] *= scale_x;
-	matrix3x3[4] *= scale_y;
-	matrix3x3[6] *= scale_x;
-	matrix3x3[7] *= scale_y;
-}
-
-void translate(float* matrix3x3, float dx, float dy)
-{
-	float g = matrix3x3[2];
-	float h = matrix3x3[5];
-	float i = matrix3x3[8];
-	matrix3x3[0] += g*dx;
-	matrix3x3[1] += g*dy;
-	matrix3x3[3] += h*dx;
-	matrix3x3[4] += h*dy;
-	matrix3x3[6] += i*dx;
-	matrix3x3[7] += i*dy;
-}
-
-void rotate(float* matrix3x3, float radians)
-{
-	float cosT = cos(radians);
-	float sinT = sin(radians);
-	float a = matrix3x3[0];
-	float b = matrix3x3[3];
-	float c = matrix3x3[6];
-	float d = matrix3x3[1];
-	float e = matrix3x3[4];
-	float f = matrix3x3[7];
-	matrix3x3[0] = a*cosT-d*sinT;
-	matrix3x3[1] = a*sinT+d*cosT;
-	matrix3x3[3] = b*cosT-e*sinT;
-	matrix3x3[4] = b*sinT+e*cosT;
-	matrix3x3[6] = c*cosT-f*sinT;
-	matrix3x3[7] = c*sinT+f*cosT;
-}*/
-
 // Post-multiply
 void scale(float* matrix3x3, float scale_x, float scale_y)
 {
@@ -181,7 +139,7 @@ int main(int argc, char* argv[])
 		
 		
 		float matrix[9] = {1,0,0,0,1,0,0,0,1};
-		translate(matrix, dx, dy);  // Uh oh!  It looks like the transformations are backward...  I want it to work like OpenGL's matrix operations.
+		translate(matrix, dx, dy);
 		scale(matrix, scale_x, scale_y);
 		rotate(matrix, angle*M_PI/180);
 		GPU_BlitTransformMatrix(image, NULL, target, x, y, matrix);
