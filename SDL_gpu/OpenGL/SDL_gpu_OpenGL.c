@@ -739,6 +739,40 @@ static int BlitTransformX(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcr
 	return result;
 }
 
+static int BlitTransformMatrix(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float* matrix3x3)
+{
+	if(src == NULL || dest == NULL)
+		return -1;
+	if(renderer != src->renderer || renderer != dest->renderer)
+		return -2;
+	
+	glPushMatrix();
+	
+	if(dest == renderer->display)
+	{
+		// column-major 3x3 to column-major 4x4 (and scooting the translations to the homogeneous column)
+		float matrix[16] = {matrix3x3[0],matrix3x3[1],matrix3x3[2],0,matrix3x3[3],matrix3x3[4],matrix3x3[5],0,0,0,matrix3x3[8],0,matrix3x3[6],matrix3x3[7],0,1};
+		glTranslatef(x, y, 0);
+		glMultMatrixf(matrix);
+	}
+	else
+	{
+		// column-major 3x3 to column-major 4x4 (and scooting the translations to the homogeneous column)
+		float matrix[16] = {matrix3x3[0],matrix3x3[1],matrix3x3[2],0,matrix3x3[3],matrix3x3[4],matrix3x3[5],0,0,0,matrix3x3[8],0,matrix3x3[6],matrix3x3[7],0,1};
+		glTranslatef(x, renderer->display->h - y, 0);
+		glScalef(1, -1, 1);
+		glMultMatrixf(matrix);
+		glScalef(1, -1, 1);
+		glTranslatef(0, -renderer->display->h, 0);
+	}
+	
+	int result = GPU_Blit(src, srcrect, dest, 0, 0);
+	
+	glPopMatrix();
+	
+	return result;
+}
+
 static float SetZ(GPU_Renderer* renderer, float z)
 {
 	if(renderer == NULL)
@@ -1287,6 +1321,7 @@ GPU_Renderer* GPU_CreateRenderer_OpenGL(void)
 	renderer->BlitScale = &BlitScale;
 	renderer->BlitTransform = &BlitTransform;
 	renderer->BlitTransformX = &BlitTransformX;
+	renderer->BlitTransformMatrix = &BlitTransformMatrix;
 	
 	renderer->SetZ = &SetZ;
 	renderer->GetZ = &GetZ;

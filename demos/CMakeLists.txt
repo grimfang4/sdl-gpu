@@ -46,3 +46,6 @@ target_link_libraries (virtual-resolution-demo SDL_gpu)
 
 add_executable(transformx-demo transformx/main.c)
 target_link_libraries (transformx-demo SDL_gpu)
+
+add_executable(transform-matrix-demo transform-matrix/main.c)
+target_link_libraries (transform-matrix-demo SDL_gpu)
