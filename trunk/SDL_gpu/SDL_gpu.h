@@ -144,6 +144,13 @@ typedef struct GPU_Renderer
 	 * \param scaleY Vertical stretch factor */
 	int (*BlitTransformX)(struct GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float pivot_x, float pivot_y, float angle, float scaleX, float scaleY);
 	
+	/*! Transforms and draws the 'src' image to the 'dest' render target.
+	 * \param srcrect The region of the source image to use.
+	 * \param x Destination x-position
+	 * \param y Destination y-position
+	 * \param matrix3x3 3x3 matrix in column-major order (index = row + column*numColumns) */
+	int (*BlitTransformMatrix)(struct GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float* matrix3x3);
+	
 	/*! Sets the renderer's z-depth.
 	 * \return The previous z-depth */
 	float (*SetZ)(struct GPU_Renderer* renderer, float z);
@@ -336,6 +343,15 @@ int GPU_BlitTransform(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float
 	* \param scaleX Horizontal stretch factor
 	* \param scaleY Vertical stretch factor */
 int GPU_BlitTransformX(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float pivot_x, float pivot_y, float angle, float scaleX, float scaleY);
+
+
+/*! Transforms and draws the 'src' image to the 'dest' render target.
+	* \param srcrect The region of the source image to use.
+	* \param x Destination x-position
+	* \param y Destination y-position
+	* \param matrix3x3 3x3 matrix in column-major order (index = row + column*numColumns) */
+int GPU_BlitTransformMatrix(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float* matrix3x3);
+
 
 /*! Sets the renderer's z-depth.
     * \return The previous z-depth */
