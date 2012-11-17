@@ -23,6 +23,9 @@ target_link_libraries (render-target-demo SDL_gpu)
 add_executable(blend-demo blend/main.c)
 target_link_libraries (blend-demo SDL_gpu)
 
+add_executable(blend-mode-demo blend-mode/main.c)
+target_link_libraries (blend-mode-demo SDL_gpu)
+
 add_executable(shapes-demo shapes/main.c)
 target_link_libraries (shapes-demo SDL_gpu)
 

@@ -1,5 +1,6 @@
 #include "SDL.h"
 #include "SDL_gpu.h"
+#include <math.h>
 
 void printRenderers(void)
 {
@@ -24,20 +25,20 @@ int main(int argc, char* argv[])
 	
 	printf("Using renderer: %s\n", GPU_GetCurrentRendererID());
 	
-	GPU_Image* image = GPU_LoadImage("data/test.bmp");
+	GPU_Image* image = GPU_LoadImage("data/test3.png");
 	if(image == NULL)
 		return -1;
 	
-	GPU_Image* screen2_image = GPU_CreateImage(800, 600, 4);
-	GPU_Target* screen2 = GPU_LoadTarget(screen2_image);
+	GPU_Image* bg = GPU_LoadImage("data/test4.bmp");
+	if(bg == NULL)
+		return -1;
+	
+	Uint8* keystates = SDL_GetKeyState(NULL);
+	float x = 0, y = 0;
+	
 	
 	Uint32 startTime = SDL_GetTicks();
 	long frameCount = 0;
-	
-	GPU_Target* target = screen;
-	float x = 400.0f;
-	float y = 300.0f;
-	SDL_Color red = {255, 0, 0, 255};
 	
 	Uint8 done = 0;
 	SDL_Event event;
@@ -51,27 +52,39 @@ int main(int argc, char* argv[])
 			{
 				if(event.key.keysym.sym == SDLK_ESCAPE)
 					done = 1;
-				else if(event.key.keysym.sym == SDLK_SPACE)
-				{
-					if(target == screen)
-						target = screen2;
-					else
-						target = screen;
-				}
 			}
 		}
 		
+		if(keystates[SDLK_UP])
+			y -= 1;
+		else if(keystates[SDLK_DOWN])
+			y += 1;
+		if(keystates[SDLK_LEFT])
+			x -= 1;
+		else if(keystates[SDLK_RIGHT])
+			x += 1;
+		
 		GPU_Clear(screen);
-		GPU_Clear(screen2);
 		
-		GPU_BlitScale(image, NULL, target, x, y, 0.1f, 0.1f);
-		GPU_BlitTransformX(image, NULL, target, x, y, 100, 100, SDL_GetTicks()/10.0f, 0.25f, 0.25f);
+		GPU_BlitScale(bg, NULL, screen, screen->w/2, screen->h/2, screen->w/(float)bg->w, screen->h/(float)bg->h);
 		
+		GPU_SetBlendMode(GPU_BLEND_NORMAL);
+		GPU_Blit(image, NULL, screen, x+100, y+150);
 		
-		if(target == screen2)
-			GPU_CircleFilled(screen2, 0, 0, 100, red);
+		GPU_SetBlendMode(GPU_BLEND_MULTIPLY);
+		GPU_Blit(image, NULL, screen, x+350, y+150);
 		
-		GPU_Blit(screen2_image, NULL, screen, 400, 300);
+		GPU_SetBlendMode(GPU_BLEND_DARKEN);
+		GPU_Blit(image, NULL, screen, x+600, y+150);
+		
+		GPU_SetBlendMode(GPU_BLEND_LIGHTEN);
+		GPU_Blit(image, NULL, screen, x+100, y+400);
+		
+		GPU_SetBlendMode(GPU_BLEND_DIFFERENCE);
+		GPU_Blit(image, NULL, screen, x+350, y+400);
+		
+		GPU_SetBlendMode(GPU_BLEND_NORMAL);
+		
 		GPU_Flip();
 		
 		frameCount++;
