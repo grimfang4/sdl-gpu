@@ -457,7 +457,13 @@ void GPU_SetImageFilter(GPU_Image* image, GPU_FilterEnum filter)
 	current_renderer->SetImageFilter(current_renderer, image, filter);
 }
 
-
+void GPU_SetBlendMode(GPU_BlendEnum mode)
+{
+	if(current_renderer == NULL || current_renderer->SetBlendMode == NULL)
+		return;
+	
+	current_renderer->SetBlendMode(current_renderer, mode);
+}
 
 
 

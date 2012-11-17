@@ -39,6 +39,14 @@ static const GPU_FilterEnum GPU_NEAREST = 0;
 static const GPU_FilterEnum GPU_LINEAR = 1;
 static const GPU_FilterEnum GPU_LINEAR_MIPMAP = 2;
 
+/*! Blending options */
+typedef unsigned int GPU_BlendEnum;
+static const GPU_BlendEnum GPU_BLEND_NORMAL = 0;
+static const GPU_BlendEnum GPU_BLEND_MULTIPLY = 1;
+static const GPU_BlendEnum GPU_BLEND_DARKEN = 2;
+static const GPU_BlendEnum GPU_BLEND_LIGHTEN = 3;
+static const GPU_BlendEnum GPU_BLEND_DIFFERENCE = 4;
+
 /*! Camera object that determines viewing transform. */
 typedef struct GPU_Camera
 {
@@ -185,6 +193,9 @@ typedef struct GPU_Renderer
 	
 	/*! Sets the image filtering mode, if supported by the renderer. */
 	void (*SetImageFilter)(struct GPU_Renderer* renderer, GPU_Image* image, GPU_FilterEnum filter);
+	
+	/*! Sets the blending mode, if supported by the renderer. */
+	void (*SetBlendMode)(struct GPU_Renderer* renderer, GPU_BlendEnum mode);
 
 	/*! Clears the contents of the given render target. */
 	void (*Clear)(struct GPU_Renderer* renderer, GPU_Target* target);
@@ -402,6 +413,9 @@ SDL_Color GPU_GetPixel(GPU_Target* target, Sint16 x, Sint16 y);
 
 /*! Sets the image filtering mode, if supported by the renderer. */
 void GPU_SetImageFilter(GPU_Image* image, GPU_FilterEnum filter);
+	
+/*! Sets the blending mode, if supported by the renderer. */
+void GPU_SetBlendMode(GPU_BlendEnum mode);
 
 /*! Clears the contents of the given render target. */
 void GPU_Clear(GPU_Target* target);

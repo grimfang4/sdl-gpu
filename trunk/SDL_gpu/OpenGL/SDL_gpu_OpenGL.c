@@ -1201,6 +1201,34 @@ static void SetImageFilter(GPU_Renderer* renderer, GPU_Image* image, GPU_FilterE
 }
 
 
+static void SetBlendMode(GPU_Renderer* renderer, GPU_BlendEnum mode)
+{
+	if(mode == GPU_BLEND_NORMAL)
+	{
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glBlendEquation(GL_FUNC_ADD);
+	}
+	else if(mode == GPU_BLEND_MULTIPLY)
+	{
+		glBlendFunc(GL_DST_COLOR, GL_ZERO);
+		glBlendEquation(GL_FUNC_ADD);
+	}
+	else if(mode == GPU_BLEND_DARKEN)
+	{
+		glBlendFunc(GL_ONE, GL_ONE);
+		glBlendEquation(GL_MIN);
+	}
+	else if(mode == GPU_BLEND_LIGHTEN)
+	{
+		glBlendFunc(GL_ONE, GL_ONE);
+		glBlendEquation(GL_MAX);
+	}
+	else if(mode == GPU_BLEND_DIFFERENCE)
+	{
+		glBlendFunc(GL_ONE, GL_ONE);
+		glBlendEquation(GL_FUNC_SUBTRACT);
+	}
+}
 
 
 
@@ -1336,6 +1364,7 @@ GPU_Renderer* GPU_CreateRenderer_OpenGL(void)
 	renderer->ShiftHSVExcept = &ShiftHSVExcept;
 	renderer->GetPixel = &GetPixel;
 	renderer->SetImageFilter = &SetImageFilter;
+	renderer->SetBlendMode = &SetBlendMode;
 	
 	renderer->Clear = &Clear;
 	renderer->ClearRGBA = &ClearRGBA;
