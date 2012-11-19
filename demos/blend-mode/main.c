@@ -29,8 +29,13 @@ int main(int argc, char* argv[])
 	if(image == NULL)
 		return -1;
 	
-	GPU_Image* bg = GPU_LoadImage("data/test4.bmp");
-	if(bg == NULL)
+	GPU_Image* bg_base = GPU_LoadImage("data/test4.bmp");
+	if(bg_base == NULL)
+		return -1;
+	
+	GPU_Image* bg = GPU_CreateImage(bg_base->w, bg_base->h, 4);
+	GPU_Target* bg_target = GPU_LoadTarget(bg);
+	if(bg == NULL || bg_target == NULL)
 		return -1;
 	
 	Uint8* keystates = SDL_GetKeyState(NULL);
@@ -64,26 +69,39 @@ int main(int argc, char* argv[])
 		else if(keystates[SDLK_RIGHT])
 			x += 1;
 		
-		GPU_Clear(screen);
+		GPU_ClearRGBA(screen, 150, 150, 150, 255);
+		// Draw a face under everything
+		GPU_BlitScale(image, NULL, screen, screen->w/2, screen->h/2, screen->w/(float)image->w, screen->h/(float)image->h);
 		
-		GPU_BlitScale(bg, NULL, screen, screen->w/2, screen->h/2, screen->w/(float)bg->w, screen->h/(float)bg->h);
+		GPU_Clear(bg_target);
+		
+		GPU_Blit(bg_base, NULL, bg_target, bg->w/2, bg->h/2);
 		
 		GPU_SetBlendMode(GPU_BLEND_NORMAL);
-		GPU_Blit(image, NULL, screen, x+100, y+150);
+		GPU_BlitScale(image, NULL, bg_target, x+50, y+50, 0.5f, 0.5f);
 		
 		GPU_SetBlendMode(GPU_BLEND_MULTIPLY);
-		GPU_Blit(image, NULL, screen, x+350, y+150);
+		GPU_BlitScale(image, NULL, bg_target, x+250, y+50, 0.5f, 0.5f);
 		
 		GPU_SetBlendMode(GPU_BLEND_DARKEN);
-		GPU_Blit(image, NULL, screen, x+600, y+150);
+		GPU_BlitScale(image, NULL, bg_target, x+450, y+50, 0.5f, 0.5f);
 		
 		GPU_SetBlendMode(GPU_BLEND_LIGHTEN);
-		GPU_Blit(image, NULL, screen, x+100, y+400);
+		GPU_BlitScale(image, NULL, bg_target, x+650, y+50, 0.5f, 0.5f);
 		
 		GPU_SetBlendMode(GPU_BLEND_DIFFERENCE);
-		GPU_Blit(image, NULL, screen, x+350, y+400);
+		GPU_BlitScale(image, NULL, bg_target, x+50, y+250, 0.5f, 0.5f);
+		
+		GPU_SetBlendMode(GPU_BLEND_PUNCHOUT);
+		GPU_BlitScale(image, NULL, bg_target, x+250, y+250, 0.5f, 0.5f);
+		
+		GPU_SetBlendMode(GPU_BLEND_CUTOUT);
+		GPU_BlitScale(image, NULL, bg_target, x+450, y+250, 0.5f, 0.5f);
 		
 		GPU_SetBlendMode(GPU_BLEND_NORMAL);
+		
+		// Put our result on the screen target
+		GPU_BlitScale(bg, NULL, screen, screen->w/2, screen->h/2, screen->w/(float)bg->w, screen->h/(float)bg->h);
 		
 		GPU_Flip();
 		

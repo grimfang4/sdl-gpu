@@ -46,6 +46,8 @@ static const GPU_BlendEnum GPU_BLEND_MULTIPLY = 1;
 static const GPU_BlendEnum GPU_BLEND_DARKEN = 2;
 static const GPU_BlendEnum GPU_BLEND_LIGHTEN = 3;
 static const GPU_BlendEnum GPU_BLEND_DIFFERENCE = 4;
+static const GPU_BlendEnum GPU_BLEND_PUNCHOUT = 5;
+static const GPU_BlendEnum GPU_BLEND_CUTOUT = 6;
 
 /*! Camera object that determines viewing transform. */
 typedef struct GPU_Camera
