@@ -1210,8 +1210,28 @@ static void SetBlendMode(GPU_Renderer* renderer, GPU_BlendEnum mode)
 	}
 	else if(mode == GPU_BLEND_MULTIPLY)
 	{
-		glBlendFuncSeparate(GL_DST_COLOR, GL_ZERO, GL_ZERO, GL_ONE);
+		glBlendFuncSeparate(GL_DST_COLOR, GL_ZERO, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glBlendEquation(GL_FUNC_ADD);
+	}
+	else if(mode == GPU_BLEND_ADD)
+	{
+		glBlendFunc(GL_ONE, GL_ONE);
+		glBlendEquation(GL_FUNC_ADD);
+	}
+	else if(mode == GPU_BLEND_SUBTRACT)
+	{
+		glBlendFunc(GL_ONE, GL_ONE);
+		glBlendEquation(GL_FUNC_SUBTRACT);
+	}
+	else if(mode == GPU_BLEND_ADD_COLOR)
+	{
+		glBlendFuncSeparate(GL_ONE, GL_ONE, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glBlendEquation(GL_FUNC_ADD);
+	}
+	else if(mode == GPU_BLEND_SUBTRACT_COLOR)
+	{
+		glBlendFuncSeparate(GL_ONE, GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA);
+		glBlendEquation(GL_FUNC_SUBTRACT);
 	}
 	else if(mode == GPU_BLEND_DARKEN)
 	{
