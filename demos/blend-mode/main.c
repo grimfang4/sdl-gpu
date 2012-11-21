@@ -33,7 +33,7 @@ int main(int argc, char* argv[])
 	if(bg_base == NULL)
 		return -1;
 	
-	GPU_Image* bg = GPU_CreateImage(bg_base->w, bg_base->h, 4);
+	GPU_Image* bg = GPU_CreateImage(screen->w, screen->h, 4);
 	GPU_Target* bg_target = GPU_LoadTarget(bg);
 	if(bg == NULL || bg_target == NULL)
 		return -1;
@@ -75,7 +75,7 @@ int main(int argc, char* argv[])
 		
 		GPU_Clear(bg_target);
 		
-		GPU_Blit(bg_base, NULL, bg_target, bg->w/2, bg->h/2);
+		GPU_BlitScale(bg_base, NULL, bg_target, bg->w/2, bg->h/2, bg_target->w/(float)bg_base->w, bg_target->h/(float)bg_base->h);
 		
 		GPU_SetBlendMode(GPU_BLEND_NORMAL);
 		GPU_BlitScale(image, NULL, bg_target, x+50, y+50, 0.5f, 0.5f);
