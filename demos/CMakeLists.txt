@@ -52,3 +52,6 @@ target_link_libraries (transformx-demo SDL_gpu)
 
 add_executable(transform-matrix-demo transform-matrix/main.c)
 target_link_libraries (transform-matrix-demo SDL_gpu)
+
+add_executable(copy-demo copy/main.c)
+target_link_libraries (copy-demo SDL_gpu)
