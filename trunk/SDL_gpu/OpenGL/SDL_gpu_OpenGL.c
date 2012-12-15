@@ -564,6 +564,34 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_T
 	// Bind the FBO
 	glBindFramebuffer(GL_FRAMEBUFFER, ((TargetData_OpenGL*)dest->data)->handle);
 	
+	// Rendering to FBO clips outside of the viewport.  This makes textures larger than the screen viewport to fail drawing completely.
+	// However, when the viewport is adjusted to fit the texture, it scales the projected region up to the viewport.
+	// This scaling can be fixed by scaling the texture coords.
+	// At this point though, textures with smaller dimensions are clipped...
+	GLint vp[4];
+	glGetIntegerv(GL_VIEWPORT, vp);
+	
+	Uint8 viewScaleX = (dest->w > vp[2]);
+	Uint8 viewScaleY = (dest->h > vp[3]);
+	float wRatio, hRatio;
+	if(viewScaleX || viewScaleY)
+	{
+		unsigned int w = vp[2];
+		unsigned int h = vp[3];
+		if(viewScaleX)
+		{
+			wRatio = dest->w/(float)w;
+			w = dest->w;
+		}
+		if(viewScaleY)
+		{
+			hRatio = dest->h/(float)h;
+			h = dest->h;
+		}
+		glViewport( 0, 0, w, h);
+	}
+	
+	
 	if(dest->useClip)
 	{
 		glEnable(GL_SCISSOR_TEST);
@@ -598,6 +626,18 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_T
 		dy1 = y - srcrect->h/2;
 		dx2 = x + srcrect->w/2;
 		dy2 = y + srcrect->h/2;
+	}
+	
+	// Fix the viewport scaling
+	if(viewScaleX)
+	{
+		x1 *= wRatio;
+		x2 *= wRatio;
+	}
+	if(viewScaleY)
+	{
+		y1 *= hRatio;
+		y2 *= hRatio;
 	}
 	
 	if(dest != renderer->display)
@@ -641,8 +681,13 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_T
 		glDisable(GL_SCISSOR_TEST);
 	}
 	
+	glMatrixMode( GL_PROJECTION );
+	glPopMatrix();
+	glMatrixMode( GL_MODELVIEW );
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	
+	/// restore viewport
+	glViewport(vp[0], vp[1], vp[2], vp[3]);
 	return 0;
 }
 
