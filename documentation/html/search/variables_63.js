@@ -1,5 +1,6 @@
 var searchData=
 [
+  ['camera',['camera',['../structGPU__Renderer_a5cc68420c0ba2fcf5f0625abc601d1b1.html#a5cc68420c0ba2fcf5f0625abc601d1b1',1,'GPU_Renderer']]],
   ['channels',['channels',['../structGPU__Image_ab4b55f2f31790f0a41ab40551606bc48.html#ab4b55f2f31790f0a41ab40551606bc48',1,'GPU_Image']]],
   ['circle',['Circle',['../structGPU__ShapeRenderer_ac00207867b94acdccd4f0b6a96fb9cfb.html#ac00207867b94acdccd4f0b6a96fb9cfb',1,'GPU_ShapeRenderer']]],
   ['circlefilled',['CircleFilled',['../structGPU__ShapeRenderer_a4d5fe6ebc5ec051aa9b6e834667447be.html#a4d5fe6ebc5ec051aa9b6e834667447be',1,'GPU_ShapeRenderer']]],
