@@ -578,15 +578,26 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_T
 	{
 		unsigned int w = vp[2];
 		unsigned int h = vp[3];
+		int destW, destH;
+		if(renderer->display == dest)
+		{
+			GPU_GetDisplayResolution(&destW, &destH);
+		}
+		else
+		{
+			destW = dest->w;
+			destH = dest->h;
+		}
+		
 		if(viewScaleX)
 		{
-			wRatio = dest->w/(float)w;
-			w = dest->w;
+			wRatio = destW/(float)w;
+			w = destW;
 		}
 		if(viewScaleY)
 		{
-			hRatio = dest->h/(float)h;
-			h = dest->h;
+			hRatio = destH/(float)h;
+			h = destH;
 		}
 		glViewport( 0, 0, w, h);
 	}
