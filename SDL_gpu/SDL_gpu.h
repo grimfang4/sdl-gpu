@@ -117,51 +117,51 @@ typedef struct GPU_Renderer
 	/*! Deletes a render target in the proper way for this renderer. */
 	void (*FreeTarget)(struct GPU_Renderer* renderer, GPU_Target* target);
 
-	/*! Draws the 'src' image to the 'dest' render target.
+	/*! Draws the 'src' image to the 'dest' render target.  Draws the image centered at (x, y).  Note that this is different from many other graphics libraries, but has none of the consequences of an arbitrary offset.
 	 * \param srcrect The region of the source image to use.
-	 * \param x Destination x-position
-	 * \param y Destination y-position */
+	 * \param x Destination x-position (centered)
+	 * \param y Destination y-position (centered) */
 	int (*Blit)(struct GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y);
 	
-	/*! Rotates and draws the 'src' image to the 'dest' render target.
+	/*! Rotates and draws the 'src' image to the 'dest' render target.  Draws the image centered at (x, y).
 	 * \param srcrect The region of the source image to use.
-	 * \param x Destination x-position
-	 * \param y Destination y-position
+	 * \param x Destination x-position (centered)
+	 * \param y Destination y-position (centered)
 	 * \param angle Rotation angle (in degrees) */
 	int (*BlitRotate)(struct GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float angle);
 	
-	/*! Scales and draws the 'src' image to the 'dest' render target.
+	/*! Scales and draws the 'src' image to the 'dest' render target.  Draws the image centered at (x, y).
 	 * \param srcrect The region of the source image to use.
-	 * \param x Destination x-position
-	 * \param y Destination y-position
+	 * \param x Destination x-position (centered)
+	 * \param y Destination y-position (centered)
 	 * \param scaleX Horizontal stretch factor
 	 * \param scaleY Vertical stretch factor */
 	int (*BlitScale)(struct GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float scaleX, float scaleY);
 	
-	/*! Scales, rotates, and draws the 'src' image to the 'dest' render target.
+	/*! Scales, rotates, and draws the 'src' image to the 'dest' render target.  Draws the image centered at (x, y).
 	 * \param srcrect The region of the source image to use.
-	 * \param x Destination x-position
-	 * \param y Destination y-position
+	 * \param x Destination x-position (centered)
+	 * \param y Destination y-position (centered)
 	 * \param angle Rotation angle (in degrees)
 	 * \param scaleX Horizontal stretch factor
 	 * \param scaleY Vertical stretch factor */
 	int (*BlitTransform)(struct GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float angle, float scaleX, float scaleY);
 	
-	/*! Scales, rotates around a pivot point, and draws the 'src' image to the 'dest' render target.
+	/*! Scales, rotates around a pivot point, and draws the 'src' image to the 'dest' render target.  Draws the image centered at (x, y).
 	 * \param srcrect The region of the source image to use.
-	 * \param x Destination x-position
-	 * \param y Destination y-position
-	 * \param pivot_x Pivot x-position
-	 * \param pivot_y Pivot y-position
+	 * \param x Destination x-position (centered)
+	 * \param y Destination y-position (centered)
+	 * \param pivot_x Pivot x-position (on src image)
+	 * \param pivot_y Pivot y-position (on src image)
 	 * \param angle Rotation angle (in degrees)
 	 * \param scaleX Horizontal stretch factor
 	 * \param scaleY Vertical stretch factor */
 	int (*BlitTransformX)(struct GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float pivot_x, float pivot_y, float angle, float scaleX, float scaleY);
 	
-	/*! Transforms and draws the 'src' image to the 'dest' render target.
+	/*! Transforms and draws the 'src' image to the 'dest' render target.  Draws the image centered at (x, y).
 	 * \param srcrect The region of the source image to use.
-	 * \param x Destination x-position
-	 * \param y Destination y-position
+	 * \param x Destination x-position (centered)
+	 * \param y Destination y-position (centered)
 	 * \param matrix3x3 3x3 matrix in column-major order (index = row + column*numColumns) */
 	int (*BlitTransformMatrix)(struct GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float* matrix3x3);
 	
