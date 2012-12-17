@@ -29,10 +29,11 @@ int main(int argc, char* argv[])
 	int numImages = 0;
 	
 	GPU_Image* images[argc-1];
-	for(int i = 1; i < argc; i++)
+	int i;
+	for(i = 1; i < argc; i++)
 	{
-		images[i-1] = GPU_LoadImage(argv[i]);
-		if(images[i-1] != NULL)
+		images[numImages] = GPU_LoadImage(argv[i]);
+		if(images[numImages] != NULL)
 			numImages++;
 	}
 	
@@ -86,7 +87,7 @@ int main(int argc, char* argv[])
 		
 		float x = 100;
 		float y = 100;
-		for(int i = 0; i < numImages; i++)
+		for(i = 0; i < numImages; i++)
 		{
 			float x_scale = 150.0f/images[i]->w;
 			float y_scale = 150.0f/images[i]->h;
@@ -106,7 +107,7 @@ int main(int argc, char* argv[])
 		SDL_Delay(10);
 	}
 	
-	for(int i = 0; i < numImages; i++)
+	for(i = 0; i < numImages; i++)
 	{
 		GPU_FreeImage(images[i]);
 	}
