@@ -39,7 +39,7 @@
 #include <string.h>
 
 /*	error reporting	*/
-char *result_string_pointer = "SOIL initialized";
+const char *result_string_pointer = "SOIL initialized";
 
 /*	for loading cube maps	*/
 enum{
@@ -144,58 +144,6 @@ unsigned int
 		/*	image loading failed	*/
 		result_string_pointer = stbi_failure_reason();
 		return 0;
-	}
-	/*	OK, make it a texture!	*/
-	tex_id = SOIL_internal_create_OGL_texture(
-			img, width, height, channels,
-			reuse_texture_ID, flags,
-			GL_TEXTURE_2D, GL_TEXTURE_2D,
-			GL_MAX_TEXTURE_SIZE );
-	/*	and nuke the image data	*/
-	SOIL_free_image_data( img );
-	/*	and return the handle, such as it is	*/
-	return tex_id;
-}
-
-unsigned int
-	SOIL_load_OGL_HDR_texture
-	(
-		const char *filename,
-		int fake_HDR_format,
-		int rescale_to_max,
-		unsigned int reuse_texture_ID,
-		unsigned int flags
-	)
-{
-	/*	variables	*/
-	unsigned char* img;
-	int width, height, channels;
-	unsigned int tex_id;
-	/*	no direct uploading of the image as a DDS file	*/
-	/* error check */
-	if( (fake_HDR_format != SOIL_HDR_RGBE) &&
-		(fake_HDR_format != SOIL_HDR_RGBdivA) &&
-		(fake_HDR_format != SOIL_HDR_RGBdivA2) )
-	{
-		result_string_pointer = "Invalid fake HDR format specified";
-		return 0;
-	}
-	/*	try to load the image (only the HDR type) */
-	img = stbi_hdr_load_rgbe( filename, &width, &height, &channels, 4 );
-	/*	channels holds the original number of channels, which may have been forced	*/
-	if( NULL == img )
-	{
-		/*	image loading failed	*/
-		result_string_pointer = stbi_failure_reason();
-		return 0;
-	}
-	/* the load worked, do I need to convert it? */
-	if( fake_HDR_format == SOIL_HDR_RGBdivA )
-	{
-		RGBE_to_RGBdivA( img, width, height, rescale_to_max );
-	} else if( fake_HDR_format == SOIL_HDR_RGBdivA2 )
-	{
-		RGBE_to_RGBdivA2( img, width, height, rescale_to_max );
 	}
 	/*	OK, make it a texture!	*/
 	tex_id = SOIL_internal_create_OGL_texture(
