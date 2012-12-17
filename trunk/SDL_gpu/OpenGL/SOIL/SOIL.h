@@ -205,24 +205,6 @@ unsigned int
 	);
 
 /**
-	Loads an HDR image from disk into an OpenGL texture.
-	\param filename the name of the file to upload as a texture
-	\param fake_HDR_format SOIL_HDR_RGBE, SOIL_HDR_RGBdivA, SOIL_HDR_RGBdivA2
-	\param reuse_texture_ID 0-generate a new texture ID, otherwise reuse the texture ID (overwriting the old texture)
-	\param flags can be any of SOIL_FLAG_POWER_OF_TWO | SOIL_FLAG_MIPMAPS | SOIL_FLAG_TEXTURE_REPEATS | SOIL_FLAG_MULTIPLY_ALPHA | SOIL_FLAG_INVERT_Y | SOIL_FLAG_COMPRESS_TO_DXT
-	\return 0-failed, otherwise returns the OpenGL texture handle
-**/
-unsigned int
-	SOIL_load_OGL_HDR_texture
-	(
-		const char *filename,
-		int fake_HDR_format,
-		int rescale_to_max,
-		unsigned int reuse_texture_ID,
-		unsigned int flags
-	);
-
-/**
 	Loads an image from RAM into an OpenGL texture.
 	\param buffer the image data in RAM just as if it were still in a file
 	\param buffer_length the size of the buffer in bytes
