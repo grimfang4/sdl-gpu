@@ -12,6 +12,7 @@ option(SDL_gpu_INSTALL "Install SDL_gpu libs, includes, and CMake scripts" ${SDL
 option(SDL_gpu_BUILD_SHARED "Build SDL_gpu shared libraries" OFF)
 option(SDL_gpu_BUILD_STATIC "Build SDL_gpu static libraries" ON)
 option(SDL_gpu_BUILD_EXAMPLES "Build SDL_gpu examples" ON)
+option(SDL_gpu_BUILD_TOOLS "Build SDL_gpu tool programs" ON)
 
 set(SDL_gpu_VERSION 0.0.1)
 set(SOIL_VERSION 7.26.07)
@@ -46,4 +47,8 @@ add_subdirectory(SDL_gpu)
 if(SDL_gpu_BUILD_EXAMPLES)
   add_subdirectory(demos)
 endif(SDL_gpu_BUILD_EXAMPLES)
+
+if(SDL_gpu_BUILD_TOOLS)
+  add_subdirectory(tools)
+endif(SDL_gpu_BUILD_TOOLS)
 
