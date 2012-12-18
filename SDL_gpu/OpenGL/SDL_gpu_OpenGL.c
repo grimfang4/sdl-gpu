@@ -8,6 +8,14 @@
 #include "SOIL.h"
 #include <math.h>
 
+#define FORCE_POWER_OF_TWO
+
+#ifdef FORCE_POWER_OF_TWO
+	#define POT_FLAG SOIL_FLAG_POWER_OF_TWO
+#else
+	#define POT_FLAG 0
+#endif
+
 static Uint8 checkExtension(const char* str)
 {
 	if(!glewIsExtensionSupported(str))
@@ -247,14 +255,12 @@ static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint8 
 	int iw, ih;
 	iw = w;
 	ih = h;
-	texture = SOIL_create_OGL_texture(pixels, &iw, &ih, channels, 0, 0);
+	texture = SOIL_create_OGL_texture(pixels, &iw, &ih, channels, 0, POT_FLAG);
 	if(texture == 0)
 	{
 		free(pixels);
 		return NULL;
 	}
-	w = iw;
-	h = ih;
 	
 	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &texture_format);
 	
@@ -278,6 +284,8 @@ static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint8 
 	
 	result->w = w;
 	result->h = h;
+	data->tex_width = iw;
+	data->tex_height = ih;
 	
 	free(pixels);
 	
@@ -291,8 +299,8 @@ static GPU_Image* LoadImage(GPU_Renderer* renderer, const char* filename)
 	GLint texture_format;
 	GLint w, h;
 	
-	
-	texture = SOIL_load_OGL_texture(filename, SOIL_LOAD_AUTO, 0, 0);
+	int result_w, result_h;
+	texture = SOIL_load_OGL_texture(filename, SOIL_LOAD_AUTO, 0, POT_FLAG, &result_w, &result_h);
 	if(texture == 0)
 		return NULL;
 	
@@ -340,8 +348,10 @@ static GPU_Image* LoadImage(GPU_Renderer* renderer, const char* filename)
 	data->format = texture_format;
 	data->hasMipmaps = 0;
 	
-	result->w = w;
-	result->h = h;
+	result->w = result_w;
+	result->h = result_h;
+	data->tex_width = w;
+	data->tex_height = h;
 	
 	return result;
 }
@@ -399,6 +409,7 @@ static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surf
 	GLint  nOfColors;
 	int w, h;
 	
+	// TODO: Implement power-of-two conversion
 	// Check that the image's width is a power of 2
 	/*if ( (surface->w & (surface->w - 1)) != 0 ) {
 		printf("warning: image.bmp's width is not a power of 2\n");
@@ -480,8 +491,10 @@ static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surf
 	data->format = texture_format;
 	data->hasMipmaps = 0;
 	
-	result->w = w;
-	result->h = h;
+	result->w = surface->w;
+	result->h = surface->h;
+	data->tex_width = w;
+	data->tex_height = h;
 	
 	return result;
 }
@@ -617,6 +630,8 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_T
 		glScissor(dest->clipRect.x * xFactor, y * yFactor, dest->clipRect.w * xFactor, dest->clipRect.h * yFactor);
 	}
 	
+	//Uint16 tex_width = ((ImageData_OpenGL*)src->data)->tex_width;
+	//Uint16 tex_height = ((ImageData_OpenGL*)src->data)->tex_height;
 	float x1, y1, x2, y2;
 	float dx1, dy1, dx2, dy2;
 	dx1 = x;
@@ -625,8 +640,8 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_T
 	{
 		x1 = 0;
 		y1 = 0;
-		x2 = 1;
-		y2 = 1;
+		x2 = 1;//((float)src->w)/tex_width;
+		y2 = 1;//((float)src->h)/tex_height;
 		dx1 = x - src->w/2;
 		dy1 = y - src->h/2;
 		dx2 = x + src->w/2;
