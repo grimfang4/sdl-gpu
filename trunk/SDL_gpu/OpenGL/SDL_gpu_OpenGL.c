@@ -244,12 +244,17 @@ static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint8 
 	unsigned char* pixels = (unsigned char*)malloc(w*h*channels);
 	memset(pixels, 0, w*h*channels);
 	
-	texture = SOIL_create_OGL_texture(pixels, w, h, channels, 0, 0);
+	int iw, ih;
+	iw = w;
+	ih = h;
+	texture = SOIL_create_OGL_texture(pixels, &iw, &ih, channels, 0, 0);
 	if(texture == 0)
 	{
 		free(pixels);
 		return NULL;
 	}
+	w = iw;
+	h = ih;
 	
 	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &texture_format);
 	

@@ -114,9 +114,10 @@ enum
 **/
 enum
 {
-	SOIL_SAVE_TYPE_TGA = 0,
-	SOIL_SAVE_TYPE_BMP = 1,
-	SOIL_SAVE_TYPE_DDS = 2
+        SOIL_SAVE_TYPE_TGA = 0,
+        SOIL_SAVE_TYPE_BMP = 1,
+        SOIL_SAVE_TYPE_PNG = 2,
+        SOIL_SAVE_TYPE_DDS = 3
 };
 
 /**
@@ -202,12 +203,30 @@ unsigned int
 		int force_channels,
 		unsigned int reuse_texture_ID,
 		unsigned int flags
-	);
+        );
 
 /**
-	Loads an image from RAM into an OpenGL texture.
-	\param buffer the image data in RAM just as if it were still in a file
-	\param buffer_length the size of the buffer in bytes
+        Loads an HDR image from disk into an OpenGL texture.
+        \param filename the name of the file to upload as a texture
+        \param fake_HDR_format SOIL_HDR_RGBE, SOIL_HDR_RGBdivA, SOIL_HDR_RGBdivA2
+        \param reuse_texture_ID 0-generate a new texture ID, otherwise reuse the texture ID (overwriting the old texture)
+        \param flags can be any of SOIL_FLAG_POWER_OF_TWO | SOIL_FLAG_MIPMAPS | SOIL_FLAG_TEXTURE_REPEATS | SOIL_FLAG_MULTIPLY_ALPHA | SOIL_FLAG_INVERT_Y | SOIL_FLAG_COMPRESS_TO_DXT
+        \return 0-failed, otherwise returns the OpenGL texture handle
+**/
+unsigned int
+        SOIL_load_OGL_HDR_texture
+        (
+                const char *filename,
+                int fake_HDR_format,
+                int rescale_to_max,
+                unsigned int reuse_texture_ID,
+                unsigned int flags
+        );
+
+/**
+        Loads an image from RAM into an OpenGL texture.
+        \param buffer the image data in RAM just as if it were still in a file
+        \param buffer_length the size of the buffer in bytes
 	\param force_channels 0-image format, 1-luminous, 2-luminous/alpha, 3-RGB, 4-RGBA
 	\param reuse_texture_ID 0-generate a new texture ID, otherwise reuse the texture ID (overwriting the old texture)
 	\param flags can be any of SOIL_FLAG_POWER_OF_TWO | SOIL_FLAG_MIPMAPS | SOIL_FLAG_TEXTURE_REPEATS | SOIL_FLAG_MULTIPLY_ALPHA | SOIL_FLAG_INVERT_Y | SOIL_FLAG_COMPRESS_TO_DXT | SOIL_FLAG_DDS_LOAD_DIRECT
@@ -295,13 +314,13 @@ unsigned int
 	\return 0-failed, otherwise returns the OpenGL texture handle
 **/
 unsigned int
-	SOIL_create_OGL_texture
-	(
-		const unsigned char *const data,
-		int width, int height, int channels,
-		unsigned int reuse_texture_ID,
-		unsigned int flags
-	);
+        SOIL_create_OGL_texture
+        (
+                const unsigned char *const data,
+                int *width, int *height, int channels,
+                unsigned int reuse_texture_ID,
+                unsigned int flags
+        );
 
 /**
 	Creates an OpenGL cubemap texture by splitting up 1 image into 6 parts.
@@ -413,3 +432,4 @@ const char*
 #endif
 
 #endif /* HEADER_SIMPLE_OPENGL_IMAGE_LIBRARY	*/
+ 

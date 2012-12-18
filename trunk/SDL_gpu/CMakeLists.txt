@@ -9,7 +9,7 @@ set(SDL_gpu_SRCS
 	OpenGL/SOIL/image_DXT.c
 	OpenGL/SOIL/image_helper.c
 	OpenGL/SOIL/stb_image.c
-	OpenGL/SOIL/stb_image_aug.c
+	OpenGL/SOIL/stb_image_write.c
 	Direct3D/SDL_gpu_Direct3D.c
 	Direct3D/SDL_gpuShapes_Direct3D.c
 )
@@ -26,7 +26,6 @@ set(SDL_gpu_HDRS
 	OpenGL/SOIL/image_helper.h
 	OpenGL/SOIL/stb_image.h
 	OpenGL/SOIL/stb_image_write.h
-	OpenGL/SOIL/stb_image_aug.h
 	Direct3D/SDL_gpu_Direct3D.h
 	Direct3D/SDL_gpu_Direct3D_internal.h
 )
