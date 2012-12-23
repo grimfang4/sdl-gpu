@@ -156,9 +156,7 @@ unsigned int
 		const char *filename,
 		int force_channels,
 		unsigned int reuse_texture_ID,
-		unsigned int flags,
-		int* result_data_width,
-		int* result_data_height
+		unsigned int flags
 	);
 
 /**
