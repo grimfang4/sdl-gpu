@@ -15,7 +15,6 @@ typedef struct ImageData_OpenGL
 	GLuint handle;
 	GLenum format;
 	GLboolean hasMipmaps;
-	Uint16 tex_width, tex_height;
 } ImageData_OpenGL;
 
 typedef struct TargetData_OpenGL
