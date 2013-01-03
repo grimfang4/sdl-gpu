@@ -112,11 +112,11 @@ void GPU_RegisterRenderers()
 	if(i >= MAX_REGISTERED_RENDERERS)
 		return;
 	
-	id = "Direct3D";
+	/*id = "Direct3D";
 	rendererRegister[i].id = (char*)malloc(strlen(id) + 1);
 	strcpy(rendererRegister[i].id, id);
 	rendererRegister[i].createFn = &GPU_CreateRenderer_Direct3D;
-	rendererRegister[i].freeFn = &GPU_FreeRenderer_Direct3D;
+	rendererRegister[i].freeFn = &GPU_FreeRenderer_Direct3D;*/
 }
 
 

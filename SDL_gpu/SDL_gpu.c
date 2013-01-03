@@ -60,22 +60,16 @@ int GPU_ToggleFullscreen(void)
 	return current_renderer->ToggleFullscreen(current_renderer);
 }
 
+// TODO: Add error code return value
 void GPU_GetDisplayResolution(int* w, int* h)
 {
-	SDL_Surface* surf = SDL_GetVideoSurface();
-	if(surf == NULL)
-	{
-		if(w)
-			*w = 0;
-		if(h)
-			*h = 0;
+    if(current_renderer == NULL)
 		return;
-	}
-	
+    
 	if(w)
-		*w = surf->w;
+		*w = current_renderer->window_w;
 	if(h)
-		*h = surf->h;
+		*h = current_renderer->window_h;
 }
 
 int GPU_SetDisplayResolution(Uint16 w, Uint16 h)
@@ -137,14 +131,13 @@ const char* GPU_GetErrorString(void)
 
 void GPU_GetVirtualCoords(float* x, float* y, float displayX, float displayY)
 {
-	SDL_Surface* surf = SDL_GetVideoSurface();
-	if(current_renderer == NULL || current_renderer->display == NULL || surf == NULL)
+	if(current_renderer == NULL || current_renderer->display == NULL)
 		return;
 	
 	if(x != NULL)
-		*x = (displayX*current_renderer->display->w)/surf->w;
+		*x = (displayX*current_renderer->display->w)/current_renderer->window_w;
 	if(y != NULL)
-		*y = (displayY*current_renderer->display->h)/surf->h;
+		*y = (displayY*current_renderer->display->h)/current_renderer->window_h;
 }
 
 GPU_Camera GPU_GetDefaultCamera(void)
