@@ -82,6 +82,9 @@ typedef struct GPU_Renderer
 	/*! Initializes SDL and SDL_gpu.  Creates a window and renderer context. */
 	GPU_Target* (*Init)(struct GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags);
 	
+	/*! Sets up this renderer to act as the current renderer.  Called automatically by GPU_SetCurrentRenderer(). */
+	void (*SetAsCurrent)(struct GPU_Renderer* renderer);
+	
 	/*! Change the actual size of the window. */
 	int (*SetDisplayResolution)(struct GPU_Renderer* renderer, Uint16 w, Uint16 h);
 	

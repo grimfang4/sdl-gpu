@@ -13,6 +13,9 @@ const char* GPU_GetCurrentRendererID(void)
 void GPU_SetCurrentRenderer(const char* id)
 {
 	current_renderer = GPU_GetRendererByID(id);
+	
+	if(current_renderer != NULL && current_renderer->SetAsCurrent != NULL)
+		current_renderer->SetAsCurrent(current_renderer);
 }
 
 GPU_Renderer* GPU_GetCurrentRenderer(void)

@@ -53,7 +53,8 @@ static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags
         
         SDL_GetWindowSize(window, &renderer->window_w, &renderer->window_h);
         
-        SDL_GL_CreateContext(window);
+        SDL_GLContext context = SDL_GL_CreateContext(window);
+        ((RendererData_OpenGL*)renderer->data)->context = context;
 	#else
         SDL_Surface* screen = SDL_SetVideoMode(w, h, 0, flags);
         
@@ -113,6 +114,14 @@ static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags
 	renderer->display->clipRect.h = renderer->display->h;
 	
 	return renderer->display;
+}
+
+
+static void SetAsCurrent(GPU_Renderer* renderer)
+{
+    #ifdef SDL_GPU_USE_SDL2
+    SDL_GL_MakeCurrent(((RendererData_OpenGL*)renderer->data)->window, ((RendererData_OpenGL*)renderer->data)->context);
+    #endif
 }
 
 // FIXME: Rename to SetWindowResolution
@@ -1464,6 +1473,7 @@ GPU_Renderer* GPU_CreateRenderer_OpenGL(void)
 	memset(renderer->data, 0, sizeof(RendererData_OpenGL));
 	
 	renderer->Init = &Init;
+	renderer->SetAsCurrent = &SetAsCurrent;
 	renderer->SetDisplayResolution = &SetDisplayResolution;
 	renderer->SetVirtualResolution = &SetVirtualResolution;
 	renderer->Quit = &Quit;
