@@ -20,6 +20,9 @@ static Uint8 checkExtension(const char* str)
 
 static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags)
 {
+    #ifdef SDL_GPU_USE_SDL2
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+    #else
 	Uint8 useDoubleBuffering = flags & SDL_DOUBLEBUF;
 	if(useDoubleBuffering)
 	{
@@ -27,6 +30,9 @@ static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags
 		flags &= ~SDL_DOUBLEBUF;
 	}
 	SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, 1);
+	flags |= SDL_OPENGL;
+	#endif
+	
 	
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
 	
@@ -35,12 +41,28 @@ static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags
 	SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
 	SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
 	
-	flags |= SDL_OPENGL;
-	
-	SDL_Surface* screen = SDL_SetVideoMode(w, h, 0, flags);
-	
-	if(screen == NULL)
-		return NULL;
+    #ifdef SDL_GPU_USE_SDL2
+        SDL_Window* window = SDL_CreateWindow("",
+                            SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+                            w, h,
+                            SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL);
+        
+        ((RendererData_OpenGL*)renderer->data)->window = window;
+        if(window == NULL)
+            return NULL;
+        
+        SDL_GetWindowSize(window, &renderer->window_w, &renderer->window_h);
+        
+        SDL_GL_CreateContext(window);
+	#else
+        SDL_Surface* screen = SDL_SetVideoMode(w, h, 0, flags);
+        
+        if(screen == NULL)
+            return NULL;
+        
+        renderer->window_w = screen->w;
+        renderer->window_h = screen->h;
+    #endif
     
 	GLenum err = glewInit();
 	if (GLEW_OK != err)
@@ -81,28 +103,31 @@ static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags
 
 	((TargetData_OpenGL*)renderer->display->data)->handle = 0;
 	renderer->display->renderer = renderer;
-	renderer->display->w = screen->w;
-	renderer->display->h = screen->h;
+	renderer->display->w = renderer->window_w;
+	renderer->display->h = renderer->window_h;
 	
 	renderer->display->useClip = 0;
 	renderer->display->clipRect.x = 0;
 	renderer->display->clipRect.y = 0;
-	renderer->display->clipRect.w = screen->w;
-	renderer->display->clipRect.h = screen->h;
+	renderer->display->clipRect.w = renderer->display->w;
+	renderer->display->clipRect.h = renderer->display->h;
 	
 	return renderer->display;
 }
 
+// FIXME: Rename to SetWindowResolution
 static int SetDisplayResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
 {
 	if(renderer->display == NULL)
 		return 0;
 	
+	#ifdef SDL_GPU_USE_SDL2
+	SDL_SetWindowSize(((RendererData_OpenGL*)renderer->data)->window, w, h);
+	SDL_GetWindowSize(((RendererData_OpenGL*)renderer->data)->window, &renderer->window_w, &renderer->window_h);
+	#else
     SDL_Surface* surf = SDL_GetVideoSurface();
 	Uint32 flags = surf->flags;
 	
-	Uint16 virtualW = renderer->display->w;
-	Uint16 virtualH = renderer->display->h;
 	
 	SDL_Surface* screen = SDL_SetVideoMode(w, h, 0, flags);
 	// There's a bug in SDL.  This is a workaround.  Let's resize again:
@@ -110,6 +135,13 @@ static int SetDisplayResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
 	
 	if(screen == NULL)
 		return 0;
+    
+    renderer->window_w = screen->w;
+    renderer->window_h = screen->h;
+    #endif
+    
+	Uint16 virtualW = renderer->display->w;
+	Uint16 virtualH = renderer->display->h;
     
 	glEnable( GL_TEXTURE_2D );
 	glClearColor( 0.0f, 0.0f, 0.0f, 0.0f );
@@ -165,15 +197,24 @@ static void Quit(GPU_Renderer* renderer)
 
 static int ToggleFullscreen(GPU_Renderer* renderer)
 {
-    SDL_Surface* surf = SDL_GetVideoSurface();
-    if(SDL_WM_ToggleFullScreen(surf))
-		return 1;
-	
-	Uint16 w = surf->w;
-	Uint16 h = surf->h;
-	surf->flags ^= SDL_FULLSCREEN;
-	
-	return SetDisplayResolution(renderer, w, h);
+    #ifdef SDL_GPU_USE_SDL2
+        Uint8 enable = !(SDL_GetWindowFlags(((RendererData_OpenGL*)renderer->data)->window) & SDL_WINDOW_FULLSCREEN);
+        
+        if(SDL_SetWindowFullscreen(((RendererData_OpenGL*)renderer->data)->window, enable) < 0)
+            return 0;
+            
+        return 1;
+    #else
+        SDL_Surface* surf = SDL_GetVideoSurface();
+        
+        if(SDL_WM_ToggleFullScreen(surf))
+            return 1;
+        
+        Uint16 w = surf->w;
+        Uint16 h = surf->h;
+        surf->flags ^= SDL_FULLSCREEN;
+        return SetDisplayResolution(renderer, w, h);
+	#endif
 }
 
 
@@ -369,7 +410,7 @@ static GPU_Image* CopyImage(GPU_Renderer* renderer, GPU_Image* image)
     Uint16 w = renderer->display->w;
     Uint16 h = renderer->display->h;
     
-    renderer->SetVirtualResolution(renderer, SDL_GetVideoSurface()->w, SDL_GetVideoSurface()->h);
+    renderer->SetVirtualResolution(renderer, renderer->window_w, renderer->window_h);
 	renderer->Blit(renderer, image, NULL, tgt, tgt->w/2, tgt->h/2);
     renderer->SetVirtualResolution(renderer, w, h);
 	
@@ -612,8 +653,8 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_T
 	{
 		glEnable(GL_SCISSOR_TEST);
 		int y = (renderer->display == dest? renderer->display->h - (dest->clipRect.y + dest->clipRect.h) : dest->clipRect.y);
-		float xFactor = ((float)SDL_GetVideoSurface()->w)/renderer->display->w;
-		float yFactor = ((float)SDL_GetVideoSurface()->h)/renderer->display->h;
+		float xFactor = ((float)renderer->window_w)/renderer->display->w;
+		float yFactor = ((float)renderer->window_h)/renderer->display->h;
 		glScissor(dest->clipRect.x * xFactor, y * yFactor, dest->clipRect.w * xFactor, dest->clipRect.h * yFactor);
 	}
 	
@@ -1342,8 +1383,8 @@ static void Clear(GPU_Renderer* renderer, GPU_Target* target)
 	{
 		glEnable(GL_SCISSOR_TEST);
 		int y = (renderer->display == target? renderer->display->h - (target->clipRect.y + target->clipRect.h) : target->clipRect.y);
-		float xFactor = ((float)SDL_GetVideoSurface()->w)/renderer->display->w;
-		float yFactor = ((float)SDL_GetVideoSurface()->h)/renderer->display->h;
+		float xFactor = ((float)renderer->window_w)/renderer->display->w;
+		float yFactor = ((float)renderer->window_h)/renderer->display->h;
 		glScissor(target->clipRect.x * xFactor, y * yFactor, target->clipRect.w * xFactor, target->clipRect.h * yFactor);
 	}
 	
@@ -1377,8 +1418,8 @@ static void ClearRGBA(GPU_Renderer* renderer, GPU_Target* target, Uint8 r, Uint8
 	{
 		glEnable(GL_SCISSOR_TEST);
 		int y = (renderer->display == target? renderer->display->h - (target->clipRect.y + target->clipRect.h) : target->clipRect.y);
-		float xFactor = ((float)SDL_GetVideoSurface()->w)/renderer->display->w;
-		float yFactor = ((float)SDL_GetVideoSurface()->h)/renderer->display->h;
+		float xFactor = ((float)renderer->window_w)/renderer->display->w;
+		float yFactor = ((float)renderer->window_h)/renderer->display->h;
 		glScissor(target->clipRect.x * xFactor, y * yFactor, target->clipRect.w * xFactor, target->clipRect.h * yFactor);
 	}
 	
@@ -1396,7 +1437,11 @@ static void ClearRGBA(GPU_Renderer* renderer, GPU_Target* target, Uint8 r, Uint8
 
 static void Flip(GPU_Renderer* renderer)
 {
+    #ifdef SDL_GPU_USE_SDL2
+    SDL_GL_SwapWindow(((RendererData_OpenGL*)renderer->data)->window);
+    #else
 	SDL_GL_SwapBuffers();
+	#endif
 }
 
 
@@ -1416,6 +1461,7 @@ GPU_Renderer* GPU_CreateRenderer_OpenGL(void)
 	renderer->camera = GPU_GetDefaultCamera();
 	
 	renderer->data = (RendererData_OpenGL*)malloc(sizeof(RendererData_OpenGL));
+	memset(renderer->data, 0, sizeof(RendererData_OpenGL));
 	
 	renderer->Init = &Init;
 	renderer->SetDisplayResolution = &SetDisplayResolution;

@@ -35,7 +35,7 @@ void GPU_LoadShapeRenderer(void)
 		freeShapeRendererFn = &GPU_FreeShapeRenderer_OpenGL;
 	}
 	
-	if(strcmp(rendererID, "Direct3D") == 0)
+	/*if(strcmp(rendererID, "Direct3D") == 0)
 	{
 		GPU_ShapeRenderer* sr = GPU_CreateShapeRenderer_Direct3D();
 		if(sr == NULL)
@@ -43,7 +43,7 @@ void GPU_LoadShapeRenderer(void)
 		sr->renderer = renderer;
 		shapeRenderer = sr;
 		freeShapeRendererFn = &GPU_FreeShapeRenderer_Direct3D;
-	}
+	}*/
 	
 }
 

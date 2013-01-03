@@ -23,6 +23,12 @@ static void Circle(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, flo
 
 
 
+#ifdef SDL_GPU_USE_SDL2
+    #define GET_WINDOW(shape_renderer) ((GPU_RendererData_OpenGL*)shape_renderer->renderer->data)->window
+#else
+    #define GET_WINDOW(shape_renderer) SDL_GetVideoSurface()
+#endif
+
 
 #define BEGIN \
 	if(target == NULL) \
@@ -38,8 +44,8 @@ static void Circle(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, flo
 	{ \
 		glEnable(GL_SCISSOR_TEST); \
 		int y = (renderer->renderer->display == target? renderer->renderer->display->h - (target->clipRect.y + target->clipRect.h) : target->clipRect.y); \
-		float xFactor = ((float)SDL_GetVideoSurface()->w)/renderer->renderer->display->w; \
-		float yFactor = ((float)SDL_GetVideoSurface()->h)/renderer->renderer->display->h; \
+		float xFactor = ((float)renderer->renderer->window_w)/renderer->renderer->display->w; \
+		float yFactor = ((float)renderer->renderer->window_h)/renderer->renderer->display->h; \
 		glScissor(target->clipRect.x * xFactor, y * yFactor, target->clipRect.w * xFactor, target->clipRect.h * yFactor); \
 	} \
 	 \
@@ -415,22 +421,23 @@ static void RectRound(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1,
 	
 	glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
 	
+	float i;
 	glBegin(GL_LINE_LOOP);
 		glVertex3f(x1+radius,y1, z);
 		glVertex3f(x2-radius,y1, z);
-		for(float i=(float)M_PI*1.5f;i<M_PI*2;i+=0.1f)
+		for(i=(float)M_PI*1.5f;i<M_PI*2;i+=0.1f)
 			glVertex3f(x2-radius+cos(i)*radius,y1+radius+sin(i)*radius, z);
 		glVertex3f(x2,y1+radius, z);
 		glVertex3f(x2,y2-radius, z);
-		for(float i=0;i<(float)M_PI*0.5f;i+=0.1f)
+		for(i=0;i<(float)M_PI*0.5f;i+=0.1f)
 			glVertex3f(x2-radius+cos(i)*radius,y2-radius+sin(i)*radius, z);
 		glVertex3f(x2-radius,y2, z);
 		glVertex3f(x1+radius,y2, z);
-		for(float i=(float)M_PI*0.5f;i<M_PI;i+=0.1f)
+		for(i=(float)M_PI*0.5f;i<M_PI;i+=0.1f)
 			glVertex3f(x1+radius+cos(i)*radius,y2-radius+sin(i)*radius, z);
 		glVertex3f(x1,y2-radius, z);
 		glVertex3f(x1,y1+radius, z);
-		for(float i=(float)M_PI;i<M_PI*1.5f;i+=0.1f)
+		for(i=(float)M_PI;i<M_PI*1.5f;i+=0.1f)
 			glVertex3f(x1+radius+cos(i)*radius,y1+radius+sin(i)*radius, z);
 	glEnd();
 	
@@ -459,22 +466,23 @@ static void RectRoundFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, flo
 	
 	glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
 	
+	float i;
 	glBegin(GL_POLYGON);
 		glVertex3f(x1+radius,y1, z);
 		glVertex3f(x2-radius,y1, z);
-		for(float i=(float)M_PI*1.5f;i<M_PI*2;i+=0.1f)
+		for(i=(float)M_PI*1.5f;i<M_PI*2;i+=0.1f)
 			glVertex3f(x2-radius+cos(i)*radius,y1+radius+sin(i)*radius, z);
 		glVertex3f(x2,y1+radius, z);
 		glVertex3f(x2,y2-radius, z);
-		for(float i=0;i<(float)M_PI*0.5f;i+=0.1f)
+		for(i=0;i<(float)M_PI*0.5f;i+=0.1f)
 			glVertex3f(x2-radius+cos(i)*radius,y2-radius+sin(i)*radius, z);
 		glVertex3f(x2-radius,y2, z);
 		glVertex3f(x1+radius,y2, z);
-		for(float i=(float)M_PI*0.5f;i<M_PI;i+=0.1f)
+		for(i=(float)M_PI*0.5f;i<M_PI;i+=0.1f)
 			glVertex3f(x1+radius+cos(i)*radius,y2-radius+sin(i)*radius, z);
 		glVertex3f(x1,y2-radius, z);
 		glVertex3f(x1,y1+radius, z);
-		for(float i=(float)M_PI;i<M_PI*1.5f;i+=0.1f)
+		for(i=(float)M_PI;i<M_PI*1.5f;i+=0.1f)
 			glVertex3f(x1+radius+cos(i)*radius,y1+radius+sin(i)*radius, z);
 	glEnd();
 	

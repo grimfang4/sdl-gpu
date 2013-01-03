@@ -6,6 +6,9 @@
 
 typedef struct RendererData_OpenGL
 {
+    #ifdef SDL_GPU_USE_SDL2
+    SDL_Window* window;
+    #endif
 	GLuint handle;
 	float z;
 } RendererData_OpenGL;

@@ -67,8 +67,14 @@ typedef struct GPU_Renderer
 	/*! String identifier of the renderer. */
 	char* id;
 	
-	/*! Main display surface/framebuffer. */
+	/*! Main display surface/framebuffer.  Virtual dimensions can be gotten from this. */
 	GPU_Target* display;
+	
+	/*! Actual window width */
+	int window_w;
+	
+	/*! Actual window height */
+	int window_h;
 	
 	/*! Transforms for the global view. */
 	GPU_Camera camera;
