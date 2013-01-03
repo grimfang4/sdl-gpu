@@ -8,6 +8,7 @@ typedef struct RendererData_OpenGL
 {
     #ifdef SDL_GPU_USE_SDL2
     SDL_Window* window;
+    SDL_GLContext context;
     #endif
 	GLuint handle;
 	float z;
