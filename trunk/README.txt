@@ -1,4 +1,4 @@
-SDL_gpu, a library for making 2D OpenGL/Direct3D as simple as 2D SDL.
+SDL_gpu, a library for making hardware-accelerated 2D graphics easy.
 by Jonathan Dearborn
 
 SDL_gpu is licensed under the terms of the MIT License.
@@ -21,8 +21,17 @@ DEPENDENCIES
 ============
 
 SDL 1.2 (www.libsdl.org)
-A rendering backend (OpenGL only, at the moment)
+A rendering backend
+	Currently implemented: OpenGL, OpenGLES_1
 
+
+===================
+SELECTING RENDERERS
+===================
+
+Currently, the build process does not handle the selection of renderers to include in the library.
+You must manually change the file references in <trunk>/CMakeLists.txt and <trunk>/SDL_gpu/CMakeLists.txt.
+Also, the renderer must be specified in GPU_RegisterRenderers() in SDL_gpu_Renderer.c.
 
 ========
 BUILDING

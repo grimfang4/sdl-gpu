@@ -274,8 +274,8 @@ int GPU_ToggleFullscreen(void);
 /*! Gets the current renderer identifier string. */
 const char* GPU_GetCurrentRendererID(void);
 
-/*! Gets the default renderer identifier string. */
-const char* GPU_GetDefaultRendererID(void);
+/*! Gets the renderer identifier string for the given renderer index. */
+const char* GPU_GetRendererID(unsigned int index);
 
 /*! Gets the number of active (created) renderers. */
 int GPU_GetNumActiveRenderers(void);
