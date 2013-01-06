@@ -10,8 +10,6 @@ set(SDL_gpu_SRCS
 	OpenGL/SOIL/image_helper.c
 	OpenGL/SOIL/stb_image.c
 	OpenGL/SOIL/stb_image_write.c
-	Direct3D/SDL_gpu_Direct3D.c
-	Direct3D/SDL_gpuShapes_Direct3D.c
 )
 set(SDL_gpu_HDRS
 	SDL_gpu.h
@@ -26,13 +24,10 @@ set(SDL_gpu_HDRS
 	OpenGL/SOIL/image_helper.h
 	OpenGL/SOIL/stb_image.h
 	OpenGL/SOIL/stb_image_write.h
-	Direct3D/SDL_gpu_Direct3D.h
-	Direct3D/SDL_gpu_Direct3D_internal.h
 )
 set(SDL_gpu_install_HDRS
 	SDL_gpu.h
 	OpenGL/SDL_gpu_OpenGL.h
-	Direct3D/SDL_gpu_Direct3D.h
 )
 
 if(SDL_gpu_BUILD_SHARED)

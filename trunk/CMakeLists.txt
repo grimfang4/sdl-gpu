@@ -35,7 +35,6 @@ include_directories(SDL_gpu/OpenGL/SOIL)
 link_libraries (
    ${SDL_LIBRARY}
    ${OPENGL_LIBRARIES}
-   #SDLmain # Not included in SDL_LIBRARY variable
 )
 
 add_definitions("-g -Wall -std=c99 -pedantic")
