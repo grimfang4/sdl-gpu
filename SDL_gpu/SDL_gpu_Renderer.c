@@ -3,9 +3,10 @@
 
 
 #include "OpenGL/SDL_gpu_OpenGL_internal.h"
+//#include "OpenGLES_1/SDL_gpu_OpenGLES_1_internal.h"
 //#include "Direct3D/SDL_gpu_Direct3D_internal.h"
 
-#define MAX_ACTIVE_RENDERERS 10
+#define MAX_ACTIVE_RENDERERS 20
 #define MAX_REGISTERED_RENDERERS 2
 
 // TODO: Add list of initialized renderers that need to be cleaned up at GPU_Quit().
@@ -90,9 +91,12 @@ void GPU_GetRegisteredRendererList(const char** renderers_array)
 }
 
 
-const char* GPU_GetDefaultRendererID(void)
+const char* GPU_GetRendererID(unsigned int index)
 {
-	return "OpenGL";
+	if(index >= MAX_REGISTERED_RENDERERS)
+		return NULL;
+	
+	return rendererRegister[index].id;
 }
 
 void GPU_RegisterRenderers()
@@ -111,6 +115,16 @@ void GPU_RegisterRenderers()
 	i++;
 	if(i >= MAX_REGISTERED_RENDERERS)
 		return;
+	
+	/*const char* id = "OpenGLES_1";
+	rendererRegister[i].id = (char*)malloc(strlen(id) + 1);
+	strcpy(rendererRegister[i].id, id);
+	rendererRegister[i].createFn = &GPU_CreateRenderer_OpenGLES_1;
+	rendererRegister[i].freeFn = &GPU_FreeRenderer_OpenGLES_1;
+	
+	i++;
+	if(i >= MAX_REGISTERED_RENDERERS)
+		return;*/
 	
 	/*id = "Direct3D";
 	rendererRegister[i].id = (char*)malloc(strlen(id) + 1);
@@ -159,7 +173,8 @@ GPU_Renderer* GPU_CreateRenderer(const char* id)
 		}
 	}
 	
-	// TODO: Add an error here: If NULL, we don't understand the id.
+	if(result == NULL)
+		GPU_LogError("Could not create renderer: \"%s\" was not found in the renderer registry.\n", id);
 	return result;
 }
 

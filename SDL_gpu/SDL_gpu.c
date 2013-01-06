@@ -76,7 +76,7 @@ GPU_Target* GPU_Init(const char* renderer_id, Uint16 w, Uint16 h, Uint32 flags)
 	
 	if(renderer_id == NULL)
 	{
-		renderer_id = GPU_GetDefaultRendererID();
+		renderer_id = GPU_GetRendererID(0);
 		if(renderer_id == NULL)
 			return NULL;
 	}
