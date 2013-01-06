@@ -1,6 +1,10 @@
 #include "SDL_gpu.h"
 #include "SDL_gpu_Renderer.h"
 
+#ifdef ANDROID
+#include <android/log.h>
+#endif
+
 static GPU_Renderer* current_renderer = NULL;
 
 const char* GPU_GetCurrentRendererID(void)
@@ -22,6 +26,49 @@ GPU_Renderer* GPU_GetCurrentRenderer(void)
 {
 	return current_renderer;
 }
+
+
+
+void GPU_LogInfo(const char* format, ...)
+{
+#ifdef SDL_GPU_ENABLE_LOG
+	va_list args;
+	va_start(args, format);
+	#ifdef ANDROID
+		__android_log_vprint(ANDROID_LOG_INFO, "APPLICATION", format, args);
+	#else
+		vprintf(format, args);
+	#endif
+	va_end(args);
+#endif
+}
+
+void GPU_LogWarning(const char* format, ...)
+{
+#ifdef SDL_GPU_ENABLE_LOG
+	va_list args;
+	va_start(args, format);
+	#ifdef ANDROID
+		__android_log_vprint(ANDROID_LOG_WARN, "APPLICATION", format, args);
+	#else
+		vprintf(format, args);
+	#endif
+	va_end(args);
+#endif
+}
+
+void GPU_LogError(const char* format, ...)
+{
+	va_list args;
+	va_start(args, format);
+	#ifdef ANDROID
+		__android_log_vprint(ANDROID_LOG_ERROR, "APPLICATION", format, args);
+	#else
+		vprintf(format, args);
+	#endif
+	va_end(args);
+}
+
 
 GPU_Target* GPU_Init(const char* renderer_id, Uint16 w, Uint16 h, Uint32 flags)
 {
