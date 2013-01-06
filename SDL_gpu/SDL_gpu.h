@@ -2,7 +2,8 @@
 #define _SDL_GPU_H__
 
 #include "SDL.h"
-
+#include <stdio.h>
+#include <stdarg.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -223,6 +224,17 @@ typedef struct GPU_Renderer
 	void* data;
 	
 } GPU_Renderer;
+
+
+// System calls
+/*! Prints an informational log message. */
+void GPU_LogInfo(const char* format, ...);
+
+/*! Prints a warning log message. */
+void GPU_LogWarning(const char* format, ...);
+
+/*! Prints an error log message. */
+void GPU_LogError(const char* format, ...);
 
 
 // Setup calls
