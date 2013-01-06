@@ -40,7 +40,7 @@ static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags
 	SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
 	SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
 	SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
-	
+        
     #ifdef SDL_GPU_USE_SDL2
         SDL_Window* window = SDL_CreateWindow("",
                             SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
@@ -65,9 +65,9 @@ static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags
         renderer->window_h = screen->h;
     #endif
     
-	GLenum err = glewInit();
-	if (GLEW_OK != err)
-	{
+        GLenum err = glewInit();
+        if (GLEW_OK != err)
+        {
 		/* Problem: glewInit failed, something is seriously wrong. */
 		fprintf(stderr, "Error: %s\n", glewGetErrorString(err));
 	}
@@ -75,18 +75,18 @@ static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags
 	checkExtension("GL_EXT_framebuffer_object");
 	checkExtension("GL_ARB_framebuffer_object"); // glGenerateMipmap
 	checkExtension("GL_EXT_framebuffer_blit");
-    
+
 	glEnable( GL_TEXTURE_2D );
 	glClearColor( 0.0f, 0.0f, 0.0f, 0.0f );
 	
-	glViewport( 0, 0, w, h);
+	glViewport( 0, 0, renderer->window_w, renderer->window_h);
 	
 	glClear( GL_COLOR_BUFFER_BIT );
 	
 	glMatrixMode( GL_PROJECTION );
 	glLoadIdentity();
 	
-	glOrtho(0.0f, w, h, 0.0f, -1.0f, 1.0f);
+	glOrtho(0.0f, renderer->window_w, renderer->window_h, 0.0f, -1.0f, 1.0f);
 	
 	glMatrixMode( GL_MODELVIEW );
 	glLoadIdentity();
@@ -110,10 +110,10 @@ static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags
 	renderer->display->useClip = 0;
 	renderer->display->clipRect.x = 0;
 	renderer->display->clipRect.y = 0;
-	renderer->display->clipRect.w = renderer->display->w;
-	renderer->display->clipRect.h = renderer->display->h;
-	
-	return renderer->display;
+        renderer->display->clipRect.w = renderer->display->w;
+        renderer->display->clipRect.h = renderer->display->h;
+
+        return renderer->display;
 }
 
 
@@ -294,34 +294,34 @@ static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint8 
 	unsigned char* pixels = (unsigned char*)malloc(w*h*channels);
 	memset(pixels, 0, w*h*channels);
 	
-	int iw, ih;
-	iw = w;
-	ih = h;
-	texture = SOIL_create_OGL_texture(pixels, &iw, &ih, channels, 0, 0);
-	if(texture == 0)
-	{
+        int iw, ih;
+        iw = w;
+        ih = h;
+        texture = SOIL_create_OGL_texture(pixels, &iw, &ih, channels, 0, 0);
+        if(texture == 0)
+        {
 		free(pixels);
 		return NULL;
 	}
-	w = iw;
-	h = ih;
-	
-	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &texture_format);
-	
-	// Set the texture's stretching properties
-	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+        w = iw;
+        h = ih;
+
+        glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &texture_format);
+        
+        // Set the texture's stretching properties
+        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
 	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 	
-	glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
-	
-	GPU_Image* result = (GPU_Image*)malloc(sizeof(GPU_Image));
-	ImageData_OpenGL* data = (ImageData_OpenGL*)malloc(sizeof(ImageData_OpenGL));
-	result->data = data;
-	result->renderer = renderer;
-	result->channels = channels;
+        glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
+        
+        GPU_Image* result = (GPU_Image*)malloc(sizeof(GPU_Image));
+        ImageData_OpenGL* data = (ImageData_OpenGL*)malloc(sizeof(ImageData_OpenGL));
+        result->data = data;
+        result->renderer = renderer;
+        result->channels = channels;
 	data->handle = texture;
 	data->format = texture_format;
 	data->hasMipmaps = 0;
@@ -336,22 +336,22 @@ static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint8 
 
 static GPU_Image* LoadImage(GPU_Renderer* renderer, const char* filename)
 {
-	
-	GLuint texture;			// This is a handle to our texture object
-	GLint texture_format;
-	GLint w, h;
-	
-	
-	texture = SOIL_load_OGL_texture(filename, SOIL_LOAD_AUTO, 0, 0);
-	if(texture == 0)
-		return NULL;
-	
-	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &texture_format);
-	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &w);
-	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &h);
-	
-	// Set the texture's stretching properties
-	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+        
+        GLuint texture;                 // This is a handle to our texture object
+        GLint texture_format;
+        GLint w, h;
+        
+        
+        texture = SOIL_load_OGL_texture(filename, SOIL_LOAD_AUTO, 0, 0);
+        if(texture == 0)
+                return NULL;
+        
+        glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &texture_format);
+        glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &w);
+        glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &h);
+        
+        // Set the texture's stretching properties
+        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
@@ -359,37 +359,37 @@ static GPU_Image* LoadImage(GPU_Renderer* renderer, const char* filename)
 	
 	glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
 
-	
-	GPU_Image* result = (GPU_Image*)malloc(sizeof(GPU_Image));
-	ImageData_OpenGL* data = (ImageData_OpenGL*)malloc(sizeof(ImageData_OpenGL));
-	result->data = data;
-	result->renderer = renderer;
-	
+        
+        GPU_Image* result = (GPU_Image*)malloc(sizeof(GPU_Image));
+        ImageData_OpenGL* data = (ImageData_OpenGL*)malloc(sizeof(ImageData_OpenGL));
+        result->data = data;
+        result->renderer = renderer;
+        
 	int channels = 0;
 	switch(texture_format)
 	{
 	case GL_LUMINANCE:
 		channels = 1;
 		break;
-	case GL_LUMINANCE_ALPHA:
-		channels = 2;
-		break;
-	case GL_BGR:
-	case GL_RGB:
-		channels = 3;
-		break;
-	case GL_BGRA:
-	case GL_RGBA:
-		channels = 4;
-		break;
+        case GL_LUMINANCE_ALPHA:
+                channels = 2;
+                break;
+        case GL_BGR:
+        case GL_RGB:
+                channels = 3;
+                break;
+        case GL_BGRA:
+        case GL_RGBA:
+                channels = 4;
+                break;
 	}
-	
-	result->channels = channels;
-	
-	data->handle = texture;
-	data->format = texture_format;
-	data->hasMipmaps = 0;
-	
+        
+        result->channels = channels;
+        
+        data->handle = texture;
+        data->format = texture_format;
+        data->hasMipmaps = 0;
+        
 	result->w = w;
 	result->h = h;
 	
@@ -460,28 +460,28 @@ static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surf
 	}*/
 
 	// get the number of channels in the SDL surface
-	nOfColors = surface->format->BytesPerPixel;
-	if (nOfColors == 4)     // contains an alpha channel
-	{
-			if (surface->format->Rmask == 0x000000ff)
-					texture_format = GL_RGBA;
-			else
-					texture_format = GL_BGRA;
-	} else if (nOfColors == 3)     // no alpha channel
-	{
-			if (surface->format->Rmask == 0x000000ff)
-					texture_format = GL_RGB;
-			else
-					texture_format = GL_BGR;
-	} else {
-			//printf("warning: the image is not truecolor..  this will probably break\n");
-			return NULL;
-	}
+        nOfColors = surface->format->BytesPerPixel;
+        if (nOfColors == 4)     // contains an alpha channel
+        {
+                        if (surface->format->Rmask == 0x000000ff)
+                                        texture_format = GL_RGBA;
+                        else
+                                        texture_format = GL_BGRA;
+        } else if (nOfColors == 3)     // no alpha channel
+        {
+                        if (surface->format->Rmask == 0x000000ff)
+                                        texture_format = GL_RGB;
+                        else
+                                        texture_format = GL_BGR;
+        } else {
+                        //printf("warning: the image is not truecolor..  this will probably break\n");
+                        return NULL;
+        }
 
-	// Have OpenGL generate a texture object handle for us
-	glGenTextures( 1, &texture );
+        // Have OpenGL generate a texture object handle for us
+        glGenTextures( 1, &texture );
 
-	// Bind the texture object
+        // Bind the texture object
 	glBindTexture( GL_TEXTURE_2D, texture );
 
 	// Set the texture's stretching properties
@@ -494,34 +494,34 @@ static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surf
 	// Edit the texture object's image data using the information SDL_Surface gives us
 	glTexImage2D( GL_TEXTURE_2D, 0, nOfColors, surface->w, surface->h, 0,
 					texture_format, GL_UNSIGNED_BYTE, surface->pixels );
-	
-	glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
-	
-	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &w);
-	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &h);
-	
-	GPU_Image* result = (GPU_Image*)malloc(sizeof(GPU_Image));
-	ImageData_OpenGL* data = (ImageData_OpenGL*)malloc(sizeof(ImageData_OpenGL));
-	result->data = data;
-	result->renderer = renderer;
-	
+        
+        glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
+        
+        glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &w);
+        glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &h);
+        
+        GPU_Image* result = (GPU_Image*)malloc(sizeof(GPU_Image));
+        ImageData_OpenGL* data = (ImageData_OpenGL*)malloc(sizeof(ImageData_OpenGL));
+        result->data = data;
+        result->renderer = renderer;
+        
 	int channels = 0;
 	switch(texture_format)
 	{
 	case GL_LUMINANCE:
 		channels = 1;
 		break;
-	case GL_LUMINANCE_ALPHA:
-		channels = 2;
-		break;
-	case GL_BGR:
-	case GL_RGB:
-		channels = 3;
-		break;
-	case GL_BGRA:
-	case GL_RGBA:
-		channels = 4;
-		break;
+        case GL_LUMINANCE_ALPHA:
+                channels = 2;
+                break;
+        case GL_BGR:
+        case GL_RGB:
+                channels = 3;
+                break;
+        case GL_BGRA:
+        case GL_RGBA:
+                channels = 4;
+                break;
 	}
 	
 	result->channels = channels;
@@ -539,12 +539,12 @@ static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surf
 
 static void FreeImage(GPU_Renderer* renderer, GPU_Image* image)
 {
-	if(image == NULL)
-		return;
-	
-	glDeleteTextures( 1, &((ImageData_OpenGL*)image->data)->handle);
-	free(image->data);
-	free(image);
+        if(image == NULL)
+                return;
+        
+        glDeleteTextures( 1, &((ImageData_OpenGL*)image->data)->handle);
+        free(image->data);
+        free(image);
 }
 
 static GPU_Target* GetDisplayTarget(GPU_Renderer* renderer)
@@ -561,25 +561,25 @@ static GPU_Target* LoadTarget(GPU_Renderer* renderer, GPU_Image* image)
 	GLuint handle;
 	// Create framebuffer object
 	glGenFramebuffers(1, &handle);
-	glBindFramebuffer(GL_FRAMEBUFFER, handle);
-	
-	// Attach the texture to it
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ((ImageData_OpenGL*)image->data)->handle, 0);
-	
-	GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-	if(status != GL_FRAMEBUFFER_COMPLETE)
+        glBindFramebuffer(GL_FRAMEBUFFER, handle);
+        
+        // Attach the texture to it
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ((ImageData_OpenGL*)image->data)->handle, 0);
+        
+        GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+        if(status != GL_FRAMEBUFFER_COMPLETE)
 		return NULL;
 	
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	
-	GPU_Target* result = (GPU_Target*)malloc(sizeof(GPU_Target));
-	TargetData_OpenGL* data = (TargetData_OpenGL*)malloc(sizeof(TargetData_OpenGL));
-	result->data = data;
-	data->handle = handle;
-	data->format = ((ImageData_OpenGL*)image->data)->format;
-	result->renderer = renderer;
-	result->w = image->w;
-	result->h = image->h;
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        
+        GPU_Target* result = (GPU_Target*)malloc(sizeof(GPU_Target));
+        TargetData_OpenGL* data = (TargetData_OpenGL*)malloc(sizeof(TargetData_OpenGL));
+        result->data = data;
+        data->handle = handle;
+        data->format = ((ImageData_OpenGL*)image->data)->format;
+        result->renderer = renderer;
+        result->w = image->w;
+        result->h = image->h;
 	
 	result->useClip = 0;
 	result->clipRect.x = 0;
@@ -594,13 +594,13 @@ static GPU_Target* LoadTarget(GPU_Renderer* renderer, GPU_Image* image)
 
 static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
 {
-	if(target == NULL || target == renderer->display)
-		return;
-	
-	glDeleteFramebuffers(1, &((TargetData_OpenGL*)target->data)->handle);
-	
-	free(target->data);
-	free(target);
+        if(target == NULL || target == renderer->display)
+                return;
+        
+        glDeleteFramebuffers(1, &((TargetData_OpenGL*)target->data)->handle);
+        
+        free(target->data);
+        free(target);
 }
 
 
@@ -611,16 +611,16 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_T
 		return -1;
 	if(renderer != src->renderer || renderer != dest->renderer)
 		return -2;
-	
-	
-	// Bind the texture to which subsequent calls refer
-	glBindTexture( GL_TEXTURE_2D, ((ImageData_OpenGL*)src->data)->handle );
-	
-	// Bind the FBO
-	glBindFramebuffer(GL_FRAMEBUFFER, ((TargetData_OpenGL*)dest->data)->handle);
-	
-	// Rendering to FBO clips outside of the viewport.  This makes textures larger than the screen viewport to fail drawing completely.
-	// However, when the viewport is adjusted to fit the texture, it scales the projected region up to the viewport.
+        
+        
+        // Bind the texture to which subsequent calls refer
+        glBindTexture( GL_TEXTURE_2D, ((ImageData_OpenGL*)src->data)->handle );
+        
+        // Bind the FBO
+        glBindFramebuffer(GL_FRAMEBUFFER, ((TargetData_OpenGL*)dest->data)->handle);
+        
+        // Rendering to FBO clips outside of the viewport.  This makes textures larger than the screen viewport to fail drawing completely.
+        // However, when the viewport is adjusted to fit the texture, it scales the projected region up to the viewport.
 	// This scaling can be fixed by scaling the texture coords.
 	// At this point though, textures with smaller dimensions are clipped...
 	GLint vp[4];
@@ -721,13 +721,13 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_T
 		}
 		
 		dy1 = renderer->display->h - dy1;
-		dy2 = renderer->display->h - dy2;
-	}
-	
-	glBegin( GL_QUADS );
-		//Bottom-left vertex (corner)
-		glTexCoord2f( x1, y1 );
-		glVertex3f( dx1, dy1, 0.0f );
+                dy2 = renderer->display->h - dy2;
+        }
+
+        glBegin( GL_QUADS );
+                //Bottom-left vertex (corner)
+                glTexCoord2f( x1, y1 );
+                glVertex3f( dx1, dy1, 0.0f );
 	
 		//Bottom-right vertex (corner)
 		glTexCoord2f( x2, y1 );
@@ -738,12 +738,12 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_T
 		glVertex3f( dx2, dy2, 0.0f );
 	
 		//Top-left vertex (corner)
-		glTexCoord2f( x1, y2 );
-		glVertex3f( dx1, dy2, 0.0f );
-	glEnd();
-	
-	if(dest->useClip)
-	{
+                glTexCoord2f( x1, y2 );
+                glVertex3f( dx1, dy2, 0.0f );
+        glEnd();
+        
+        if(dest->useClip)
+        {
 		glDisable(GL_SCISSOR_TEST);
 	}
 	
@@ -886,33 +886,33 @@ static int BlitTransformMatrix(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect*
 
 static float SetZ(GPU_Renderer* renderer, float z)
 {
-	if(renderer == NULL)
-		return 0.0f;
-	
-	float oldZ = ((RendererData_OpenGL*)(renderer->data))->z;
-	((RendererData_OpenGL*)(renderer->data))->z = z;
-	
-	return oldZ;
+        if(renderer == NULL)
+                return 0.0f;
+        
+        float oldZ = ((RendererData_OpenGL*)(renderer->data))->z;
+        ((RendererData_OpenGL*)(renderer->data))->z = z;
+        
+        return oldZ;
 }
 
 static float GetZ(GPU_Renderer* renderer)
 {
-	if(renderer == NULL)
-		return 0.0f;
-	return ((RendererData_OpenGL*)(renderer->data))->z;
+        if(renderer == NULL)
+                return 0.0f;
+        return ((RendererData_OpenGL*)(renderer->data))->z;
 }
 
 static void GenerateMipmaps(GPU_Renderer* renderer, GPU_Image* image)
 {
-	if(image == NULL)
-		return;
-	
-	glBindTexture( GL_TEXTURE_2D, ((ImageData_OpenGL*)image->data)->handle );
-	glGenerateMipmap(GL_TEXTURE_2D);
-	((ImageData_OpenGL*)image->data)->hasMipmaps = 1;
-	
-	GLint filter;
-	glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, &filter);
+        if(image == NULL)
+                return;
+        
+        glBindTexture( GL_TEXTURE_2D, ((ImageData_OpenGL*)image->data)->handle );
+        glGenerateMipmap(GL_TEXTURE_2D);
+        ((ImageData_OpenGL*)image->data)->hasMipmaps = 1;
+        
+        GLint filter;
+        glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, &filter);
 	if(filter == GL_LINEAR)
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
 }
@@ -938,25 +938,25 @@ static void ReplaceRGB(GPU_Renderer* renderer, GPU_Image* image, Uint8 from_r, U
 {
 	if(image == NULL || image->channels < 3)
 		return;
-	if(renderer != image->renderer)
-		return;
-	
-	glBindTexture( GL_TEXTURE_2D, ((ImageData_OpenGL*)image->data)->handle );
+        if(renderer != image->renderer)
+                return;
+        
+        glBindTexture( GL_TEXTURE_2D, ((ImageData_OpenGL*)image->data)->handle );
 
-	GLint textureWidth, textureHeight;
+        GLint textureWidth, textureHeight;
 
-	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &textureWidth);
-	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &textureHeight);
-	
-	GLenum texture_format = ((ImageData_OpenGL*)image->data)->format;
+        glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &textureWidth);
+        glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &textureHeight);
+        
+        GLenum texture_format = ((ImageData_OpenGL*)image->data)->format;
 
-	// FIXME: Does not take into account GL_PACK_ALIGNMENT
-	GLubyte *buffer = (GLubyte *)malloc(textureWidth*textureHeight*image->channels);
+        // FIXME: Does not take into account GL_PACK_ALIGNMENT
+        GLubyte *buffer = (GLubyte *)malloc(textureWidth*textureHeight*image->channels);
 
-	glGetTexImage(GL_TEXTURE_2D, 0, texture_format, GL_UNSIGNED_BYTE, buffer);
+        glGetTexImage(GL_TEXTURE_2D, 0, texture_format, GL_UNSIGNED_BYTE, buffer);
 
-	int x,y,i;
-	for(y = 0; y < textureHeight; y++)
+        int x,y,i;
+        for(y = 0; y < textureHeight; y++)
 	{
 		for(x = 0; x < textureWidth; x++)
 		{
@@ -982,23 +982,23 @@ static void MakeRGBTransparent(GPU_Renderer* renderer, GPU_Image* image, Uint8 r
 {
 	if(image == NULL || image->channels < 4)
 		return;
-	if(renderer != image->renderer)
-		return;
-	
-	glBindTexture( GL_TEXTURE_2D, ((ImageData_OpenGL*)image->data)->handle );
+        if(renderer != image->renderer)
+                return;
+        
+        glBindTexture( GL_TEXTURE_2D, ((ImageData_OpenGL*)image->data)->handle );
 
-	GLint textureWidth, textureHeight;
+        GLint textureWidth, textureHeight;
 
-	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &textureWidth);
-	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &textureHeight);
+        glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &textureWidth);
+        glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &textureHeight);
 
-	// FIXME: Does not take into account GL_PACK_ALIGNMENT
-	GLubyte *buffer = (GLubyte *)malloc(textureWidth*textureHeight*4);
+        // FIXME: Does not take into account GL_PACK_ALIGNMENT
+        GLubyte *buffer = (GLubyte *)malloc(textureWidth*textureHeight*4);
 
-	glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+        glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
 
-	int x,y,i;
-	for(y = 0; y < textureHeight; y++)
+        int x,y,i;
+        for(y = 0; y < textureHeight; y++)
 	{
 		for(x = 0; x < textureWidth; x++)
 		{
@@ -1117,25 +1117,25 @@ static void ShiftHSV(GPU_Renderer* renderer, GPU_Image* image, int hue, int satu
 {
 	if(image == NULL || image->channels < 3)
 		return;
-	if(renderer != image->renderer)
-		return;
-	
-	glBindTexture( GL_TEXTURE_2D, ((ImageData_OpenGL*)image->data)->handle );
+        if(renderer != image->renderer)
+                return;
+        
+        glBindTexture( GL_TEXTURE_2D, ((ImageData_OpenGL*)image->data)->handle );
 
-	GLint textureWidth, textureHeight;
+        GLint textureWidth, textureHeight;
 
-	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &textureWidth);
-	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &textureHeight);
+        glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &textureWidth);
+        glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &textureHeight);
 
-	// FIXME: Does not take into account GL_PACK_ALIGNMENT
-	GLubyte *buffer = (GLubyte *)malloc(textureWidth*textureHeight*image->channels);
-	
-	GLenum texture_format = ((ImageData_OpenGL*)image->data)->format;
+        // FIXME: Does not take into account GL_PACK_ALIGNMENT
+        GLubyte *buffer = (GLubyte *)malloc(textureWidth*textureHeight*image->channels);
+        
+        GLenum texture_format = ((ImageData_OpenGL*)image->data)->format;
 
-	glGetTexImage(GL_TEXTURE_2D, 0, texture_format, GL_UNSIGNED_BYTE, buffer);
+        glGetTexImage(GL_TEXTURE_2D, 0, texture_format, GL_UNSIGNED_BYTE, buffer);
 
-	int x,y,i;
-	for(y = 0; y < textureHeight; y++)
+        int x,y,i;
+        for(y = 0; y < textureHeight; y++)
 	{
 		for(x = 0; x < textureWidth; x++)
 		{
@@ -1181,25 +1181,25 @@ static void ShiftHSVExcept(GPU_Renderer* renderer, GPU_Image* image, int hue, in
 {
 	if(image == NULL || image->channels < 3)
 		return;
-	if(renderer != image->renderer)
-		return;
-	
-	glBindTexture( GL_TEXTURE_2D, ((ImageData_OpenGL*)image->data)->handle );
+        if(renderer != image->renderer)
+                return;
+        
+        glBindTexture( GL_TEXTURE_2D, ((ImageData_OpenGL*)image->data)->handle );
 
-	GLint textureWidth, textureHeight;
+        GLint textureWidth, textureHeight;
 
-	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &textureWidth);
-	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &textureHeight);
+        glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &textureWidth);
+        glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &textureHeight);
 
-	// FIXME: Does not take into account GL_PACK_ALIGNMENT
-	GLubyte *buffer = (GLubyte *)malloc(textureWidth*textureHeight*image->channels);
-	
-	GLenum texture_format = ((ImageData_OpenGL*)image->data)->format;
+        // FIXME: Does not take into account GL_PACK_ALIGNMENT
+        GLubyte *buffer = (GLubyte *)malloc(textureWidth*textureHeight*image->channels);
+        
+        GLenum texture_format = ((ImageData_OpenGL*)image->data)->format;
 
-	glGetTexImage(GL_TEXTURE_2D, 0, texture_format, GL_UNSIGNED_BYTE, buffer);
+        glGetTexImage(GL_TEXTURE_2D, 0, texture_format, GL_UNSIGNED_BYTE, buffer);
 
-	int x,y,i;
-	for(y = 0; y < textureHeight; y++)
+        int x,y,i;
+        for(y = 0; y < textureHeight; y++)
 	{
 		for(x = 0; x < textureWidth; x++)
 		{
@@ -1258,16 +1258,16 @@ static SDL_Color GetPixel(GPU_Renderer* renderer, GPU_Target* target, Sint16 x, 
 	if(renderer != target->renderer)
 		return result;
 	if(x < 0 || y < 0 || x >= target->w || y >= target->h)
-		return result;
-	
-	// Bind the FBO
-	glBindFramebuffer(GL_FRAMEBUFFER, ((TargetData_OpenGL*)target->data)->handle);
-	
-	unsigned char pixels[4];
-	glReadPixels(x, y, 1, 1, ((TargetData_OpenGL*)target->data)->format, GL_UNSIGNED_BYTE, pixels);
-	
-	result.r = pixels[0];
-	result.g = pixels[1];
+                return result;
+        
+        // Bind the FBO
+        glBindFramebuffer(GL_FRAMEBUFFER, ((TargetData_OpenGL*)target->data)->handle);
+        
+        unsigned char pixels[4];
+        glReadPixels(x, y, 1, 1, ((TargetData_OpenGL*)target->data)->format, GL_UNSIGNED_BYTE, pixels);
+        
+        result.r = pixels[0];
+        result.g = pixels[1];
 	result.b = pixels[2];
 	result.unused = pixels[3];
 	
@@ -1280,29 +1280,29 @@ static void SetImageFilter(GPU_Renderer* renderer, GPU_Image* image, GPU_FilterE
 {
 	if(image == NULL)
 		return;
-	if(renderer != image->renderer)
-		return;
-	
-	glBindTexture( GL_TEXTURE_2D, ((ImageData_OpenGL*)image->data)->handle );
-	
-	GLenum minFilter = GL_NEAREST;
-	GLenum magFilter = GL_NEAREST;
-	
-	if(filter == GPU_LINEAR)
-	{
-		if(((ImageData_OpenGL*)image->data)->hasMipmaps)
-			minFilter = GL_NEAREST_MIPMAP_LINEAR;
-		else
-			minFilter = GL_LINEAR;
+        if(renderer != image->renderer)
+                return;
+        
+        glBindTexture( GL_TEXTURE_2D, ((ImageData_OpenGL*)image->data)->handle );
+        
+        GLenum minFilter = GL_NEAREST;
+        GLenum magFilter = GL_NEAREST;
+        
+        if(filter == GPU_LINEAR)
+        {
+                if(((ImageData_OpenGL*)image->data)->hasMipmaps)
+                        minFilter = GL_NEAREST_MIPMAP_LINEAR;
+                else
+                        minFilter = GL_LINEAR;
         
 		magFilter = GL_LINEAR;
-	}
-	else if(filter == GPU_LINEAR_MIPMAP)
-	{
-		if(((ImageData_OpenGL*)image->data)->hasMipmaps)
-			minFilter = GL_LINEAR_MIPMAP_LINEAR;
-		else
-			minFilter = GL_LINEAR;
+        }
+        else if(filter == GPU_LINEAR_MIPMAP)
+        {
+                if(((ImageData_OpenGL*)image->data)->hasMipmaps)
+                        minFilter = GL_LINEAR_MIPMAP_LINEAR;
+                else
+                        minFilter = GL_LINEAR;
         
 		magFilter = GL_LINEAR;
 	}
@@ -1314,10 +1314,10 @@ static void SetImageFilter(GPU_Renderer* renderer, GPU_Image* image, GPU_FilterE
 
 static void SetBlendMode(GPU_Renderer* renderer, GPU_BlendEnum mode)
 {
-	if(mode == GPU_BLEND_NORMAL)
-	{
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		glBlendEquation(GL_FUNC_ADD);
+        if(mode == GPU_BLEND_NORMAL)
+        {
+                glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+                glBlendEquation(GL_FUNC_ADD);
 	}
 	else if(mode == GPU_BLEND_MULTIPLY)
 	{
@@ -1365,10 +1365,10 @@ static void SetBlendMode(GPU_Renderer* renderer, GPU_BlendEnum mode)
 		glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
 	}
 	else if(mode == GPU_BLEND_CUTOUT)
-	{
-		glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA);
-		glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
-	}
+        {
+                glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA);
+                glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
+        }
 }
 
 
@@ -1381,34 +1381,34 @@ static void Clear(GPU_Renderer* renderer, GPU_Target* target)
 {
 	if(target == NULL)
 		return;
-	if(renderer != target->renderer)
-		return;
-	
-	glBindFramebuffer(GL_FRAMEBUFFER, ((TargetData_OpenGL*)target->data)->handle);
-	glPushAttrib(GL_VIEWPORT_BIT);
-	glViewport(0,0,target->w, target->h);
-	
-	if(target->useClip)
+        if(renderer != target->renderer)
+                return;
+        
+        glBindFramebuffer(GL_FRAMEBUFFER, ((TargetData_OpenGL*)target->data)->handle);
+        glPushAttrib(GL_VIEWPORT_BIT);
+        glViewport(0,0,target->w, target->h);
+        
+        if(target->useClip)
 	{
 		glEnable(GL_SCISSOR_TEST);
 		int y = (renderer->display == target? renderer->display->h - (target->clipRect.y + target->clipRect.h) : target->clipRect.y);
 		float xFactor = ((float)renderer->window_w)/renderer->display->w;
 		float yFactor = ((float)renderer->window_h)/renderer->display->h;
-		glScissor(target->clipRect.x * xFactor, y * yFactor, target->clipRect.w * xFactor, target->clipRect.h * yFactor);
-	}
-	
-	glPushAttrib(GL_COLOR_BUFFER_BIT);
-	glClearColor(0,0,0,0);
-	glClear(GL_COLOR_BUFFER_BIT);
-	glPopAttrib();
-	
-	if(target->useClip)
-	{
-		glDisable(GL_SCISSOR_TEST);
-	}
-	
-	glPopAttrib();
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+                glScissor(target->clipRect.x * xFactor, y * yFactor, target->clipRect.w * xFactor, target->clipRect.h * yFactor);
+        }
+        
+        glPushAttrib(GL_COLOR_BUFFER_BIT);
+        glClearColor(0,0,0,0);
+        glClear(GL_COLOR_BUFFER_BIT);
+        glPopAttrib();
+        
+        if(target->useClip)
+        {
+                glDisable(GL_SCISSOR_TEST);
+        }
+        
+        glPopAttrib();
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 
@@ -1416,14 +1416,14 @@ static void ClearRGBA(GPU_Renderer* renderer, GPU_Target* target, Uint8 r, Uint8
 {
 	if(target == NULL)
 		return;
-	if(renderer != target->renderer)
-		return;
-	
-	glBindFramebuffer(GL_FRAMEBUFFER, ((TargetData_OpenGL*)target->data)->handle);
-	glPushAttrib(GL_VIEWPORT_BIT);
-	glViewport(0,0,target->w, target->h);
-	
-	if(target->useClip)
+        if(renderer != target->renderer)
+                return;
+        
+        glBindFramebuffer(GL_FRAMEBUFFER, ((TargetData_OpenGL*)target->data)->handle);
+        glPushAttrib(GL_VIEWPORT_BIT);
+        glViewport(0,0,target->w, target->h);
+        
+        if(target->useClip)
 	{
 		glEnable(GL_SCISSOR_TEST);
 		int y = (renderer->display == target? renderer->display->h - (target->clipRect.y + target->clipRect.h) : target->clipRect.y);
@@ -1437,11 +1437,11 @@ static void ClearRGBA(GPU_Renderer* renderer, GPU_Target* target, Uint8 r, Uint8
 	
 	if(target->useClip)
 	{
-		glDisable(GL_SCISSOR_TEST);
-	}
-	
-	glPopAttrib();
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+                glDisable(GL_SCISSOR_TEST);
+        }
+
+        glPopAttrib();
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 static void Flip(GPU_Renderer* renderer)
@@ -1449,8 +1449,8 @@ static void Flip(GPU_Renderer* renderer)
     #ifdef SDL_GPU_USE_SDL2
     SDL_GL_SwapWindow(((RendererData_OpenGL*)renderer->data)->window);
     #else
-	SDL_GL_SwapBuffers();
-	#endif
+        SDL_GL_SwapBuffers();
+        #endif
 }
 
 
@@ -1459,21 +1459,21 @@ static void Flip(GPU_Renderer* renderer)
 
 GPU_Renderer* GPU_CreateRenderer_OpenGL(void)
 {
-	GPU_Renderer* renderer = (GPU_Renderer*)malloc(sizeof(GPU_Renderer));
-	if(renderer == NULL)
+        GPU_Renderer* renderer = (GPU_Renderer*)malloc(sizeof(GPU_Renderer));
+        if(renderer == NULL)
 		return NULL;
-	
-	memset(renderer, 0, sizeof(GPU_Renderer));
-	
-	renderer->id = "OpenGL";
-	renderer->display = NULL;
-	renderer->camera = GPU_GetDefaultCamera();
-	
-	renderer->data = (RendererData_OpenGL*)malloc(sizeof(RendererData_OpenGL));
-	memset(renderer->data, 0, sizeof(RendererData_OpenGL));
-	
-	renderer->Init = &Init;
-	renderer->SetAsCurrent = &SetAsCurrent;
+        
+        memset(renderer, 0, sizeof(GPU_Renderer));
+        
+        renderer->id = "OpenGL";
+        renderer->display = NULL;
+        renderer->camera = GPU_GetDefaultCamera();
+        
+        renderer->data = (RendererData_OpenGL*)malloc(sizeof(RendererData_OpenGL));
+        memset(renderer->data, 0, sizeof(RendererData_OpenGL));
+        
+        renderer->Init = &Init;
+        renderer->SetAsCurrent = &SetAsCurrent;
 	renderer->SetDisplayResolution = &SetDisplayResolution;
 	renderer->SetVirtualResolution = &SetVirtualResolution;
 	renderer->Quit = &Quit;
@@ -1517,13 +1517,13 @@ GPU_Renderer* GPU_CreateRenderer_OpenGL(void)
 	renderer->ClearRGBA = &ClearRGBA;
 	renderer->Flip = &Flip;
 	
-	return renderer;
+        return renderer;
 }
 
 void GPU_FreeRenderer_OpenGL(GPU_Renderer* renderer)
 {
-	if(renderer == NULL)
-		return;
+        if(renderer == NULL)
+                return;
 	
 	free(renderer->data);
 	free(renderer);
