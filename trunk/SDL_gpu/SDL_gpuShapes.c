@@ -2,7 +2,7 @@
 #include <string.h>
 
 #include "OpenGL/SDL_gpu_OpenGL_internal.h"
-#include "Direct3D/SDL_gpu_Direct3D_internal.h"
+//#include "Direct3D/SDL_gpu_Direct3D_internal.h"
 
 
 static GPU_ShapeRenderer* shapeRenderer = NULL;
