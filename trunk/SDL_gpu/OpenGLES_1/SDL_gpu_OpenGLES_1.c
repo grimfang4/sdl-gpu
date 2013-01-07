@@ -49,7 +49,7 @@ static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags
                             w, h,
                             SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL);
         
-        ((RendererData_OpenGL*)renderer->data)->window = window;
+        ((RendererData_OpenGLES_1*)renderer->data)->window = window;
         if(window == NULL)
         {
         	GPU_LogError("Window creation failed.\n");
@@ -59,7 +59,7 @@ static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags
         SDL_GetWindowSize(window, &renderer->window_w, &renderer->window_h);
         
         SDL_GLContext context = SDL_GL_CreateContext(window);
-        ((RendererData_OpenGL*)renderer->data)->context = context;
+        ((RendererData_OpenGLES_1*)renderer->data)->context = context;
 	#else
         SDL_Surface* screen = SDL_SetVideoMode(w, h, 0, flags);
         
@@ -108,9 +108,9 @@ static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags
 	if(renderer->display == NULL)
 		renderer->display = (GPU_Target*)malloc(sizeof(GPU_Target));
 	
-	renderer->display->data = (TargetData_OpenGL*)malloc(sizeof(TargetData_OpenGL));
+	renderer->display->data = (TargetData_OpenGLES_1*)malloc(sizeof(TargetData_OpenGLES_1));
 
-	((TargetData_OpenGL*)renderer->display->data)->handle = 0;
+	((TargetData_OpenGLES_1*)renderer->display->data)->handle = 0;
 	renderer->display->renderer = renderer;
 	renderer->display->w = renderer->window_w;
 	renderer->display->h = renderer->window_h;
@@ -129,7 +129,7 @@ static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags
 static void SetAsCurrent(GPU_Renderer* renderer)
 {
     #ifdef SDL_GPU_USE_SDL2
-    SDL_GL_MakeCurrent(((RendererData_OpenGL*)renderer->data)->window, ((RendererData_OpenGL*)renderer->data)->context);
+    SDL_GL_MakeCurrent(((RendererData_OpenGLES_1*)renderer->data)->window, ((RendererData_OpenGLES_1*)renderer->data)->context);
     #endif
 }
 
@@ -140,8 +140,8 @@ static int SetDisplayResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
 		return 0;
 	
 	#ifdef SDL_GPU_USE_SDL2
-	SDL_SetWindowSize(((RendererData_OpenGL*)renderer->data)->window, w, h);
-	SDL_GetWindowSize(((RendererData_OpenGL*)renderer->data)->window, &renderer->window_w, &renderer->window_h);
+	SDL_SetWindowSize(((RendererData_OpenGLES_1*)renderer->data)->window, w, h);
+	SDL_GetWindowSize(((RendererData_OpenGLES_1*)renderer->data)->window, &renderer->window_w, &renderer->window_h);
 	#else
     SDL_Surface* surf = SDL_GetVideoSurface();
 	Uint32 flags = surf->flags;
@@ -216,9 +216,9 @@ static void Quit(GPU_Renderer* renderer)
 static int ToggleFullscreen(GPU_Renderer* renderer)
 {
     #ifdef SDL_GPU_USE_SDL2
-        Uint8 enable = !(SDL_GetWindowFlags(((RendererData_OpenGL*)renderer->data)->window) & SDL_WINDOW_FULLSCREEN);
+        Uint8 enable = !(SDL_GetWindowFlags(((RendererData_OpenGLES_1*)renderer->data)->window) & SDL_WINDOW_FULLSCREEN);
         
-        if(SDL_SetWindowFullscreen(((RendererData_OpenGL*)renderer->data)->window, enable) < 0)
+        if(SDL_SetWindowFullscreen(((RendererData_OpenGLES_1*)renderer->data)->window, enable) < 0)
             return 0;
             
         return 1;
