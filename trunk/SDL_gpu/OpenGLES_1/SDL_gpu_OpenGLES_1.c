@@ -562,7 +562,7 @@ static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surf
 	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
 	// Edit the texture object's image data using the information SDL_Surface gives us
-	glTexImage2D( GL_TEXTURE_2D, 0, nOfColors, surface->w, surface->h, 0,
+	glTexImage2D( GL_TEXTURE_2D, 0, texture_format, surface->w, surface->h, 0,
 					texture_format, GL_UNSIGNED_BYTE, surface->pixels );
 	
 	glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
@@ -1045,6 +1045,13 @@ static void SetRGBA(GPU_Renderer* renderer, Uint8 r, Uint8 g, Uint8 b, Uint8 a)
 	glColor4f(r/255.01f, g/255.01f, b/255.01f, a/255.01f);
 }
 
+static void readTexPixels(GPU_Target* source, GLint format, GLubyte* pixels)
+{
+	glBindFramebuffer(GL_FRAMEBUFFER, ((TargetData_OpenGLES_1*)source->data)->handle);
+	glReadPixels(0, 0, source->w, source->h, format, GL_UNSIGNED_BYTE, pixels);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
 
 static void ReplaceRGB(GPU_Renderer* renderer, GPU_Image* image, Uint8 from_r, Uint8 from_g, Uint8 from_b, Uint8 to_r, Uint8 to_g, Uint8 to_b)
 {
@@ -1071,7 +1078,9 @@ static void ReplaceRGB(GPU_Renderer* renderer, GPU_Image* image, Uint8 from_r, U
 	GLubyte *buffer = (GLubyte *)malloc(textureWidth*textureHeight*image->channels);
 
 #ifndef glGetTexImage
-	return;
+	GPU_Target* tgt = GPU_LoadTarget(image);
+	readTexPixels(tgt, texture_format, buffer);
+	GPU_FreeTarget(tgt);
 #else
 	glGetTexImage(GL_TEXTURE_2D, 0, texture_format, GL_UNSIGNED_BYTE, buffer);
 #endif
@@ -1097,8 +1106,6 @@ static void ReplaceRGB(GPU_Renderer* renderer, GPU_Image* image, Uint8 from_r, U
 	free(buffer);
 }
 
-
-
 static void MakeRGBTransparent(GPU_Renderer* renderer, GPU_Image* image, Uint8 r, Uint8 g, Uint8 b)
 {
 	if(image == NULL || image->channels < 4)
@@ -1122,7 +1129,9 @@ static void MakeRGBTransparent(GPU_Renderer* renderer, GPU_Image* image, Uint8 r
 	GLubyte *buffer = (GLubyte *)malloc(textureWidth*textureHeight*4);
 
 #ifndef glGetTexImage
-	return;
+	GPU_Target* tgt = GPU_LoadTarget(image);
+	readTexPixels(tgt, GL_RGBA, buffer);
+	GPU_FreeTarget(tgt);
 #else
 	glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
 #endif
@@ -1268,7 +1277,9 @@ static void ShiftHSV(GPU_Renderer* renderer, GPU_Image* image, int hue, int satu
 	GLenum texture_format = ((ImageData_OpenGLES_1*)image->data)->format;
 
 #ifndef glGetTexImage
-	return;
+	GPU_Target* tgt = GPU_LoadTarget(image);
+	readTexPixels(tgt, texture_format, buffer);
+	GPU_FreeTarget(tgt);
 #else
 	glGetTexImage(GL_TEXTURE_2D, 0, texture_format, GL_UNSIGNED_BYTE, buffer);
 #endif
@@ -1341,7 +1352,9 @@ static void ShiftHSVExcept(GPU_Renderer* renderer, GPU_Image* image, int hue, in
 	GLenum texture_format = ((ImageData_OpenGLES_1*)image->data)->format;
 
 #ifndef glGetTexImage
-	return;
+	GPU_Target* tgt = GPU_LoadTarget(image);
+	readTexPixels(tgt, texture_format, buffer);
+	GPU_FreeTarget(tgt);
 #else
 	glGetTexImage(GL_TEXTURE_2D, 0, texture_format, GL_UNSIGNED_BYTE, buffer);
 #endif
