@@ -42,10 +42,7 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <android/log.h>
 
-#define LOG_BEGIN __android_log_print(ANDROID_LOG_ERROR, "APPLICATION",
-#define LOG_END )
 
 /*	error reporting	*/
 const char *result_string_pointer = "SOIL initialized";
@@ -144,7 +141,7 @@ SOIL_Texture
 		if( result.texture )
 		{
 			/*	hey, it worked!!	*/
-			LOG_BEGIN "Texture DDS?\n" LOG_END;
+			//LOG_BEGIN "Texture DDS?\n" LOG_END;
 			return result;
 		}
 	}
@@ -160,7 +157,7 @@ SOIL_Texture
 	{
 		/*	image loading failed	*/
 		result_string_pointer = stbi_failure_reason();
-		LOG_BEGIN "Texture load failed: %s\n", result_string_pointer LOG_END;
+		//LOG_BEGIN "Texture load failed: %s\n", result_string_pointer LOG_END;
 		return result;
 	}
 	/*      OK, make it a texture!  */

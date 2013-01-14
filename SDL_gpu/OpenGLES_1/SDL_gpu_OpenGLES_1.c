@@ -16,16 +16,6 @@
 	#define POT_FLAG 0
 #endif
 
-static Uint8 checkExtension(const char* str)
-{
-	if(!glewIsExtensionSupported(str))
-	{
-		GPU_LogError("Error: Extension %s is not supported.\n", str);
-		return 0;
-	}
-	return 1;
-}
-
 static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags)
 {
     #ifdef SDL_GPU_USE_SDL2
@@ -76,19 +66,6 @@ static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags
         renderer->window_w = screen->w;
         renderer->window_h = screen->h;
     #endif
-    
-#ifndef ANDROID
-	GLenum err = glewInit();
-	if (GLEW_OK != err)
-	{
-		/* Problem: glewInit failed, something is seriously wrong. */
-		fprintf(stderr, "Error: %s\n", glewGetErrorString(err));
-	}
-	
-	checkExtension("GL_EXT_framebuffer_object");
-	checkExtension("GL_ARB_framebuffer_object"); // glGenerateMipmap
-	checkExtension("GL_EXT_framebuffer_blit");
-#endif
 
 	GPU_LogInfo("Setting up OpenGL state.\n");
 	glEnable( GL_TEXTURE_2D );
@@ -350,20 +327,17 @@ static GPU_Image* LoadImage(GPU_Renderer* renderer, const char* filename)
 {
 	SOIL_Texture texture;
 	
-#ifdef ANDROID
 	SDL_RWops* rwops = SDL_RWFromFile(filename, "r");
 	if(rwops == NULL)
 		return NULL;
 	int data_bytes = SDL_RWseek(rwops, 0, SEEK_END);
 	SDL_RWseek(rwops, 0, SEEK_SET);
-	char* c_data = (char*)malloc(data_bytes);
+	unsigned char* c_data = (unsigned char*)malloc(data_bytes);
 	SDL_RWread(rwops, c_data, 1, data_bytes);
 	texture = SOIL_load_OGL_texture_from_memory(c_data, data_bytes, SOIL_LOAD_AUTO, 0, POT_FLAG);
 	free(c_data);
 	SDL_FreeRW(rwops);
-#else
-	texture = SOIL_load_OGL_texture(filename, SOIL_LOAD_AUTO, 0, POT_FLAG);
-#endif
+	
 	if(texture.texture == 0)
 	{
 		GPU_LogError("Failed to load image: Texture handle is 0.\n");
@@ -826,7 +800,6 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_T
 		dy2 = renderer->display->h - dy2;
 	}
 
-#ifdef ANDROID
 	GLfloat gltexcoords[8];
 	glTexCoordPointer(2, GL_FLOAT, 0, gltexcoords);
 	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -860,25 +833,7 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_T
 	glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 	glDisableClientState(GL_VERTEX_ARRAY);
 	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-#else
-	glBegin( GL_TRIANGLE_FAN );
-		//Bottom-left vertex (corner)
-		glTexCoord2f( x1, y1 );
-		glVertex3f( dx1, dy1, 0.0f );
 	
-		//Bottom-right vertex (corner)
-		glTexCoord2f( x2, y1 );
-		glVertex3f( dx2, dy1, 0.0f );
-	
-		//Top-right vertex (corner)
-		glTexCoord2f( x2, y2 );
-		glVertex3f( dx2, dy2, 0.0f );
-	
-		//Top-left vertex (corner)
-		glTexCoord2f( x1, y2 );
-		glVertex3f( dx1, dy2, 0.0f );
-	glEnd();
-#endif
 	
 	if(dest->useClip)
 	{

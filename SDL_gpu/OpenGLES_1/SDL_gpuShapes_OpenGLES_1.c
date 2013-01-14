@@ -88,7 +88,6 @@ static void Pixel(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, floa
 	
 	glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
 	
-#ifdef ANDROID
 	GLfloat glverts[3];
 	glVertexPointer(3, GL_FLOAT, 0, glverts);
 	glEnableClientState(GL_VERTEX_ARRAY);
@@ -99,11 +98,6 @@ static void Pixel(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, floa
 
 	glDrawArrays(GL_POINTS, 0, 1);
 	glDisableClientState(GL_VERTEX_ARRAY);
-#else
-	glBegin(GL_POINTS);
-	glVertex3f(x, y, z);
-	glEnd();
-#endif
 	
 	END;
 }
@@ -116,7 +110,7 @@ static void Line(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, floa
 	INVERT_Y(y2);
 	
 	glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
-#ifdef ANDROID
+	
 	GLfloat glverts[6];
 	glVertexPointer(3, GL_FLOAT, 0, glverts);
 	glEnableClientState(GL_VERTEX_ARRAY);
@@ -130,12 +124,6 @@ static void Line(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, floa
 
 	glDrawArrays(GL_LINES, 0, 2);
 	glDisableClientState(GL_VERTEX_ARRAY);
-#else
-	glBegin(GL_LINES);
-	glVertex3f(x1, y1, z);
-	glVertex3f(x2, y2, z);
-	glEnd();
-#endif
 	
 	END;
 }
@@ -361,7 +349,7 @@ static void Tri(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, float
 	INVERT_Y(y3);
 	
 	glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
-#ifdef ANDROID
+	
 	GLfloat glverts[9];
 	glVertexPointer(3, GL_FLOAT, 0, glverts);
 	glEnableClientState(GL_VERTEX_ARRAY);
@@ -378,13 +366,6 @@ static void Tri(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, float
 
 	glDrawArrays(GL_LINE_LOOP, 0, 3);
 	glDisableClientState(GL_VERTEX_ARRAY);
-#else
-	glBegin(GL_LINE_LOOP);
-	glVertex3f(x1, y1, z);
-	glVertex3f(x2, y2, z);
-	glVertex3f(x3, y3, z);
-	glEnd();
-#endif
 	
 	END;
 }
@@ -399,7 +380,6 @@ static void TriFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1,
 	
 	glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
 
-#ifdef ANDROID
 	GLfloat glverts[9];
 	glVertexPointer(3, GL_FLOAT, 0, glverts);
 	glEnableClientState(GL_VERTEX_ARRAY);
@@ -416,13 +396,6 @@ static void TriFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1,
 
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 3);
 	glDisableClientState(GL_VERTEX_ARRAY);
-#else
-	glBegin(GL_TRIANGLE_STRIP);
-	glVertex3f(x1, y1, z);
-	glVertex3f(x2, y2, z);
-	glVertex3f(x3, y3, z);
-	glEnd();
-#endif
 	
 	END;
 }
@@ -436,7 +409,6 @@ static void Rect(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, floa
 	
 	glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
 
-#ifdef ANDROID
 	GLfloat glverts[12];
 	glVertexPointer(3, GL_FLOAT, 0, glverts);
 	glEnableClientState(GL_VERTEX_ARRAY);
@@ -456,14 +428,6 @@ static void Rect(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, floa
 
 	glDrawArrays(GL_LINE_LOOP, 0, 4);
 	glDisableClientState(GL_VERTEX_ARRAY);
-#else
-	glBegin(GL_LINE_LOOP);
-	glVertex3f(x1, y1, z);
-	glVertex3f(x1, y2, z);
-	glVertex3f(x2, y2, z);
-	glVertex3f(x2, y1, z);
-	glEnd();
-#endif
 	
 	END;
 }
@@ -477,7 +441,6 @@ static void RectFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1
 	
 	glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
 	
-#ifdef ANDROID
 	GLfloat glverts[12];
 	glVertexPointer(3, GL_FLOAT, 0, glverts);
 	glEnableClientState(GL_VERTEX_ARRAY);
@@ -497,14 +460,6 @@ static void RectFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1
 
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 	glDisableClientState(GL_VERTEX_ARRAY);
-#else
-	glBegin(GL_TRIANGLE_STRIP);
-	glVertex3f(x1, y1, z);
-	glVertex3f(x1, y2, z);
-	glVertex3f(x2, y1, z);
-	glVertex3f(x2, y2, z);
-	glEnd();
-#endif
 	
 	END;
 }
