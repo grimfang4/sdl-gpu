@@ -1,9 +1,11 @@
 #include "SDL_gpu_Renderer.h"
 #include <string.h>
 
-
-#include "OpenGL/SDL_gpu_OpenGL_internal.h"
-//#include "OpenGLES_1/SDL_gpu_OpenGLES_1_internal.h"
+#ifndef SDL_GPU_USE_OPENGLES_1
+	#include "OpenGL/SDL_gpu_OpenGL_internal.h"
+#else
+	#include "OpenGLES_1/SDL_gpu_OpenGLES_1_internal.h"
+#endif
 //#include "Direct3D/SDL_gpu_Direct3D_internal.h"
 
 #define MAX_ACTIVE_RENDERERS 20
@@ -106,6 +108,7 @@ void GPU_RegisterRenderers()
 	if(i >= MAX_REGISTERED_RENDERERS)
 		return;
 	
+#ifndef SDL_GPU_USE_OPENGLES_1
 	const char* id = "OpenGL";
 	rendererRegister[i].id = (char*)malloc(strlen(id) + 1);
 	strcpy(rendererRegister[i].id, id);
@@ -115,8 +118,8 @@ void GPU_RegisterRenderers()
 	i++;
 	if(i >= MAX_REGISTERED_RENDERERS)
 		return;
-	
-	/*const char* id = "OpenGLES_1";
+#else
+	const char* id = "OpenGLES_1";
 	rendererRegister[i].id = (char*)malloc(strlen(id) + 1);
 	strcpy(rendererRegister[i].id, id);
 	rendererRegister[i].createFn = &GPU_CreateRenderer_OpenGLES_1;
@@ -124,7 +127,8 @@ void GPU_RegisterRenderers()
 	
 	i++;
 	if(i >= MAX_REGISTERED_RENDERERS)
-		return;*/
+		return;
+#endif
 	
 	/*id = "Direct3D";
 	rendererRegister[i].id = (char*)malloc(strlen(id) + 1);

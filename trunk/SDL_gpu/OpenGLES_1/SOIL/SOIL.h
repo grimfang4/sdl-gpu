@@ -146,8 +146,10 @@ enum
 typedef struct SOIL_Texture
 {
 	unsigned int texture;
-	int width;
+	int width; /* Texture object dims */
 	int height;
+	int data_width;  /* Image data dims */
+	int data_height;
 	GLint format;
 } SOIL_Texture;
 
@@ -168,51 +170,7 @@ SOIL_Texture
 		unsigned int flags
 	);
 
-/**
-	Loads 6 images from disk into an OpenGL cubemap texture.
-	\param x_pos_file the name of the file to upload as the +x cube face
-	\param x_neg_file the name of the file to upload as the -x cube face
-	\param y_pos_file the name of the file to upload as the +y cube face
-	\param y_neg_file the name of the file to upload as the -y cube face
-	\param z_pos_file the name of the file to upload as the +z cube face
-	\param z_neg_file the name of the file to upload as the -z cube face
-	\param force_channels 0-image format, 1-luminous, 2-luminous/alpha, 3-RGB, 4-RGBA
-	\param reuse_texture_ID 0-generate a new texture ID, otherwise reuse the texture ID (overwriting the old texture)
-	\param flags can be any of SOIL_FLAG_POWER_OF_TWO | SOIL_FLAG_MIPMAPS | SOIL_FLAG_TEXTURE_REPEATS | SOIL_FLAG_MULTIPLY_ALPHA | SOIL_FLAG_INVERT_Y | SOIL_FLAG_COMPRESS_TO_DXT | SOIL_FLAG_DDS_LOAD_DIRECT
-	\return 0-failed, otherwise returns the OpenGL texture handle
-**/
-unsigned int
-	SOIL_load_OGL_cubemap
-	(
-		const char *x_pos_file,
-		const char *x_neg_file,
-		const char *y_pos_file,
-		const char *y_neg_file,
-		const char *z_pos_file,
-		const char *z_neg_file,
-		int force_channels,
-		unsigned int reuse_texture_ID,
-		unsigned int flags
-	);
 
-/**
-	Loads 1 image from disk and splits it into an OpenGL cubemap texture.
-	\param filename the name of the file to upload as a texture
-	\param face_order the order of the faces in the file, any combination of NSWEUD, for North, South, Up, etc.
-	\param force_channels 0-image format, 1-luminous, 2-luminous/alpha, 3-RGB, 4-RGBA
-	\param reuse_texture_ID 0-generate a new texture ID, otherwise reuse the texture ID (overwriting the old texture)
-	\param flags can be any of SOIL_FLAG_POWER_OF_TWO | SOIL_FLAG_MIPMAPS | SOIL_FLAG_TEXTURE_REPEATS | SOIL_FLAG_MULTIPLY_ALPHA | SOIL_FLAG_INVERT_Y | SOIL_FLAG_COMPRESS_TO_DXT | SOIL_FLAG_DDS_LOAD_DIRECT
-	\return 0-failed, otherwise returns the OpenGL texture handle
-**/
-unsigned int
-	SOIL_load_OGL_single_cubemap
-	(
-		const char *filename,
-		const char face_order[6],
-		int force_channels,
-		unsigned int reuse_texture_ID,
-		unsigned int flags
-        );
 
 /**
         Loads an HDR image from disk into an OpenGL texture.
@@ -222,7 +180,7 @@ unsigned int
         \param flags can be any of SOIL_FLAG_POWER_OF_TWO | SOIL_FLAG_MIPMAPS | SOIL_FLAG_TEXTURE_REPEATS | SOIL_FLAG_MULTIPLY_ALPHA | SOIL_FLAG_INVERT_Y | SOIL_FLAG_COMPRESS_TO_DXT
         \return 0-failed, otherwise returns the OpenGL texture handle
 **/
-unsigned int
+SOIL_Texture
         SOIL_load_OGL_HDR_texture
         (
                 const char *filename,
@@ -251,65 +209,6 @@ SOIL_Texture
 		unsigned int flags
 	);
 
-/**
-	Loads 6 images from memory into an OpenGL cubemap texture.
-	\param x_pos_buffer the image data in RAM to upload as the +x cube face
-	\param x_pos_buffer_length the size of the above buffer
-	\param x_neg_buffer the image data in RAM to upload as the +x cube face
-	\param x_neg_buffer_length the size of the above buffer
-	\param y_pos_buffer the image data in RAM to upload as the +x cube face
-	\param y_pos_buffer_length the size of the above buffer
-	\param y_neg_buffer the image data in RAM to upload as the +x cube face
-	\param y_neg_buffer_length the size of the above buffer
-	\param z_pos_buffer the image data in RAM to upload as the +x cube face
-	\param z_pos_buffer_length the size of the above buffer
-	\param z_neg_buffer the image data in RAM to upload as the +x cube face
-	\param z_neg_buffer_length the size of the above buffer
-	\param force_channels 0-image format, 1-luminous, 2-luminous/alpha, 3-RGB, 4-RGBA
-	\param reuse_texture_ID 0-generate a new texture ID, otherwise reuse the texture ID (overwriting the old texture)
-	\param flags can be any of SOIL_FLAG_POWER_OF_TWO | SOIL_FLAG_MIPMAPS | SOIL_FLAG_TEXTURE_REPEATS | SOIL_FLAG_MULTIPLY_ALPHA | SOIL_FLAG_INVERT_Y | SOIL_FLAG_COMPRESS_TO_DXT | SOIL_FLAG_DDS_LOAD_DIRECT
-	\return 0-failed, otherwise returns the OpenGL texture handle
-**/
-unsigned int
-	SOIL_load_OGL_cubemap_from_memory
-	(
-		const unsigned char *const x_pos_buffer,
-		int x_pos_buffer_length,
-		const unsigned char *const x_neg_buffer,
-		int x_neg_buffer_length,
-		const unsigned char *const y_pos_buffer,
-		int y_pos_buffer_length,
-		const unsigned char *const y_neg_buffer,
-		int y_neg_buffer_length,
-		const unsigned char *const z_pos_buffer,
-		int z_pos_buffer_length,
-		const unsigned char *const z_neg_buffer,
-		int z_neg_buffer_length,
-		int force_channels,
-		unsigned int reuse_texture_ID,
-		unsigned int flags
-	);
-
-/**
-	Loads 1 image from RAM and splits it into an OpenGL cubemap texture.
-	\param buffer the image data in RAM just as if it were still in a file
-	\param buffer_length the size of the buffer in bytes
-	\param face_order the order of the faces in the file, any combination of NSWEUD, for North, South, Up, etc.
-	\param force_channels 0-image format, 1-luminous, 2-luminous/alpha, 3-RGB, 4-RGBA
-	\param reuse_texture_ID 0-generate a new texture ID, otherwise reuse the texture ID (overwriting the old texture)
-	\param flags can be any of SOIL_FLAG_POWER_OF_TWO | SOIL_FLAG_MIPMAPS | SOIL_FLAG_TEXTURE_REPEATS | SOIL_FLAG_MULTIPLY_ALPHA | SOIL_FLAG_INVERT_Y | SOIL_FLAG_COMPRESS_TO_DXT | SOIL_FLAG_DDS_LOAD_DIRECT
-	\return 0-failed, otherwise returns the OpenGL texture handle
-**/
-unsigned int
-	SOIL_load_OGL_single_cubemap_from_memory
-	(
-		const unsigned char *const buffer,
-		int buffer_length,
-		const char face_order[6],
-		int force_channels,
-		unsigned int reuse_texture_ID,
-		unsigned int flags
-	);
 
 /**
 	Creates a 2D OpenGL texture from raw image data.  Note that the raw data is
@@ -322,35 +221,15 @@ unsigned int
 	\param flags can be any of SOIL_FLAG_POWER_OF_TWO | SOIL_FLAG_MIPMAPS | SOIL_FLAG_TEXTURE_REPEATS | SOIL_FLAG_MULTIPLY_ALPHA | SOIL_FLAG_INVERT_Y | SOIL_FLAG_COMPRESS_TO_DXT
 	\return 0-failed, otherwise returns the OpenGL texture handle
 **/
-unsigned int
+SOIL_Texture
         SOIL_create_OGL_texture
         (
                 const unsigned char *const data,
-                int *width, int *height, int channels,
+                int width, int height, int channels,
                 unsigned int reuse_texture_ID,
                 unsigned int flags
         );
 
-/**
-	Creates an OpenGL cubemap texture by splitting up 1 image into 6 parts.
-	\param data the raw data to be uploaded as an OpenGL texture
-	\param width the width of the image in pixels
-	\param height the height of the image in pixels
-	\param channels the number of channels: 1-luminous, 2-luminous/alpha, 3-RGB, 4-RGBA
-	\param face_order the order of the faces in the file, and combination of NSWEUD, for North, South, Up, etc.
-	\param reuse_texture_ID 0-generate a new texture ID, otherwise reuse the texture ID (overwriting the old texture)
-	\param flags can be any of SOIL_FLAG_POWER_OF_TWO | SOIL_FLAG_MIPMAPS | SOIL_FLAG_TEXTURE_REPEATS | SOIL_FLAG_MULTIPLY_ALPHA | SOIL_FLAG_INVERT_Y | SOIL_FLAG_COMPRESS_TO_DXT | SOIL_FLAG_DDS_LOAD_DIRECT
-	\return 0-failed, otherwise returns the OpenGL texture handle
-**/
-unsigned int
-	SOIL_create_OGL_single_cubemap
-	(
-		const unsigned char *const data,
-		int width, int height, int channels,
-		const char face_order[6],
-		unsigned int reuse_texture_ID,
-		unsigned int flags
-	);
 
 /**
 	Captures the OpenGL window (RGB) and saves it to disk
