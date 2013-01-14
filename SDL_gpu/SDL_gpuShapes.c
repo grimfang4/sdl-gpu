@@ -1,8 +1,9 @@
 #include "SDL_gpu.h"
 #include <string.h>
 
-#include "OpenGL/SDL_gpu_OpenGL_internal.h"
+//#include "OpenGL/SDL_gpu_OpenGL_internal.h"
 //#include "Direct3D/SDL_gpu_Direct3D_internal.h"
+#include "OpenGLES_1/SDL_gpu_OpenGLES_1_internal.h"
 
 
 static GPU_ShapeRenderer* shapeRenderer = NULL;
@@ -25,7 +26,7 @@ void GPU_LoadShapeRenderer(void)
 	if(renderer == NULL)
 		return;
 	
-	if(strcmp(rendererID, "OpenGL") == 0)
+	/*if(strcmp(rendererID, "OpenGL") == 0)
 	{
 		GPU_ShapeRenderer* sr = GPU_CreateShapeRenderer_OpenGL();
 		if(sr == NULL)
@@ -33,7 +34,7 @@ void GPU_LoadShapeRenderer(void)
 		sr->renderer = renderer;
 		shapeRenderer = sr;
 		freeShapeRendererFn = &GPU_FreeShapeRenderer_OpenGL;
-	}
+	}*/
 	
 	/*if(strcmp(rendererID, "Direct3D") == 0)
 	{
@@ -45,6 +46,16 @@ void GPU_LoadShapeRenderer(void)
 		freeShapeRendererFn = &GPU_FreeShapeRenderer_Direct3D;
 	}*/
 	
+	if(strcmp(rendererID, "OpenGLES_1") == 0)
+	{
+		GPU_ShapeRenderer* sr = GPU_CreateShapeRenderer_OpenGLES_1();
+		if(sr == NULL)
+			return;
+		sr->renderer = renderer;
+		shapeRenderer = sr;
+		freeShapeRendererFn = &GPU_FreeShapeRenderer_OpenGLES_1;
+	}
+
 }
 
 #define CHECK_RENDERER(ret) \

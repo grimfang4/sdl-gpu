@@ -19,6 +19,7 @@ typedef struct ImageData_OpenGLES_1
 	GLuint handle;
 	GLenum format;
 	GLboolean hasMipmaps;
+	GLuint tex_w, tex_h;  // For power-of-two support
 } ImageData_OpenGLES_1;
 
 typedef struct TargetData_OpenGLES_1
