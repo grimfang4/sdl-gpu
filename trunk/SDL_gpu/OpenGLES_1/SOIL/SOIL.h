@@ -153,6 +153,17 @@ typedef struct SOIL_Texture
 	GLint format;
 } SOIL_Texture;
 
+
+// Scale up 'orig' data to fit new width and height and store it in 'resampled'.
+int
+	up_scale_image
+	(
+		const unsigned char* const orig,
+		int width, int height, int channels,
+		unsigned char* resampled,
+		int resampled_width, int resampled_height
+	);
+
 /**
 	Loads an image from disk into an OpenGL texture.
 	\param filename the name of the file to upload as a texture
