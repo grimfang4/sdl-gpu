@@ -1,8 +1,6 @@
 #ifndef _SDL_GPU_OPENGLES_1_INTERNAL_H__
 #define _SDL_GPU_OPENGLES_1_INTERNAL_H__
 
-#ifndef SDL_GPU_FAKE_GLES
-
 #include "GLES/gl.h"
 #include "GLES/glext.h"
 
@@ -18,12 +16,6 @@
 #define GL_FRAMEBUFFER GL_FRAMEBUFFER_OES
 #define GL_COLOR_ATTACHMENT0 GL_COLOR_ATTACHMENT0_OES
 #define GL_FRAMEBUFFER_COMPLETE GL_FRAMEBUFFER_COMPLETE_OES
-#else
-
-#include "GL/gl.h"
-#include "GL/glext.h"
-
-#endif
 
 #include "SDL_gpu_OpenGLES_1.h"
 

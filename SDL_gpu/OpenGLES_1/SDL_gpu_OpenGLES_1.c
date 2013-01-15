@@ -16,6 +16,16 @@
 	#define POT_FLAG 0
 #endif
 
+static Uint8 checkExtension(const char* str)
+{
+	if(!glewIsExtensionSupported(str))
+	{
+		GPU_LogError("Error: Extension %s is not supported.\n", str);
+		return 0;
+	}
+	return 1;
+}
+
 static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags)
 {
     #ifdef SDL_GPU_USE_SDL2
@@ -66,6 +76,19 @@ static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags
         renderer->window_w = screen->w;
         renderer->window_h = screen->h;
     #endif
+    
+#ifndef ANDROID
+	GLenum err = glewInit();
+	if (GLEW_OK != err)
+	{
+		/* Problem: glewInit failed, something is seriously wrong. */
+		fprintf(stderr, "Error: %s\n", glewGetErrorString(err));
+	}
+	
+	checkExtension("GL_EXT_framebuffer_object");
+	checkExtension("GL_ARB_framebuffer_object"); // glGenerateMipmap
+	checkExtension("GL_EXT_framebuffer_blit");
+#endif
 
 	GPU_LogInfo("Setting up OpenGL state.\n");
 	glEnable( GL_TEXTURE_2D );
@@ -74,6 +97,7 @@ static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags
 	glViewport( 0, 0, renderer->window_w, renderer->window_h);
 	
 	glClear( GL_COLOR_BUFFER_BIT );
+	glColor4ub(255, 255, 255, 255);
 	
 	glMatrixMode( GL_PROJECTION );
 	glLoadIdentity();
@@ -151,6 +175,7 @@ static int SetDisplayResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
 	glViewport( 0, 0, w, h);
 	
 	glClear( GL_COLOR_BUFFER_BIT );
+	glColor4ub(255, 255, 255, 255);
 	
 	glMatrixMode( GL_PROJECTION );
 	glLoadIdentity();
@@ -327,17 +352,20 @@ static GPU_Image* LoadImage(GPU_Renderer* renderer, const char* filename)
 {
 	SOIL_Texture texture;
 	
+#ifdef ANDROID
 	SDL_RWops* rwops = SDL_RWFromFile(filename, "r");
 	if(rwops == NULL)
 		return NULL;
 	int data_bytes = SDL_RWseek(rwops, 0, SEEK_END);
 	SDL_RWseek(rwops, 0, SEEK_SET);
-	unsigned char* c_data = (unsigned char*)malloc(data_bytes);
+	char* c_data = (char*)malloc(data_bytes);
 	SDL_RWread(rwops, c_data, 1, data_bytes);
 	texture = SOIL_load_OGL_texture_from_memory(c_data, data_bytes, SOIL_LOAD_AUTO, 0, POT_FLAG);
 	free(c_data);
 	SDL_FreeRW(rwops);
-	
+#else
+	texture = SOIL_load_OGL_texture(filename, SOIL_LOAD_AUTO, 0, POT_FLAG);
+#endif
 	if(texture.texture == 0)
 	{
 		GPU_LogError("Failed to load image: Texture handle is 0.\n");
@@ -473,20 +501,50 @@ SDL_Surface* convertToPOTSurface(SDL_Surface* surface)
 	// Create new surface of the correct dimensions
 	SDL_Surface* result = SDL_CreateRGBSurface(SDL_SWSURFACE, w, h, surface->format->BitsPerPixel, surface->format->Rmask, surface->format->Gmask, surface->format->Bmask, surface->format->Amask);
 
+	/*
 	// Copy image data without alpha blending
 	SDL_BlendMode blendMode = SDL_GetSurfaceBlendMode(surface, &blendMode);
 	SDL_SetSurfaceBlendMode(surface, SDL_BLENDMODE_NONE);
 	SDL_BlitSurface(surface, NULL, result, NULL);
-	SDL_SetSurfaceBlendMode(surface, blendMode);
+	SDL_SetSurfaceBlendMode(surface, blendMode);*/
+
+	// Stretch and copy the data
+	if(!up_scale_image(surface->pixels, surface->w, surface->h, surface->format->BytesPerPixel, result->pixels, result->w, result->h))
+	{
+		SDL_FreeSurface(result);
+		return NULL;
+	}
 
 	return result;
 }
+
+#define USE_SOIL_MORE
 
 static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surface)
 {
 	if(surface == NULL)
 		return NULL;
 	GPU_LogError("CopyImageFromSurface()\n");
+
+#ifdef USE_SOIL_MORE
+	SOIL_Texture tex = SOIL_create_OGL_texture(surface->pixels, surface->w, surface->h, surface->format->BytesPerPixel, 0, POT_FLAG);
+	GPU_Image* result = (GPU_Image*)malloc(sizeof(GPU_Image));
+	ImageData_OpenGLES_1* data = (ImageData_OpenGLES_1*)malloc(sizeof(ImageData_OpenGLES_1));
+	result->data = data;
+	result->renderer = renderer;
+
+	result->channels = surface->format->BytesPerPixel;
+
+	data->handle = tex.texture;
+	data->format = tex.format;
+	data->hasMipmaps = 0;
+
+	result->w = surface->w;
+	result->h = surface->h;
+	data->tex_w = tex.width;
+	data->tex_h = tex.height;
+#else
+
 	// From gpwiki.org
 	GLuint texture;			// This is a handle to our texture object
 	GLenum texture_format;
@@ -512,7 +570,10 @@ static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surf
 		// Set actual image dimensions (NPOT)
 		result->w = surface->w;
 		result->h = surface->h;
-		GPU_LogError("Done copying.\n");
+
+		Uint16 tex_w = ((ImageData_OpenGLES_1*)result->data)->tex_w;
+		Uint16 tex_h = ((ImageData_OpenGLES_1*)result->data)->tex_h;
+		GPU_LogError("Done copying: Surface dims are %d/%d x %d/%d.\n", result->w, tex_w, result->h, tex_h);
 		return result;
 	}
 
@@ -572,30 +633,7 @@ static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surf
 	result->data = data;
 	result->renderer = renderer;
 	
-	int channels = 0;
-	switch(texture_format)
-	{
-	case GL_LUMINANCE:
-		channels = 1;
-		break;
-	case GL_LUMINANCE_ALPHA:
-		channels = 2;
-		break;
-#ifdef GL_BGR
-	case GL_BGR:
-#endif
-	case GL_RGB:
-		channels = 3;
-		break;
-#ifdef GL_BGRA
-	case GL_BGRA:
-#endif
-	case GL_RGBA:
-		channels = 4;
-		break;
-	}
-	
-	result->channels = channels;
+	result->channels = nOfColors;
 	
 	data->handle = texture;
 	data->format = texture_format;
@@ -605,6 +643,7 @@ static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surf
 	result->h = surface->h;
 	data->tex_w = w;
 	data->tex_h = h;
+#endif
 	
 	return result;
 }
@@ -760,10 +799,14 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_T
 	}
 	else
 	{
-		x1 = srcrect->x/(float)tex_w;
-		y1 = srcrect->y/(float)tex_h;
-		x2 = (srcrect->x + srcrect->w)/(float)tex_w;
-		y2 = (srcrect->y + srcrect->h)/(float)tex_h;
+		//x1 = srcrect->x/(float)tex_w;
+		//y1 = srcrect->y/(float)tex_h;
+		//x2 = (srcrect->x + srcrect->w)/(float)tex_w;
+		//y2 = (srcrect->y + srcrect->h)/(float)tex_h;
+		x1 = srcrect->x/(float)src->w;
+		y1 = srcrect->y/(float)src->h;
+		x2 = (srcrect->x + srcrect->w)/(float)src->w;
+		y2 = (srcrect->y + srcrect->h)/(float)src->h;
 		dx1 = x - srcrect->w/2;
 		dy1 = y - srcrect->h/2;
 		dx2 = x + srcrect->w/2;
@@ -800,6 +843,7 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_T
 		dy2 = renderer->display->h - dy2;
 	}
 
+#ifdef ANDROID
 	GLfloat gltexcoords[8];
 	glTexCoordPointer(2, GL_FLOAT, 0, gltexcoords);
 	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -833,7 +877,25 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_T
 	glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 	glDisableClientState(GL_VERTEX_ARRAY);
 	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+#else
+	glBegin( GL_TRIANGLE_FAN );
+		//Bottom-left vertex (corner)
+		glTexCoord2f( x1, y1 );
+		glVertex3f( dx1, dy1, 0.0f );
 	
+		//Bottom-right vertex (corner)
+		glTexCoord2f( x2, y1 );
+		glVertex3f( dx2, dy1, 0.0f );
+	
+		//Top-right vertex (corner)
+		glTexCoord2f( x2, y2 );
+		glVertex3f( dx2, dy2, 0.0f );
+	
+		//Top-left vertex (corner)
+		glTexCoord2f( x1, y2 );
+		glVertex3f( dx1, dy2, 0.0f );
+	glEnd();
+#endif
 	
 	if(dest->useClip)
 	{
@@ -1026,10 +1088,10 @@ static void SetRGBA(GPU_Renderer* renderer, Uint8 r, Uint8 g, Uint8 b, Uint8 a)
 	glColor4f(r/255.01f, g/255.01f, b/255.01f, a/255.01f);
 }
 
-static void readTexPixels(GPU_Target* source, GLint format, GLubyte* pixels)
+static void readTexPixels(GPU_Target* source, unsigned int width, unsigned int height, GLint format, GLubyte* pixels)
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, ((TargetData_OpenGLES_1*)source->data)->handle);
-	glReadPixels(0, 0, source->w, source->h, format, GL_UNSIGNED_BYTE, pixels);
+	glReadPixels(0, 0, width, height, format, GL_UNSIGNED_BYTE, pixels);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
@@ -1060,7 +1122,7 @@ static void ReplaceRGB(GPU_Renderer* renderer, GPU_Image* image, Uint8 from_r, U
 
 #ifndef glGetTexImage
 	GPU_Target* tgt = GPU_LoadTarget(image);
-	readTexPixels(tgt, texture_format, buffer);
+	readTexPixels(tgt, textureWidth, textureHeight, texture_format, buffer);
 	GPU_FreeTarget(tgt);
 #else
 	glGetTexImage(GL_TEXTURE_2D, 0, texture_format, GL_UNSIGNED_BYTE, buffer);
@@ -1113,7 +1175,7 @@ static void MakeRGBTransparent(GPU_Renderer* renderer, GPU_Image* image, Uint8 r
 
 #ifndef glGetTexImage
 	GPU_Target* tgt = GPU_LoadTarget(image);
-	readTexPixels(tgt, texture_format, buffer);
+	readTexPixels(tgt, textureWidth, textureHeight, texture_format, buffer);
 	GPU_FreeTarget(tgt);
 #else
 	glGetTexImage(GL_TEXTURE_2D, 0, texture_format, GL_UNSIGNED_BYTE, buffer);
@@ -1241,7 +1303,7 @@ static void ShiftHSV(GPU_Renderer* renderer, GPU_Image* image, int hue, int satu
 		return;
 	if(renderer != image->renderer)
 		return;
-	
+
 	glBindTexture( GL_TEXTURE_2D, ((ImageData_OpenGLES_1*)image->data)->handle );
 
 	GLint textureWidth, textureHeight;
@@ -1261,7 +1323,7 @@ static void ShiftHSV(GPU_Renderer* renderer, GPU_Image* image, int hue, int satu
 
 #ifndef glGetTexImage
 	GPU_Target* tgt = GPU_LoadTarget(image);
-	readTexPixels(tgt, texture_format, buffer);
+	readTexPixels(tgt, textureWidth, textureHeight, texture_format, buffer);
 	GPU_FreeTarget(tgt);
 #else
 	glGetTexImage(GL_TEXTURE_2D, 0, texture_format, GL_UNSIGNED_BYTE, buffer);
@@ -1316,7 +1378,7 @@ static void ShiftHSVExcept(GPU_Renderer* renderer, GPU_Image* image, int hue, in
 		return;
 	if(renderer != image->renderer)
 		return;
-	
+
 	glBindTexture( GL_TEXTURE_2D, ((ImageData_OpenGLES_1*)image->data)->handle );
 
 	GLint textureWidth, textureHeight;
@@ -1336,7 +1398,7 @@ static void ShiftHSVExcept(GPU_Renderer* renderer, GPU_Image* image, int hue, in
 
 #ifndef glGetTexImage
 	GPU_Target* tgt = GPU_LoadTarget(image);
-	readTexPixels(tgt, texture_format, buffer);
+	readTexPixels(tgt, textureWidth, textureHeight, texture_format, buffer);
 	GPU_FreeTarget(tgt);
 #else
 	glGetTexImage(GL_TEXTURE_2D, 0, texture_format, GL_UNSIGNED_BYTE, buffer);
@@ -1553,9 +1615,11 @@ static void Clear(GPU_Renderer* renderer, GPU_Target* target)
 	}
 	
 	//glPushAttrib(GL_COLOR_BUFFER_BIT);
+
 	glClearColor(0,0,0,0);
 	glClear(GL_COLOR_BUFFER_BIT);
 	//glPopAttrib();
+	glColor4ub(255, 255, 255, 255);
 	
 	if(target->useClip)
 	{
@@ -1591,6 +1655,8 @@ static void ClearRGBA(GPU_Renderer* renderer, GPU_Target* target, Uint8 r, Uint8
 	glClearColor(r/255.0f, g/255.0f, b/255.0f, a/255.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 	
+	glColor4ub(255, 255, 255, 255);
+
 	if(target->useClip)
 	{
 		glDisable(GL_SCISSOR_TEST);
