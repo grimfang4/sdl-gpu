@@ -1,4 +1,4 @@
-#include "SDL_gpu_Renderer.h"
+#include "SDL_gpu.h"
 #include <string.h>
 
 #ifndef SDL_GPU_USE_OPENGLES_1
@@ -6,7 +6,6 @@
 #else
 	#include "OpenGLES_1/SDL_gpu_OpenGLES_1_internal.h"
 #endif
-//#include "Direct3D/SDL_gpu_Direct3D_internal.h"
 
 #define MAX_ACTIVE_RENDERERS 20
 #define MAX_REGISTERED_RENDERERS 2
@@ -130,11 +129,6 @@ void GPU_RegisterRenderers()
 		return;
 #endif
 	
-	/*id = "Direct3D";
-	rendererRegister[i].id = (char*)malloc(strlen(id) + 1);
-	strcpy(rendererRegister[i].id, id);
-	rendererRegister[i].createFn = &GPU_CreateRenderer_Direct3D;
-	rendererRegister[i].freeFn = &GPU_FreeRenderer_Direct3D;*/
 }
 
 
