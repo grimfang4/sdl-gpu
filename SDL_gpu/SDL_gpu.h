@@ -5,6 +5,11 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+#if SDL_VERSION_ATLEAST(2,0,0)
+    #define SDL_GPU_USE_SDL2
+#endif
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
