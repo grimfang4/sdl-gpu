@@ -34,11 +34,19 @@ if(SDL_gpu_BUILD_SHARED)
 		${SDL_gpu_HDRS}
 		${SDL_gpu_SRCS}
 	)
+	if (SDL_gpu_USE_SDL2)
+	set_target_properties(SDL_gpu_shared PROPERTIES
+		OUTPUT_NAME "SDL2_gpu"
+		CLEAN_DIRECT_OUTPUT 1
+		VERSION ${SDL_gpu_VERSION}
+	)
+	else (SDL_gpu_USE_SDL2)
 	set_target_properties(SDL_gpu_shared PROPERTIES
 		OUTPUT_NAME "SDL_gpu"
 		CLEAN_DIRECT_OUTPUT 1
 		VERSION ${SDL_gpu_VERSION}
 	)
+	endif (SDL_gpu_USE_SDL2)
 	set_target_properties(SDL_gpu_shared PROPERTIES LINKER_LANGUAGE C)
 endif()
 
@@ -47,10 +55,19 @@ if(SDL_gpu_BUILD_STATIC)
 		${SDL_gpu_HDRS}
 		${SDL_gpu_SRCS}
 	)
+	if (SDL_gpu_USE_SDL2)
 	set_target_properties(SDL_gpu PROPERTIES
+		OUTPUT_NAME "SDL2_gpu"
 		CLEAN_DIRECT_OUTPUT 1
 		VERSION ${SDL_gpu_VERSION}
 	)
+	else (SDL_gpu_USE_SDL2)
+	set_target_properties(SDL_gpu PROPERTIES
+		OUTPUT_NAME "SDL_gpu"
+		CLEAN_DIRECT_OUTPUT 1
+		VERSION ${SDL_gpu_VERSION}
+	)
+	endif (SDL_gpu_USE_SDL2)
 	set_target_properties(SDL_gpu PROPERTIES LINKER_LANGUAGE C)
 endif()
 
