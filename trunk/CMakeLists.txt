@@ -11,7 +11,7 @@ endif(UNIX)
 option(SDL_gpu_INSTALL "Install SDL_gpu libs, includes, and CMake scripts" ${SDL_gpu_INSTALL_BY_DEFAULT})
 option(SDL_gpu_BUILD_SHARED "Build SDL_gpu shared libraries" OFF)
 option(SDL_gpu_BUILD_STATIC "Build SDL_gpu static libraries" ON)
-option(SDL_gpu_BUILD_EXAMPLES "Build SDL_gpu examples" ON)
+option(SDL_gpu_BUILD_DEMOS "Build SDL_gpu demo programs" ON)
 option(SDL_gpu_BUILD_TOOLS "Build SDL_gpu tool programs" ON)
 
 set(SDL_gpu_VERSION 0.0.1)

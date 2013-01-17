@@ -13,7 +13,6 @@ set(SDL_gpu_SRCS
 )
 set(SDL_gpu_HDRS
 	SDL_gpu.h
-	SDL_gpu_Renderer.h
 	OpenGL/SDL_gpu_OpenGL.h
 	OpenGL/SDL_gpu_OpenGL_internal.h
 	OpenGL/glew.h

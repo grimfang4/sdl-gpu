@@ -20,7 +20,7 @@ svn checkout http://sdl-gpu.googlecode.com/svn/ sdl-gpu
 DEPENDENCIES
 ============
 
-SDL 1.2 (www.libsdl.org)
+SDL 1.2 or SDL 2.0 (www.libsdl.org)
 A rendering backend
 	Currently implemented: OpenGL, OpenGLES_1
 
