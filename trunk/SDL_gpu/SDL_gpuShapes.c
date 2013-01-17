@@ -6,7 +6,6 @@
 #else
     #include "OpenGLES_1/SDL_gpu_OpenGLES_1_internal.h"
 #endif
-//#include "Direct3D/SDL_gpu_Direct3D_internal.h"
 
 
 static GPU_ShapeRenderer* shapeRenderer = NULL;
@@ -52,15 +51,6 @@ void GPU_LoadShapeRenderer(void)
 	}
 	#endif
 	
-	/*if(strcmp(rendererID, "Direct3D") == 0)
-	{
-		GPU_ShapeRenderer* sr = GPU_CreateShapeRenderer_Direct3D();
-		if(sr == NULL)
-			return;
-		sr->renderer = renderer;
-		shapeRenderer = sr;
-		freeShapeRendererFn = &GPU_FreeShapeRenderer_Direct3D;
-	}*/
 
 }
 

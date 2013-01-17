@@ -1,9 +1,10 @@
 #include "SDL_gpu.h"
-#include "SDL_gpu_Renderer.h"
 
 #ifdef ANDROID
 #include <android/log.h>
 #endif
+
+void GPU_InitRendererRegister(void);
 
 static GPU_Renderer* current_renderer = NULL;
 
