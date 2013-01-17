@@ -38,7 +38,7 @@ static void Circle(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, flo
 	float z = ((RendererData_OpenGL*)renderer->renderer->data)->z;	\
 	 \
 	/* Bind the FBO */ \
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, ((TargetData_OpenGL*)target->data)->handle); \
+	glBindFramebuffer(GL_FRAMEBUFFER, ((TargetData_OpenGL*)target->data)->handle); \
 	glPushAttrib(GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT); \
 	if(target->useClip) \
 	{ \
@@ -57,7 +57,7 @@ static void Circle(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, flo
 		glDisable(GL_SCISSOR_TEST); \
 	} \
 	glPopAttrib(); \
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0); \
+	glBindFramebuffer(GL_FRAMEBUFFER, 0); \
 	glEnable( GL_TEXTURE_2D );
 
 	
