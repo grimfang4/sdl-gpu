@@ -2,6 +2,10 @@
 #include "SDL_gpu.h"
 #include <math.h>
 
+#ifdef SDL_GPU_USE_SDL2
+#define SDL_GetKeyState SDL_GetKeyboardState
+#endif
+
 void printRenderers(void)
 {
 	const char* renderers[GPU_GetNumRegisteredRenderers()];
@@ -50,6 +54,12 @@ int main(int argc, char* argv[])
 	long frameCount = 0;
 	
 	Uint8* keystates = SDL_GetKeyState(NULL);
+	if(keystates == NULL)
+    {
+        printf("Failed to get keyboard state!\n");
+        return -2;
+    }
+    
 	int x = 0;
 	int y = 0;
 	

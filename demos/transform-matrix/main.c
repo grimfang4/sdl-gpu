@@ -2,6 +2,10 @@
 #include "SDL_gpu.h"
 #include <math.h>
 
+#ifdef SDL_GPU_USE_SDL2
+#define SDL_GetKeyState SDL_GetKeyboardState
+#endif
+
 #ifndef M_PI
   #define M_PI 3.14159
 #endif

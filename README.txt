@@ -52,7 +52,7 @@ cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX=/usr
 INCLUDING
 =========
 
-Add the include for SDL_gpu.h to your sources.  Link to SDL_gpu (libSDL_gpu.a).
+Add the include for SDL_gpu.h to your sources.  Link to SDL_gpu (libSDL_gpu.a) or SDL2_gpu (if you use SDL2).
 
 
 =============
