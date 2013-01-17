@@ -38,7 +38,7 @@ static void Circle(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, flo
 	float z = ((RendererData_OpenGLES_1*)renderer->renderer->data)->z;	\
 	 \
 	/* Bind the FBO */ \
-	glBindFramebufferEXT(GL_FRAMEBUFFER, ((TargetData_OpenGLES_1*)target->data)->handle); \
+	glBindFramebuffer(GL_FRAMEBUFFER, ((TargetData_OpenGLES_1*)target->data)->handle); \
 	/*glPushAttrib(GL_COLOR_BUFFER_BIT);*/ \
 	if(target->useClip) \
 	{ \
@@ -58,7 +58,7 @@ static void Circle(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, flo
 	} \
 	/*glPopAttrib();*/ \
 	glColor4ub(255, 255, 255, 255); \
-	glBindFramebufferEXT(GL_FRAMEBUFFER, 0); \
+	glBindFramebuffer(GL_FRAMEBUFFER, 0); \
 	glEnable( GL_TEXTURE_2D );
 
 	
@@ -89,7 +89,6 @@ static void Pixel(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, floa
 	
 	glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
 	
-#ifdef ANDROID
 	GLfloat glverts[3];
 	glVertexPointer(3, GL_FLOAT, 0, glverts);
 	glEnableClientState(GL_VERTEX_ARRAY);
@@ -100,11 +99,6 @@ static void Pixel(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, floa
 
 	glDrawArrays(GL_POINTS, 0, 1);
 	glDisableClientState(GL_VERTEX_ARRAY);
-#else
-	glBegin(GL_POINTS);
-	glVertex3f(x, y, z);
-	glEnd();
-#endif
 	
 	END;
 }
@@ -117,7 +111,7 @@ static void Line(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, floa
 	INVERT_Y(y2);
 	
 	glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
-#ifdef ANDROID
+
 	GLfloat glverts[6];
 	glVertexPointer(3, GL_FLOAT, 0, glverts);
 	glEnableClientState(GL_VERTEX_ARRAY);
@@ -131,12 +125,6 @@ static void Line(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, floa
 
 	glDrawArrays(GL_LINES, 0, 2);
 	glDisableClientState(GL_VERTEX_ARRAY);
-#else
-	glBegin(GL_LINES);
-	glVertex3f(x1, y1, z);
-	glVertex3f(x2, y2, z);
-	glEnd();
-#endif
 	
 	END;
 }
@@ -204,6 +192,26 @@ static void Arc(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, float 
 	float t = startAngle;
 	float dt = (1 - (endAngle - startAngle)/360) * 5;  // A segment every 5 degrees of a full circle
 	float dx, dy;
+	
+	int numSegments = fabs(endAngle - startAngle)/dt;
+	
+	GLfloat glverts[numSegments*3];
+	glVertexPointer(3, GL_FLOAT, 0, glverts);
+	glEnableClientState(GL_VERTEX_ARRAY);
+	
+	int i;
+	for(i = 0; i < numSegments; i++)
+	{
+		dx = radius*cos(t*RADPERDEG);
+		dy = radius*sin(t*RADPERDEG);
+		glverts[i*3] = x+dx;
+		glverts[i*3+1] = y+dy;
+		glverts[i*3+2] = z;
+		t += dt;
+	}
+
+	glDrawArrays(GL_LINE_LOOP, 0, numSegments);
+	glDisableClientState(GL_VERTEX_ARRAY);
 
 	/*glBegin(GL_LINE_STRIP);
 	dx = radius*cos(t*RADPERDEG);
@@ -284,6 +292,30 @@ static void ArcFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, 
 	float t = startAngle;
 	float dt = (1 - (endAngle - startAngle)/360) * 5;  // A segment every 5 degrees of a full circle
 	float dx, dy;
+	
+	int numSegments = fabs(endAngle - startAngle)/dt;
+	
+	GLfloat glverts[(1+numSegments)*3];
+	glVertexPointer(3, GL_FLOAT, 0, glverts);
+	glEnableClientState(GL_VERTEX_ARRAY);
+	
+	glverts[0] = x;
+	glverts[1] = y;
+	glverts[2] = z;
+	int i;
+	for(i = 0; i < numSegments; i++)
+	{
+		dx = radius*cos(t*RADPERDEG);
+		dy = radius*sin(t*RADPERDEG);
+		glverts[i*3] = x+dx;
+		glverts[i*3+1] = y+dy;
+		glverts[i*3+2] = z;
+		t += dt;
+	}
+
+	glDrawArrays(GL_TRIANGLE_FAN, 0, 1+numSegments);
+	glDisableClientState(GL_VERTEX_ARRAY);
+	
 	/*glBegin(GL_TRIANGLE_FAN);
 	glVertex3f(x, y, z);
 	dx = radius*cos(t*RADPERDEG);
@@ -311,18 +343,25 @@ static void Circle(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, flo
 	float t = 0;
 	float dt = 5;  // A segment every 5 degrees of a full circle
 	float dx, dy;
-	/*glBegin(GL_LINE_LOOP);
-	dx = radius*cos(t*RADPERDEG);
-	dy = radius*sin(t*RADPERDEG);
-	glVertex3f(x+dx, y+dy, z);
-	while(t < 360)
+	int numSegments = 360/dt+1;
+	
+	GLfloat glverts[numSegments*3];
+	glVertexPointer(3, GL_FLOAT, 0, glverts);
+	glEnableClientState(GL_VERTEX_ARRAY);
+	
+	int i;
+	for(i = 0; i < numSegments; i++)
 	{
-		t += dt;
 		dx = radius*cos(t*RADPERDEG);
 		dy = radius*sin(t*RADPERDEG);
-		glVertex3f(x+dx, y+dy, z);
+		glverts[i*3] = x+dx;
+		glverts[i*3+1] = y+dy;
+		glverts[i*3+2] = z;
+		t += dt;
 	}
-	glEnd();*/
+
+	glDrawArrays(GL_LINE_LOOP, 0, numSegments);
+	glDisableClientState(GL_VERTEX_ARRAY);
 	
 	END;
 }
@@ -337,6 +376,30 @@ static void CircleFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float 
 	float t = 0;
 	float dt = 5;  // A segment every 5 degrees of a full circle
 	float dx, dy;
+	
+	int numSegments = 360/dt+1;
+	
+	GLfloat glverts[(1+numSegments)*3];
+	glVertexPointer(3, GL_FLOAT, 0, glverts);
+	glEnableClientState(GL_VERTEX_ARRAY);
+	
+	glverts[0] = x;
+	glverts[1] = y;
+	glverts[2] = z;
+	int i;
+	for(i = 1; i < 1+numSegments; i++)
+	{
+		dx = radius*cos(t*RADPERDEG);
+		dy = radius*sin(t*RADPERDEG);
+		glverts[i*3] = x+dx;
+		glverts[i*3+1] = y+dy;
+		glverts[i*3+2] = z;
+		t += dt;
+	}
+
+	glDrawArrays(GL_TRIANGLE_FAN, 0, 1+numSegments);
+	glDisableClientState(GL_VERTEX_ARRAY);
+	
 	/*glBegin(GL_TRIANGLE_FAN);
 	dx = radius*cos(t*RADPERDEG);
 	dy = radius*sin(t*RADPERDEG);
@@ -362,7 +425,7 @@ static void Tri(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, float
 	INVERT_Y(y3);
 	
 	glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
-#ifdef ANDROID
+
 	GLfloat glverts[9];
 	glVertexPointer(3, GL_FLOAT, 0, glverts);
 	glEnableClientState(GL_VERTEX_ARRAY);
@@ -379,13 +442,6 @@ static void Tri(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, float
 
 	glDrawArrays(GL_LINE_LOOP, 0, 3);
 	glDisableClientState(GL_VERTEX_ARRAY);
-#else
-	glBegin(GL_LINE_LOOP);
-	glVertex3f(x1, y1, z);
-	glVertex3f(x2, y2, z);
-	glVertex3f(x3, y3, z);
-	glEnd();
-#endif
 	
 	END;
 }
@@ -400,7 +456,6 @@ static void TriFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1,
 	
 	glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
 
-#ifdef ANDROID
 	GLfloat glverts[9];
 	glVertexPointer(3, GL_FLOAT, 0, glverts);
 	glEnableClientState(GL_VERTEX_ARRAY);
@@ -417,13 +472,6 @@ static void TriFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1,
 
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 3);
 	glDisableClientState(GL_VERTEX_ARRAY);
-#else
-	glBegin(GL_TRIANGLE_STRIP);
-	glVertex3f(x1, y1, z);
-	glVertex3f(x2, y2, z);
-	glVertex3f(x3, y3, z);
-	glEnd();
-#endif
 	
 	END;
 }
@@ -437,7 +485,6 @@ static void Rect(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, floa
 	
 	glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
 
-#ifdef ANDROID
 	GLfloat glverts[12];
 	glVertexPointer(3, GL_FLOAT, 0, glverts);
 	glEnableClientState(GL_VERTEX_ARRAY);
@@ -457,14 +504,6 @@ static void Rect(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, floa
 
 	glDrawArrays(GL_LINE_LOOP, 0, 4);
 	glDisableClientState(GL_VERTEX_ARRAY);
-#else
-	glBegin(GL_LINE_LOOP);
-	glVertex3f(x1, y1, z);
-	glVertex3f(x1, y2, z);
-	glVertex3f(x2, y2, z);
-	glVertex3f(x2, y1, z);
-	glEnd();
-#endif
 	
 	END;
 }
@@ -478,7 +517,6 @@ static void RectFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1
 	
 	glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
 	
-#ifdef ANDROID
 	GLfloat glverts[12];
 	glVertexPointer(3, GL_FLOAT, 0, glverts);
 	glEnableClientState(GL_VERTEX_ARRAY);
@@ -498,14 +536,6 @@ static void RectFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1
 
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 	glDisableClientState(GL_VERTEX_ARRAY);
-#else
-	glBegin(GL_TRIANGLE_STRIP);
-	glVertex3f(x1, y1, z);
-	glVertex3f(x1, y2, z);
-	glVertex3f(x2, y1, z);
-	glVertex3f(x2, y2, z);
-	glEnd();
-#endif
 	
 	END;
 }
