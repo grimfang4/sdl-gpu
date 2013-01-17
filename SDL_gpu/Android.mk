@@ -20,7 +20,8 @@ LOCAL_SRC_FILES := SDL_gpu.c \
 				   $(SOIL_DIR)/stb_image.c \
 				   $(SOIL_DIR)/stb_image_write.c
 
-LOCAL_CFLAGS += -DSDL_GPU_USE_SDL2
+
+LOCAL_CFLAGS += -DSDL_GPU_USE_OPENGLES_1
 LOCAL_LDLIBS += -llog -lGLESv1_CM
 
 LOCAL_SHARED_LIBRARIES := SDL2
