@@ -493,7 +493,7 @@ SOIL_Texture
                 {
                         /*      yep, resize     */
                         unsigned char *resampled = (unsigned char*)malloc( channels*new_width*new_height );
-                        up_scale_image(
+                        copy_to_subimage(
                                         img, width, height, channels,
                                         resampled, new_width, new_height );
 
