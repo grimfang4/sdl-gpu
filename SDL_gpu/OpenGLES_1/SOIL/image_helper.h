@@ -29,6 +29,19 @@ int
 	);
 
 /**
+ * This is used to replace up_scale_image() when the texture should not be stretched to fill a POT replacement.
+ *
+ **/
+int
+	copy_to_subimage
+	(
+		const unsigned char* const orig,
+		int width, int height, int channels,
+		unsigned char* resampled,
+		int resampled_width, int resampled_height
+	);
+
+/**
 	This function downscales an image.
 	Used for creating MIPmaps,
 	the incoming image should be a

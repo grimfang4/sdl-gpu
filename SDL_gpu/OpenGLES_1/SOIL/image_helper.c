@@ -81,6 +81,58 @@ int
     return 1;
 }
 
+
+int
+	copy_to_subimage
+	(
+		const unsigned char* const orig,
+		int width, int height, int channels,
+		unsigned char* resampled,
+		int resampled_width, int resampled_height
+	)
+{
+	float dx, dy;
+	int x, y, c;
+
+    /* error(s) check	*/
+    if ( 	(width < 1) || (height < 1) ||
+            (resampled_width < 2) || (resampled_height < 2) ||
+            (channels < 1) ||
+            (NULL == orig) || (NULL == resampled) )
+    {
+        /*	signify badness	*/
+        return 0;
+    }
+    /*
+		for each given pixel in the new map, find the exact location
+		from the original map which would contribute to this guy
+	*/
+    for ( y = 0; y < height; ++y )
+    {
+    	float sampley = y;
+    	int inty = (int)sampley;
+        for ( x = 0; x < width; ++x )
+        {
+			float samplex = x;
+			int intx = (int)samplex;
+			int base_index;
+			/*	base index into the original image	*/
+			base_index = (inty * width + intx) * channels;
+			int new_index = (inty * resampled_width + intx) * channels;
+            for ( c = 0; c < channels; ++c )
+            {
+            	/*	do the sampling	*/
+				float value = orig[base_index+c];
+            	/*	save the new value	*/
+            	resampled[new_index+c] =
+						(unsigned char)(value);
+            }
+        }
+    }
+    /*	done	*/
+    return 1;
+}
+
 int
 	mipmap_image
 	(

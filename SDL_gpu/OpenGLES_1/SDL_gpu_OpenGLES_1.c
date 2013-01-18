@@ -338,8 +338,8 @@ static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint8 
 	data->format = texture.format;
 	data->hasMipmaps = 0;
 	
-	result->w = texture.data_width;
-	result->h = texture.data_height;
+	result->w = w;//texture.data_width;
+	result->h = h;//texture.data_height;
 	data->tex_w = texture.width;
 	data->tex_h = texture.height;
 	
@@ -508,8 +508,8 @@ SDL_Surface* convertToPOTSurface(SDL_Surface* surface)
 	SDL_BlitSurface(surface, NULL, result, NULL);
 	SDL_SetSurfaceBlendMode(surface, blendMode);*/
 
-	// Stretch and copy the data
-	if(!up_scale_image(surface->pixels, surface->w, surface->h, surface->format->BytesPerPixel, result->pixels, result->w, result->h))
+	// Copy the data
+	if(!copy_to_subimage(surface->pixels, surface->w, surface->h, surface->format->BytesPerPixel, result->pixels, result->w, result->h))
 	{
 		SDL_FreeSurface(result);
 		return NULL;
@@ -524,7 +524,6 @@ static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surf
 {
 	if(surface == NULL)
 		return NULL;
-	GPU_LogError("CopyImageFromSurface()\n");
 
 #ifdef USE_SOIL_MORE
 	SOIL_Texture tex = SOIL_create_OGL_texture(surface->pixels, surface->w, surface->h, surface->format->BytesPerPixel, 0, POT_FLAG);
@@ -555,13 +554,11 @@ static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surf
 	Uint8 pot_h = isPowerOfTwo(surface->h);
 	if(!pot_w || !pot_h)
 	{
-		GPU_LogError("Not POT: %d, %d\n", surface->w, surface->h);
 		// Make it power-of-two
 		SDL_Surface* POTSurface = convertToPOTSurface(surface);
 		if(POTSurface == NULL)
 			return NULL;
 
-		GPU_LogError("Converted: %d, %d.\n", POTSurface->w, POTSurface->h);
 		// Try again to create image using that surface
 		GPU_Image* result = CopyImageFromSurface(renderer, POTSurface);
 		SDL_FreeSurface(POTSurface);
@@ -573,7 +570,6 @@ static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surf
 
 		Uint16 tex_w = ((ImageData_OpenGLES_1*)result->data)->tex_w;
 		Uint16 tex_h = ((ImageData_OpenGLES_1*)result->data)->tex_h;
-		GPU_LogError("Done copying: Surface dims are %d/%d x %d/%d.\n", result->w, tex_w, result->h, tex_h);
 		return result;
 	}
 
@@ -790,8 +786,8 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_T
 	{
 		x1 = 0;
 		y1 = 0;
-		x2 = 1;//((float)src->w)/tex_w;
-		y2 = 1;//((float)src->h)/tex_h;
+		x2 = ((float)src->w)/tex_w;
+		y2 = ((float)src->h)/tex_h;
 		dx1 = x - src->w/2;
 		dy1 = y - src->h/2;
 		dx2 = x + src->w/2;
@@ -799,14 +795,14 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_T
 	}
 	else
 	{
-		//x1 = srcrect->x/(float)tex_w;
-		//y1 = srcrect->y/(float)tex_h;
-		//x2 = (srcrect->x + srcrect->w)/(float)tex_w;
-		//y2 = (srcrect->y + srcrect->h)/(float)tex_h;
-		x1 = srcrect->x/(float)src->w;
-		y1 = srcrect->y/(float)src->h;
-		x2 = (srcrect->x + srcrect->w)/(float)src->w;
-		y2 = (srcrect->y + srcrect->h)/(float)src->h;
+		x1 = srcrect->x/(float)tex_w;
+		y1 = srcrect->y/(float)tex_h;
+		x2 = (srcrect->x + srcrect->w)/(float)tex_w;
+		y2 = (srcrect->y + srcrect->h)/(float)tex_h;
+		//x1 = srcrect->x/(float)src->w;
+		//y1 = srcrect->y/(float)src->h;
+		//x2 = (srcrect->x + srcrect->w)/(float)src->w;
+		//y2 = (srcrect->y + srcrect->h)/(float)src->h;
 		dx1 = x - srcrect->w/2;
 		dy1 = y - srcrect->h/2;
 		dx2 = x + srcrect->w/2;
