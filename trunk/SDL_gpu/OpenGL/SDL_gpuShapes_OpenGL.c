@@ -586,6 +586,7 @@ GPU_ShapeRenderer* GPU_CreateShapeRenderer_OpenGL(void)
 	renderer->Pixel = &Pixel;
 	renderer->Line = &Line;
 	renderer->Arc = &Arc;
+	renderer->ArcFilled = &ArcFilled;
 	renderer->Circle = &Circle;
 	renderer->CircleFilled = &CircleFilled;
 	renderer->Tri = &Tri;

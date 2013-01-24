@@ -12,6 +12,7 @@ typedef struct RendererData_OpenGL
     #endif
 	GLuint handle;
 	float z;
+	Uint8 blending;
 } RendererData_OpenGL;
 
 typedef struct ImageData_OpenGL
@@ -25,6 +26,7 @@ typedef struct TargetData_OpenGL
 {
 	GLuint handle;
 	GLenum format;
+	GLuint textureHandle;
 } TargetData_OpenGL;
 
 

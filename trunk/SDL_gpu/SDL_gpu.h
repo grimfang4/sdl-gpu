@@ -16,7 +16,8 @@ extern "C" {
 
 
 
-struct GPU_Renderer;
+
+typedef struct GPU_Renderer GPU_Renderer;
 
 /*! Image object for containing pixel/texture data. */
 typedef struct GPU_Image
@@ -68,7 +69,7 @@ typedef struct GPU_Camera
 } GPU_Camera;
 
 /*! Renderer object which specializes the API to a particular backend. */
-typedef struct GPU_Renderer
+struct GPU_Renderer
 {
 	/*! String identifier of the renderer. */
 	char* id;
@@ -86,64 +87,67 @@ typedef struct GPU_Renderer
 	GPU_Camera camera;
 	
 	/*! Initializes SDL and SDL_gpu.  Creates a window and renderer context. */
-	GPU_Target* (*Init)(struct GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags);
+	GPU_Target* (*Init)(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags);
 	
 	/*! Sets up this renderer to act as the current renderer.  Called automatically by GPU_SetCurrentRenderer(). */
-	void (*SetAsCurrent)(struct GPU_Renderer* renderer);
+	void (*SetAsCurrent)(GPU_Renderer* renderer);
 	
 	/*! Change the actual size of the window. */
-	int (*SetDisplayResolution)(struct GPU_Renderer* renderer, Uint16 w, Uint16 h);
+	int (*SetDisplayResolution)(GPU_Renderer* renderer, Uint16 w, Uint16 h);
 	
 	/*! Change the logical size of the window which the drawing commands use. */
-	void (*SetVirtualResolution)(struct GPU_Renderer* renderer, Uint16 w, Uint16 h);
+	void (*SetVirtualResolution)(GPU_Renderer* renderer, Uint16 w, Uint16 h);
 	
 	/*! Clean up the renderer state. */
-	void (*Quit)(struct GPU_Renderer* renderer);
+	void (*Quit)(GPU_Renderer* renderer);
 	
 	/*! Enable/disable fullscreen mode.
 	 * On some platforms, this will destroy the renderer context and require that textures be reloaded. */
-	int (*ToggleFullscreen)(struct GPU_Renderer* renderer);
+	int (*ToggleFullscreen)(GPU_Renderer* renderer);
 
 	/*! Sets the renderer's current camera.  If cam is NULL, the default camera is used.
 	* \return The old camera. */
-	GPU_Camera (*SetCamera)(struct GPU_Renderer* renderer, GPU_Target* screen, GPU_Camera* cam);
+	GPU_Camera (*SetCamera)(GPU_Renderer* renderer, GPU_Target* screen, GPU_Camera* cam);
 	
 	/*! Create a new, blank image.  Don't forget to GPU_FreeImage() it. */
-	GPU_Image* (*CreateImage)(struct GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint8 channels);
+	GPU_Image* (*CreateImage)(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint8 channels);
 	
 	/*! Load image from an image file that is supported by this renderer.  Don't forget to GPU_FreeImage() it. */
-	GPU_Image* (*LoadImage)(struct GPU_Renderer* renderer, const char* filename);
+	GPU_Image* (*LoadImage)(GPU_Renderer* renderer, const char* filename);
 	
 	/*! Copy an image to a new image.  Don't forget to GPU_FreeImage() both. */
-	GPU_Image* (*CopyImage)(struct GPU_Renderer* renderer, GPU_Image* image);
+	GPU_Image* (*CopyImage)(GPU_Renderer* renderer, GPU_Image* image);
 	
 	/*! Copy SDL_Surface data into a new GPU_Image.  Don't forget to SDL_FreeSurface() the surface and GPU_FreeImage() the image.*/
-	GPU_Image* (*CopyImageFromSurface)(struct GPU_Renderer* renderer, SDL_Surface* surface);
+	GPU_Image* (*CopyImageFromSurface)(GPU_Renderer* renderer, SDL_Surface* surface);
 	
 	/*! Deletes an image in the proper way for this renderer. */
-	void (*FreeImage)(struct GPU_Renderer* renderer, GPU_Image* image);
+	void (*FreeImage)(GPU_Renderer* renderer, GPU_Image* image);
+	
+    /*! Copies software surface data to a hardware texture.  Draws data with the upper left corner being (x,y).  */
+    void (*SubSurfaceCopy)(GPU_Renderer* renderer, SDL_Surface* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y);
 
 	/*! \return The renderer's main display surface/framebuffer. */
-	GPU_Target* (*GetDisplayTarget)(struct GPU_Renderer* renderer);
+	GPU_Target* (*GetDisplayTarget)(GPU_Renderer* renderer);
 	
 	/*! Creates a new render target from the given image. */
-	GPU_Target* (*LoadTarget)(struct GPU_Renderer* renderer, GPU_Image* image);
+	GPU_Target* (*LoadTarget)(GPU_Renderer* renderer, GPU_Image* image);
 	
 	/*! Deletes a render target in the proper way for this renderer. */
-	void (*FreeTarget)(struct GPU_Renderer* renderer, GPU_Target* target);
+	void (*FreeTarget)(GPU_Renderer* renderer, GPU_Target* target);
 
 	/*! Draws the 'src' image to the 'dest' render target.  Draws the image centered at (x, y).  Note that this is different from many other graphics libraries, but has none of the consequences of an arbitrary offset.
 	 * \param srcrect The region of the source image to use.
 	 * \param x Destination x-position (centered)
 	 * \param y Destination y-position (centered) */
-	int (*Blit)(struct GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y);
+	int (*Blit)(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y);
 	
 	/*! Rotates and draws the 'src' image to the 'dest' render target.  Draws the image centered at (x, y).
 	 * \param srcrect The region of the source image to use.
 	 * \param x Destination x-position (centered)
 	 * \param y Destination y-position (centered)
 	 * \param angle Rotation angle (in degrees) */
-	int (*BlitRotate)(struct GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float angle);
+	int (*BlitRotate)(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float angle);
 	
 	/*! Scales and draws the 'src' image to the 'dest' render target.  Draws the image centered at (x, y).
 	 * \param srcrect The region of the source image to use.
@@ -151,7 +155,7 @@ typedef struct GPU_Renderer
 	 * \param y Destination y-position (centered)
 	 * \param scaleX Horizontal stretch factor
 	 * \param scaleY Vertical stretch factor */
-	int (*BlitScale)(struct GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float scaleX, float scaleY);
+	int (*BlitScale)(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float scaleX, float scaleY);
 	
 	/*! Scales, rotates, and draws the 'src' image to the 'dest' render target.  Draws the image centered at (x, y).
 	 * \param srcrect The region of the source image to use.
@@ -160,7 +164,7 @@ typedef struct GPU_Renderer
 	 * \param angle Rotation angle (in degrees)
 	 * \param scaleX Horizontal stretch factor
 	 * \param scaleY Vertical stretch factor */
-	int (*BlitTransform)(struct GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float angle, float scaleX, float scaleY);
+	int (*BlitTransform)(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float angle, float scaleX, float scaleY);
 	
 	/*! Scales, rotates around a pivot point, and draws the 'src' image to the 'dest' render target.  Draws the image centered at (x, y).
 	 * \param srcrect The region of the source image to use.
@@ -171,64 +175,67 @@ typedef struct GPU_Renderer
 	 * \param angle Rotation angle (in degrees)
 	 * \param scaleX Horizontal stretch factor
 	 * \param scaleY Vertical stretch factor */
-	int (*BlitTransformX)(struct GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float pivot_x, float pivot_y, float angle, float scaleX, float scaleY);
+	int (*BlitTransformX)(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float pivot_x, float pivot_y, float angle, float scaleX, float scaleY);
 	
 	/*! Transforms and draws the 'src' image to the 'dest' render target.  Draws the image centered at (x, y).
 	 * \param srcrect The region of the source image to use.
 	 * \param x Destination x-position (centered)
 	 * \param y Destination y-position (centered)
 	 * \param matrix3x3 3x3 matrix in column-major order (index = row + column*numColumns) */
-	int (*BlitTransformMatrix)(struct GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float* matrix3x3);
+	int (*BlitTransformMatrix)(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float* matrix3x3);
 	
 	/*! Sets the renderer's z-depth.
 	 * \return The previous z-depth */
-	float (*SetZ)(struct GPU_Renderer* renderer, float z);
+	float (*SetZ)(GPU_Renderer* renderer, float z);
 	
 	/*! Gets the renderer's z-depth.
 	 * \return The current z-depth */
-	float (*GetZ)(struct GPU_Renderer* renderer);
+	float (*GetZ)(GPU_Renderer* renderer);
 	
 	/*! Loads mipmaps for the given image, if supported by the renderer. */
-	void (*GenerateMipmaps)(struct GPU_Renderer* renderer, GPU_Image* image);
+	void (*GenerateMipmaps)(GPU_Renderer* renderer, GPU_Image* image);
+
+	/*! Gets the current alpha blending setting. */
+	Uint8 (*GetBlending)(GPU_Renderer* renderer);
 
 	/*! Enables/disables alpha blending. */
-	void (*SetBlending)(struct GPU_Renderer* renderer, Uint8 enable);
+	void (*SetBlending)(GPU_Renderer* renderer, Uint8 enable);
 	
 	/*! Sets the modulation color for subsequent drawing, if supported by the renderer. */
-	void (*SetRGBA)(struct GPU_Renderer* renderer, Uint8 r, Uint8 g, Uint8 b, Uint8 a);
+	void (*SetRGBA)(GPU_Renderer* renderer, Uint8 r, Uint8 g, Uint8 b, Uint8 a);
 
 	/*! Changes all pixels of a given color into another color. */
-	void (*ReplaceRGB)(struct GPU_Renderer* renderer, GPU_Image* image, Uint8 from_r, Uint8 from_g, Uint8 from_b, Uint8 to_r, Uint8 to_g, Uint8 to_b);
+	void (*ReplaceRGB)(GPU_Renderer* renderer, GPU_Image* image, Uint8 from_r, Uint8 from_g, Uint8 from_b, Uint8 to_r, Uint8 to_g, Uint8 to_b);
 	
 	/*! Changes the alpha value of all pixels of the given color to fully transparent. */
-	void (*MakeRGBTransparent)(struct GPU_Renderer* renderer, GPU_Image* image, Uint8 r, Uint8 g, Uint8 b);
+	void (*MakeRGBTransparent)(GPU_Renderer* renderer, GPU_Image* image, Uint8 r, Uint8 g, Uint8 b);
 	
 	/*! Changes the color of each pixel by shifting the colors in HSV space. */
-	void (*ShiftHSV)(struct GPU_Renderer* renderer, GPU_Image* image, int hue, int saturation, int value);
+	void (*ShiftHSV)(GPU_Renderer* renderer, GPU_Image* image, int hue, int saturation, int value);
 	
 	/*! Changes the color of each pixel by shifting the colors in HSV space, skipping pixels in the given HSV color range. */
-	void (*ShiftHSVExcept)(struct GPU_Renderer* renderer, GPU_Image* image, int hue, int saturation, int value, int notHue, int notSat, int notVal, int range);
+	void (*ShiftHSVExcept)(GPU_Renderer* renderer, GPU_Image* image, int hue, int saturation, int value, int notHue, int notSat, int notVal, int range);
 	
 	/*! \return The RGBA color of a pixel. */
-	SDL_Color (*GetPixel)(struct GPU_Renderer* renderer, GPU_Target* target, Sint16 x, Sint16 y);
+	SDL_Color (*GetPixel)(GPU_Renderer* renderer, GPU_Target* target, Sint16 x, Sint16 y);
 	
 	/*! Sets the image filtering mode, if supported by the renderer. */
-	void (*SetImageFilter)(struct GPU_Renderer* renderer, GPU_Image* image, GPU_FilterEnum filter);
+	void (*SetImageFilter)(GPU_Renderer* renderer, GPU_Image* image, GPU_FilterEnum filter);
 	
 	/*! Sets the blending mode, if supported by the renderer. */
-	void (*SetBlendMode)(struct GPU_Renderer* renderer, GPU_BlendEnum mode);
+	void (*SetBlendMode)(GPU_Renderer* renderer, GPU_BlendEnum mode);
 
 	/*! Clears the contents of the given render target. */
-	void (*Clear)(struct GPU_Renderer* renderer, GPU_Target* target);
+	void (*Clear)(GPU_Renderer* renderer, GPU_Target* target);
 	/*! Fills the given render target with a color. */
-	void (*ClearRGBA)(struct GPU_Renderer* renderer, GPU_Target* target, Uint8 r, Uint8 g, Uint8 b, Uint8 a);
+	void (*ClearRGBA)(GPU_Renderer* renderer, GPU_Target* target, Uint8 r, Uint8 g, Uint8 b, Uint8 a);
 	/*! Updates the physical display (monitor) with the contents of the display surface/framebuffer. */
-	void (*Flip)(struct GPU_Renderer* renderer);
+	void (*Flip)(GPU_Renderer* renderer);
 	
 	/*! Renderer-specific data. */
 	void* data;
 	
-} GPU_Renderer;
+};
 
 
 // System calls
@@ -336,6 +343,9 @@ GPU_Image* GPU_CopyImageFromSurface(SDL_Surface* surface);
 /*! Deletes an image in the proper way for this renderer. */
 void GPU_FreeImage(GPU_Image* image);
 
+/*! Copies software surface data to a hardware texture.  Draws data with the upper left corner being (x,y).  */
+void GPU_SubSurfaceCopy(SDL_Surface* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y);
+
 /*! \return The renderer's main display surface/framebuffer. */
 GPU_Target* GPU_GetDisplayTarget(void);
 
@@ -416,6 +426,9 @@ SDL_Rect GPU_SetClip(GPU_Target* target, Sint16 x, Sint16 y, Uint16 w, Uint16 h)
 /*! Clears (resets) the clipping rect for the given render target. */
 void GPU_ClearClip(GPU_Target* target);
 
+/*! Gets the current alpha blending setting. */
+Uint8 GPU_GetBlending(void);
+
 /*! Enables/disables alpha blending. */
 void GPU_SetBlending(Uint8 enable);
 
@@ -467,46 +480,48 @@ void GPU_Flip(void);
 
 // Shapes
 
-struct GPU_ShapeRenderer;
+typedef struct GPU_ShapeRenderer GPU_ShapeRenderer;
 
-typedef struct GPU_ShapeRenderer
+struct GPU_ShapeRenderer
 {
 	GPU_Renderer* renderer;
 	
-	float (*SetThickness)(struct GPU_ShapeRenderer* shapeRenderer, float thickness);
-	float (*GetThickness)(struct GPU_ShapeRenderer* shapeRenderer);
+	float (*SetThickness)(GPU_ShapeRenderer* shapeRenderer, float thickness);
+	float (*GetThickness)(GPU_ShapeRenderer* shapeRenderer);
 	
-	void (*Pixel)(struct GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, float x, float y, SDL_Color color);
+	void (*Pixel)(GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, float x, float y, SDL_Color color);
 
-	void (*Line)(struct GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color);
+	void (*Line)(GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color);
 
-	void (*Arc)(struct GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, float x, float y, float radius, float startAngle, float endAngle, SDL_Color color);
+	void (*Arc)(GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, float x, float y, float radius, float startAngle, float endAngle, SDL_Color color);
+	
+	void (*ArcFilled)(GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, float x, float y, float radius, float startAngle, float endAngle, SDL_Color color);
 
-	void (*Circle)(struct GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, float x, float y, float radius, SDL_Color color);
+	void (*Circle)(GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, float x, float y, float radius, SDL_Color color);
 
-	void (*CircleFilled)(struct GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, float x, float y, float radius, SDL_Color color);
+	void (*CircleFilled)(GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, float x, float y, float radius, SDL_Color color);
 
-	void (*Tri)(struct GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, float x1, float y1, float x2, float y2, float x3, float y3, SDL_Color color);
+	void (*Tri)(GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, float x1, float y1, float x2, float y2, float x3, float y3, SDL_Color color);
 
-	void (*TriFilled)(struct GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, float x1, float y1, float x2, float y2, float x3, float y3, SDL_Color color);
+	void (*TriFilled)(GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, float x1, float y1, float x2, float y2, float x3, float y3, SDL_Color color);
 
-	void (*Rect)(struct GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color);
+	void (*Rect)(GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color);
 
-	void (*RectFilled)(struct GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color);
+	void (*RectFilled)(GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color);
 
-	void (*RectRound)(struct GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, float x1, float y1, float x2, float y2, float radius, SDL_Color color);
+	void (*RectRound)(GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, float x1, float y1, float x2, float y2, float radius, SDL_Color color);
 
-	void (*RectRoundFilled)(struct GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, float x1, float y1, float x2, float y2, float radius, SDL_Color color);
+	void (*RectRoundFilled)(GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, float x1, float y1, float x2, float y2, float radius, SDL_Color color);
 
-	void (*Polygon)(struct GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, Uint16 n, float* vertices, SDL_Color color);
+	void (*Polygon)(GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, Uint16 n, float* vertices, SDL_Color color);
 
-	void (*PolygonFilled)(struct GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, Uint16 n, float* vertices, SDL_Color color);
+	void (*PolygonFilled)(GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, Uint16 n, float* vertices, SDL_Color color);
 
-	void (*PolygonBlit)(struct GPU_ShapeRenderer* shapeRenderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* target, Uint16 n, float* vertices, float textureX, float textureY, float angle, float scaleX, float scaleY);
+	void (*PolygonBlit)(GPU_ShapeRenderer* shapeRenderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* target, Uint16 n, float* vertices, float textureX, float textureY, float angle, float scaleX, float scaleY);
 	
 	void* data;
 	
-} GPU_ShapeRenderer;
+};
 
 // Call this after setting a GPU_Renderer (e.g after GPU_Init())
 void GPU_LoadShapeRenderer(void);
@@ -520,6 +535,8 @@ void GPU_Pixel(GPU_Target* target, float x, float y, SDL_Color color);
 void GPU_Line(GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color);
 
 void GPU_Arc(GPU_Target* target, float x, float y, float radius, float startAngle, float endAngle, SDL_Color color);
+
+void GPU_ArcFilled(GPU_Target* target, float x, float y, float radius, float startAngle, float endAngle, SDL_Color color);
 
 void GPU_Circle(GPU_Target* target, float x, float y, float radius, SDL_Color color);
 

@@ -94,8 +94,7 @@ static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags
 	glEnable( GL_TEXTURE_2D );
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	
-	glEnable(GL_BLEND);
-
+	renderer->SetBlending(renderer, 1);
 	
 	if(renderer->display == NULL)
 		renderer->display = (GPU_Target*)malloc(sizeof(GPU_Target));
@@ -103,6 +102,7 @@ static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags
 	renderer->display->data = (TargetData_OpenGL*)malloc(sizeof(TargetData_OpenGL));
 
 	((TargetData_OpenGL*)renderer->display->data)->handle = 0;
+	((TargetData_OpenGL*)renderer->display->data)->textureHandle = 0;
 	renderer->display->renderer = renderer;
 	renderer->display->w = renderer->window_w;
 	renderer->display->h = renderer->window_h;
@@ -110,10 +110,10 @@ static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags
 	renderer->display->useClip = 0;
 	renderer->display->clipRect.x = 0;
 	renderer->display->clipRect.y = 0;
-        renderer->display->clipRect.w = renderer->display->w;
-        renderer->display->clipRect.h = renderer->display->h;
+    renderer->display->clipRect.w = renderer->display->w;
+    renderer->display->clipRect.h = renderer->display->h;
 
-        return renderer->display;
+    return renderer->display;
 }
 
 
@@ -539,12 +539,75 @@ static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surf
 
 static void FreeImage(GPU_Renderer* renderer, GPU_Image* image)
 {
-        if(image == NULL)
-                return;
-        
-        glDeleteTextures( 1, &((ImageData_OpenGL*)image->data)->handle);
-        free(image->data);
-        free(image);
+    if(image == NULL)
+            return;
+    
+    glDeleteTextures( 1, &((ImageData_OpenGL*)image->data)->handle);
+    free(image->data);
+    free(image);
+}
+
+
+static void SubSurfaceCopy(GPU_Renderer* renderer, SDL_Surface* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y)
+{
+    if(renderer == NULL || src == NULL || dest == NULL)
+        return;
+    
+    if(renderer != dest->renderer)
+        return;
+    
+    SDL_Rect r;
+    if(srcrect != NULL)
+        r = *srcrect;
+    else
+    {
+        r.x = 0;
+        r.y = 0;
+        r.w = src->w;
+        r.h = src->h;
+    }
+    
+    glBindTexture( GL_TEXTURE_2D, ((TargetData_OpenGL*)dest->data)->textureHandle );
+    
+    //GLenum texture_format = GL_RGBA;//((ImageData_OpenGL*)image->data)->format;
+    
+    SDL_Surface* temp = SDL_CreateRGBSurface(SDL_SWSURFACE, r.w, r.h, src->format->BitsPerPixel, src->format->Rmask, src->format->Gmask, src->format->Bmask, src->format->Amask);
+	
+	if(temp == NULL)
+	{
+	    GPU_LogError("GPU_SubSurfaceCopy(): Failed to create new %dx%d RGB surface.\n", r.w, r.h);
+        return;
+	}
+	
+	// Copy data to new surface
+	SDL_BlendMode blendmode;
+	SDL_GetSurfaceBlendMode(src, &blendmode);
+	SDL_SetSurfaceBlendMode(src, SDL_BLENDMODE_NONE);
+	
+	SDL_BlitSurface(src, &r, temp, NULL);
+	
+	SDL_SetSurfaceBlendMode(src, blendmode);
+	
+	// Make surface into an image
+	GPU_Image* image = GPU_CopyImageFromSurface(temp);
+	if(image == NULL)
+	{
+	    GPU_LogError("GPU_SubSurfaceCopy(): Failed to create new image texture.\n");
+        return;
+	}
+	
+	// Copy image to dest
+	Uint8 blending = GPU_GetBlending();
+	GPU_SetBlending(0);
+	GPU_Blit(image, NULL, dest, x + r.w/2, y + r.h/2);
+	GPU_SetBlending(blending);
+	
+	// This would be more efficient...
+	//glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, r.w, r.h, texture_format, GL_UNSIGNED_BYTE, buffer);
+	
+    GPU_FreeImage(image);
+
+	SDL_FreeSurface(temp);
 }
 
 static GPU_Target* GetDisplayTarget(GPU_Renderer* renderer)
@@ -561,25 +624,26 @@ static GPU_Target* LoadTarget(GPU_Renderer* renderer, GPU_Image* image)
 	GLuint handle;
 	// Create framebuffer object
 	glGenFramebuffers(1, &handle);
-        glBindFramebuffer(GL_FRAMEBUFFER, handle);
-        
-        // Attach the texture to it
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ((ImageData_OpenGL*)image->data)->handle, 0);
-        
-        GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-        if(status != GL_FRAMEBUFFER_COMPLETE)
-		return NULL;
-	
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        
-        GPU_Target* result = (GPU_Target*)malloc(sizeof(GPU_Target));
-        TargetData_OpenGL* data = (TargetData_OpenGL*)malloc(sizeof(TargetData_OpenGL));
-        result->data = data;
-        data->handle = handle;
-        data->format = ((ImageData_OpenGL*)image->data)->format;
-        result->renderer = renderer;
-        result->w = image->w;
-        result->h = image->h;
+    glBindFramebuffer(GL_FRAMEBUFFER, handle);
+    
+    // Attach the texture to it
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ((ImageData_OpenGL*)image->data)->handle, 0);
+    
+    GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    if(status != GL_FRAMEBUFFER_COMPLETE)
+    return NULL;
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    
+    GPU_Target* result = (GPU_Target*)malloc(sizeof(GPU_Target));
+    TargetData_OpenGL* data = (TargetData_OpenGL*)malloc(sizeof(TargetData_OpenGL));
+    result->data = data;
+    data->handle = handle;
+    data->format = ((ImageData_OpenGL*)image->data)->format;
+    data->textureHandle = ((ImageData_OpenGL*)image->data)->handle;
+    result->renderer = renderer;
+    result->w = image->w;
+    result->h = image->h;
 	
 	result->useClip = 0;
 	result->clipRect.x = 0;
@@ -917,6 +981,10 @@ static void GenerateMipmaps(GPU_Renderer* renderer, GPU_Image* image)
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
 }
 
+static Uint8 GetBlending(GPU_Renderer* renderer)
+{
+    return ((RendererData_OpenGL*)renderer->data)->blending;
+}
 
 
 static void SetBlending(GPU_Renderer* renderer, Uint8 enable)
@@ -925,6 +993,8 @@ static void SetBlending(GPU_Renderer* renderer, Uint8 enable)
 		glEnable(GL_BLEND);
 	else
 		glDisable(GL_BLEND);
+    
+    ((RendererData_OpenGL*)renderer->data)->blending = enable;
 }
 
 
@@ -1459,21 +1529,21 @@ static void Flip(GPU_Renderer* renderer)
 
 GPU_Renderer* GPU_CreateRenderer_OpenGL(void)
 {
-        GPU_Renderer* renderer = (GPU_Renderer*)malloc(sizeof(GPU_Renderer));
-        if(renderer == NULL)
-		return NULL;
-        
-        memset(renderer, 0, sizeof(GPU_Renderer));
-        
-        renderer->id = "OpenGL";
-        renderer->display = NULL;
-        renderer->camera = GPU_GetDefaultCamera();
-        
-        renderer->data = (RendererData_OpenGL*)malloc(sizeof(RendererData_OpenGL));
-        memset(renderer->data, 0, sizeof(RendererData_OpenGL));
-        
-        renderer->Init = &Init;
-        renderer->SetAsCurrent = &SetAsCurrent;
+    GPU_Renderer* renderer = (GPU_Renderer*)malloc(sizeof(GPU_Renderer));
+    if(renderer == NULL)
+    return NULL;
+    
+    memset(renderer, 0, sizeof(GPU_Renderer));
+    
+    renderer->id = "OpenGL";
+    renderer->display = NULL;
+    renderer->camera = GPU_GetDefaultCamera();
+    
+    renderer->data = (RendererData_OpenGL*)malloc(sizeof(RendererData_OpenGL));
+    memset(renderer->data, 0, sizeof(RendererData_OpenGL));
+    
+    renderer->Init = &Init;
+    renderer->SetAsCurrent = &SetAsCurrent;
 	renderer->SetDisplayResolution = &SetDisplayResolution;
 	renderer->SetVirtualResolution = &SetVirtualResolution;
 	renderer->Quit = &Quit;
@@ -1485,6 +1555,7 @@ GPU_Renderer* GPU_CreateRenderer_OpenGL(void)
 	renderer->LoadImage = &LoadImage;
 	renderer->CopyImage = &CopyImage;
 	renderer->CopyImageFromSurface = &CopyImageFromSurface;
+	renderer->SubSurfaceCopy = &SubSurfaceCopy;
 	renderer->FreeImage = &FreeImage;
 	
 	renderer->GetDisplayTarget = &GetDisplayTarget;
@@ -1502,6 +1573,7 @@ GPU_Renderer* GPU_CreateRenderer_OpenGL(void)
 	renderer->GetZ = &GetZ;
 	renderer->GenerateMipmaps = &GenerateMipmaps;
 	
+	renderer->GetBlending = &GetBlending;
 	renderer->SetBlending = &SetBlending;
 	renderer->SetRGBA = &SetRGBA;
 	
@@ -1517,7 +1589,7 @@ GPU_Renderer* GPU_CreateRenderer_OpenGL(void)
 	renderer->ClearRGBA = &ClearRGBA;
 	renderer->Flip = &Flip;
 	
-        return renderer;
+    return renderer;
 }
 
 void GPU_FreeRenderer_OpenGL(GPU_Renderer* renderer)
