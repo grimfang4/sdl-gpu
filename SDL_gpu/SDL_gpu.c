@@ -253,6 +253,15 @@ void GPU_FreeImage(GPU_Image* image)
 	current_renderer->FreeImage(current_renderer, image);
 }
 
+
+void GPU_SubSurfaceCopy(SDL_Surface* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y)
+{
+	if(current_renderer == NULL || current_renderer->SubSurfaceCopy == NULL)
+        return;
+	
+	current_renderer->SubSurfaceCopy(current_renderer, src, srcrect, dest, x, y);
+}
+
 GPU_Target* GPU_GetDisplayTarget(void)
 {
 	if(current_renderer == NULL || current_renderer->GetDisplayTarget == NULL)
@@ -408,6 +417,14 @@ void GPU_ClearClip(GPU_Target* target)
 	target->clipRect.h = target->h;
 }
 
+
+Uint8 GPU_GetBlending(void)
+{
+	if(current_renderer == NULL || current_renderer->GetBlending == NULL)
+		return 0;
+	
+	return current_renderer->GetBlending(current_renderer);
+}
 
 
 void GPU_SetBlending(Uint8 enable)

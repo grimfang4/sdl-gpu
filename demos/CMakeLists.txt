@@ -58,3 +58,6 @@ target_link_libraries (copy-demo SDL_gpu)
 
 add_executable(npot-demo npot/main.c)
 target_link_libraries (npot-demo SDL_gpu)
+
+add_executable(subsurface-demo subsurface/main.c)
+target_link_libraries (subsurface-demo SDL_gpu)
