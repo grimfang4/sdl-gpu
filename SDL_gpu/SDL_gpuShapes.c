@@ -109,6 +109,16 @@ void GPU_Arc(GPU_Target* target, float x, float y, float radius, float startAngl
 	shapeRenderer->Arc(shapeRenderer, target, x, y, radius, startAngle, endAngle, color);
 }
 
+
+void GPU_ArcFilled(GPU_Target* target, float x, float y, float radius, float startAngle, float endAngle, SDL_Color color)
+{
+	CHECK_RENDERER();
+	if(shapeRenderer->ArcFilled == NULL)
+		return;
+	
+	shapeRenderer->ArcFilled(shapeRenderer, target, x, y, radius, startAngle, endAngle, color);
+}
+
 void GPU_Circle(GPU_Target* target, float x, float y, float radius, SDL_Color color)
 {
 	CHECK_RENDERER();

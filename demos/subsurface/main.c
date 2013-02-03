@@ -21,7 +21,7 @@ int main(int argc, char* argv[])
 	GPU_Target* screen = GPU_Init(NULL, 800, 600, 0);
 	if(screen == NULL)
 		return -1;
-	
+    
 	printf("Using renderer: %s\n", GPU_GetCurrentRendererID());
 	
 	SDL_Surface* surf = SDL_LoadBMP("data/test.bmp");
