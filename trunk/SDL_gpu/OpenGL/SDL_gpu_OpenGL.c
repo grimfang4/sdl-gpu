@@ -602,7 +602,7 @@ static void SubSurfaceCopy(GPU_Renderer* renderer, SDL_Surface* src, SDL_Rect* s
 	GPU_Blit(image, NULL, dest, x + r.w/2, y + r.h/2);
 	GPU_SetBlending(blending);
 	
-	// This would be more efficient...
+	// Using glTextSubImage might be more efficient
 	//glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, r.w, r.h, texture_format, GL_UNSIGNED_BYTE, buffer);
 	
     GPU_FreeImage(image);
@@ -675,16 +675,16 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_T
 		return -1;
 	if(renderer != src->renderer || renderer != dest->renderer)
 		return -2;
-        
-        
-        // Bind the texture to which subsequent calls refer
-        glBindTexture( GL_TEXTURE_2D, ((ImageData_OpenGL*)src->data)->handle );
-        
-        // Bind the FBO
-        glBindFramebuffer(GL_FRAMEBUFFER, ((TargetData_OpenGL*)dest->data)->handle);
-        
-        // Rendering to FBO clips outside of the viewport.  This makes textures larger than the screen viewport to fail drawing completely.
-        // However, when the viewport is adjusted to fit the texture, it scales the projected region up to the viewport.
+    
+    
+    // Bind the texture to which subsequent calls refer
+    glBindTexture( GL_TEXTURE_2D, ((ImageData_OpenGL*)src->data)->handle );
+    
+    // Bind the FBO
+    glBindFramebuffer(GL_FRAMEBUFFER, ((TargetData_OpenGL*)dest->data)->handle);
+    
+    // Rendering to FBO clips outside of the viewport.  This makes textures larger than the screen viewport to fail drawing completely.
+    // However, when the viewport is adjusted to fit the texture, it scales the projected region up to the viewport.
 	// This scaling can be fixed by scaling the texture coords.
 	// At this point though, textures with smaller dimensions are clipped...
 	GLint vp[4];
@@ -785,30 +785,30 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_T
 		}
 		
 		dy1 = renderer->display->h - dy1;
-                dy2 = renderer->display->h - dy2;
-        }
+        dy2 = renderer->display->h - dy2;
+    }
 
-        glBegin( GL_QUADS );
-                //Bottom-left vertex (corner)
-                glTexCoord2f( x1, y1 );
-                glVertex3f( dx1, dy1, 0.0f );
-	
-		//Bottom-right vertex (corner)
-		glTexCoord2f( x2, y1 );
-		glVertex3f( dx2, dy1, 0.0f );
-	
-		//Top-right vertex (corner)
-		glTexCoord2f( x2, y2 );
-		glVertex3f( dx2, dy2, 0.0f );
-	
-		//Top-left vertex (corner)
-                glTexCoord2f( x1, y2 );
-                glVertex3f( dx1, dy2, 0.0f );
-        glEnd();
+    glBegin( GL_QUADS );
+    //Bottom-left vertex (corner)
+    glTexCoord2f( x1, y1 );
+    glVertex3f( dx1, dy1, 0.0f );
+
+    //Bottom-right vertex (corner)
+    glTexCoord2f( x2, y1 );
+    glVertex3f( dx2, dy1, 0.0f );
+
+    //Top-right vertex (corner)
+    glTexCoord2f( x2, y2 );
+    glVertex3f( dx2, dy2, 0.0f );
+
+    //Top-left vertex (corner)
+    glTexCoord2f( x1, y2 );
+    glVertex3f( dx1, dy2, 0.0f );
+    glEnd();
         
-        if(dest->useClip)
-        {
-		glDisable(GL_SCISSOR_TEST);
+    if(dest->useClip)
+    {
+        glDisable(GL_SCISSOR_TEST);
 	}
 	
 	glMatrixMode( GL_PROJECTION );
