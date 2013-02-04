@@ -82,11 +82,12 @@ int main(int argc, char* argv[])
 		SDL_Color red = {255, 0, 0, 255};
 		GPU_Rect(target, area.x, area.y, area.x + area.w, area.y + area.h, red);
 		
-		float scale = 0.25f;
-		GPU_BlitTransformX(image, NULL, target, area.x, area.y, 0, 0, SDL_GetTicks()/10.0f, scale, scale);
-		GPU_BlitTransformX(image, NULL, target, area.x + area.w, area.y, image->w, 0, SDL_GetTicks()/10.0f, scale, scale);
-		GPU_BlitTransformX(image, NULL, target, area.x, area.y + area.h, 0, image->h, SDL_GetTicks()/10.0f, scale, scale);
-		GPU_BlitTransformX(image, NULL, target, area.x + area.w, area.y + area.h, image->w, image->h, SDL_GetTicks()/10.0f, scale, scale);
+		float scale_x = 0.25f;
+		float scale_y = 0.5f;
+		GPU_BlitTransformX(image, NULL, target, area.x, area.y, 0, 0, SDL_GetTicks()/10.0f, scale_x, scale_y);
+		GPU_BlitTransformX(image, NULL, target, area.x + area.w, area.y, image->w, 0, SDL_GetTicks()/10.0f, scale_x, scale_y);
+		GPU_BlitTransformX(image, NULL, target, area.x, area.y + area.h, 0, image->h, SDL_GetTicks()/10.0f, scale_x, scale_y);
+		GPU_BlitTransformX(image, NULL, target, area.x + area.w, area.y + area.h, image->w, image->h, SDL_GetTicks()/10.0f, scale_x, scale_y);
 		
 		
 		if(target == screen2)
