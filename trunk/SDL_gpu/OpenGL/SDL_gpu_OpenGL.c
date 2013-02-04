@@ -902,15 +902,15 @@ static int BlitTransformX(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcr
 	if(dest == renderer->display)
 	{
 		glTranslatef(x, y, 0);
-		glScalef(scaleX, scaleY, 1.0f);
 		glRotatef(angle, 0, 0, 1);
+		glScalef(scaleX, scaleY, 1.0f);
 		glTranslatef(-pivot_x, -pivot_y, 0);
 	}
 	else
 	{
 		glTranslatef(x, renderer->display->h - y, 0);
-		glScalef(scaleX, scaleY, 1.0f);
 		glRotatef(-angle, 0, 0, 1);
+		glScalef(scaleX, scaleY, 1.0f);
 		glTranslatef(-pivot_x, pivot_y - renderer->display->h, 0);
 	}
 	
