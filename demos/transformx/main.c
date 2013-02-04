@@ -39,6 +39,8 @@ int main(int argc, char* argv[])
 	float y = 300.0f;
 	SDL_Color red = {255, 0, 0, 255};
 	
+	Uint8 usingVirtual = 0;
+	
 	Uint8 done = 0;
 	SDL_Event event;
 	while(!done)
@@ -58,6 +60,16 @@ int main(int argc, char* argv[])
 					else
 						target = screen;
 				}
+				else if(event.key.keysym.sym == SDLK_RETURN)
+				{
+				    usingVirtual = !usingVirtual;
+				    
+				    if(usingVirtual)
+                        GPU_SetVirtualResolution(640, 480);
+                    else
+                        GPU_SetVirtualResolution(800, 600);
+                    
+				}
 			}
 		}
 		
@@ -65,7 +77,16 @@ int main(int argc, char* argv[])
 		GPU_Clear(screen2);
 		
 		GPU_BlitScale(image, NULL, target, x, y, 0.1f, 0.1f);
-		GPU_BlitTransformX(image, NULL, target, x, y, 100, 100, SDL_GetTicks()/10.0f, 0.25f, 0.25f);
+		
+		SDL_Rect area = {target->w/2 - 150, target->h/2 - 150, 300, 300};
+		SDL_Color red = {255, 0, 0, 255};
+		GPU_Rect(target, area.x, area.y, area.x + area.w, area.y + area.h, red);
+		
+		float scale = 0.25f;
+		GPU_BlitTransformX(image, NULL, target, area.x, area.y, 0, 0, SDL_GetTicks()/10.0f, scale, scale);
+		GPU_BlitTransformX(image, NULL, target, area.x + area.w, area.y, image->w, 0, SDL_GetTicks()/10.0f, scale, scale);
+		GPU_BlitTransformX(image, NULL, target, area.x, area.y + area.h, 0, image->h, SDL_GetTicks()/10.0f, scale, scale);
+		GPU_BlitTransformX(image, NULL, target, area.x + area.w, area.y + area.h, image->w, image->h, SDL_GetTicks()/10.0f, scale, scale);
 		
 		
 		if(target == screen2)

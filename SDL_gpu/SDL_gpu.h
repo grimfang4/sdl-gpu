@@ -386,12 +386,12 @@ int GPU_BlitScale(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, 
 int GPU_BlitTransform(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float angle, float scaleX, float scaleY);
 
 	
-/*! Scales, rotates around a pivot point, and draws the 'src' image to the 'dest' render target.
+/*! Scales, rotates around a pivot point, and draws the 'src' image to the 'dest' render target.  The drawing point (x, y) coincides with the pivot point on the src image (pivot_x, pivot_y).
 	* \param srcrect The region of the source image to use.
 	* \param x Destination x-position
 	* \param y Destination y-position
-	* \param pivot_x Pivot x-position
-	* \param pivot_y Pivot y-position
+	* \param pivot_x Pivot x-position (in src image coordinates)
+	* \param pivot_y Pivot y-position (in src image coordinates)
 	* \param angle Rotation angle (in degrees)
 	* \param scaleX Horizontal stretch factor
 	* \param scaleY Vertical stretch factor */

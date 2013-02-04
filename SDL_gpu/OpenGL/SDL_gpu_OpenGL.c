@@ -891,20 +891,27 @@ static int BlitTransformX(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcr
 	
 	glPushMatrix();
 	
+	// Shift away from the center (these are relative to the image corner)
+	pivot_x -= src->w/2;
+	pivot_y -= src->h/2;
+	
+	// Scale the pivot point so it moves the src image the right amount according to the viewport scale
+	//pivot_x *= ?;
+	//pivot_y *= ?;
+	
 	if(dest == renderer->display)
 	{
-		glTranslatef(x + pivot_x, y + pivot_y, 0);
+		glTranslatef(x, y, 0);
+		glScalef(scaleX, scaleY, 1.0f);
 		glRotatef(angle, 0, 0, 1);
 		glTranslatef(-pivot_x, -pivot_y, 0);
-		glScalef(scaleX, scaleY, 1.0f);
 	}
 	else
 	{
-		glTranslatef(x + pivot_x, renderer->display->h - y - pivot_y, 0);
-		glRotatef(-angle, 0, 0, 1);
-		glTranslatef(-pivot_x, pivot_y, 0);
+		glTranslatef(x, renderer->display->h - y, 0);
 		glScalef(scaleX, scaleY, 1.0f);
-		glTranslatef(0, -renderer->display->h, 0);
+		glRotatef(-angle, 0, 0, 1);
+		glTranslatef(-pivot_x, pivot_y - renderer->display->h, 0);
 	}
 	
 	int result = GPU_Blit(src, srcrect, dest, 0, 0);
