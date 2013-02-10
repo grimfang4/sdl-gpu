@@ -165,22 +165,20 @@ static void Arc(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, float 
     // Check if the angle to be drawn crosses 0
     Uint8 crossesZero = (startAngle < 0 && endAngle > 0) || (startAngle < 360 && endAngle > 360);
     
-    // Push all values to 0 <= angle < 360
-    while(startAngle >= 360)
-        startAngle -= 360;
-    while(endAngle >= 360)
-        endAngle -= 360;
-    while(startAngle < 0)
-        startAngle += 360;
-    while(endAngle < 0)
-        endAngle += 360;
-    
     if(endAngle == 0)
         endAngle = 360;
     else if(crossesZero)
     {
-        Arc(renderer, target, x, y, radius, originalSA, 359.9f, color);
+        float sa = originalSA;
+        // Render the left part
+        while(sa < 0.0f)
+            sa += 360;
+        Arc(renderer, target, x, y, radius, sa, 359.9f, color);
+        
+        // Continue to render the right part
         startAngle = 0;
+        while(endAngle >= 360)
+        endAngle -= 360;
     }
 	
 	
@@ -265,22 +263,21 @@ static void ArcFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, 
     // Check if the angle to be drawn crosses 0
     Uint8 crossesZero = (startAngle < 0 && endAngle > 0) || (startAngle < 360 && endAngle > 360);
     
-    // Push all values to 0 <= angle < 360
-    while(startAngle >= 360)
-        startAngle -= 360;
-    while(endAngle >= 360)
-        endAngle -= 360;
-    while(startAngle < 0)
-        startAngle += 360;
-    while(endAngle < 0)
-        endAngle += 360;
-    
     if(endAngle == 0)
         endAngle = 360;
     else if(crossesZero)
     {
-        ArcFilled(renderer, target, x, y, radius, originalSA, 359.9f, color);
+        float sa = originalSA;
+        
+        // Render the left part
+        while(sa < 0.0f)
+            sa += 360;
+        ArcFilled(renderer, target, x, y, radius, sa, 359.9f, color);
+        
+        // Continue to render the right part
         startAngle = 0;
+        while(endAngle >= 360)
+        endAngle -= 360;
     }
 	
 	
@@ -293,7 +290,7 @@ static void ArcFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, 
 	float dt = (1 - (endAngle - startAngle)/360) * 5;  // A segment every 5 degrees of a full circle
 	float dx, dy;
 	
-	int numSegments = fabs(endAngle - startAngle)/dt;
+	int numSegments = fabs(endAngle - startAngle)/dt+1;
 	
 	GLfloat glverts[(1+numSegments)*3];
 	glVertexPointer(3, GL_FLOAT, 0, glverts);
@@ -303,7 +300,7 @@ static void ArcFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, 
 	glverts[1] = y;
 	glverts[2] = z;
 	int i;
-	for(i = 0; i < numSegments; i++)
+	for(i = 1; i < numSegments+1; i++)
 	{
 		dx = radius*cos(t*RADPERDEG);
 		dy = radius*sin(t*RADPERDEG);
@@ -727,6 +724,7 @@ GPU_ShapeRenderer* GPU_CreateShapeRenderer_OpenGLES_1(void)
 	renderer->Pixel = &Pixel;
 	renderer->Line = &Line;
 	renderer->Arc = &Arc;
+	renderer->ArcFilled = &ArcFilled;
 	renderer->Circle = &Circle;
 	renderer->CircleFilled = &CircleFilled;
 	renderer->Tri = &Tri;

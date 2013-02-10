@@ -148,22 +148,20 @@ static void Arc(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, float 
     // Check if the angle to be drawn crosses 0
     Uint8 crossesZero = (startAngle < 0 && endAngle > 0) || (startAngle < 360 && endAngle > 360);
     
-    // Push all values to 0 <= angle < 360
-    while(startAngle >= 360)
-        startAngle -= 360;
-    while(endAngle >= 360)
-        endAngle -= 360;
-    while(startAngle < 0)
-        startAngle += 360;
-    while(endAngle < 0)
-        endAngle += 360;
-    
     if(endAngle == 0)
         endAngle = 360;
     else if(crossesZero)
     {
-        Arc(renderer, target, x, y, radius, originalSA, 359.9f, color);
+        float sa = originalSA;
+        // Render the left part
+        while(sa < 0.0f)
+            sa += 360;
+        Arc(renderer, target, x, y, radius, sa, 359.9f, color);
+        
+        // Continue to render the right part
         startAngle = 0;
+        while(endAngle >= 360)
+        endAngle -= 360;
     }
 	
 	
@@ -227,22 +225,21 @@ static void ArcFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, 
     // Check if the angle to be drawn crosses 0
     Uint8 crossesZero = (startAngle < 0 && endAngle > 0) || (startAngle < 360 && endAngle > 360);
     
-    // Push all values to 0 <= angle < 360
-    while(startAngle >= 360)
-        startAngle -= 360;
-    while(endAngle >= 360)
-        endAngle -= 360;
-    while(startAngle < 0)
-        startAngle += 360;
-    while(endAngle < 0)
-        endAngle += 360;
-    
     if(endAngle == 0)
         endAngle = 360;
     else if(crossesZero)
     {
-        ArcFilled(renderer, target, x, y, radius, originalSA, 359.9f, color);
+        float sa = originalSA;
+        
+        // Render the left part
+        while(sa < 0.0f)
+            sa += 360;
+        ArcFilled(renderer, target, x, y, radius, sa, 359.9f, color);
+        
+        // Continue to render the right part
         startAngle = 0;
+        while(endAngle >= 360)
+        endAngle -= 360;
     }
 	
 	
