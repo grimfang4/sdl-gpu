@@ -175,8 +175,7 @@ int main(int argc, char* argv[])
 				}
 				else if(event.key.keysym.sym == SDLK_UP)
 				{
-					if(thickness < 10)
-						thickness += 0.3f;
+					thickness += 0.3f;
 					GPU_SetThickness(thickness);
 				}
 				else if(event.key.keysym.sym == SDLK_DOWN)

@@ -35,6 +35,7 @@ typedef struct TargetData_OpenGL
 typedef struct ShapeRendererData_OpenGL
 {
 	GLuint handle;
+	float line_thickness;
 } ShapeRendererData_OpenGL;
 
 #endif
