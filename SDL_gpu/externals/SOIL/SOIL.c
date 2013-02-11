@@ -42,7 +42,6 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "SDL_gpu.h"
 
 /*	error reporting	*/
 const char *result_string_pointer = "SOIL initialized";

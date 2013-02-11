@@ -4,25 +4,25 @@ set(SDL_gpu_SRCS
 	SDL_gpu_Renderer.c
 	OpenGL/SDL_gpu_OpenGL.c
 	OpenGL/SDL_gpuShapes_OpenGL.c
-	OpenGL/glew.c
-	OpenGL/SOIL/SOIL.c
-	OpenGL/SOIL/image_DXT.c
-	OpenGL/SOIL/image_helper.c
-	OpenGL/SOIL/stb_image.c
-	OpenGL/SOIL/stb_image_write.c
+	externals/glew/glew.c
+	externals/SOIL/SOIL.c
+	externals/SOIL/image_DXT.c
+	externals/SOIL/image_helper.c
+	externals/SOIL/stb_image.c
+	externals/SOIL/stb_image_write.c
 )
 set(SDL_gpu_HDRS
 	SDL_gpu.h
 	OpenGL/SDL_gpu_OpenGL.h
 	OpenGL/SDL_gpu_OpenGL_internal.h
-	OpenGL/glew.h
-	OpenGL/glxew.h
-	OpenGL/wglew.h
-	OpenGL/SOIL/SOIL.h
-	OpenGL/SOIL/image_DXT.h
-	OpenGL/SOIL/image_helper.h
-	OpenGL/SOIL/stb_image.h
-	OpenGL/SOIL/stb_image_write.h
+	externals/glew/glew.h
+	externals/glew/glxew.h
+	externals/glew/wglew.h
+	externals/SOIL/SOIL.h
+	externals/SOIL/image_DXT.h
+	externals/SOIL/image_helper.h
+	externals/SOIL/stb_image.h
+	externals/SOIL/stb_image_write.h
 )
 set(SDL_gpu_install_HDRS
 	SDL_gpu.h
