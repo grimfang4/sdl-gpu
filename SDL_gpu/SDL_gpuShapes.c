@@ -7,7 +7,6 @@
     #include "OpenGLES_1/SDL_gpu_OpenGLES_1_internal.h"
 #endif
 
-
 static GPU_ShapeRenderer* shapeRenderer = NULL;
 
 static void (*freeShapeRendererFn)(GPU_ShapeRenderer* renderer) = NULL;

@@ -19,6 +19,10 @@
 #define RADPERDEG 0.0174532925f
 #endif
 
+
+//#include "vase_line/vase_rend_draft_1.h"
+#include "../OpenGLES_1/vase_line/vase_rend_draft_2.h"
+
 static void Circle(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, float y, float radius, SDL_Color color);
 
 
@@ -67,17 +71,15 @@ static void Circle(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, flo
 
 static float SetThickness(GPU_ShapeRenderer* renderer, float thickness)
 {
-	float old;
-	glGetFloatv(GL_LINE_WIDTH, &old);
+	float old = ((ShapeRendererData_OpenGL*)renderer->data)->line_thickness;
+	((ShapeRendererData_OpenGL*)renderer->data)->line_thickness = thickness;
 	glLineWidth(thickness);
 	return old;
 }
 
 static float GetThickness(GPU_ShapeRenderer* renderer)
 {
-	float old;
-	glGetFloatv(GL_LINE_WIDTH, &old);
-	return old;
+	return ((ShapeRendererData_OpenGL*)renderer->data)->line_thickness;
 }
 
 static void Pixel(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, float y, SDL_Color color)
@@ -102,12 +104,12 @@ static void Line(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, floa
 	INVERT_Y(y1);
 	INVERT_Y(y2);
 	
-	glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
-	
-	glBegin(GL_LINES);
-	glVertex3f(x1, y1, z);
-	glVertex3f(x2, y2, z);
-	glEnd();
+	(void)z;
+	line ( x1,y1,x2,y2,
+			renderer->GetThickness(renderer),
+			color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f,
+			0,0,
+			1);
 	
 	END;
 }
@@ -579,6 +581,7 @@ GPU_ShapeRenderer* GPU_CreateShapeRenderer_OpenGL(void)
 	renderer->data = (ShapeRendererData_OpenGL*)malloc(sizeof(ShapeRendererData_OpenGL));
 	
 	renderer->SetThickness = &SetThickness;
+	renderer->SetThickness(renderer, 1.0f);
 	renderer->GetThickness = &GetThickness;
 	renderer->Pixel = &Pixel;
 	renderer->Line = &Line;

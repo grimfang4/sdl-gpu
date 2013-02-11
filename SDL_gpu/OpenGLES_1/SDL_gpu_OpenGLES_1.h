@@ -35,6 +35,7 @@ typedef struct TargetData_OpenGLES_1
 typedef struct ShapeRendererData_OpenGLES_1
 {
 	GLuint handle;
+	float line_thickness;
 } ShapeRendererData_OpenGLES_1;
 
 #endif

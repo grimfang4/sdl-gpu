@@ -100,9 +100,9 @@ static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags
     glLoadIdentity();
 
     glEnable( GL_TEXTURE_2D );
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     renderer->SetBlending(renderer, 1);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     if(renderer->display == NULL)
         renderer->display = (GPU_Target*)malloc(sizeof(GPU_Target));
