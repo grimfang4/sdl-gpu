@@ -208,7 +208,7 @@ static void Arc(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, float 
 		t += dt;
 	}
 
-	glDrawArrays(GL_LINE_LOOP, 0, numSegments);
+	glDrawArrays(GL_LINE_STRIP, 0, numSegments);
 	glDisableClientState(GL_VERTEX_ARRAY);
 
 	/*glBegin(GL_LINE_STRIP);
