@@ -8,6 +8,14 @@
 #include "SOIL.h"
 #include <math.h>
 
+//#define FORCE_POWER_OF_TWO
+
+#ifdef FORCE_POWER_OF_TWO
+#define POT_FLAG SOIL_FLAG_POWER_OF_TWO
+#else
+#define POT_FLAG 0
+#endif
+
 static Uint8 checkExtension(const char* str)
 {
     if(!glewIsExtensionSupported(str))
@@ -288,25 +296,17 @@ static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint8 
     if(channels < 3 || channels > 4)
         return NULL;
 
-    GLuint texture;
-    GLint texture_format;
+    SOIL_Texture texture;
 
     unsigned char* pixels = (unsigned char*)malloc(w*h*channels);
     memset(pixels, 0, w*h*channels);
 
-    int iw, ih;
-    iw = w;
-    ih = h;
-    texture = SOIL_create_OGL_texture(pixels, &iw, &ih, channels, 0, 0);
-    if(texture == 0)
+    texture = SOIL_create_OGL_texture(pixels, w, h, channels, 0, POT_FLAG);
+    if(texture.texture == 0)
     {
         free(pixels);
         return NULL;
     }
-    w = iw;
-    h = ih;
-
-    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &texture_format);
 
     // Set the texture's stretching properties
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
@@ -322,12 +322,14 @@ static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint8 
     result->data = data;
     result->renderer = renderer;
     result->channels = channels;
-    data->handle = texture;
-    data->format = texture_format;
+    data->handle = texture.texture;
+    data->format = texture.format;
     data->hasMipmaps = 0;
 
-    result->w = w;
-    result->h = h;
+    result->w = w;//texture.data_width;
+    result->h = h;//texture.data_height;
+    data->tex_w = texture.width;
+    data->tex_h = texture.height;
 
     free(pixels);
 
@@ -336,19 +338,14 @@ static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint8 
 
 static GPU_Image* LoadImage(GPU_Renderer* renderer, const char* filename)
 {
+    SOIL_Texture texture;                 // This is a handle to our texture object
 
-    GLuint texture;                 // This is a handle to our texture object
-    GLint texture_format;
-    GLint w, h;
-
-
-    texture = SOIL_load_OGL_texture(filename, SOIL_LOAD_AUTO, 0, 0);
-    if(texture == 0)
+    texture = SOIL_load_OGL_texture(filename, SOIL_LOAD_AUTO, 0, POT_FLAG);
+    if(texture.texture == 0)
+    {
+        GPU_LogError("Failed to load image \"%s\": %s.\n", filename, SOIL_last_result());
         return NULL;
-
-    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &texture_format);
-    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &w);
-    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &h);
+    }
 
     // Set the texture's stretching properties
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
@@ -366,7 +363,7 @@ static GPU_Image* LoadImage(GPU_Renderer* renderer, const char* filename)
     result->renderer = renderer;
 
     int channels = 0;
-    switch(texture_format)
+    switch(texture.format)
     {
     case GL_LUMINANCE:
         channels = 1;
@@ -386,12 +383,14 @@ static GPU_Image* LoadImage(GPU_Renderer* renderer, const char* filename)
 
     result->channels = channels;
 
-    data->handle = texture;
-    data->format = texture_format;
+    data->handle = texture.texture;
+    data->format = texture.format;
     data->hasMipmaps = 0;
 
-    result->w = w;
-    result->h = h;
+    result->w = texture.data_width;
+    result->h = texture.data_height;
+    data->tex_w = texture.width;
+    data->tex_h = texture.height;
 
     return result;
 }
@@ -438,10 +437,31 @@ static GPU_Image* CopyImage(GPU_Renderer* renderer, GPU_Image* image)
     return result;
 }
 
+#define USE_SOIL_MORE
+
 static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surface)
 {
     if(surface == NULL)
         return NULL;
+
+#ifdef USE_SOIL_MORE
+    SOIL_Texture tex = SOIL_create_OGL_texture(surface->pixels, surface->w, surface->h, surface->format->BytesPerPixel, 0, POT_FLAG);
+    GPU_Image* result = (GPU_Image*)malloc(sizeof(GPU_Image));
+    ImageData_OpenGL* data = (ImageData_OpenGL*)malloc(sizeof(ImageData_OpenGL));
+    result->data = data;
+    result->renderer = renderer;
+
+    result->channels = surface->format->BytesPerPixel;
+
+    data->handle = tex.texture;
+    data->format = tex.format;
+    data->hasMipmaps = 0;
+
+    result->w = surface->w;
+    result->h = surface->h;
+    data->tex_w = tex.width;
+    data->tex_h = tex.height;
+#else
 
     // From gpwiki.org
     GLuint texture;			// This is a handle to our texture object
@@ -449,36 +469,57 @@ static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surf
     GLint  nOfColors;
     int w, h;
 
-    // Check that the image's width is a power of 2
-    /*if ( (surface->w & (surface->w - 1)) != 0 ) {
-    	printf("warning: image.bmp's width is not a power of 2\n");
-    }
+    Uint8 pot_w = isPowerOfTwo(surface->w);
+    Uint8 pot_h = isPowerOfTwo(surface->h);
+    if(!pot_w || !pot_h)
+    {
+        // Make it power-of-two
+        SDL_Surface* POTSurface = convertToPOTSurface(surface);
+        if(POTSurface == NULL)
+            return NULL;
 
-    // Also check if the height is a power of 2
-    if ( (surface->h & (surface->h - 1)) != 0 ) {
-    	printf("warning: image.bmp's height is not a power of 2\n");
-    }*/
+        // Try again to create image using that surface
+        GPU_Image* result = CopyImageFromSurface(renderer, POTSurface);
+        SDL_FreeSurface(POTSurface);
+        if(result == NULL)
+            return NULL;
+        // Set actual image dimensions (NPOT)
+        result->w = surface->w;
+        result->h = surface->h;
+
+        Uint16 tex_w = ((ImageData_OpenGLES_1*)result->data)->tex_w;
+        Uint16 tex_h = ((ImageData_OpenGLES_1*)result->data)->tex_h;
+        return result;
+    }
 
     // get the number of channels in the SDL surface
     nOfColors = surface->format->BytesPerPixel;
     if (nOfColors == 4)     // contains an alpha channel
     {
+#ifdef GL_BGRA
         if (surface->format->Rmask == 0x000000ff)
             texture_format = GL_RGBA;
         else
             texture_format = GL_BGRA;
+#else
+        texture_format = GL_RGBA;
+#endif
     } else if (nOfColors == 3)     // no alpha channel
     {
+#ifdef GL_BGR
         if (surface->format->Rmask == 0x000000ff)
             texture_format = GL_RGB;
         else
             texture_format = GL_BGR;
+#else
+        texture_format = GL_RGB;
+#endif
     } else {
         //printf("warning: the image is not truecolor..  this will probably break\n");
         return NULL;
     }
 
-    // Have OpenGL generate a texture object handle for us
+    // Have OpenGLES generate a texture object handle for us
     glGenTextures( 1, &texture );
 
     // Bind the texture object
@@ -492,46 +533,32 @@ static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surf
     glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
     // Edit the texture object's image data using the information SDL_Surface gives us
-    glTexImage2D( GL_TEXTURE_2D, 0, nOfColors, surface->w, surface->h, 0,
+    glTexImage2D( GL_TEXTURE_2D, 0, texture_format, surface->w, surface->h, 0,
                   texture_format, GL_UNSIGNED_BYTE, surface->pixels );
 
     glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
 
-    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &w);
-    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &h);
+    //glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &w);
+    //glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &h);
+    w = surface->w;
+    h = surface->h;
 
     GPU_Image* result = (GPU_Image*)malloc(sizeof(GPU_Image));
-    ImageData_OpenGL* data = (ImageData_OpenGL*)malloc(sizeof(ImageData_OpenGL));
+    ImageData_OpenGLES_1* data = (ImageData_OpenGLES_1*)malloc(sizeof(ImageData_OpenGLES_1));
     result->data = data;
     result->renderer = renderer;
 
-    int channels = 0;
-    switch(texture_format)
-    {
-    case GL_LUMINANCE:
-        channels = 1;
-        break;
-    case GL_LUMINANCE_ALPHA:
-        channels = 2;
-        break;
-    case GL_BGR:
-    case GL_RGB:
-        channels = 3;
-        break;
-    case GL_BGRA:
-    case GL_RGBA:
-        channels = 4;
-        break;
-    }
-
-    result->channels = channels;
+    result->channels = nOfColors;
 
     data->handle = texture;
     data->format = texture_format;
     data->hasMipmaps = 0;
 
-    result->w = w;
-    result->h = h;
+    result->w = surface->w;
+    result->h = surface->h;
+    data->tex_w = w;
+    data->tex_h = h;
+#endif
 
     return result;
 }

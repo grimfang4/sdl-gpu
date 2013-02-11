@@ -308,7 +308,6 @@ static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint8 
         return NULL;
 
     SOIL_Texture texture;
-    GLint texture_format;
 
     unsigned char* pixels = (unsigned char*)malloc(w*h*channels);
     memset(pixels, 0, w*h*channels);
@@ -354,6 +353,7 @@ static GPU_Image* LoadImage(GPU_Renderer* renderer, const char* filename)
     SOIL_Texture texture;
 
 #ifdef ANDROID
+    // Must use SDL_RWops to access the assets directory automatically
     SDL_RWops* rwops = SDL_RWFromFile(filename, "r");
     if(rwops == NULL)
         return NULL;
@@ -369,10 +369,9 @@ static GPU_Image* LoadImage(GPU_Renderer* renderer, const char* filename)
 #endif
     if(texture.texture == 0)
     {
-        GPU_LogError("Failed to load image: Texture handle is 0.\n");
+        GPU_LogError("Failed to load image \"%s\": %s.\n", filename, SOIL_last_result());
         return NULL;
     }
-
 
     // Set the texture's stretching properties
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );

@@ -2809,7 +2809,7 @@ static int parse_png_file(png *z, int scan, int req_comp)
             // if critical, fail
             if (first) return e("first not IHDR", "Corrupt PNG");
             if ((c.type & (1 << 29)) == 0) {
-               #ifndef STBI_NO_FAILURE_STRINGS
+               #if !defined(STBI_NO_FAILURE_STRINGS) && !defined(STBI_FAILURE_USERMSG)
                // not threadsafe
                static char invalid_chunk[] = "XXXX chunk not known";
                invalid_chunk[0] = (uint8) (c.type >> 24);
