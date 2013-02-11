@@ -46,7 +46,9 @@ endif( NOT SDL_gpu_USE_SDL2 )
 
 include_directories(${OPENGL_INCLUDE_DIR})
 include_directories(SDL_gpu)
-include_directories(SDL_gpu/OpenGL/SOIL)
+include_directories(SDL_gpu/externals/SOIL)
+include_directories(SDL_gpu/externals/glew)
+include_directories(SDL_gpu/externals/vase_rend)
 
 link_libraries (${OPENGL_LIBRARIES})
 

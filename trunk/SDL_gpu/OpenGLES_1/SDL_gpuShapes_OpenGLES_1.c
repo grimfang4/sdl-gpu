@@ -20,7 +20,7 @@
 #endif
 
 
-#include "vase_line/vase_rend_draft_2.h"
+#include "vase_rend_draft_2.h"
 
 static void Circle(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, float y, float radius, SDL_Color color);
 
