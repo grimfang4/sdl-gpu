@@ -91,7 +91,6 @@ int
 		int resampled_width, int resampled_height
 	)
 {
-	float dx, dy;
 	int x, y, c;
 
     /* error(s) check	*/

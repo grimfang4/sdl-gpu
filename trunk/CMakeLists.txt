@@ -50,7 +50,7 @@ include_directories(SDL_gpu/OpenGL/SOIL)
 
 link_libraries (${OPENGL_LIBRARIES})
 
-add_definitions("-g -Wall -std=c99 -pedantic")
+add_definitions("-g -Wall -std=c99 -pedantic -DSTBI_FAILURE_USERMSG")
 
 # The SDL_gpu library.
 add_subdirectory(SDL_gpu)
