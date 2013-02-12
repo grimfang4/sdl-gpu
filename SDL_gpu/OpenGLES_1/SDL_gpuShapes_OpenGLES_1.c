@@ -20,8 +20,6 @@
 #endif
 
 
-#include "vase_rend_draft_2.h"
-
 static void Circle(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, float y, float radius, SDL_Color color);
 
 
@@ -111,16 +109,21 @@ static void Line(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, floa
     INVERT_Y(y1);
     INVERT_Y(y2);
 
-    (void)z;
-    glEnableClientState(GL_VERTEX_ARRAY);
-    glEnableClientState(GL_COLOR_ARRAY);
-    line ( x1,y1,x2,y2,
-           renderer->GetThickness(renderer),
-           color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f,
-           0,0,
-           1);
-    glDisableClientState(GL_VERTEX_ARRAY);
-    glDisableClientState(GL_COLOR_ARRAY);
+	glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
+
+	GLfloat glverts[6];
+	glVertexPointer(3, GL_FLOAT, 0, glverts);
+	glEnableClientState(GL_VERTEX_ARRAY);
+
+	glverts[0] = x1;
+	glverts[1] = y1;
+	glverts[2] = z;
+	glverts[3] = x2;
+	glverts[4] = y2;
+	glverts[5] = z;
+
+	glDrawArrays(GL_LINES, 0, 2);
+	glDisableClientState(GL_VERTEX_ARRAY);
 
     END;
 }
