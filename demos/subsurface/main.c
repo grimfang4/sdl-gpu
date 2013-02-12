@@ -38,8 +38,6 @@ int main(int argc, char* argv[])
 	SDL_FreeSurface(surf);
 	surf = NULL;
 	
-	float dt = 0.010f;
-	
 	Uint32 startTime = SDL_GetTicks();
 	long frameCount = 0;
 	

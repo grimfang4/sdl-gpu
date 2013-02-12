@@ -37,7 +37,6 @@ int main(int argc, char* argv[])
 	GPU_Target* target = screen;
 	float x = 400.0f;
 	float y = 300.0f;
-	SDL_Color red = {255, 0, 0, 255};
 	
 	Uint8 usingVirtual = 0;
 	

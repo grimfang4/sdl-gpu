@@ -523,8 +523,10 @@ struct GPU_ShapeRenderer
 	
 };
 
-// Call this after setting a GPU_Renderer (e.g after GPU_Init())
+// Called automatically (after setting a GPU_Renderer)
 void GPU_LoadShapeRenderer(void);
+
+GPU_ShapeRenderer* GPU_GetCurrentShapeRenderer(void);
 
 float GPU_SetThickness(float thickness);
 
@@ -559,7 +561,6 @@ void GPU_Polygon(GPU_Target* target, Uint16 n, float* vertices, SDL_Color color)
 void GPU_PolygonFilled(GPU_Target* target, Uint16 n, float* vertices, SDL_Color color);
 
 void GPU_PolygonBlit(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* target, Uint16 n, float* vertices, float textureX, float textureY, float angle, float scaleX, float scaleY);
-
 
 
 
