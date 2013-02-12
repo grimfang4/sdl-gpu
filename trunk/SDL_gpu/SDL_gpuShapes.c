@@ -11,6 +11,11 @@ static GPU_ShapeRenderer* shapeRenderer = NULL;
 
 static void (*freeShapeRendererFn)(GPU_ShapeRenderer* renderer) = NULL;
 
+GPU_ShapeRenderer* GPU_GetCurrentShapeRenderer(void)
+{
+    return shapeRenderer;
+}
+
 void GPU_LoadShapeRenderer(void)
 {
 	// Free the old one
