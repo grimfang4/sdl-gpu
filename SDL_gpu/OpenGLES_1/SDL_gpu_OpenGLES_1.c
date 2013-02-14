@@ -689,13 +689,22 @@ static void SubSurfaceCopy(GPU_Renderer* renderer, SDL_Surface* src, SDL_Rect* s
     }
 
     // Copy data to new surface
+    #ifdef SDL_GPU_USE_SDL2
     SDL_BlendMode blendmode;
     SDL_GetSurfaceBlendMode(src, &blendmode);
     SDL_SetSurfaceBlendMode(src, SDL_BLENDMODE_NONE);
+    #else
+    Uint32 srcAlpha = src->flags & SDL_SRCALPHA;
+    SDL_SetAlpha(src, 0, src->format->alpha);
+    #endif
 
     SDL_BlitSurface(src, &r, temp, NULL);
 
+    #ifdef SDL_GPU_USE_SDL2
     SDL_SetSurfaceBlendMode(src, blendmode);
+    #else
+    SDL_SetAlpha(src, srcAlpha, src->format->alpha);
+    #endif
 
     // Make surface into an image
     GPU_Image* image = GPU_CopyImageFromSurface(temp);
