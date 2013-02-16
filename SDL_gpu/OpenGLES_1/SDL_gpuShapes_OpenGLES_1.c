@@ -192,12 +192,10 @@ static void Arc(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, float 
 
     int numSegments = fabs(endAngle - startAngle)/dt;
 
-    GLfloat glverts[numSegments*3];
-    glVertexPointer(3, GL_FLOAT, 0, glverts);
-    glEnableClientState(GL_VERTEX_ARRAY);
+    GLfloat glverts[(numSegments+2)*3];  // Extra vertex for endpoint
 
     int i;
-    for(i = 0; i < numSegments; i++)
+    for(i = 0; i < numSegments+1; i++)
     {
         dx = radius*cos(t*RADPERDEG);
         dy = radius*sin(t*RADPERDEG);
@@ -206,8 +204,16 @@ static void Arc(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, float 
         glverts[i*3+2] = z;
         t += dt;
     }
+    
+    dx = radius*cos(endAngle*RADPERDEG);
+    dy = radius*sin(endAngle*RADPERDEG);
+    glverts[i*3] = x+dx;
+    glverts[i*3+1] = y+dy;
+    glverts[i*3+2] = z;
 
-    glDrawArrays(GL_LINE_STRIP, 0, numSegments);
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glVertexPointer(3, GL_FLOAT, 0, glverts);
+    glDrawArrays(GL_LINE_STRIP, 0, numSegments+2);
     glDisableClientState(GL_VERTEX_ARRAY);
 
     /*glBegin(GL_LINE_STRIP);
@@ -289,17 +295,15 @@ static void ArcFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, 
     float dt = (1 - (endAngle - startAngle)/360) * 5;  // A segment every 5 degrees of a full circle
     float dx, dy;
 
-    int numSegments = fabs(endAngle - startAngle)/dt+1;
+    int numSegments = fabs(endAngle - startAngle)/dt;
 
-    GLfloat glverts[(1+numSegments)*3];
-    glVertexPointer(3, GL_FLOAT, 0, glverts);
-    glEnableClientState(GL_VERTEX_ARRAY);
+    GLfloat glverts[(numSegments+3)*3];  // Extra vertex for the center and endpoint
 
     glverts[0] = x;
     glverts[1] = y;
     glverts[2] = z;
     int i;
-    for(i = 1; i < numSegments+1; i++)
+    for(i = 1; i < numSegments+2; i++)
     {
         dx = radius*cos(t*RADPERDEG);
         dy = radius*sin(t*RADPERDEG);
@@ -309,7 +313,15 @@ static void ArcFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, 
         t += dt;
     }
 
-    glDrawArrays(GL_TRIANGLE_FAN, 0, 1+numSegments);
+    dx = radius*cos(endAngle*RADPERDEG);
+    dy = radius*sin(endAngle*RADPERDEG);
+    glverts[i*3] = x+dx;
+    glverts[i*3+1] = y+dy;
+    glverts[i*3+2] = z;
+    
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glVertexPointer(3, GL_FLOAT, 0, glverts);
+    glDrawArrays(GL_TRIANGLE_FAN, 0, numSegments+3);
     glDisableClientState(GL_VERTEX_ARRAY);
 
     /*glBegin(GL_TRIANGLE_FAN);
