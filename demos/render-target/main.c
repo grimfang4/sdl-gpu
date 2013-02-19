@@ -4,6 +4,15 @@
 
 #ifdef SDL_GPU_USE_SDL2
 #define SDL_GetKeyState SDL_GetKeyboardState
+#define KEY_UP SDL_SCANCODE_UP
+#define KEY_DOWN SDL_SCANCODE_DOWN
+#define KEY_LEFT SDL_SCANCODE_LEFT
+#define KEY_RIGHT SDL_SCANCODE_RIGHT
+#else
+#define KEY_UP SDLK_UP
+#define KEY_DOWN SDLK_DOWN
+#define KEY_LEFT SDLK_LEFT
+#define KEY_RIGHT SDLK_RIGHT
 #endif
 
 void printRenderers(void)
@@ -78,13 +87,13 @@ int main(int argc, char* argv[])
 			}
 		}
 		
-		if(keystates[SDLK_UP])
+		if(keystates[KEY_UP])
 			y -= 1;
-		else if(keystates[SDLK_DOWN])
+		else if(keystates[KEY_DOWN])
 			y += 1;
-		if(keystates[SDLK_LEFT])
+		if(keystates[KEY_LEFT])
 			x -= 1;
-		else if(keystates[SDLK_RIGHT])
+		else if(keystates[KEY_RIGHT])
 			x += 1;
 		
 		GPU_Clear(screen);

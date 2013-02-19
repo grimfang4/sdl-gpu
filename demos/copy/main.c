@@ -1,10 +1,7 @@
 #include "SDL.h"
 #include "SDL_gpu.h"
 #include <math.h>
-
-#ifdef SDL_GPU_USE_SDL2
-#define SDL_GetKeyState SDL_GetKeyboardState
-#endif
+#include "../common/compat.h"
 
 void printRenderers(void)
 {
@@ -64,27 +61,27 @@ int main(int argc, char* argv[])
 			}
 		}
 		
-		if(keystates[SDLK_UP])
+		if(keystates[KEY_UP])
 		{
 			camera.y -= 200*dt;
 		}
-		else if(keystates[SDLK_DOWN])
+		else if(keystates[KEY_DOWN])
 		{
 			camera.y += 200*dt;
 		}
-		if(keystates[SDLK_LEFT])
+		if(keystates[KEY_LEFT])
 		{
 			camera.x -= 200*dt;
 		}
-		else if(keystates[SDLK_RIGHT])
+		else if(keystates[KEY_RIGHT])
 		{
 			camera.x += 200*dt;
 		}
-		if(keystates[SDLK_MINUS])
+		if(keystates[KEY_MINUS])
 		{
 			camera.zoom -= 1.0f*dt;
 		}
-		else if(keystates[SDLK_EQUALS])
+		else if(keystates[KEY_EQUALS])
 		{
 			camera.zoom += 1.0f*dt;
 		}
