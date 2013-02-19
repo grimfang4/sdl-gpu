@@ -1,10 +1,7 @@
 #include "SDL.h"
 #include "SDL_gpu.h"
 #include <math.h>
-
-#ifdef SDL_GPU_USE_SDL2
-#define SDL_GetKeyState SDL_GetKeyboardState
-#endif
+#include "../common/compat.h"
 
 #ifndef M_PI
   #define M_PI 3.14159
@@ -115,25 +112,25 @@ int main(int argc, char* argv[])
 			}
 		}
 		
-		if(keystates[SDLK_UP])
+		if(keystates[KEY_UP])
 			dy -= 100*dt;
-		else if(keystates[SDLK_DOWN])
+		else if(keystates[KEY_DOWN])
 			dy += 100*dt;
-		if(keystates[SDLK_LEFT])
+		if(keystates[KEY_LEFT])
 			dx -= 100*dt;
-		else if(keystates[SDLK_RIGHT])
+		else if(keystates[KEY_RIGHT])
 			dx += 100*dt;
-		if(keystates[SDLK_COMMA])
+		if(keystates[KEY_COMMA])
 			angle -= 100*dt;
-		else if(keystates[SDLK_PERIOD])
+		else if(keystates[KEY_PERIOD])
 			angle += 100*dt;
-		if(keystates[SDLK_a])
+		if(keystates[KEY_a])
 			scale_x -= 1*dt;
-		else if(keystates[SDLK_s])
+		else if(keystates[KEY_s])
 			scale_x += 1*dt;
-		if(keystates[SDLK_z])
+		if(keystates[KEY_z])
 			scale_y -= 1*dt;
-		else if(keystates[SDLK_x])
+		else if(keystates[KEY_x])
 			scale_y += 1*dt;
 		
 		GPU_Clear(screen);
