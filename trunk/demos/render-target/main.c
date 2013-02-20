@@ -1,19 +1,7 @@
 #include "SDL.h"
 #include "SDL_gpu.h"
 #include <math.h>
-
-#ifdef SDL_GPU_USE_SDL2
-#define SDL_GetKeyState SDL_GetKeyboardState
-#define KEY_UP SDL_SCANCODE_UP
-#define KEY_DOWN SDL_SCANCODE_DOWN
-#define KEY_LEFT SDL_SCANCODE_LEFT
-#define KEY_RIGHT SDL_SCANCODE_RIGHT
-#else
-#define KEY_UP SDLK_UP
-#define KEY_DOWN SDLK_DOWN
-#define KEY_LEFT SDLK_LEFT
-#define KEY_RIGHT SDLK_RIGHT
-#endif
+#include "../common/compat.h"
 
 void printRenderers(void)
 {
@@ -35,10 +23,12 @@ int main(int argc, char* argv[])
 	GPU_Target* screen = GPU_Init(NULL, 800, 600, 0);
 	if(screen == NULL)
 		return -1;
+    
+    //GPU_SetVirtualResolution(1200, 800);
 	
 	printf("Using renderer: %s\n", GPU_GetCurrentRendererID());
 	
-	GPU_Image* image = GPU_LoadImage("data/test.bmp");
+	GPU_Image* image = GPU_CreateImage(300, 300, 4);
 	if(image == NULL)
 		return -1;
 	
@@ -54,6 +44,8 @@ int main(int argc, char* argv[])
 	if(target == NULL)
 		return -1;
 	
+	GPU_Image* mode2image = GPU_CreateImage(400, 400, 4);
+	GPU_Target* mode2target = GPU_LoadTarget(mode2image);
 	
 	SDL_Color circleColor = {255, 0, 0, 128};
 	SDL_Color circleColor2 = {0, 0, 255, 128};
@@ -63,12 +55,8 @@ int main(int argc, char* argv[])
 	long frameCount = 0;
 	
 	Uint8* keystates = SDL_GetKeyState(NULL);
-	if(keystates == NULL)
-    {
-        printf("Failed to get keyboard state!\n");
-        return -2;
-    }
     
+    int mode = 0;
 	int x = 0;
 	int y = 0;
 	
@@ -84,6 +72,12 @@ int main(int argc, char* argv[])
 			{
 				if(event.key.keysym.sym == SDLK_ESCAPE)
 					done = 1;
+				else if(event.key.keysym.sym == SDLK_SPACE)
+                {
+					mode++;
+					if(mode > 1)
+                        mode = 0;
+                }
 			}
 		}
 		
@@ -98,19 +92,43 @@ int main(int argc, char* argv[])
 		
 		GPU_Clear(screen);
 		
-		GPU_Clear(target);
-		GPU_Blit(image3, NULL, target, image3->w/2, image3->h/2);
-		
-		//GPU_BlitScale(image2, NULL, target, x, y, 0.7f, 0.7f);
-		GPU_BlitScale(image2, NULL, target, target->w/2, target->h/2, 0.7f, 0.7f);
-		//GPU_BlitRotate(image2, NULL, target, x, y, 360*sin(SDL_GetTicks()/1000.0f));
-		GPU_BlitTransform(image2, NULL, target, x, y, 360*sin(SDL_GetTicks()/1000.0f), 0.7f*sin(SDL_GetTicks()/2000.0f), 0.7f*sin(SDL_GetTicks()/2000.0f));
-		
-		GPU_CircleFilled(target, 70, 70, 20, circleColor);
-	
-		GPU_Blit(image, NULL, screen, image->w/2 + 50, image->h/2 + 50);
-		
-		GPU_CircleFilled(screen, 50 + 70, 50 + 70, 20, circleColor2);
+		if(mode == 0)
+        {
+            GPU_ClearRGBA(target, 0, 255, 0, 255);
+            GPU_Blit(image3, NULL, target, image3->w/2, image3->h/2);
+            
+            //GPU_BlitScale(image2, NULL, target, target->w/2, target->h/2, 0.7f, 0.7f);
+            //GPU_BlitScale(image2, NULL, target, x, y, 0.7f, 0.7f);
+            
+            GPU_BlitTransform(image2, NULL, target, x, y, 360*sin(SDL_GetTicks()/1000.0f), 0.7f*sin(SDL_GetTicks()/2000.0f), 0.7f*sin(SDL_GetTicks()/2000.0f));
+            
+            GPU_CircleFilled(target, 70, 70, 20, circleColor);
+        
+            GPU_Blit(image, NULL, screen, image->w/2 + 50, image->h/2 + 50);
+            GPU_BlitScale(image, NULL, screen, image->w*2 + 50, image->h/2 + 50, 0.7f, 0.7f);
+            
+            GPU_CircleFilled(screen, 50 + 70, 50 + 70, 20, circleColor2);
+        }
+        else if(mode == 1)
+        {
+            GPU_ClearRGBA(mode2target, 255, 255, 255, 255);
+            
+            SDL_Color red = {255, 0, 0, 255};
+            
+            GPU_Line(mode2target, 0, 0, mode2target->w, mode2target->h, red);
+            GPU_Line(mode2target, 0, mode2target->h, mode2target->w, 0, red);
+            GPU_TriFilled(mode2target, mode2target->w/2, mode2target->h/2 + 10, mode2target->w/2 - 10, mode2target->h/2 + 20, mode2target->w/2 + 10, mode2target->h/2 + 20, red);
+            
+            GPU_Blit(image2, NULL, mode2target, x, y);
+            
+            
+            SDL_Color blue = {0, 0, 255, 255};
+            
+            GPU_Line(screen, 0, 0, screen->w, screen->h, blue);
+            GPU_Line(screen, 0, screen->h, screen->w, 0, blue);
+            
+            GPU_Blit(mode2image, NULL, screen, mode2image->w/2, mode2image->h/2);
+        }
 		
 		GPU_Flip();
 		
@@ -124,6 +142,8 @@ int main(int argc, char* argv[])
 	
 	printf("Average FPS: %.2f\n", 1000.0f*frameCount/(SDL_GetTicks() - startTime));
 	
+	GPU_FreeImage(mode2image);
+	GPU_FreeTarget(mode2target);
 	GPU_FreeImage(image);
 	GPU_Quit();
 	

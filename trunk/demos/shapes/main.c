@@ -30,7 +30,7 @@ int main(int argc, char* argv[])
 	long frameCount = 0;
 	
 	int shapeType = 0;
-	int numShapeTypes = 13;
+	int numShapeTypes = 14;
 	
 	int i;
 	
@@ -234,36 +234,42 @@ int main(int argc, char* argv[])
 				}
 				break;
 			case 7:
-				for(i = 0; i < numCircles; i++)
+				for(i = 0; i < numArcs; i++)
 				{
-					GPU_Circle(screen, cx[i], cy[i], cr[i], colors[i]);
+					GPU_ArcFilled(screen, ax[i], ay[i], ar[i], aa1[i], aa2[i], colors[i]);
 				}
 				break;
 			case 8:
 				for(i = 0; i < numCircles; i++)
 				{
-					GPU_CircleFilled(screen, cx[i], cy[i], cr[i], colors[i]);
+					GPU_Circle(screen, cx[i], cy[i], cr[i], colors[i]);
 				}
 				break;
 			case 9:
-				for(i = 0; i < numRects; i++)
+				for(i = 0; i < numCircles; i++)
 				{
-					GPU_RectRound(screen, rx1[i], ry1[i], rx2[i], ry2[i], rr[i], colors[i]);
+					GPU_CircleFilled(screen, cx[i], cy[i], cr[i], colors[i]);
 				}
 				break;
 			case 10:
 				for(i = 0; i < numRects; i++)
 				{
-					GPU_RectRoundFilled(screen, rx1[i], ry1[i], rx2[i], ry2[i], rr[i], colors[i]);
+					GPU_RectRound(screen, rx1[i], ry1[i], rx2[i], ry2[i], rr[i], colors[i]);
 				}
 				break;
 			case 11:
+				for(i = 0; i < numRects; i++)
+				{
+					GPU_RectRoundFilled(screen, rx1[i], ry1[i], rx2[i], ry2[i], rr[i], colors[i]);
+				}
+				break;
+			case 12:
 				for(i = 0; i < numPolys; i++)
 				{
 					GPU_Polygon(screen, pn[i], pv[i], colors[i]);
 				}
 				break;
-			case 12:
+			case 13:
 				for(i = 0; i < numPolys; i++)
 				{
 					GPU_PolygonFilled(screen, pn[i], pv[i], colors[i]);

@@ -31,6 +31,7 @@ static void Circle(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, flo
 #endif
 
 
+
 #define BEGIN \
 	if(target == NULL) \
 		return; \
@@ -50,9 +51,35 @@ static void Circle(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, flo
 		glScissor(target->clipRect.x * xFactor, y * yFactor, target->clipRect.w * xFactor, target->clipRect.h * yFactor); \
 	} \
 	 \
-	glDisable( GL_TEXTURE_2D );
+	glDisable( GL_TEXTURE_2D ); \
+	GLint vp[4]; \
+    if(renderer->renderer->display != target) \
+    { \
+        glGetIntegerv(GL_VIEWPORT, vp); \
+        \
+        unsigned int w = target->w; \
+        unsigned int h = target->h; \
+        \
+        glViewport( 0, 0, w, h); \
+        \
+        glMatrixMode( GL_PROJECTION ); \
+        glPushMatrix(); \
+        glLoadIdentity(); \
+        \
+        glOrtho(0.0f, w, 0.0f, h, -1.0f, 1.0f); /* Special inverted orthographic projection because tex coords are inverted already. */ \
+        \
+        glMatrixMode( GL_MODELVIEW ); \
+    }
 
 #define END \
+    if(renderer->renderer->display != target) \
+    { \
+        glViewport(vp[0], vp[1], vp[2], vp[3]); \
+         \
+        glMatrixMode( GL_PROJECTION ); \
+        glPopMatrix(); \
+        glMatrixMode( GL_MODELVIEW ); \
+    } \
 	if(target->useClip) \
 	{ \
 		glDisable(GL_SCISSOR_TEST); \
@@ -62,9 +89,6 @@ static void Circle(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, flo
 	glEnable( GL_TEXTURE_2D );
 
 	
-#define INVERT_Y(y) \
-	if(renderer->renderer->display != target) \
-		(y) = renderer->renderer->display->h - (y);
 
 static float SetThickness(GPU_ShapeRenderer* renderer, float thickness)
 {
@@ -83,8 +107,6 @@ static void Pixel(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, floa
 {
 	BEGIN;
 	
-	INVERT_Y(y);
-	
 	glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
 	
 	glBegin(GL_POINTS);
@@ -97,9 +119,6 @@ static void Pixel(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, floa
 static void Line(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color)
 {
 	BEGIN;
-	
-	INVERT_Y(y1);
-	INVERT_Y(y2);
 	
 	glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
 	
@@ -165,8 +184,6 @@ static void Arc(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, float 
 	
 	
 	BEGIN;
-	
-	INVERT_Y(y);
 	
 	glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
 	float t = startAngle;
@@ -244,8 +261,6 @@ static void ArcFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, 
 	
 	BEGIN;
 	
-	INVERT_Y(y);
-	
 	glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
 	float t = startAngle;
 	float dt = (1 - (endAngle - startAngle)/360) * 5;  // A segment every 5 degrees of a full circle
@@ -271,8 +286,6 @@ static void Circle(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, flo
 {
 	BEGIN;
 	
-	INVERT_Y(y);
-	
 	glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
 	float t = 0;
 	float dt = 5;  // A segment every 5 degrees of a full circle
@@ -296,8 +309,6 @@ static void Circle(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, flo
 static void CircleFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, float y, float radius, SDL_Color color)
 {
 	BEGIN;
-	
-	INVERT_Y(y);
 	
 	glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
 	float t = 0;
@@ -323,10 +334,6 @@ static void Tri(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, float
 {
 	BEGIN;
 	
-	INVERT_Y(y1);
-	INVERT_Y(y2);
-	INVERT_Y(y3);
-	
 	glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
 	
 	glBegin(GL_LINE_LOOP);
@@ -341,10 +348,6 @@ static void Tri(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, float
 static void TriFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, float x3, float y3, SDL_Color color)
 {
 	BEGIN;
-	
-	INVERT_Y(y1);
-	INVERT_Y(y2);
-	INVERT_Y(y3);
 	
 	glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
 	
@@ -361,9 +364,6 @@ static void Rect(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, floa
 {
 	BEGIN;
 	
-	INVERT_Y(y1);
-	INVERT_Y(y2);
-	
 	glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
 	
 	glBegin(GL_LINE_LOOP);
@@ -379,9 +379,6 @@ static void Rect(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, floa
 static void RectFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color)
 {
 	BEGIN;
-	
-	INVERT_Y(y1);
-	INVERT_Y(y2);
 	
 	glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
 	
@@ -411,9 +408,6 @@ static void RectRound(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1,
 	}
 	
 	BEGIN;
-	
-	INVERT_Y(y1);
-	INVERT_Y(y2);
 	
 	glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
 	
@@ -457,9 +451,6 @@ static void RectRoundFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, flo
 	
 	BEGIN;
 	
-	INVERT_Y(y1);
-	INVERT_Y(y2);
-	
 	glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
 	
 	float i;
@@ -495,11 +486,7 @@ static void Polygon(GPU_ShapeRenderer* renderer, GPU_Target* target, Uint16 n, f
 	glBegin(GL_LINE_LOOP);
 	for(i = 0; i < 2*n; i+=2)
 	{
-		float y = vertices[i+1];
-		
-		INVERT_Y(y);
-		
-		glVertex3f(vertices[i], y, z);
+		glVertex3f(vertices[i], vertices[i+1], z);
 	}
 	glEnd();
 	
@@ -515,11 +502,7 @@ static void PolygonFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, Uint1
 	glBegin(GL_POLYGON);
 	for(i = 0; i < 2*n; i+=2)
 	{
-		float y = vertices[i+1];
-		
-		INVERT_Y(y);
-		
-		glVertex3f(vertices[i], y, z);
+		glVertex3f(vertices[i], vertices[i+1], z);
 	}
 	glEnd();
 	
@@ -552,7 +535,6 @@ static void PolygonBlit(GPU_ShapeRenderer* renderer, GPU_Image* src, SDL_Rect* s
 		
 		glTexCoord2f((x - textureX)*scaleX/src->w, (y - textureY)*scaleY/src->h);
 		
-		INVERT_Y(y);
 		glVertex3f(x, y, z);
 	}
 	glEnd();
