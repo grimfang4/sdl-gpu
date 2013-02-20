@@ -1,10 +1,7 @@
 #include "SDL.h"
 #include "SDL_gpu.h"
 #include <math.h>
-
-#ifdef SDL_GPU_USE_SDL2
-#define SDL_GetKeyState SDL_GetKeyboardState
-#endif
+#include "../common/compat.h"
 
 void printRenderers(void)
 {
