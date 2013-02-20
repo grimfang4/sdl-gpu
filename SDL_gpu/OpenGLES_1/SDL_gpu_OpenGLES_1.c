@@ -801,42 +801,24 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_T
     // Bind the FBO
     glBindFramebuffer(GL_FRAMEBUFFER, ((TargetData_OpenGLES_1*)dest->data)->handle);
 
-    // Rendering to FBO clips outside of the viewport.  This makes textures larger than the screen viewport to fail drawing completely.
-    // However, when the viewport is adjusted to fit the texture, it scales the projected region up to the viewport.
-    // This scaling can be fixed by scaling the texture coords.
-    // At this point though, textures with smaller dimensions are clipped...
+    // Modify the viewport and projection matrix if rendering to a texture
     GLint vp[4];
-    glGetIntegerv(GL_VIEWPORT, vp);
-
-    Uint8 viewScaleX = (dest->w > vp[2]);
-    Uint8 viewScaleY = (dest->h > vp[3]);
-    float wRatio, hRatio;
-    if(viewScaleX || viewScaleY)
+    if(renderer->display != dest)
     {
-        unsigned int w = vp[2];
-        unsigned int h = vp[3];
-        int destW, destH;
-        if(renderer->display == dest)
-        {
-            GPU_GetDisplayResolution(&destW, &destH);
-        }
-        else
-        {
-            destW = dest->w;
-            destH = dest->h;
-        }
-
-        if(viewScaleX)
-        {
-            wRatio = destW/(float)w;
-            w = destW;
-        }
-        if(viewScaleY)
-        {
-            hRatio = destH/(float)h;
-            h = destH;
-        }
+        glGetIntegerv(GL_VIEWPORT, vp);
+        
+        unsigned int w = dest->w;
+        unsigned int h = dest->h;
+        
         glViewport( 0, 0, w, h);
+        
+        glMatrixMode( GL_PROJECTION );
+        glPushMatrix();
+        glLoadIdentity();
+        
+        glOrtho(0.0f, w, 0.0f, h, -1.0f, 1.0f); // Special inverted orthographic projection because tex coords are inverted already.
+        
+        glMatrixMode( GL_MODELVIEW );
     }
 
 
@@ -854,14 +836,14 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_T
 
     float x1, y1, x2, y2;
     float dx1, dy1, dx2, dy2;
-    dx1 = x;
-    dy1 = y;
     if(srcrect == NULL)
     {
+        // Scale tex coords according to actual texture dims
         x1 = 0;
         y1 = 0;
         x2 = ((float)src->w)/tex_w;
         y2 = ((float)src->h)/tex_h;
+        // Center the image on the given coords
         dx1 = x - src->w/2;
         dy1 = y - src->h/2;
         dx2 = x + src->w/2;
@@ -869,48 +851,16 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_T
     }
     else
     {
+        // Scale srcrect tex coords according to actual texture dims
         x1 = srcrect->x/(float)tex_w;
         y1 = srcrect->y/(float)tex_h;
         x2 = (srcrect->x + srcrect->w)/(float)tex_w;
         y2 = (srcrect->y + srcrect->h)/(float)tex_h;
-        //x1 = srcrect->x/(float)src->w;
-        //y1 = srcrect->y/(float)src->h;
-        //x2 = (srcrect->x + srcrect->w)/(float)src->w;
-        //y2 = (srcrect->y + srcrect->h)/(float)src->h;
+        // Center the image on the given coords
         dx1 = x - srcrect->w/2;
         dy1 = y - srcrect->h/2;
         dx2 = x + srcrect->w/2;
         dy2 = y + srcrect->h/2;
-    }
-
-    // Fix the viewport scaling
-    if(viewScaleX)
-    {
-        x1 *= wRatio;
-        x2 *= wRatio;
-    }
-    if(viewScaleY)
-    {
-        y1 *= hRatio;
-        y2 *= hRatio;
-    }
-
-    if(dest != renderer->display)
-    {
-
-        if(srcrect == NULL)
-        {
-            dy1 = y - src->h/2;
-            dy2 = y + src->h/2;
-        }
-        else
-        {
-            dy1 = y - srcrect->h/2;
-            dy2 = y + srcrect->h/2;
-        }
-
-        dy1 = renderer->display->h - dy1;
-        dy2 = renderer->display->h - dy2;
     }
 
     GLfloat gltexcoords[8];
@@ -957,8 +907,15 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_T
     glMatrixMode( GL_MODELVIEW );
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    /// restore viewport
-    glViewport(vp[0], vp[1], vp[2], vp[3]);
+    // restore viewport and projection
+    if(renderer->display != dest)
+    {
+        glViewport(vp[0], vp[1], vp[2], vp[3]);
+        
+        glMatrixMode( GL_PROJECTION );
+        glPopMatrix();
+        glMatrixMode( GL_MODELVIEW );
+    }
     return 0;
 }
 
@@ -972,9 +929,8 @@ static int BlitRotate(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect,
 
     glPushMatrix();
 
-    glTranslatef(x, (dest == renderer->display? y : renderer->display->h-y), 0);
+    glTranslatef(x, y, 0);
     glRotatef(angle, 0, 0, 1);
-    glTranslatef(0, (dest == renderer->display? 0 : -renderer->display->h), 0);
 
     int result = GPU_Blit(src, srcrect, dest, 0, 0);
 
@@ -992,7 +948,7 @@ static int BlitScale(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, 
 
     glPushMatrix();
 
-    glTranslatef(x, (dest == renderer->display? y : renderer->display->h*(1-scaleY) - y), 0);
+    glTranslatef(x, y, 0);
     glScalef(scaleX, scaleY, 1.0f);
 
     int result = GPU_Blit(src, srcrect, dest, 0, 0);
@@ -1011,10 +967,9 @@ static int BlitTransform(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcre
 
     glPushMatrix();
 
-    glTranslatef(x, (dest == renderer->display? y : renderer->display->h - y), 0);
+    glTranslatef(x, y, 0);
     glRotatef(angle, 0, 0, 1);
     glScalef(scaleX, scaleY, 1.0f);
-    glTranslatef(0, (dest == renderer->display? 0 : -renderer->display->h), 0);
 
     int result = GPU_Blit(src, srcrect, dest, 0, 0);
 
@@ -1040,20 +995,10 @@ static int BlitTransformX(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcr
     //pivot_x *= ?;
     //pivot_y *= ?;
 
-    if(dest == renderer->display)
-    {
-        glTranslatef(x, y, 0);
-        glRotatef(angle, 0, 0, 1);
-        glScalef(scaleX, scaleY, 1.0f);
-        glTranslatef(-pivot_x, -pivot_y, 0);
-    }
-    else
-    {
-        glTranslatef(x, renderer->display->h - y, 0);
-        glRotatef(-angle, 0, 0, 1);
-        glScalef(scaleX, scaleY, 1.0f);
-        glTranslatef(-pivot_x, pivot_y - renderer->display->h, 0);
-    }
+    glTranslatef(x, y, 0);
+    glRotatef(angle, 0, 0, 1);
+    glScalef(scaleX, scaleY, 1.0f);
+    glTranslatef(-pivot_x, -pivot_y, 0);
 
     int result = GPU_Blit(src, srcrect, dest, 0, 0);
 
@@ -1071,23 +1016,13 @@ static int BlitTransformMatrix(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect*
 
     glPushMatrix();
 
-    if(dest == renderer->display)
-    {
-        // column-major 3x3 to column-major 4x4 (and scooting the translations to the homogeneous column)
-        float matrix[16] = {matrix3x3[0],matrix3x3[1],matrix3x3[2],0,matrix3x3[3],matrix3x3[4],matrix3x3[5],0,0,0,matrix3x3[8],0,matrix3x3[6],matrix3x3[7],0,1};
-        glTranslatef(x, y, 0);
-        glMultMatrixf(matrix);
-    }
-    else
-    {
-        // column-major 3x3 to column-major 4x4 (and scooting the translations to the homogeneous column)
-        float matrix[16] = {matrix3x3[0],matrix3x3[1],matrix3x3[2],0,matrix3x3[3],matrix3x3[4],matrix3x3[5],0,0,0,matrix3x3[8],0,matrix3x3[6],matrix3x3[7],0,1};
-        glTranslatef(x, renderer->display->h - y, 0);
-        glScalef(1, -1, 1);
-        glMultMatrixf(matrix);
-        glScalef(1, -1, 1);
-        glTranslatef(0, -renderer->display->h, 0);
-    }
+    // column-major 3x3 to column-major 4x4 (and scooting the translations to the homogeneous column)
+    float matrix[16] = {matrix3x3[0], matrix3x3[1], matrix3x3[2], 0,
+                        matrix3x3[3], matrix3x3[4], matrix3x3[5], 0,
+                        0,            0,            matrix3x3[8], 0,
+                        matrix3x3[6], matrix3x3[7], 0,            1};
+    glTranslatef(x, y, 0);
+    glMultMatrixf(matrix);
 
     int result = GPU_Blit(src, srcrect, dest, 0, 0);
 
