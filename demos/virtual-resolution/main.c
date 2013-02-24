@@ -72,13 +72,13 @@ int main(int argc, char* argv[])
 			}
 		}
 		
-		if(keystates[SDLK_UP])
+		if(keystates[KEY_UP])
 			y -= 1;
-		else if(keystates[SDLK_DOWN])
+		else if(keystates[KEY_DOWN])
 			y += 1;
-		if(keystates[SDLK_LEFT])
+		if(keystates[KEY_LEFT])
 			x -= 1;
-		else if(keystates[SDLK_RIGHT])
+		else if(keystates[KEY_RIGHT])
 			x += 1;
 		
 		GPU_Clear(screen);
