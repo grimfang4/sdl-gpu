@@ -442,7 +442,7 @@ void GPU_SetColor(SDL_Color* color)
 		return;
 	
 	if(color == NULL)
-		current_renderer->SetRGBA(current_renderer, 0, 0, 0, 255);
+		current_renderer->SetRGBA(current_renderer, 255, 255, 255, 255);
 	else
 		current_renderer->SetRGBA(current_renderer, color->r, color->g, color->b, color->unused);
 }
