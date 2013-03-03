@@ -115,6 +115,9 @@ struct GPU_Renderer
 	/*! Load image from an image file that is supported by this renderer.  Don't forget to GPU_FreeImage() it. */
 	GPU_Image* (*LoadImage)(GPU_Renderer* renderer, const char* filename);
 	
+	/*! Save image to a file.  The file type is deduced from the extension.  Returns 0 on failure. */
+	Uint8 (*SaveImage)(GPU_Renderer* renderer, GPU_Image* image, const char* filename);
+	
 	/*! Copy an image to a new image.  Don't forget to GPU_FreeImage() both. */
 	GPU_Image* (*CopyImage)(GPU_Renderer* renderer, GPU_Image* image);
 	
@@ -333,6 +336,9 @@ GPU_Image* GPU_CreateImage(Uint16 w, Uint16 h, Uint8 channels);
 
 /*! Load image from an image file that is supported by this renderer.  Don't forget to GPU_FreeImage() it. */
 GPU_Image* GPU_LoadImage(const char* filename);
+
+/*! Save image to a file.  The file type is deduced from the extension.  Returns 0 on failure. */
+Uint8 GPU_SaveImage(GPU_Image* image, const char* filename);
 
 /*! Copy an image to a new image.  Don't forget to GPU_FreeImage() both. */
 GPU_Image* GPU_CopyImage(GPU_Image* image);

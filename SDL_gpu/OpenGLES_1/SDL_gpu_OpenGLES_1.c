@@ -7,6 +7,7 @@
 #include "SDL_gpu_OpenGLES_1_internal.h"
 #include "SOIL.h"
 #include <math.h>
+#include <strings.h>
 
 #define FORCE_POWER_OF_TWO
 
@@ -425,6 +426,73 @@ static GPU_Image* LoadImage(GPU_Renderer* renderer, const char* filename)
     return result;
 }
 
+
+static void readTexPixels(GPU_Target* source, unsigned int width, unsigned int height, GLint format, GLubyte* pixels)
+{
+    glBindFramebuffer(GL_FRAMEBUFFER, ((TargetData_OpenGLES_1*)source->data)->handle);
+    glReadPixels(0, 0, width, height, format, GL_UNSIGNED_BYTE, pixels);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+static unsigned char* getRawImageData(GPU_Image* image)
+{
+    unsigned char* data = (unsigned char*)malloc(image->w * image->h * image->channels);
+
+    GPU_Target* tgt = GPU_LoadTarget(image);
+    readTexPixels(tgt, image->w, image->h, ((ImageData_OpenGLES_1*)image->data)->format, data);
+    GPU_FreeTarget(tgt);
+
+    return data;
+}
+
+static Uint8 SaveImage(GPU_Renderer* renderer, GPU_Image* image, const char* filename)
+{
+    int image_type;
+    const char* extension;
+    Uint8 result;
+    unsigned char* data;
+
+    if(filename == NULL)
+        return 0;
+
+    if(strlen(filename) < 5)
+    {
+        GPU_LogError("GPU_SaveImage() failed: Unsupported format.\n");
+        return 0;
+    }
+
+    extension = filename + strlen(filename)-1 - 3;
+
+    /* Doesn't support length 4 extensions yet */
+    if(extension[0] != '.')
+    {
+        GPU_LogError("GPU_SaveImage() failed: Unsupported format.\n");
+        return 0;
+    }
+
+    extension++;
+    if(strcasecmp(extension, "png") == 0)
+        image_type = SOIL_SAVE_TYPE_PNG;
+    else if(strcasecmp(extension, "bmp") == 0)
+        image_type = SOIL_SAVE_TYPE_BMP;
+    else if(strcasecmp(extension, "tga") == 0)
+        image_type = SOIL_SAVE_TYPE_TGA;
+    else if(strcasecmp(extension, "dds") == 0)
+        image_type = SOIL_SAVE_TYPE_DDS;
+    else
+    {
+        GPU_LogError("GPU_SaveImage() failed: Unsupported format (%s).\n", extension);
+        return 0;
+    }
+
+    data = getRawImageData(image);
+
+    result = SOIL_save_image(filename, image_type, image->w, image->h, image->channels, data);
+
+    free(data);
+    return result;
+}
+
 static GPU_Image* CopyImage(GPU_Renderer* renderer, GPU_Image* image)
 {
     GLboolean old_blend;
@@ -689,22 +757,22 @@ static void SubSurfaceCopy(GPU_Renderer* renderer, SDL_Surface* src, SDL_Rect* s
     }
 
     // Copy data to new surface
-    #ifdef SDL_GPU_USE_SDL2
+#ifdef SDL_GPU_USE_SDL2
     SDL_BlendMode blendmode;
     SDL_GetSurfaceBlendMode(src, &blendmode);
     SDL_SetSurfaceBlendMode(src, SDL_BLENDMODE_NONE);
-    #else
+#else
     Uint32 srcAlpha = src->flags & SDL_SRCALPHA;
     SDL_SetAlpha(src, 0, src->format->alpha);
-    #endif
+#endif
 
     SDL_BlitSurface(src, &r, temp, NULL);
 
-    #ifdef SDL_GPU_USE_SDL2
+#ifdef SDL_GPU_USE_SDL2
     SDL_SetSurfaceBlendMode(src, blendmode);
-    #else
+#else
     SDL_SetAlpha(src, srcAlpha, src->format->alpha);
-    #endif
+#endif
 
     // Make surface into an image
     GPU_Image* image = GPU_CopyImageFromSurface(temp);
@@ -806,18 +874,18 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_T
     if(renderer->display != dest)
     {
         glGetIntegerv(GL_VIEWPORT, vp);
-        
+
         unsigned int w = dest->w;
         unsigned int h = dest->h;
-        
+
         glViewport( 0, 0, w, h);
-        
+
         glMatrixMode( GL_PROJECTION );
         glPushMatrix();
         glLoadIdentity();
-        
+
         glOrtho(0.0f, w, 0.0f, h, -1.0f, 1.0f); // Special inverted orthographic projection because tex coords are inverted already.
-        
+
         glMatrixMode( GL_MODELVIEW );
     }
 
@@ -911,7 +979,7 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_T
     if(renderer->display != dest)
     {
         glViewport(vp[0], vp[1], vp[2], vp[3]);
-        
+
         glMatrixMode( GL_PROJECTION );
         glPopMatrix();
         glMatrixMode( GL_MODELVIEW );
@@ -1020,7 +1088,8 @@ static int BlitTransformMatrix(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect*
     float matrix[16] = {matrix3x3[0], matrix3x3[1], matrix3x3[2], 0,
                         matrix3x3[3], matrix3x3[4], matrix3x3[5], 0,
                         0,            0,            matrix3x3[8], 0,
-                        matrix3x3[6], matrix3x3[7], 0,            1};
+                        matrix3x3[6], matrix3x3[7], 0,            1
+                       };
     glTranslatef(x, y, 0);
     glMultMatrixf(matrix);
 
@@ -1087,13 +1156,6 @@ static void SetBlending(GPU_Renderer* renderer, Uint8 enable)
 static void SetRGBA(GPU_Renderer* renderer, Uint8 r, Uint8 g, Uint8 b, Uint8 a)
 {
     glColor4f(r/255.01f, g/255.01f, b/255.01f, a/255.01f);
-}
-
-static void readTexPixels(GPU_Target* source, unsigned int width, unsigned int height, GLint format, GLubyte* pixels)
-{
-    glBindFramebuffer(GL_FRAMEBUFFER, ((TargetData_OpenGLES_1*)source->data)->handle);
-    glReadPixels(0, 0, width, height, format, GL_UNSIGNED_BYTE, pixels);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 
@@ -1669,6 +1731,7 @@ GPU_Renderer* GPU_CreateRenderer_OpenGLES_1(void)
 
     renderer->CreateImage = &CreateImage;
     renderer->LoadImage = &LoadImage;
+    renderer->SaveImage = &SaveImage;
     renderer->CopyImage = &CopyImage;
     renderer->CopyImageFromSurface = &CopyImageFromSurface;
     renderer->SubSurfaceCopy = &SubSurfaceCopy;

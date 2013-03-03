@@ -229,6 +229,14 @@ GPU_Image* GPU_LoadImage(const char* filename)
 	return current_renderer->LoadImage(current_renderer, filename);
 }
 
+Uint8 GPU_SaveImage(GPU_Image* image, const char* filename)
+{
+	if(current_renderer == NULL || current_renderer->SaveImage == NULL)
+		return 0;
+	
+	return current_renderer->SaveImage(current_renderer, image, filename);
+}
+
 GPU_Image* GPU_CopyImage(GPU_Image* image)
 {
 	if(current_renderer == NULL || current_renderer->CopyImage == NULL)
