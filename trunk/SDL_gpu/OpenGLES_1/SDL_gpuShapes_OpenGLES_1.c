@@ -585,6 +585,13 @@ static void RectRound(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1,
     END;
 }
 
+static inline void set_vertex(float* verts, int index, float x, float y, float z)
+{
+    verts[index*3] = x;
+    verts[index*3 + 1] = y;
+    verts[index*3 + 2] = z;
+}
+
 static void RectRoundFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, float radius, SDL_Color color)
 {
     if(y2 < y1)
@@ -603,27 +610,34 @@ static void RectRoundFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, flo
     BEGIN;
 
     glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
-
+    
+    //int numVerts = 8 + (int(M_PI*5)+1)*4;  // 8 + (15.7 + 1)*4
+    float glverts[120*3];
+    glVertexPointer(3, GL_FLOAT, 0, glverts);
+    glEnableClientState(GL_VERTEX_ARRAY);
+    
     float i;
-    /*glBegin(GL_TRIANGLE_FAN);
-    	glVertex3f(x1+radius,y1, z);
-    	glVertex3f(x2-radius,y1, z);
-    	for(i=(float)M_PI*1.5f;i<M_PI*2;i+=0.1f)
-    		glVertex3f(x2-radius+cos(i)*radius,y1+radius+sin(i)*radius, z);
-    	glVertex3f(x2,y1+radius, z);
-    	glVertex3f(x2,y2-radius, z);
-    	for(i=0;i<(float)M_PI*0.5f;i+=0.1f)
-    		glVertex3f(x2-radius+cos(i)*radius,y2-radius+sin(i)*radius, z);
-    	glVertex3f(x2-radius,y2, z);
-    	glVertex3f(x1+radius,y2, z);
-    	for(i=(float)M_PI*0.5f;i<M_PI;i+=0.1f)
-    		glVertex3f(x1+radius+cos(i)*radius,y2-radius+sin(i)*radius, z);
-    	glVertex3f(x1,y2-radius, z);
-    	glVertex3f(x1,y1+radius, z);
-    	for(i=(float)M_PI;i<M_PI*1.5f;i+=0.1f)
-    		glVertex3f(x1+radius+cos(i)*radius,y1+radius+sin(i)*radius, z);
-    glEnd();*/
+    int n = 0;
+    set_vertex(glverts, n++, x1+radius,y1, z);
+    set_vertex(glverts, n++, x2-radius,y1, z);
+    for(i=(float)M_PI*1.5f;i<M_PI*2;i+=0.1f)
+        set_vertex(glverts, n++, x2-radius+cos(i)*radius,y1+radius+sin(i)*radius, z);
+    set_vertex(glverts, n++, x2,y1+radius, z);
+    set_vertex(glverts, n++, x2,y2-radius, z);
+    for(i=0;i<(float)M_PI*0.5f;i+=0.1f)
+        set_vertex(glverts, n++, x2-radius+cos(i)*radius,y2-radius+sin(i)*radius, z);
+    set_vertex(glverts, n++, x2-radius,y2, z);
+    set_vertex(glverts, n++, x1+radius,y2, z);
+    for(i=(float)M_PI*0.5f;i<M_PI;i+=0.1f)
+        set_vertex(glverts, n++, x1+radius+cos(i)*radius,y2-radius+sin(i)*radius, z);
+    set_vertex(glverts, n++, x1,y2-radius, z);
+    set_vertex(glverts, n++, x1,y1+radius, z);
+    for(i=(float)M_PI;i<M_PI*1.5f;i+=0.1f)
+        set_vertex(glverts, n++, x1+radius+cos(i)*radius,y1+radius+sin(i)*radius, z);
 
+    glDrawArrays(GL_TRIANGLE_FAN, 0, n);
+    glDisableClientState(GL_VERTEX_ARRAY);
+    
     END;
 }
 

@@ -7,6 +7,7 @@
 #include "SDL_gpu_OpenGL_internal.h"
 #include "SOIL.h"
 #include <math.h>
+#include <strings.h>
 
 //#define FORCE_POWER_OF_TWO
 
@@ -393,6 +394,65 @@ static GPU_Image* LoadImage(GPU_Renderer* renderer, const char* filename)
     data->tex_h = texture.height;
 
     return result;
+}
+
+static unsigned char* getRawImageData(GPU_Image* image)
+{
+    unsigned char* data = (unsigned char*)malloc(image->w * image->h * image->channels);
+    
+    glBindTexture(GL_TEXTURE_2D, ((ImageData_OpenGL*)image->data)->handle);
+    glGetTexImage(GL_TEXTURE_2D, 0, ((ImageData_OpenGL*)image->data)->format, GL_UNSIGNED_BYTE, data);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    
+    return data;
+}
+
+static Uint8 SaveImage(GPU_Renderer* renderer, GPU_Image* image, const char* filename)
+{
+    int image_type;
+    const char* extension;
+    Uint8 result;
+    unsigned char* data;
+    
+    if(filename == NULL)
+        return 0;
+    
+    if(strlen(filename) < 5)
+    {
+        GPU_LogError("GPU_SaveImage() failed: Unsupported format.\n");
+        return 0;
+    }
+    
+    extension = filename + strlen(filename)-1 - 3;
+    
+    /* Doesn't support length 4 extensions yet */
+    if(extension[0] != '.')
+    {
+        GPU_LogError("GPU_SaveImage() failed: Unsupported format.\n");
+        return 0;
+    }
+    
+    extension++;
+    if(strcasecmp(extension, "png") == 0)
+        image_type = SOIL_SAVE_TYPE_PNG;
+    else if(strcasecmp(extension, "bmp") == 0)
+        image_type = SOIL_SAVE_TYPE_BMP;
+    else if(strcasecmp(extension, "tga") == 0)
+        image_type = SOIL_SAVE_TYPE_TGA;
+    else if(strcasecmp(extension, "dds") == 0)
+        image_type = SOIL_SAVE_TYPE_DDS;
+    else
+    {
+        GPU_LogError("GPU_SaveImage() failed: Unsupported format (%s).\n", extension);
+        return 0;
+    }
+    
+    data = getRawImageData(image);
+    
+	result = SOIL_save_image(filename, image_type, image->w, image->h, image->channels, data);
+	
+	free(data);
+	return result;
 }
 
 static GPU_Image* CopyImage(GPU_Renderer* renderer, GPU_Image* image)
@@ -1536,6 +1596,7 @@ GPU_Renderer* GPU_CreateRenderer_OpenGL(void)
 
     renderer->CreateImage = &CreateImage;
     renderer->LoadImage = &LoadImage;
+    renderer->SaveImage = &SaveImage;
     renderer->CopyImage = &CopyImage;
     renderer->CopyImageFromSurface = &CopyImageFromSurface;
     renderer->SubSurfaceCopy = &SubSurfaceCopy;
