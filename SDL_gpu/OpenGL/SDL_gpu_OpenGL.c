@@ -51,19 +51,26 @@ static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags
     SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
 
 #ifdef SDL_GPU_USE_SDL2
-    SDL_Window* window = SDL_CreateWindow("",
-                                          SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                                          w, h,
-                                          SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL);
-
-    ((RendererData_OpenGL*)renderer->data)->window = window;
+    SDL_Window* window = ((RendererData_OpenGL*)renderer->data)->window;
     if(window == NULL)
-        return NULL;
+    {
+        window = SDL_CreateWindow("",
+                                              SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+                                              w, h,
+                                              SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL);
+
+        ((RendererData_OpenGL*)renderer->data)->window = window;
+        if(window == NULL)
+        {
+            GPU_LogError("Window creation failed.\n");
+            return NULL;
+        }
+        
+        SDL_GLContext context = SDL_GL_CreateContext(window);
+        ((RendererData_OpenGL*)renderer->data)->context = context;
+    }
 
     SDL_GetWindowSize(window, &renderer->window_w, &renderer->window_h);
-
-    SDL_GLContext context = SDL_GL_CreateContext(window);
-    ((RendererData_OpenGL*)renderer->data)->context = context;
 #else
     SDL_Surface* screen = SDL_SetVideoMode(w, h, 0, flags);
 
