@@ -302,7 +302,10 @@ static GPU_Camera SetCamera(GPU_Renderer* renderer, GPU_Target* screen, GPU_Came
 static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint8 channels)
 {
     if(channels < 3 || channels > 4)
+    {
+        GPU_LogError("GPU_CreateImage() could not create an image with %d color channels.  Try 3 or 4 instead.\n", channels);
         return NULL;
+    }
 
     SOIL_Texture texture;
 
