@@ -109,7 +109,11 @@ struct GPU_Renderer
 	* \return The old camera. */
 	GPU_Camera (*SetCamera)(GPU_Renderer* renderer, GPU_Target* screen, GPU_Camera* cam);
 	
-	/*! Create a new, blank image.  Don't forget to GPU_FreeImage() it. */
+    /*! Create a new, blank image with a format determined by the number of channels requested.  Don't forget to GPU_FreeImage() it. 
+         * \param w Image width in pixels
+         * \param h Image height in pixels
+         * \param channels Number of color channels.  Usually in the range of [1,4] with 3 being RGB and 4 being RGBA.
+         */
 	GPU_Image* (*CreateImage)(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint8 channels);
 	
 	/*! Load image from an image file that is supported by this renderer.  Don't forget to GPU_FreeImage() it. */
@@ -331,7 +335,11 @@ GPU_Camera GPU_GetCamera(void);
  * \return The old camera. */
 GPU_Camera GPU_SetCamera(GPU_Target* screen, GPU_Camera* cam);
 
-/*! Create a new, blank image.  Don't forget to GPU_FreeImage() it. */
+/*! Create a new, blank image with a format determined by the number of channels requested.  Don't forget to GPU_FreeImage() it. 
+	 * \param w Image width in pixels
+	 * \param h Image height in pixels
+	 * \param channels Number of color channels.  Usually in the range of [1,4] with 3 being RGB and 4 being RGBA.
+	 */
 GPU_Image* GPU_CreateImage(Uint16 w, Uint16 h, Uint8 channels);
 
 /*! Load image from an image file that is supported by this renderer.  Don't forget to GPU_FreeImage() it. */
