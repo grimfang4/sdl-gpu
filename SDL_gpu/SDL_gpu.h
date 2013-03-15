@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+/* Auto-detect if we're using the SDL2 API by the headers available. */
 #if SDL_VERSION_ATLEAST(2,0,0)
     #define SDL_GPU_USE_SDL2
 #endif
@@ -19,7 +20,15 @@ extern "C" {
 
 typedef struct GPU_Renderer GPU_Renderer;
 
-/*! Image object for containing pixel/texture data. */
+/*! Image object for containing pixel/texture data.
+ * A GPU_Image can be created with GPU_CreateImage(), GPU_LoadImage(), GPU_CopyImage(), or GPU_CopyImageFromSurface().
+ * Free the memory with GPU_FreeImage() when you're done.
+ * \see GPU_CreateImage()
+ * \see GPU_LoadImage()
+ * \see GPU_CopyImage()
+ * \see GPU_CopyImageFromSurface()
+ * \see GPU_Target
+ */
 typedef struct GPU_Image
 {
 	struct GPU_Renderer* renderer;
@@ -30,7 +39,11 @@ typedef struct GPU_Image
 
 
 /*! Render target object for use as a blitting destination.
- * A GPU_Target can be created from a GPU_Image with GPU_LoadTarget(). */
+ * A GPU_Target can be created from a GPU_Image with GPU_LoadTarget().
+ * Free the memory with GPU_FreeTarget() when you're done.
+ * \see GPU_LoadTarget()
+ * \see GPU_FreeTarget()
+ */
 typedef struct GPU_Target
 {
 	struct GPU_Renderer* renderer;
@@ -40,13 +53,17 @@ typedef struct GPU_Target
 	SDL_Rect clipRect;
 } GPU_Target;
 
-/*! Texture filtering options */
+/*! Texture filtering options.  These affect the quality/interpolation of colors when images are scaled. 
+ * \see GPU_SetImageFilter()
+ */
 typedef unsigned int GPU_FilterEnum;
 static const GPU_FilterEnum GPU_NEAREST = 0;
 static const GPU_FilterEnum GPU_LINEAR = 1;
 static const GPU_FilterEnum GPU_LINEAR_MIPMAP = 2;
 
-/*! Blending options */
+/*! Blending options 
+ * \see GPU_SetBlendMode()
+ */
 typedef unsigned int GPU_BlendEnum;
 static const GPU_BlendEnum GPU_BLEND_NORMAL = 0;
 static const GPU_BlendEnum GPU_BLEND_MULTIPLY = 1;
@@ -60,7 +77,11 @@ static const GPU_BlendEnum GPU_BLEND_DIFFERENCE = 8;
 static const GPU_BlendEnum GPU_BLEND_PUNCHOUT = 9;
 static const GPU_BlendEnum GPU_BLEND_CUTOUT = 10;
 
-/*! Camera object that determines viewing transform. */
+/*! Camera object that determines viewing transform.
+ * \see GPU_SetCamera() 
+ * \see GPU_GetDefaultCamera() 
+ * \see GPU_GetCamera()
+ */
 typedef struct GPU_Camera
 {
 	float x, y, z;
@@ -86,157 +107,119 @@ struct GPU_Renderer
 	/*! Transforms for the global view. */
 	GPU_Camera camera;
 	
-	/*! Initializes SDL and SDL_gpu.  Creates a window and renderer context. */
+	/*! \see GPU_Init() */
 	GPU_Target* (*Init)(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags);
 	
 	/*! Sets up this renderer to act as the current renderer.  Called automatically by GPU_SetCurrentRenderer(). */
 	void (*SetAsCurrent)(GPU_Renderer* renderer);
 	
-	/*! Change the actual size of the window. */
+	/*! \see GPU_SetDisplayResolution() */
 	int (*SetDisplayResolution)(GPU_Renderer* renderer, Uint16 w, Uint16 h);
 	
-	/*! Change the logical size of the window which the drawing commands use. */
+	/*! \see GPU_SetVirtualResolution() */
 	void (*SetVirtualResolution)(GPU_Renderer* renderer, Uint16 w, Uint16 h);
 	
 	/*! Clean up the renderer state. */
 	void (*Quit)(GPU_Renderer* renderer);
 	
-	/*! Enable/disable fullscreen mode.
-	 * On some platforms, this will destroy the renderer context and require that textures be reloaded. */
+	/*! \see GPU_ToggleFullscreen() */
 	int (*ToggleFullscreen)(GPU_Renderer* renderer);
 
-	/*! Sets the renderer's current camera.  If cam is NULL, the default camera is used.
-	* \return The old camera. */
+	/*! \see GPU_SetCamera() */
 	GPU_Camera (*SetCamera)(GPU_Renderer* renderer, GPU_Target* screen, GPU_Camera* cam);
 	
-    /*! Create a new, blank image with a format determined by the number of channels requested.  Don't forget to GPU_FreeImage() it. 
-         * \param w Image width in pixels
-         * \param h Image height in pixels
-         * \param channels Number of color channels.  Usually in the range of [1,4] with 3 being RGB and 4 being RGBA.
-         */
+    /*! \see GPU_CreateImage() */
 	GPU_Image* (*CreateImage)(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint8 channels);
 	
-	/*! Load image from an image file that is supported by this renderer.  Don't forget to GPU_FreeImage() it. */
+	/*! \see GPU_LoadImage() */
 	GPU_Image* (*LoadImage)(GPU_Renderer* renderer, const char* filename);
 	
-	/*! Save image to a file.  The file type is deduced from the extension.  Returns 0 on failure. */
+	/*! \see GPU_SaveImage() */
 	Uint8 (*SaveImage)(GPU_Renderer* renderer, GPU_Image* image, const char* filename);
 	
-	/*! Copy an image to a new image.  Don't forget to GPU_FreeImage() both. */
+	/*! \see GPU_CopyImage() */
 	GPU_Image* (*CopyImage)(GPU_Renderer* renderer, GPU_Image* image);
 	
-	/*! Copy SDL_Surface data into a new GPU_Image.  Don't forget to SDL_FreeSurface() the surface and GPU_FreeImage() the image.*/
+	/*! \see GPU_CopyImageFromSurface() */
 	GPU_Image* (*CopyImageFromSurface)(GPU_Renderer* renderer, SDL_Surface* surface);
 	
-	/*! Deletes an image in the proper way for this renderer. */
+	/*! \see GPU_FreeImage() */
 	void (*FreeImage)(GPU_Renderer* renderer, GPU_Image* image);
 	
-    /*! Copies software surface data to a hardware texture.  Draws data with the upper left corner being (x,y).  */
+    /*! \see GPU_SubSurfaceCopy() */
     void (*SubSurfaceCopy)(GPU_Renderer* renderer, SDL_Surface* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y);
 
-	/*! \return The renderer's main display surface/framebuffer. */
+	/*! \see GPU_GetDisplayTarget() */
 	GPU_Target* (*GetDisplayTarget)(GPU_Renderer* renderer);
 	
-	/*! Creates a new render target from the given image. */
+	/*! \see GPU_LoadTarget() */
 	GPU_Target* (*LoadTarget)(GPU_Renderer* renderer, GPU_Image* image);
 	
-	/*! Deletes a render target in the proper way for this renderer. */
+	/*! \see GPU_FreeTarget() */
 	void (*FreeTarget)(GPU_Renderer* renderer, GPU_Target* target);
 
-	/*! Draws the 'src' image to the 'dest' render target.  Draws the image centered at (x, y).  Note that this is different from many other graphics libraries, but has none of the consequences of an arbitrary offset.
-	 * \param srcrect The region of the source image to use.
-	 * \param x Destination x-position (centered)
-	 * \param y Destination y-position (centered) */
+	/*! \see GPU_Blit() */
 	int (*Blit)(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y);
 	
-	/*! Rotates and draws the 'src' image to the 'dest' render target.  Draws the image centered at (x, y).
-	 * \param srcrect The region of the source image to use.
-	 * \param x Destination x-position (centered)
-	 * \param y Destination y-position (centered)
-	 * \param angle Rotation angle (in degrees) */
+	/*! \see GPU_BlitRotate() */
 	int (*BlitRotate)(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float angle);
 	
-	/*! Scales and draws the 'src' image to the 'dest' render target.  Draws the image centered at (x, y).
-	 * \param srcrect The region of the source image to use.
-	 * \param x Destination x-position (centered)
-	 * \param y Destination y-position (centered)
-	 * \param scaleX Horizontal stretch factor
-	 * \param scaleY Vertical stretch factor */
+	/*! \see GPU_BlitScale() */
 	int (*BlitScale)(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float scaleX, float scaleY);
 	
-	/*! Scales, rotates, and draws the 'src' image to the 'dest' render target.  Draws the image centered at (x, y).
-	 * \param srcrect The region of the source image to use.
-	 * \param x Destination x-position (centered)
-	 * \param y Destination y-position (centered)
-	 * \param angle Rotation angle (in degrees)
-	 * \param scaleX Horizontal stretch factor
-	 * \param scaleY Vertical stretch factor */
+	/*! \see GPU_BlitTransform */
 	int (*BlitTransform)(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float angle, float scaleX, float scaleY);
 	
-	/*! Scales, rotates around a pivot point, and draws the 'src' image to the 'dest' render target.  Draws the image centered at (x, y).
-	 * \param srcrect The region of the source image to use.
-	 * \param x Destination x-position (centered)
-	 * \param y Destination y-position (centered)
-	 * \param pivot_x Pivot x-position (on src image)
-	 * \param pivot_y Pivot y-position (on src image)
-	 * \param angle Rotation angle (in degrees)
-	 * \param scaleX Horizontal stretch factor
-	 * \param scaleY Vertical stretch factor */
+	/*! \see GPU_BlitTransformX() */
 	int (*BlitTransformX)(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float pivot_x, float pivot_y, float angle, float scaleX, float scaleY);
 	
-	/*! Transforms and draws the 'src' image to the 'dest' render target.  Draws the image centered at (x, y).
-	 * \param srcrect The region of the source image to use.
-	 * \param x Destination x-position (centered)
-	 * \param y Destination y-position (centered)
-	 * \param matrix3x3 3x3 matrix in column-major order (index = row + column*numColumns) */
+	/*! \see GPU_BlitTransformMatrix() */
 	int (*BlitTransformMatrix)(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float* matrix3x3);
 	
-	/*! Sets the renderer's z-depth.
-	 * \return The previous z-depth */
+	/*! \see GPU_SetX() */
 	float (*SetZ)(GPU_Renderer* renderer, float z);
 	
-	/*! Gets the renderer's z-depth.
-	 * \return The current z-depth */
+	/*! \see GPU_GetZ() */
 	float (*GetZ)(GPU_Renderer* renderer);
 	
-	/*! Loads mipmaps for the given image, if supported by the renderer. */
+	/*! \see GPU_GenerateMipmaps() */
 	void (*GenerateMipmaps)(GPU_Renderer* renderer, GPU_Image* image);
 
-	/*! Gets the current alpha blending setting. */
+	/*! \see GPU_GetBlending() */
 	Uint8 (*GetBlending)(GPU_Renderer* renderer);
 
-	/*! Enables/disables alpha blending. */
+	/*! \see GPU_SetBlending() */
 	void (*SetBlending)(GPU_Renderer* renderer, Uint8 enable);
 	
-	/*! Sets the modulation color for subsequent drawing, if supported by the renderer. */
+	/*! \see GPU_SetRGBA() */
 	void (*SetRGBA)(GPU_Renderer* renderer, Uint8 r, Uint8 g, Uint8 b, Uint8 a);
 
-	/*! Changes all pixels of a given color into another color. */
+	/*! \see GPU_ReplaceRGB() */
 	void (*ReplaceRGB)(GPU_Renderer* renderer, GPU_Image* image, Uint8 from_r, Uint8 from_g, Uint8 from_b, Uint8 to_r, Uint8 to_g, Uint8 to_b);
 	
-	/*! Changes the alpha value of all pixels of the given color to fully transparent. */
+	/*! \see GPU_MakeRGBTransparent() */
 	void (*MakeRGBTransparent)(GPU_Renderer* renderer, GPU_Image* image, Uint8 r, Uint8 g, Uint8 b);
 	
-	/*! Changes the color of each pixel by shifting the colors in HSV space. */
+	/*! \see GPU_ShiftHSV() */
 	void (*ShiftHSV)(GPU_Renderer* renderer, GPU_Image* image, int hue, int saturation, int value);
 	
-	/*! Changes the color of each pixel by shifting the colors in HSV space, skipping pixels in the given HSV color range. */
+	/*! \see GPU_ShiftHSVExcept() */
 	void (*ShiftHSVExcept)(GPU_Renderer* renderer, GPU_Image* image, int hue, int saturation, int value, int notHue, int notSat, int notVal, int range);
 	
-	/*! \return The RGBA color of a pixel. */
+	/*! \see GPU_GetPixel() */
 	SDL_Color (*GetPixel)(GPU_Renderer* renderer, GPU_Target* target, Sint16 x, Sint16 y);
 	
-	/*! Sets the image filtering mode, if supported by the renderer. */
+	/*! \see GPU_SetImageFilter() */
 	void (*SetImageFilter)(GPU_Renderer* renderer, GPU_Image* image, GPU_FilterEnum filter);
 	
-	/*! Sets the blending mode, if supported by the renderer. */
+	/*! \see GPU_SetBlendMode() */
 	void (*SetBlendMode)(GPU_Renderer* renderer, GPU_BlendEnum mode);
 
-	/*! Clears the contents of the given render target. */
+	/*! \see GPU_Clear() */
 	void (*Clear)(GPU_Renderer* renderer, GPU_Target* target);
-	/*! Fills the given render target with a color. */
+	/*! \see GPU_ClearRGBA() */
 	void (*ClearRGBA)(GPU_Renderer* renderer, GPU_Target* target, Uint8 r, Uint8 g, Uint8 b, Uint8 a);
-	/*! Updates the physical display (monitor) with the contents of the display surface/framebuffer. */
+	/*! \see GPU_Flip() */
 	void (*Flip)(GPU_Renderer* renderer);
 	
 	/*! Renderer-specific data. */
@@ -254,6 +237,8 @@ void GPU_LogWarning(const char* format, ...);
 
 /*! Prints an error log message. */
 void GPU_LogError(const char* format, ...);
+
+#define GPU_Log GPU_LogInfo
 
 
 // Setup calls
@@ -331,7 +316,9 @@ GPU_Camera GPU_GetCamera(void);
 
 
 // Defined by renderer
-/*! Sets the current renderer's current camera.  If cam is NULL, the default camera is used.
+/*! Sets the current renderer's current camera.
+ * \param screen The target to affect. (currently affects every target regardless)
+ * \param cam A pointer to the camera data to use or NULL to use the default camera.
  * \return The old camera. */
 GPU_Camera GPU_SetCamera(GPU_Target* screen, GPU_Camera* cam);
 

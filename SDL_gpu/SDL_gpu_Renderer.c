@@ -1,5 +1,6 @@
 #include "SDL_gpu.h"
 #include <string.h>
+#include <strings.h>
 
 #ifndef SDL_GPU_USE_OPENGLES_1
 	#include "OpenGL/SDL_gpu_OpenGL_internal.h"
@@ -163,7 +164,7 @@ GPU_Renderer* GPU_CreateRenderer(const char* id)
 		if(rendererRegister[i].id == NULL)
 			continue;
 		
-		if(strcmp(id, rendererRegister[i].id) == 0)
+		if(strcasecmp(id, rendererRegister[i].id) == 0)
 		{
 			if(rendererRegister[i].createFn != NULL)
 				result = rendererRegister[i].createFn();
@@ -192,7 +193,7 @@ GPU_Renderer* GPU_GetRendererByID(const char* id)
 		if(rendererMap[i] == NULL)
 			continue;
 		
-		if(strcmp(id, rendererMap[i]->id) == 0)
+		if(strcasecmp(id, rendererMap[i]->id) == 0)
 		{
 			return rendererMap[i];
 		}
@@ -229,7 +230,7 @@ void GPU_FreeRenderer(GPU_Renderer* renderer)
 		if(rendererRegister[i].id == NULL)
 			continue;
 		
-		if(strcmp(renderer->id, rendererRegister[i].id) == 0)
+		if(strcasecmp(renderer->id, rendererRegister[i].id) == 0)
 		{
 			rendererRegister[i].freeFn(renderer);
 			return;
@@ -246,7 +247,7 @@ void GPU_RemoveRenderer(const char* id)
 		if(rendererMap[i] == NULL)
 			continue;
 		
-		if(strcmp(id, rendererMap[i]->id) == 0)
+		if(strcasecmp(id, rendererMap[i]->id) == 0)
 		{
 			GPU_FreeRenderer(rendererMap[i]);
 			rendererMap[i] = NULL;

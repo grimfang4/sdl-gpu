@@ -36,6 +36,10 @@ int main(int argc, char* argv[])
 	
 	GPU_Image* image2 = GPU_CopyImage(image);
 	
+	SDL_Surface* surface = SDL_LoadBMP("data/test.bmp");
+	GPU_Image* image3 = GPU_CopyImageFromSurface(surface);
+	SDL_FreeSurface(surface);
+	
 	Uint32 startTime = SDL_GetTicks();
 	long frameCount = 0;
 	
@@ -59,6 +63,7 @@ int main(int argc, char* argv[])
 		GPU_Blit(image, NULL, screen, 150, 150);
 		GPU_Blit(image1, NULL, screen, 300, 300);
 		GPU_Blit(image2, NULL, screen, 450, 450);
+		GPU_Blit(image3, NULL, screen, 600, 150);
 		
 		GPU_Flip();
 		
@@ -72,6 +77,7 @@ int main(int argc, char* argv[])
 	GPU_FreeImage(image);
 	GPU_FreeImage(image1);
 	GPU_FreeImage(image2);
+	GPU_FreeImage(image3);
 	GPU_Quit();
 	
 	return 0;
