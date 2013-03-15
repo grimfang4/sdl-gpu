@@ -507,6 +507,8 @@ static GPU_Image* CopyImage(GPU_Renderer* renderer, GPU_Image* image)
     return result;
 }
 
+
+#ifdef SDL_GPU_USE_SDL2
 Uint32 GetSDLPixelFormatFromOpenGLFormat(GLenum format)
 {
     switch(format)
@@ -522,6 +524,163 @@ Uint32 GetSDLPixelFormatFromOpenGLFormat(GLenum format)
     }
     return SDL_PIXELFORMAT_UNKNOWN;
 }
+#endif
+
+int compareFormats(GLenum glFormat, SDL_Surface* surface)
+{
+    #ifdef SDL_GPU_USE_SDL2
+    Uint32 format = GetSDLPixelFormatFromOpenGLFormat(glFormat);
+    if(format == SDL_PIXELFORMAT_UNKNOWN)
+        return -1;
+    
+    if(format == surface->format->format)
+        return 0;
+    
+    return 1;
+    #else
+    
+    SDL_PixelFormat* format = surface->format;
+    switch(glFormat)
+    {
+        case GL_RGB:
+            return !(format->BytesPerPixel == 3 && 
+                     format->Rmask == 0x0000FF && 
+                     format->Gmask == 0x00FF00 && 
+                     format->Bmask == 0xFF0000);
+        case GL_BGR:
+            return !(format->BytesPerPixel == 3 && 
+                     format->Rmask == 0xFF0000 && 
+                     format->Gmask == 0x00FF00 && 
+                     format->Bmask == 0x0000FF);
+        case GL_RGBA:
+            return !(format->BytesPerPixel == 4 && 
+                     format->Rmask == 0x000000FF && 
+                     format->Gmask == 0x0000FF00 && 
+                     format->Bmask == 0x00FF0000 &&
+                     format->Amask == 0xFF000000);
+        case GL_BGRA:
+            return !(format->BytesPerPixel == 4 && 
+                     format->Rmask == 0xFF000000 && 
+                     format->Gmask == 0x00FF0000 && 
+                     format->Bmask == 0x0000FF00 &&
+                     format->Amask == 0x000000FF);
+        default:
+            GPU_LogError("GPU_UpdateImage() was passed an image with an invalid format.\n");
+            return 1;
+    }
+    #endif
+}
+
+// From SDL_AllocFormat()
+SDL_PixelFormat* AllocFormat(GLenum glFormat)
+{
+    #ifdef SDL_GPU_USE_SDL2
+    return SDL_AllocFormat(GetSDLPixelFormatFromOpenGLFormat(glFormat));
+    
+    #else
+    // Yes, I need to do the whole thing myself... :(
+    int channels;
+    Uint32 Rmask, Gmask, Bmask, Amask, mask;
+    
+    switch(glFormat)
+    {
+        case GL_RGB:
+            channels = 3;
+            Rmask = 0x0000FF;
+            Gmask = 0x00FF00;
+            Bmask = 0xFF0000;
+            break;
+        case GL_BGR:
+            channels = 3;
+            Rmask = 0xFF0000;
+            Gmask = 0x00FF00;
+            Bmask = 0x0000FF;
+            break;
+        case GL_RGBA:
+            channels = 4;
+            Rmask = 0x000000FF;
+            Gmask = 0x0000FF00;
+            Bmask = 0x00FF0000;
+            Amask = 0xFF000000;
+            break;
+        case GL_BGRA:
+            channels = 4;
+            Rmask = 0xFF000000;
+            Gmask = 0x00FF0000;
+            Bmask = 0x0000FF00;
+            Amask = 0x000000FF;
+            break;
+        default:
+            return NULL;
+    }
+    
+    SDL_PixelFormat* result = (SDL_PixelFormat*)malloc(sizeof(SDL_PixelFormat));
+    memset(result, 0, sizeof(SDL_PixelFormat));
+    
+	result->BitsPerPixel = 8*channels;
+	result->BytesPerPixel = channels;
+	
+    result->Rmask = Rmask;
+    result->Rshift = 0;
+    result->Rloss = 8;
+    if (Rmask) {
+        for (mask = Rmask; !(mask & 0x01); mask >>= 1)
+            ++result->Rshift;
+        for (; (mask & 0x01); mask >>= 1)
+            --result->Rloss;
+    }
+
+    result->Gmask = Gmask;
+    result->Gshift = 0;
+    result->Gloss = 8;
+    if (Gmask) {
+        for (mask = Gmask; !(mask & 0x01); mask >>= 1)
+            ++result->Gshift;
+        for (; (mask & 0x01); mask >>= 1)
+            --result->Gloss;
+    }
+
+    result->Bmask = Bmask;
+    result->Bshift = 0;
+    result->Bloss = 8;
+    if (Bmask) {
+        for (mask = Bmask; !(mask & 0x01); mask >>= 1)
+            ++result->Bshift;
+        for (; (mask & 0x01); mask >>= 1)
+            --result->Bloss;
+    }
+
+    result->Amask = Amask;
+    result->Ashift = 0;
+    result->Aloss = 8;
+    if (Amask) {
+        for (mask = Amask; !(mask & 0x01); mask >>= 1)
+            ++result->Ashift;
+        for (; (mask & 0x01); mask >>= 1)
+            --result->Aloss;
+    }
+
+    return result;
+    #endif
+}
+
+Uint8 hasColorkey(SDL_Surface* surface)
+{
+    #ifdef SDL_GPU_USE_SDL2
+    return (SDL_GetColorKey(surface, NULL) == 0);
+    #else
+    return (surface->flags & SDL_SRCCOLORKEY);
+    #endif
+}
+
+void FreeFormat(SDL_PixelFormat* format)
+{
+    #ifdef SDL_GPU_USE_SDL2
+    SDL_FreeFormat(format);
+    #else
+    free(format);
+    #endif
+}
 
 // From SDL_UpdateTexture()
 static int UpdateImage(GPU_Renderer* renderer, GPU_Image* image,
@@ -532,31 +691,31 @@ static int UpdateImage(GPU_Renderer* renderer, GPU_Image* image,
         return 0;
     
     // If format doesn't match, we need to do a copy
-    Uint32 target_format_enum = GetSDLPixelFormatFromOpenGLFormat(data->format);
-    if(target_format_enum == SDL_PIXELFORMAT_UNKNOWN)
+    int format_compare = compareFormats(data->format, surface);
+    if(format_compare < 0)
     {
         GPU_LogError("GPU_UpdateImage() failed to find a good pixel format for: %d\n", data->format);
         return 0;
     }
     
-    if(target_format_enum != surface->format->format)
+    Uint8 usingTemp = 0;
+    if(format_compare > 0)
     {
         SDL_PixelFormat *dst_fmt;
         SDL_Surface *temp = NULL;
         
-        
         /* Set up a destination surface for the texture update */
-        dst_fmt = SDL_AllocFormat(target_format_enum);
+        dst_fmt = AllocFormat(data->format);
         temp = SDL_ConvertSurface(surface, dst_fmt, 0);
-        SDL_FreeFormat(dst_fmt);
-        if (temp) {
-            UpdateImage(renderer, image, NULL, temp);
-            SDL_FreeSurface(temp);
-            return 0;
-        } else {
-            GPU_LogError("GPU_UpdateImage() failed to convert surface to pixel format: %d\n", target_format_enum);
+        FreeFormat(dst_fmt);
+        
+        if(temp == NULL) {
+            GPU_LogError("GPU_UpdateImage() failed to convert surface to proper pixel format.\n");
             return 0;
         }
+        
+        surface = temp;
+        usingTemp = 1;
     }
     
     SDL_Rect updateRect;
@@ -579,6 +738,9 @@ static int UpdateImage(GPU_Renderer* renderer, GPU_Image* image,
     glTexSubImage2D(GL_TEXTURE_2D, 0, updateRect.x, updateRect.y, updateRect.w,
                                 updateRect.h, data->format, GL_UNSIGNED_BYTE,
                                 surface->pixels);
+    
+    if(usingTemp)
+        SDL_FreeSurface(surface);
     return 1;
 }
 
@@ -586,9 +748,7 @@ static int UpdateImage(GPU_Renderer* renderer, GPU_Image* image,
 static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surface)
 {
     const SDL_PixelFormat *fmt;
-    SDL_bool needAlpha;
-    //Uint32 i;
-    //Uint32 format;
+    Uint8 needAlpha;
     GPU_Image* image;
     int channels;
 
@@ -602,32 +762,22 @@ static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surf
 
     /* See what the best texture format is */
     fmt = surface->format;
-    if (fmt->Amask || SDL_GetColorKey(surface, NULL) == 0) {
-        needAlpha = SDL_TRUE;
+    if (fmt->Amask || hasColorkey(surface)) {
+        needAlpha = 1;
     } else {
-        needAlpha = SDL_FALSE;
+        needAlpha = 0;
     }
     
     // Get appropriate storage format
     // TODO: More options would be nice...
     if(needAlpha)
     {
-        //format = GL_RGBA;
         channels = 4;
     }
     else
     {
-        //format = GL_RGB;
         channels = 3;
     }
-    /*format = renderer->info.texture_formats[0];
-    for (i = 0; i < renderer->info.num_texture_formats; ++i) {
-        if (!SDL_ISPIXELFORMAT_FOURCC(renderer->info.texture_formats[i]) &&
-            SDL_ISPIXELFORMAT_ALPHA(renderer->info.texture_formats[i]) == needAlpha) {
-            format = renderer->info.texture_formats[i];
-            break;
-        }
-    }*/
 
     image = renderer->CreateImage(renderer, surface->w, surface->h, channels);
     if (!image) {

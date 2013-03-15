@@ -57,9 +57,9 @@ add_definitions("-g -Wall -std=c99 -pedantic -DSTBI_FAILURE_USERMSG")
 add_subdirectory(SDL_gpu)
 
 
-if(SDL_gpu_BUILD_EXAMPLES)
+if(SDL_gpu_BUILD_DEMOS)
   add_subdirectory(demos)
-endif(SDL_gpu_BUILD_EXAMPLES)
+endif(SDL_gpu_BUILD_DEMOS)
 
 if(SDL_gpu_BUILD_TOOLS)
   add_subdirectory(tools)

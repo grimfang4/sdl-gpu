@@ -21,24 +21,45 @@ int main(int argc, char* argv[])
 	
 	GPU_Target* screen = GPU_Init(NULL, 800, 600, 0);
 	if(screen == NULL)
+    {
+        GPU_LogError("Failed to init SDL_gpu.\n");
 		return -1;
+    }
 	
 	printf("Using renderer: %s\n", GPU_GetCurrentRendererID());
 	
 	GPU_Image* image = GPU_LoadImage("data/test.bmp");
 	if(image == NULL)
+    {
+        GPU_LogError("Failed to load image.\n");
 		return -1;
+    }
 	
 	GPU_Image* image1 = GPU_CreateImage(200, 200, 4);
+	if(image1 == NULL)
+    {
+        GPU_LogError("Failed to create image.\n");
+		return -1;
+    }
 	GPU_Target* image1_tgt = GPU_LoadTarget(image1);
 	GPU_ClearRGBA(image1_tgt, 0, 0, 255, 255);
 	GPU_FreeTarget(image1_tgt);
 	
 	GPU_Image* image2 = GPU_CopyImage(image);
+	if(image2 == NULL)
+    {
+        GPU_LogError("Failed to copy image.\n");
+		return -1;
+    }
 	
 	SDL_Surface* surface = SDL_LoadBMP("data/test.bmp");
 	GPU_Image* image3 = GPU_CopyImageFromSurface(surface);
 	SDL_FreeSurface(surface);
+	if(image == NULL)
+    {
+        GPU_LogError("Failed to copy image from surface.\n");
+		return -1;
+    }
 	
 	Uint32 startTime = SDL_GetTicks();
 	long frameCount = 0;
