@@ -4,6 +4,8 @@
 #include <android/log.h>
 #endif
 
+#include "stb_image.h"
+
 void GPU_InitRendererRegister(void);
 
 static GPU_Renderer* current_renderer = NULL;
@@ -243,6 +245,57 @@ GPU_Image* GPU_CopyImage(GPU_Image* image)
 		return NULL;
 	
 	return current_renderer->CopyImage(current_renderer, image);
+}
+
+SDL_Surface* GPU_LoadSurface(const char* filename)
+{
+	int width, height, channels;
+	Uint32 Rmask, Gmask, Bmask, Amask = 0;
+	
+	unsigned char* data = stbi_load(filename, &width, &height, &channels, 0);
+	
+	if(data == NULL)
+	{
+		GPU_LogError("GPU_LoadSurface() failed: %s\n", stbi_failure_reason());
+		return NULL;
+	}
+	if(channels < 3 || channels > 4)
+	{
+		GPU_LogError("GPU_LoadSurface() failed to load an unsupported pixel format.\n");
+		stbi_image_free(data);
+		return NULL;
+	}
+	
+	if(channels == 3)
+	{
+	#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+		Rmask = 0xff0000;
+		Gmask = 0x00ff00;
+		Bmask = 0x0000ff;
+	#else
+		Rmask = 0x0000ff;
+		Gmask = 0x00ff00;
+		Bmask = 0xff0000;
+	#endif
+	}
+	else
+	{
+	#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+		Rmask = 0xff000000;
+		Gmask = 0x00ff0000;
+		Bmask = 0x0000ff00;
+		Amask = 0x000000ff;
+	#else
+		Rmask = 0x000000ff;
+		Gmask = 0x0000ff00;
+		Bmask = 0x00ff0000;
+		Amask = 0xff000000;
+	#endif
+	}
+	
+	SDL_Surface* result = SDL_CreateRGBSurfaceFrom(data, width, height, channels*8, width*channels, Rmask, Gmask, Bmask, Amask);
+	
+	return result;
 }
 
 GPU_Image* GPU_CopyImageFromSurface(SDL_Surface* surface)
