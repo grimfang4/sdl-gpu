@@ -508,76 +508,68 @@ static GPU_Image* CopyImage(GPU_Renderer* renderer, GPU_Image* image)
 }
 
 
-#ifdef SDL_GPU_USE_SDL2
-Uint32 GetSDLPixelFormatFromOpenGLFormat(GLenum format)
+// Returns 0 if a direct conversion is safe.  Returns 1 if a copy is needed.  Returns -1 on error.
+static int compareFormats(GLenum glFormat, SDL_Surface* surface, GLenum* surfaceFormatResult)
 {
-    switch(format)
-    {
-        case GL_RGB:
-            return SDL_PIXELFORMAT_BGR888;
-        case GL_BGR:
-            return SDL_PIXELFORMAT_RGB888;
-        case GL_RGBA:
-            return SDL_PIXELFORMAT_ABGR8888;
-        case GL_BGRA:
-            return SDL_PIXELFORMAT_ARGB8888;
-    }
-    return SDL_PIXELFORMAT_UNKNOWN;
-}
-#endif
-
-int compareFormats(GLenum glFormat, SDL_Surface* surface)
-{
-    #ifdef SDL_GPU_USE_SDL2
-    Uint32 format = GetSDLPixelFormatFromOpenGLFormat(glFormat);
-    if(format == SDL_PIXELFORMAT_UNKNOWN)
-        return -1;
-    
-    if(format == surface->format->format)
-        return 0;
-    
-    return 1;
-    #else
-    
     SDL_PixelFormat* format = surface->format;
     switch(glFormat)
     {
         case GL_RGB:
-            return !(format->BytesPerPixel == 3 && 
-                     format->Rmask == 0x0000FF && 
-                     format->Gmask == 0x00FF00 && 
-                     format->Bmask == 0xFF0000);
         case GL_BGR:
-            return !(format->BytesPerPixel == 3 && 
-                     format->Rmask == 0xFF0000 && 
-                     format->Gmask == 0x00FF00 && 
-                     format->Bmask == 0x0000FF);
+            if(format->BytesPerPixel != 3)
+				return 1;
+			
+			if(format->Rmask == 0x0000FF && 
+				format->Gmask == 0x00FF00 && 
+				format->Bmask == 0xFF0000)
+			{
+				if(surfaceFormatResult != NULL)
+					*surfaceFormatResult = GL_RGB;
+				return 0;
+			}
+            if(format->Rmask == 0xFF0000 && 
+				format->Gmask == 0x00FF00 && 
+				format->Bmask == 0x0000FF)
+			{
+				if(surfaceFormatResult != NULL)
+					*surfaceFormatResult = GL_BGR;
+				return 0;
+			}
+			return 1;
+			
         case GL_RGBA:
-            return !(format->BytesPerPixel == 4 && 
-                     format->Rmask == 0x000000FF && 
-                     format->Gmask == 0x0000FF00 && 
-                     format->Bmask == 0x00FF0000 &&
-                     format->Amask == 0xFF000000);
         case GL_BGRA:
-            return !(format->BytesPerPixel == 4 && 
-                     format->Rmask == 0xFF000000 && 
-                     format->Gmask == 0x00FF0000 && 
-                     format->Bmask == 0x0000FF00 &&
-                     format->Amask == 0x000000FF);
+            if(format->BytesPerPixel != 4)
+				return 1;
+			
+			if(format->Rmask == 0x000000FF && 
+				format->Gmask == 0x0000FF00 && 
+				format->Bmask == 0x00FF0000 &&
+				format->Amask == 0xFF000000)
+			{
+				if(surfaceFormatResult != NULL)
+					*surfaceFormatResult = GL_RGBA;
+				return 0;
+			}
+			if(format->Rmask == 0xFF000000 && 
+				format->Gmask == 0x00FF0000 && 
+				format->Bmask == 0x0000FF00 &&
+				format->Amask == 0x000000FF)
+			{
+				if(surfaceFormatResult != NULL)
+					*surfaceFormatResult = GL_BGRA;
+				return 0;
+			}
+			return 1;
         default:
             GPU_LogError("GPU_UpdateImage() was passed an image with an invalid format.\n");
-            return 1;
+            return -1;
     }
-    #endif
 }
 
 // From SDL_AllocFormat()
-SDL_PixelFormat* AllocFormat(GLenum glFormat)
+static SDL_PixelFormat* AllocFormat(GLenum glFormat)
 {
-    #ifdef SDL_GPU_USE_SDL2
-    return SDL_AllocFormat(GetSDLPixelFormatFromOpenGLFormat(glFormat));
-    
-    #else
     // Yes, I need to do the whole thing myself... :(
     int channels;
     Uint32 Rmask, Gmask, Bmask, Amask, mask;
@@ -661,10 +653,9 @@ SDL_PixelFormat* AllocFormat(GLenum glFormat)
     }
 
     return result;
-    #endif
 }
 
-Uint8 hasColorkey(SDL_Surface* surface)
+static Uint8 hasColorkey(SDL_Surface* surface)
 {
     #ifdef SDL_GPU_USE_SDL2
     return (SDL_GetColorKey(surface, NULL) == 0);
@@ -673,13 +664,34 @@ Uint8 hasColorkey(SDL_Surface* surface)
     #endif
 }
 
-void FreeFormat(SDL_PixelFormat* format)
+static void FreeFormat(SDL_PixelFormat* format)
 {
-    #ifdef SDL_GPU_USE_SDL2
-    SDL_FreeFormat(format);
-    #else
     free(format);
-    #endif
+}
+
+// Returns NULL on failure.  Returns the original surface if no copy is needed.  Returns a new surface converted to the right format otherwise.
+static SDL_Surface* copySurfaceIfNeeded(GLenum glFormat, SDL_Surface* surface, GLenum* surfaceFormatResult)
+{
+	// If format doesn't match, we need to do a copy
+    int format_compare = compareFormats(glFormat, surface, surfaceFormatResult);
+	
+	// There's a problem
+    if(format_compare < 0)
+		return NULL;
+    
+    // Copy it
+    if(format_compare > 0)
+    {
+		// Convert to the right format
+        SDL_PixelFormat* dst_fmt = AllocFormat(glFormat);
+        surface = SDL_ConvertSurface(surface, dst_fmt, 0);
+        FreeFormat(dst_fmt);
+		if(surfaceFormatResult != NULL && surface != NULL)
+			*surfaceFormatResult = glFormat;
+    }
+    
+    // No copy needed
+    return surface;
 }
 
 // From SDL_UpdateTexture()
@@ -690,34 +702,14 @@ static int UpdateImage(GPU_Renderer* renderer, GPU_Image* image,
     if(renderer == NULL || image == NULL || surface == NULL)
         return 0;
     
-    // If format doesn't match, we need to do a copy
-    int format_compare = compareFormats(data->format, surface);
-    if(format_compare < 0)
-    {
-        GPU_LogError("GPU_UpdateImage() failed to find a good pixel format for: %d\n", data->format);
-        return 0;
-    }
-    
-    Uint8 usingTemp = 0;
-    if(format_compare > 0)
-    {
-        SDL_PixelFormat *dst_fmt;
-        SDL_Surface *temp = NULL;
-        
-        /* Set up a destination surface for the texture update */
-        dst_fmt = AllocFormat(data->format);
-        temp = SDL_ConvertSurface(surface, dst_fmt, 0);
-        FreeFormat(dst_fmt);
-        
-        if(temp == NULL) {
-            GPU_LogError("GPU_UpdateImage() failed to convert surface to proper pixel format.\n");
-            return 0;
-        }
-        
-        surface = temp;
-        usingTemp = 1;
-    }
-    
+    SDL_Surface* newSurface = copySurfaceIfNeeded(data->format, surface, NULL);
+    if(newSurface == NULL)
+	{
+        GPU_LogError("GPU_UpdateImage() failed to convert surface to proper pixel format.\n");
+		return 0;
+	}
+		
+	
     SDL_Rect updateRect;
     if(rect != NULL)
         updateRect = *rect;
@@ -725,8 +717,8 @@ static int UpdateImage(GPU_Renderer* renderer, GPU_Image* image,
     {
         updateRect.x = 0;
         updateRect.y = 0;
-        updateRect.w = surface->w;
-        updateRect.h = surface->h;
+        updateRect.w = newSurface->w;
+        updateRect.h = newSurface->h;
     }
         
     
@@ -734,14 +726,103 @@ static int UpdateImage(GPU_Renderer* renderer, GPU_Image* image,
     glBindTexture(GL_TEXTURE_2D, data->handle);
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
     glPixelStorei(GL_UNPACK_ROW_LENGTH,
-                              (surface->pitch / surface->format->BytesPerPixel));
+                              (newSurface->pitch / newSurface->format->BytesPerPixel));
     glTexSubImage2D(GL_TEXTURE_2D, 0, updateRect.x, updateRect.y, updateRect.w,
                                 updateRect.h, data->format, GL_UNSIGNED_BYTE,
-                                surface->pixels);
+                                newSurface->pixels);
     
-    if(usingTemp)
-        SDL_FreeSurface(surface);
+	// Delete temporary surface
+    if(surface != newSurface)
+        SDL_FreeSurface(newSurface);
     return 1;
+}
+
+// From SDL_UpdateTexture()
+static int InitImageWithSurface(GPU_Renderer* renderer, GPU_Image* image, SDL_Surface* surface)
+{
+    ImageData_OpenGL* data = (ImageData_OpenGL*)image->data;
+    if(renderer == NULL || image == NULL || surface == NULL)
+        return 0;
+    
+    GLenum internal_format = data->format;
+    GLenum original_format = internal_format;
+	
+    SDL_Surface* newSurface = copySurfaceIfNeeded(internal_format, surface, &original_format);
+    if(newSurface == NULL)
+	{
+        GPU_LogError("GPU_InitImageWithSurface() failed to convert surface to proper pixel format.\n");
+		return 0;
+	}
+    
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, data->handle);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glPixelStorei(GL_UNPACK_ROW_LENGTH,
+                              (newSurface->pitch / newSurface->format->BytesPerPixel));
+    glTexImage2D(GL_TEXTURE_2D, 0, internal_format, newSurface->w,
+                                newSurface->h, 0, original_format, GL_UNSIGNED_BYTE,
+                                newSurface->pixels);
+    
+	// Delete temporary surface
+    if(surface != newSurface)
+        SDL_FreeSurface(newSurface);
+    return 1;
+}
+
+
+static GPU_Image* CreateUninitializedImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint8 channels)
+{
+    if(channels < 3 || channels > 4)
+    {
+        GPU_LogError("GPU_CreateUninitializedImage() could not create an image with %d color channels.  Try 3 or 4 instead.\n", channels);
+        return NULL;
+    }
+	
+	GLuint handle;
+	GLenum format;
+	if(channels == 3)
+		format = GL_RGB;
+	else
+		format = GL_RGBA;
+	
+	glGenTextures( 1, &handle );
+    if(handle == 0)
+    {
+        GPU_LogError("GPU_CreateUninitializedImage() failed to generate a texture handle.\n");
+        return NULL;
+    }
+    
+    glBindTexture( GL_TEXTURE_2D, handle );
+
+    // Set the texture's stretching properties
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
+
+    GPU_Image* result = (GPU_Image*)malloc(sizeof(GPU_Image));
+    ImageData_OpenGL* data = (ImageData_OpenGL*)malloc(sizeof(ImageData_OpenGL));
+    result->data = data;
+    result->renderer = renderer;
+    result->channels = channels;
+    data->handle = handle;
+    data->format = format;
+    data->hasMipmaps = 0;
+
+    result->w = w;
+    result->h = h;
+	// FIXME: Support POT textures
+    data->tex_w = w;
+    data->tex_h = h;
+    //data->tex_w = texture.width;
+    //data->tex_h = texture.height;
+	
+    glBindTexture( GL_TEXTURE_2D, 0 );
+
+    return result;
 }
 
 // From SDL_CreateTextureFromSurface
@@ -756,7 +837,7 @@ static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surf
         return NULL;
 
     if (!surface) {
-        SDL_SetError("GPU_CopyImageFromSurface() passed NULL surface");
+        GPU_LogError("GPU_CopyImageFromSurface() passed NULL surface.\n");
         return NULL;
     }
 
@@ -779,17 +860,17 @@ static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surf
         channels = 3;
     }
 
-    image = renderer->CreateImage(renderer, surface->w, surface->h, channels);
+    image = CreateUninitializedImage(renderer, surface->w, surface->h, channels);
     if (!image) {
         return NULL;
     }
 
     if (SDL_MUSTLOCK(surface)) {
         SDL_LockSurface(surface);
-        UpdateImage(renderer, image, NULL, surface);
+        InitImageWithSurface(renderer, image, surface);
         SDL_UnlockSurface(surface);
     } else {
-        UpdateImage(renderer, image, NULL, surface);
+        InitImageWithSurface(renderer, image, surface);
     }
 
     return image;
