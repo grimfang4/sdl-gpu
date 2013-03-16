@@ -338,6 +338,9 @@ Uint8 GPU_SaveImage(GPU_Image* image, const char* filename);
 /*! Copy an image to a new image.  Don't forget to GPU_FreeImage() both. */
 GPU_Image* GPU_CopyImage(GPU_Image* image);
 
+/*! Load surface from an image file that is supported by this renderer.  Don't forget to SDL_FreeSurface() it. */
+SDL_Surface* GPU_LoadSurface(const char* filename);
+
 /*! Copy SDL_Surface data into a new GPU_Image.  Don't forget to SDL_FreeSurface() the surface and GPU_FreeImage() the image.*/
 GPU_Image* GPU_CopyImageFromSurface(SDL_Surface* surface);
 
