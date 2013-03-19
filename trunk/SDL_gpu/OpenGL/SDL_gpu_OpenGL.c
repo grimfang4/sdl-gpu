@@ -9,22 +9,22 @@
 #include <math.h>
 #include <strings.h>
 
-//#define FORCE_POWER_OF_TWO
-
-#ifdef FORCE_POWER_OF_TWO
-#define POT_FLAG SOIL_FLAG_POWER_OF_TWO
-#else
-#define POT_FLAG 0
-#endif
 
 static Uint8 checkExtension(const char* str)
 {
     if(!glewIsExtensionSupported(str))
     {
-        fprintf(stderr, "Error: %s is not supported.\n", str);
+        GPU_LogError("OpenGL error: %s is not supported.\n", str);
         return 0;
     }
     return 1;
+}
+
+static Uint8 NPOT_enabled = 0;
+
+static void initNPOT(void)
+{
+    NPOT_enabled = glewIsExtensionSupported("GL_ARB_texture_non_power_of_two");
 }
 
 static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags)
@@ -85,12 +85,14 @@ static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags
     if (GLEW_OK != err)
     {
         /* Problem: glewInit failed, something is seriously wrong. */
-        fprintf(stderr, "Error: %s\n", glewGetErrorString(err));
+        GPU_LogError("Failed to initialize: %s\n", glewGetErrorString(err));
     }
 
     checkExtension("GL_EXT_framebuffer_object");
     checkExtension("GL_ARB_framebuffer_object"); // glGenerateMipmap
     checkExtension("GL_EXT_framebuffer_blit");
+    
+    initNPOT();
 
     glEnable( GL_TEXTURE_2D );
     glClearColor( 0.0f, 0.0f, 0.0f, 0.0f );
@@ -312,7 +314,7 @@ static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint8 
     unsigned char* pixels = (unsigned char*)malloc(w*h*channels);
     memset(pixels, 0, w*h*channels);
 
-    texture = SOIL_create_OGL_texture(pixels, w, h, channels, 0, POT_FLAG);
+    texture = SOIL_create_OGL_texture(pixels, w, h, channels, 0, NPOT_enabled? 0 : SOIL_FLAG_POWER_OF_TWO);
     if(texture.texture == 0)
     {
         free(pixels);
@@ -351,7 +353,7 @@ static GPU_Image* LoadImage(GPU_Renderer* renderer, const char* filename)
 {
     SOIL_Texture texture;                 // This is a handle to our texture object
 
-    texture = SOIL_load_OGL_texture(filename, SOIL_LOAD_AUTO, 0, POT_FLAG);
+    texture = SOIL_load_OGL_texture(filename, SOIL_LOAD_AUTO, 0, NPOT_enabled? 0 : SOIL_FLAG_POWER_OF_TWO);
     if(texture.texture == 0)
     {
         GPU_LogError("Failed to load image \"%s\": %s.\n", filename, SOIL_last_result());
@@ -516,6 +518,7 @@ static int compareFormats(GLenum glFormat, SDL_Surface* surface, GLenum* surface
     {
         case GL_RGB:
         case GL_BGR:
+            //GPU_LogError("Wanted 3 channels, got %d\n", format->BytesPerPixel);
             if(format->BytesPerPixel != 3)
 				return 1;
 			
@@ -535,17 +538,26 @@ static int compareFormats(GLenum glFormat, SDL_Surface* surface, GLenum* surface
 					*surfaceFormatResult = GL_BGR;
 				return 0;
 			}
+            //GPU_LogError("Masks don't match\n");
 			return 1;
 			
         case GL_RGBA:
         case GL_BGRA:
+            //GPU_LogError("Wanted 4 channels, got %d\n", format->BytesPerPixel);
             if(format->BytesPerPixel != 4)
 				return 1;
 			
 			if(format->Rmask == 0x000000FF && 
 				format->Gmask == 0x0000FF00 && 
-				format->Bmask == 0x00FF0000 &&
-				format->Amask == 0xFF000000)
+				format->Bmask == 0x00FF0000)
+			{
+				if(surfaceFormatResult != NULL)
+					*surfaceFormatResult = GL_RGBA;
+				return 0;
+			}
+			if(format->Rmask == 0x0000FF && 
+				format->Gmask == 0x00FF00 && 
+				format->Bmask == 0xFF0000)
 			{
 				if(surfaceFormatResult != NULL)
 					*surfaceFormatResult = GL_RGBA;
@@ -553,13 +565,21 @@ static int compareFormats(GLenum glFormat, SDL_Surface* surface, GLenum* surface
 			}
 			if(format->Rmask == 0xFF000000 && 
 				format->Gmask == 0x00FF0000 && 
-				format->Bmask == 0x0000FF00 &&
-				format->Amask == 0x000000FF)
+				format->Bmask == 0x0000FF00)
 			{
 				if(surfaceFormatResult != NULL)
 					*surfaceFormatResult = GL_BGRA;
 				return 0;
 			}
+			if(format->Rmask == 0xFF0000 && 
+				format->Gmask == 0x00FF00 && 
+				format->Bmask == 0x0000FF)
+			{
+				if(surfaceFormatResult != NULL)
+					*surfaceFormatResult = GL_BGRA;
+				return 0;
+			}
+            //GPU_LogError("Masks don't match: %X, %X, %X\n", format->Rmask, format->Gmask, format->Bmask);
 			return 1;
         default:
             GPU_LogError("GPU_UpdateImage() was passed an image with an invalid format.\n");
@@ -724,9 +744,9 @@ static int UpdateImage(GPU_Renderer* renderer, GPU_Image* image,
     
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, data->handle);
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glPixelStorei(GL_UNPACK_ROW_LENGTH,
-                              (newSurface->pitch / newSurface->format->BytesPerPixel));
+    //glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    //glPixelStorei(GL_UNPACK_ROW_LENGTH,
+    //                          (newSurface->pitch / newSurface->format->BytesPerPixel));
     glTexSubImage2D(GL_TEXTURE_2D, 0, updateRect.x, updateRect.y, updateRect.w,
                                 updateRect.h, data->format, GL_UNSIGNED_BYTE,
                                 newSurface->pixels);
@@ -754,11 +774,18 @@ static int InitImageWithSurface(GPU_Renderer* renderer, GPU_Image* image, SDL_Su
 		return 0;
 	}
     
+    //GPU_LogError("Original Pitch: %d, Bpp: %d\n", surface->pitch, surface->format->BytesPerPixel);
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, data->handle);
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glPixelStorei(GL_UNPACK_ROW_LENGTH,
-                              (newSurface->pitch / newSurface->format->BytesPerPixel));
+    int alignment = 1;
+    if(newSurface->format->BytesPerPixel == 4)
+        alignment = 4;
+    
+    // FIXME: Support POT textures here
+    //GPU_LogError("New Pitch: %d, Bpp: %d, Alignment: %d\n", newSurface->pitch, newSurface->format->BytesPerPixel, alignment);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
+    //glPixelStorei(GL_UNPACK_ROW_LENGTH,
+    //                          (newSurface->pitch / newSurface->format->BytesPerPixel));
     glTexImage2D(GL_TEXTURE_2D, 0, internal_format, newSurface->w,
                                 newSurface->h, 0, original_format, GL_UNSIGNED_BYTE,
                                 newSurface->pixels);
@@ -814,11 +841,9 @@ static GPU_Image* CreateUninitializedImage(GPU_Renderer* renderer, Uint16 w, Uin
 
     result->w = w;
     result->h = h;
-	// FIXME: Support POT textures
+    // POT textures will change this later
     data->tex_w = w;
     data->tex_h = h;
-    //data->tex_w = texture.width;
-    //data->tex_h = texture.height;
 	
     glBindTexture( GL_TEXTURE_2D, 0 );
 
