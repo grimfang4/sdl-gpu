@@ -915,10 +915,10 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_T
     if(srcrect == NULL)
     {
         // Scale tex coords according to actual texture dims
-        x1 = 0;
-        y1 = 0;
-        x2 = ((float)src->w)/tex_w;
-        y2 = ((float)src->h)/tex_h;
+        x1 = 0.1f/tex_w;
+        y1 = 0.1f/tex_h;
+        x2 = ((float)src->w - 0.1f)/tex_w;
+        y2 = ((float)src->h - 0.1f)/tex_h;
         // Center the image on the given coords
         dx1 = x - src->w/2;
         dy1 = y - src->h/2;
@@ -928,10 +928,10 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_T
     else
     {
         // Scale srcrect tex coords according to actual texture dims
-        x1 = srcrect->x/(float)tex_w;
-        y1 = srcrect->y/(float)tex_h;
-        x2 = (srcrect->x + srcrect->w)/(float)tex_w;
-        y2 = (srcrect->y + srcrect->h)/(float)tex_h;
+        x1 = (srcrect->x + 0.1f)/(float)tex_w;
+        y1 = (srcrect->y + 0.1f)/(float)tex_h;
+        x2 = (srcrect->x + srcrect->w - 0.1f)/(float)tex_w;
+        y2 = (srcrect->y + srcrect->h - 0.1f)/(float)tex_h;
         // Center the image on the given coords
         dx1 = x - srcrect->w/2;
         dy1 = y - srcrect->h/2;
@@ -1138,7 +1138,7 @@ static void GenerateMipmaps(GPU_Renderer* renderer, GPU_Image* image)
     GLint filter;
     glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, &filter);
     if(filter == GL_LINEAR)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
 }
 
 
@@ -1531,7 +1531,7 @@ static void SetImageFilter(GPU_Renderer* renderer, GPU_Image* image, GPU_FilterE
     if(filter == GPU_LINEAR)
     {
         if(((ImageData_OpenGLES_1*)image->data)->hasMipmaps)
-            minFilter = GL_NEAREST_MIPMAP_LINEAR;
+            minFilter = GL_LINEAR_MIPMAP_NEAREST;
         else
             minFilter = GL_LINEAR;
 

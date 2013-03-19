@@ -1275,7 +1275,7 @@ static void GenerateMipmaps(GPU_Renderer* renderer, GPU_Image* image)
     GLint filter;
     glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, &filter);
     if(filter == GL_LINEAR)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
 }
 
 static Uint8 GetBlending(GPU_Renderer* renderer)
@@ -1659,7 +1659,7 @@ static void SetImageFilter(GPU_Renderer* renderer, GPU_Image* image, GPU_FilterE
     if(filter == GPU_LINEAR)
     {
         if(((ImageData_OpenGL*)image->data)->hasMipmaps)
-            minFilter = GL_NEAREST_MIPMAP_LINEAR;
+            minFilter = GL_LINEAR_MIPMAP_NEAREST;
         else
             minFilter = GL_LINEAR;
 
