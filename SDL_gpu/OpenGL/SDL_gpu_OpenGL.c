@@ -352,61 +352,15 @@ static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint8 
 
 static GPU_Image* LoadImage(GPU_Renderer* renderer, const char* filename)
 {
-    SOIL_Texture texture;                 // This is a handle to our texture object
-
-    texture = SOIL_load_OGL_texture(filename, SOIL_LOAD_AUTO, 0, NPOT_enabled? 0 : SOIL_FLAG_POWER_OF_TWO);
-    if(texture.texture == 0)
+    SDL_Surface* surface = GPU_LoadSurface(filename);
+    if(surface == NULL)
     {
-        GPU_LogError("Failed to load image \"%s\": %s.\n", filename, SOIL_last_result());
+        GPU_LogError("Failed to load image \"%s\"\n", filename);
         return NULL;
     }
-
-    // Set the texture's stretching properties
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
-    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
-
-
-    GPU_Image* result = (GPU_Image*)malloc(sizeof(GPU_Image));
-    ImageData_OpenGL* data = (ImageData_OpenGL*)malloc(sizeof(ImageData_OpenGL));
-    result->target = NULL;
-    result->data = data;
-    result->renderer = renderer;
-
-    int channels = 0;
-    switch(texture.format)
-    {
-    case GL_LUMINANCE:
-        channels = 1;
-        break;
-    case GL_LUMINANCE_ALPHA:
-        channels = 2;
-        break;
-    case GL_BGR:
-    case GL_RGB:
-        channels = 3;
-        break;
-    case GL_BGRA:
-    case GL_RGBA:
-        channels = 4;
-        break;
-    }
-
-    result->channels = channels;
-
-    data->handle = texture.texture;
-    data->format = texture.format;
-    data->hasMipmaps = 0;
-
-    result->w = texture.data_width;
-    result->h = texture.data_height;
-    data->tex_w = texture.width;
-    data->tex_h = texture.height;
-
+    
+    GPU_Image* result = renderer->CopyImageFromSurface(renderer, surface);
+    SDL_FreeSurface(surface);
     return result;
 }
 
