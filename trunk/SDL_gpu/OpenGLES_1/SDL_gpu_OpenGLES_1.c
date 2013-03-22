@@ -126,7 +126,6 @@ static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags
     renderer->display->data = (TargetData_OpenGLES_1*)malloc(sizeof(TargetData_OpenGLES_1));
 
     ((TargetData_OpenGLES_1*)renderer->display->data)->handle = 0;
-    ((TargetData_OpenGLES_1*)renderer->display->data)->textureHandle = 0;
     renderer->display->renderer = renderer;
     renderer->display->w = renderer->window_w;
     renderer->display->h = renderer->window_h;
@@ -361,80 +360,15 @@ static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint8 
 
 static GPU_Image* LoadImage(GPU_Renderer* renderer, const char* filename)
 {
-    SOIL_Texture texture;
-
-#ifdef ANDROID
-    // Must use SDL_RWops to access the assets directory automatically
-    SDL_RWops* rwops = SDL_RWFromFile(filename, "r");
-    if(rwops == NULL)
-        return NULL;
-    int data_bytes = SDL_RWseek(rwops, 0, SEEK_END);
-    SDL_RWseek(rwops, 0, SEEK_SET);
-    char* c_data = (char*)malloc(data_bytes);
-    SDL_RWread(rwops, c_data, 1, data_bytes);
-    texture = SOIL_load_OGL_texture_from_memory(c_data, data_bytes, SOIL_LOAD_AUTO, 0, POT_FLAG);
-    free(c_data);
-    SDL_FreeRW(rwops);
-#else
-    texture = SOIL_load_OGL_texture(filename, SOIL_LOAD_AUTO, 0, POT_FLAG);
-#endif
-    if(texture.texture == 0)
+    SDL_Surface* surface = GPU_LoadSurface(filename);
+    if(surface == NULL)
     {
-        GPU_LogError("Failed to load image \"%s\": %s.\n", filename, SOIL_last_result());
+        GPU_LogError("Failed to load image \"%s\"\n", filename);
         return NULL;
     }
-
-    // Set the texture's stretching properties
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
-    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
-
-
-    GPU_Image* result = (GPU_Image*)malloc(sizeof(GPU_Image));
-    ImageData_OpenGLES_1* data = (ImageData_OpenGLES_1*)malloc(sizeof(ImageData_OpenGLES_1));
-    result->target = NULL;
-    result->data = data;
-    result->renderer = renderer;
-
-    int channels = 0;
-    switch(texture.format)
-    {
-    case GL_LUMINANCE:
-        channels = 1;
-        break;
-    case GL_LUMINANCE_ALPHA:
-        channels = 2;
-        break;
-#ifdef GL_BGR
-    case GL_BGR:
-#endif
-    case GL_RGB:
-        channels = 3;
-        break;
-#ifdef GL_BGRA
-    case GL_BGRA:
-#endif
-    case GL_RGBA:
-        channels = 4;
-        break;
-    }
-
-    result->channels = channels;
-
-    data->handle = texture.texture;
-    data->format = texture.format;
-    data->hasMipmaps = 0;
-
-    result->w = texture.data_width;
-    result->h = texture.data_height;
-    data->tex_w = texture.width;
-    data->tex_h = texture.height;
-
-    return result;
+    
+    GPU_Image* result = renderer->CopyImageFromSurface(renderer, surface);
+    SDL_FreeSurface(surface);
 }
 
 
@@ -597,94 +531,329 @@ SDL_Surface* convertToPOTSurface(SDL_Surface* surface)
     return result;
 }
 
-#define USE_SOIL_MORE
 
-static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surface)
+// Returns 0 if a direct conversion is safe.  Returns 1 if a copy is needed.  Returns -1 on error.
+static int compareFormats(GLenum glFormat, SDL_Surface* surface, GLenum* surfaceFormatResult)
 {
-    if(surface == NULL)
-        return NULL;
-
-#ifdef USE_SOIL_MORE
-    SOIL_Texture tex = SOIL_create_OGL_texture(surface->pixels, surface->w, surface->h, surface->format->BytesPerPixel, 0, POT_FLAG);
-    GPU_Image* result = (GPU_Image*)malloc(sizeof(GPU_Image));
-    ImageData_OpenGLES_1* data = (ImageData_OpenGLES_1*)malloc(sizeof(ImageData_OpenGLES_1));
-    result->target = NULL;
-    result->data = data;
-    result->renderer = renderer;
-
-    result->channels = surface->format->BytesPerPixel;
-
-    data->handle = tex.texture;
-    data->format = tex.format;
-    data->hasMipmaps = 0;
-
-    result->w = surface->w;
-    result->h = surface->h;
-    data->tex_w = tex.width;
-    data->tex_h = tex.height;
-#else
-
-    // From gpwiki.org
-    GLuint texture;			// This is a handle to our texture object
-    GLenum texture_format;
-    GLint  nOfColors;
-    int w, h;
-
-    Uint8 pot_w = isPowerOfTwo(surface->w);
-    Uint8 pot_h = isPowerOfTwo(surface->h);
-    if(!pot_w || !pot_h)
+    SDL_PixelFormat* format = surface->format;
+    switch(glFormat)
     {
-        // Make it power-of-two
-        SDL_Surface* POTSurface = convertToPOTSurface(surface);
-        if(POTSurface == NULL)
-            return NULL;
+        case GL_RGB:
+            #ifdef GL_BGR
+        case GL_BGR:
+            #endif
+            //GPU_LogError("Wanted 3 channels, got %d\n", format->BytesPerPixel);
+            if(format->BytesPerPixel != 3)
+				return 1;
+			
+			if(format->Rmask == 0x0000FF && 
+				format->Gmask == 0x00FF00 && 
+				format->Bmask == 0xFF0000)
+			{
+				if(surfaceFormatResult != NULL)
+					*surfaceFormatResult = GL_RGB;
+				return 0;
+			}
+            #ifdef GL_BGR
+            if(format->Rmask == 0xFF0000 && 
+				format->Gmask == 0x00FF00 && 
+				format->Bmask == 0x0000FF)
+			{
+				if(surfaceFormatResult != NULL)
+					*surfaceFormatResult = GL_BGR;
+				return 0;
+			}
+			#endif
+            //GPU_LogError("Masks don't match\n");
+			return 1;
+			
+        case GL_RGBA:
+            #ifdef GL_BGRA
+        case GL_BGRA:
+            #endif
+            //GPU_LogError("Wanted 4 channels, got %d\n", format->BytesPerPixel);
+            if(format->BytesPerPixel != 4)
+				return 1;
+			
+			if(format->Rmask == 0x000000FF && 
+				format->Gmask == 0x0000FF00 && 
+				format->Bmask == 0x00FF0000)
+			{
+				if(surfaceFormatResult != NULL)
+					*surfaceFormatResult = GL_RGBA;
+				return 0;
+			}
+			if(format->Rmask == 0x0000FF && 
+				format->Gmask == 0x00FF00 && 
+				format->Bmask == 0xFF0000)
+			{
+				if(surfaceFormatResult != NULL)
+					*surfaceFormatResult = GL_RGBA;
+				return 0;
+			}
+            #ifdef GL_BGRA
+			if(format->Rmask == 0xFF000000 && 
+				format->Gmask == 0x00FF0000 && 
+				format->Bmask == 0x0000FF00)
+			{
+				if(surfaceFormatResult != NULL)
+					*surfaceFormatResult = GL_BGRA;
+				return 0;
+			}
+			if(format->Rmask == 0xFF0000 && 
+				format->Gmask == 0x00FF00 && 
+				format->Bmask == 0x0000FF)
+			{
+				if(surfaceFormatResult != NULL)
+					*surfaceFormatResult = GL_BGRA;
+				return 0;
+			}
+			#endif
+            //GPU_LogError("Masks don't match: %X, %X, %X\n", format->Rmask, format->Gmask, format->Bmask);
+			return 1;
+        default:
+            GPU_LogError("GPU_UpdateImage() was passed an image with an invalid format.\n");
+            return -1;
+    }
+}
 
-        // Try again to create image using that surface
-        GPU_Image* result = CopyImageFromSurface(renderer, POTSurface);
-        SDL_FreeSurface(POTSurface);
-        if(result == NULL)
+// From SDL_AllocFormat()
+static SDL_PixelFormat* AllocFormat(GLenum glFormat)
+{
+    // Yes, I need to do the whole thing myself... :(
+    int channels;
+    Uint32 Rmask, Gmask, Bmask, Amask, mask;
+    
+    switch(glFormat)
+    {
+        case GL_RGB:
+            channels = 3;
+            Rmask = 0x0000FF;
+            Gmask = 0x00FF00;
+            Bmask = 0xFF0000;
+            break;
+            #ifdef GL_BGR
+        case GL_BGR:
+            channels = 3;
+            Rmask = 0xFF0000;
+            Gmask = 0x00FF00;
+            Bmask = 0x0000FF;
+            break;
+            #endif
+        case GL_RGBA:
+            channels = 4;
+            Rmask = 0x000000FF;
+            Gmask = 0x0000FF00;
+            Bmask = 0x00FF0000;
+            Amask = 0xFF000000;
+            break;
+            #ifdef GL_BGRA
+        case GL_BGRA:
+            channels = 4;
+            Rmask = 0xFF000000;
+            Gmask = 0x00FF0000;
+            Bmask = 0x0000FF00;
+            Amask = 0x000000FF;
+            break;
+            #endif
+        default:
             return NULL;
-        // Set actual image dimensions (NPOT)
-        result->w = surface->w;
-        result->h = surface->h;
-
-        Uint16 tex_w = ((ImageData_OpenGLES_1*)result->data)->tex_w;
-        Uint16 tex_h = ((ImageData_OpenGLES_1*)result->data)->tex_h;
-        return result;
+    }
+    
+    SDL_PixelFormat* result = (SDL_PixelFormat*)malloc(sizeof(SDL_PixelFormat));
+    memset(result, 0, sizeof(SDL_PixelFormat));
+    
+	result->BitsPerPixel = 8*channels;
+	result->BytesPerPixel = channels;
+	
+    result->Rmask = Rmask;
+    result->Rshift = 0;
+    result->Rloss = 8;
+    if (Rmask) {
+        for (mask = Rmask; !(mask & 0x01); mask >>= 1)
+            ++result->Rshift;
+        for (; (mask & 0x01); mask >>= 1)
+            --result->Rloss;
     }
 
-    // get the number of channels in the SDL surface
-    nOfColors = surface->format->BytesPerPixel;
-    if (nOfColors == 4)     // contains an alpha channel
-    {
-#ifdef GL_BGRA
-        if (surface->format->Rmask == 0x000000ff)
-            texture_format = GL_RGBA;
-        else
-            texture_format = GL_BGRA;
-#else
-        texture_format = GL_RGBA;
-#endif
-    } else if (nOfColors == 3)     // no alpha channel
-    {
-#ifdef GL_BGR
-        if (surface->format->Rmask == 0x000000ff)
-            texture_format = GL_RGB;
-        else
-            texture_format = GL_BGR;
-#else
-        texture_format = GL_RGB;
-#endif
-    } else {
-        //printf("warning: the image is not truecolor..  this will probably break\n");
-        return NULL;
+    result->Gmask = Gmask;
+    result->Gshift = 0;
+    result->Gloss = 8;
+    if (Gmask) {
+        for (mask = Gmask; !(mask & 0x01); mask >>= 1)
+            ++result->Gshift;
+        for (; (mask & 0x01); mask >>= 1)
+            --result->Gloss;
     }
 
-    // Have OpenGLES generate a texture object handle for us
-    glGenTextures( 1, &texture );
+    result->Bmask = Bmask;
+    result->Bshift = 0;
+    result->Bloss = 8;
+    if (Bmask) {
+        for (mask = Bmask; !(mask & 0x01); mask >>= 1)
+            ++result->Bshift;
+        for (; (mask & 0x01); mask >>= 1)
+            --result->Bloss;
+    }
 
-    // Bind the texture object
-    glBindTexture( GL_TEXTURE_2D, texture );
+    result->Amask = Amask;
+    result->Ashift = 0;
+    result->Aloss = 8;
+    if (Amask) {
+        for (mask = Amask; !(mask & 0x01); mask >>= 1)
+            ++result->Ashift;
+        for (; (mask & 0x01); mask >>= 1)
+            --result->Aloss;
+    }
+
+    return result;
+}
+
+static Uint8 hasColorkey(SDL_Surface* surface)
+{
+    #ifdef SDL_GPU_USE_SDL2
+    return (SDL_GetColorKey(surface, NULL) == 0);
+    #else
+    return (surface->flags & SDL_SRCCOLORKEY);
+    #endif
+}
+
+static void FreeFormat(SDL_PixelFormat* format)
+{
+    free(format);
+}
+
+// Returns NULL on failure.  Returns the original surface if no copy is needed.  Returns a new surface converted to the right format otherwise.
+static SDL_Surface* copySurfaceIfNeeded(GLenum glFormat, SDL_Surface* surface, GLenum* surfaceFormatResult)
+{
+	// If format doesn't match, we need to do a copy
+    int format_compare = compareFormats(glFormat, surface, surfaceFormatResult);
+	
+	// There's a problem
+    if(format_compare < 0)
+		return NULL;
+    
+    // Copy it
+    if(format_compare > 0)
+    {
+		// Convert to the right format
+        SDL_PixelFormat* dst_fmt = AllocFormat(glFormat);
+        surface = SDL_ConvertSurface(surface, dst_fmt, 0);
+        FreeFormat(dst_fmt);
+		if(surfaceFormatResult != NULL && surface != NULL)
+			*surfaceFormatResult = glFormat;
+    }
+    
+    // No copy needed
+    return surface;
+}
+
+// From SDL_UpdateTexture()
+static int UpdateImage(GPU_Renderer* renderer, GPU_Image* image,
+                 const SDL_Rect* rect, SDL_Surface* surface)
+{
+    ImageData_OpenGLES_1* data = (ImageData_OpenGLES_1*)image->data;
+    if(renderer == NULL || image == NULL || surface == NULL)
+        return 0;
+    
+    SDL_Surface* newSurface = copySurfaceIfNeeded(data->format, surface, NULL);
+    if(newSurface == NULL)
+	{
+        GPU_LogError("GPU_UpdateImage() failed to convert surface to proper pixel format.\n");
+		return 0;
+	}
+		
+	
+    SDL_Rect updateRect;
+    if(rect != NULL)
+        updateRect = *rect;
+    else
+    {
+        updateRect.x = 0;
+        updateRect.y = 0;
+        updateRect.w = newSurface->w;
+        updateRect.h = newSurface->h;
+    }
+        
+    
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, data->handle);
+    //glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    //glPixelStorei(GL_UNPACK_ROW_LENGTH,
+    //                          (newSurface->pitch / newSurface->format->BytesPerPixel));
+    glTexSubImage2D(GL_TEXTURE_2D, 0, updateRect.x, updateRect.y, updateRect.w,
+                                updateRect.h, data->format, GL_UNSIGNED_BYTE,
+                                newSurface->pixels);
+    
+	// Delete temporary surface
+    if(surface != newSurface)
+        SDL_FreeSurface(newSurface);
+    return 1;
+}
+
+// From SDL_UpdateTexture()
+static int InitImageWithSurface(GPU_Renderer* renderer, GPU_Image* image, SDL_Surface* surface)
+{
+    ImageData_OpenGLES_1* data = (ImageData_OpenGLES_1*)image->data;
+    if(renderer == NULL || image == NULL || surface == NULL)
+        return 0;
+    
+    GLenum internal_format = data->format;
+    GLenum original_format = internal_format;
+	
+    SDL_Surface* newSurface = copySurfaceIfNeeded(internal_format, surface, &original_format);
+    if(newSurface == NULL)
+	{
+        GPU_LogError("GPU_InitImageWithSurface() failed to convert surface to proper pixel format.\n");
+		return 0;
+	}
+    
+    //GPU_LogError("Original Pitch: %d, Bpp: %d\n", surface->pitch, surface->format->BytesPerPixel);
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, data->handle);
+    int alignment = 1;
+    if(newSurface->format->BytesPerPixel == 4)
+        alignment = 4;
+    
+    // FIXME: Support POT textures here
+    //GPU_LogError("New Pitch: %d, Bpp: %d, Alignment: %d\n", newSurface->pitch, newSurface->format->BytesPerPixel, alignment);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
+    //glPixelStorei(GL_UNPACK_ROW_LENGTH,
+    //                          (newSurface->pitch / newSurface->format->BytesPerPixel));
+    glTexImage2D(GL_TEXTURE_2D, 0, internal_format, newSurface->w,
+                                newSurface->h, 0, original_format, GL_UNSIGNED_BYTE,
+                                newSurface->pixels);
+    
+	// Delete temporary surface
+    if(surface != newSurface)
+        SDL_FreeSurface(newSurface);
+    return 1;
+}
+
+
+static GPU_Image* CreateUninitializedImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint8 channels)
+{
+    if(channels < 3 || channels > 4)
+    {
+        GPU_LogError("GPU_CreateUninitializedImage() could not create an image with %d color channels.  Try 3 or 4 instead.\n", channels);
+        return NULL;
+    }
+	
+	GLuint handle;
+	GLenum format;
+	if(channels == 3)
+		format = GL_RGB;
+	else
+		format = GL_RGBA;
+	
+	glGenTextures( 1, &handle );
+    if(handle == 0)
+    {
+        GPU_LogError("GPU_CreateUninitializedImage() failed to generate a texture handle.\n");
+        return NULL;
+    }
+    
+    glBindTexture( GL_TEXTURE_2D, handle );
 
     // Set the texture's stretching properties
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
@@ -693,35 +862,78 @@ static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surf
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
     glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
-    // Edit the texture object's image data using the information SDL_Surface gives us
-    glTexImage2D( GL_TEXTURE_2D, 0, texture_format, surface->w, surface->h, 0,
-                  texture_format, GL_UNSIGNED_BYTE, surface->pixels );
-
     glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
-
-    //glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &w);
-    //glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &h);
-    w = surface->w;
-    h = surface->h;
 
     GPU_Image* result = (GPU_Image*)malloc(sizeof(GPU_Image));
     ImageData_OpenGLES_1* data = (ImageData_OpenGLES_1*)malloc(sizeof(ImageData_OpenGLES_1));
+    result->target = NULL;
     result->data = data;
     result->renderer = renderer;
-
-    result->channels = nOfColors;
-
-    data->handle = texture;
-    data->format = texture_format;
+    result->channels = channels;
+    data->handle = handle;
+    data->format = format;
     data->hasMipmaps = 0;
 
-    result->w = surface->w;
-    result->h = surface->h;
+    result->w = w;
+    result->h = h;
+    // POT textures will change this later
     data->tex_w = w;
     data->tex_h = h;
-#endif
+	
+    glBindTexture( GL_TEXTURE_2D, 0 );
 
     return result;
+}
+
+// From SDL_CreateTextureFromSurface
+static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surface)
+{
+    const SDL_PixelFormat *fmt;
+    Uint8 needAlpha;
+    GPU_Image* image;
+    int channels;
+
+    if(renderer == NULL)
+        return NULL;
+
+    if (!surface) {
+        GPU_LogError("GPU_CopyImageFromSurface() passed NULL surface.\n");
+        return NULL;
+    }
+
+    /* See what the best texture format is */
+    fmt = surface->format;
+    if (fmt->Amask || hasColorkey(surface)) {
+        needAlpha = 1;
+    } else {
+        needAlpha = 0;
+    }
+    
+    // Get appropriate storage format
+    // TODO: More options would be nice...
+    if(needAlpha)
+    {
+        channels = 4;
+    }
+    else
+    {
+        channels = 3;
+    }
+
+    image = CreateUninitializedImage(renderer, surface->w, surface->h, channels);
+    if (!image) {
+        return NULL;
+    }
+
+    if (SDL_MUSTLOCK(surface)) {
+        SDL_LockSurface(surface);
+        InitImageWithSurface(renderer, image, surface);
+        SDL_UnlockSurface(surface);
+    } else {
+        InitImageWithSurface(renderer, image, surface);
+    }
+
+    return image;
 }
 
 
@@ -762,7 +974,7 @@ static void SubSurfaceCopy(GPU_Renderer* renderer, SDL_Surface* src, SDL_Rect* s
 
     glBindTexture( GL_TEXTURE_2D, ((ImageData_OpenGLES_1*)dest->image->data)->handle);
 
-    //GLenum texture_format = GL_RGBA;//((ImageData_OpenGL*)image->data)->format;
+    //GLenum texture_format = GL_RGBA;//((ImageData_OpenGLES_1*)image->data)->format;
 
     SDL_Surface* temp = SDL_CreateRGBSurface(SDL_SWSURFACE, r.w, r.h, src->format->BitsPerPixel, src->format->Rmask, src->format->Gmask, src->format->Bmask, src->format->Amask);
 
