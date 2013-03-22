@@ -122,6 +122,7 @@ static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags
     if(renderer->display == NULL)
         renderer->display = (GPU_Target*)malloc(sizeof(GPU_Target));
 
+    renderer->display->image = NULL;
     renderer->display->data = (TargetData_OpenGLES_1*)malloc(sizeof(TargetData_OpenGLES_1));
 
     ((TargetData_OpenGLES_1*)renderer->display->data)->handle = 0;
@@ -340,6 +341,7 @@ static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint8 
 
     GPU_Image* result = (GPU_Image*)malloc(sizeof(GPU_Image));
     ImageData_OpenGLES_1* data = (ImageData_OpenGLES_1*)malloc(sizeof(ImageData_OpenGLES_1));
+    result->target = NULL;
     result->data = data;
     result->renderer = renderer;
     result->channels = channels;
@@ -394,6 +396,7 @@ static GPU_Image* LoadImage(GPU_Renderer* renderer, const char* filename)
 
     GPU_Image* result = (GPU_Image*)malloc(sizeof(GPU_Image));
     ImageData_OpenGLES_1* data = (ImageData_OpenGLES_1*)malloc(sizeof(ImageData_OpenGLES_1));
+    result->target = NULL;
     result->data = data;
     result->renderer = renderer;
 
@@ -605,6 +608,7 @@ static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surf
     SOIL_Texture tex = SOIL_create_OGL_texture(surface->pixels, surface->w, surface->h, surface->format->BytesPerPixel, 0, POT_FLAG);
     GPU_Image* result = (GPU_Image*)malloc(sizeof(GPU_Image));
     ImageData_OpenGLES_1* data = (ImageData_OpenGLES_1*)malloc(sizeof(ImageData_OpenGLES_1));
+    result->target = NULL;
     result->data = data;
     result->renderer = renderer;
 
@@ -725,6 +729,10 @@ static void FreeImage(GPU_Renderer* renderer, GPU_Image* image)
 {
     if(image == NULL)
         return;
+    
+    // Delete the attached target first
+    if(image->target != NULL)
+        renderer->FreeTarget(renderer, image->target);
 
     glDeleteTextures( 1, &((ImageData_OpenGLES_1*)image->data)->handle);
     free(image->data);
@@ -735,7 +743,7 @@ static void FreeImage(GPU_Renderer* renderer, GPU_Image* image)
 
 static void SubSurfaceCopy(GPU_Renderer* renderer, SDL_Surface* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y)
 {
-    if(renderer == NULL || src == NULL || dest == NULL)
+    if(renderer == NULL || src == NULL || dest == NULL || dest->image == NULL)
         return;
 
     if(renderer != dest->renderer)
@@ -752,7 +760,7 @@ static void SubSurfaceCopy(GPU_Renderer* renderer, SDL_Surface* src, SDL_Rect* s
         r.h = src->h;
     }
 
-    glBindTexture( GL_TEXTURE_2D, ((TargetData_OpenGLES_1*)dest->data)->textureHandle );
+    glBindTexture( GL_TEXTURE_2D, ((ImageData_OpenGLES_1*)dest->image->data)->handle);
 
     //GLenum texture_format = GL_RGBA;//((ImageData_OpenGL*)image->data)->format;
 
@@ -815,6 +823,9 @@ static GPU_Target* LoadTarget(GPU_Renderer* renderer, GPU_Image* image)
     if(renderer == NULL || image == NULL)
         return NULL;
 
+    if(image->target != NULL)
+        return image->target;
+    
     GLuint handle;
     // Create framebuffer object
     glGenFramebuffers(1, &handle);
@@ -834,8 +845,8 @@ static GPU_Target* LoadTarget(GPU_Renderer* renderer, GPU_Image* image)
     result->data = data;
     data->handle = handle;
     data->format = ((ImageData_OpenGLES_1*)image->data)->format;
-    data->textureHandle = ((ImageData_OpenGLES_1*)image->data)->handle;
     result->renderer = renderer;
+    result->image = image;
     result->w = image->w;
     result->h = image->h;
 
@@ -844,7 +855,8 @@ static GPU_Target* LoadTarget(GPU_Renderer* renderer, GPU_Image* image)
     result->clipRect.y = 0;
     result->clipRect.w = image->w;
     result->clipRect.h = image->h;
-
+    
+    image->target = result;
     return result;
 }
 
@@ -857,6 +869,8 @@ static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
 
     glDeleteFramebuffers(1, &((TargetData_OpenGLES_1*)target->data)->handle);
 
+    if(target->image != NULL)
+        target->image->target = NULL;  // Remove reference to this object
     free(target->data);
     free(target);
 }

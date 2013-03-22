@@ -27,7 +27,6 @@ typedef struct TargetData_OpenGLES_1
 {
 	GLuint handle;
 	GLenum format;
-	GLuint textureHandle;
 } TargetData_OpenGLES_1;
 
 

@@ -19,6 +19,7 @@ extern "C" {
 
 
 typedef struct GPU_Renderer GPU_Renderer;
+typedef struct GPU_Target GPU_Target;
 
 /*! Image object for containing pixel/texture data.
  * A GPU_Image can be created with GPU_CreateImage(), GPU_LoadImage(), GPU_CopyImage(), or GPU_CopyImageFromSurface().
@@ -32,6 +33,7 @@ typedef struct GPU_Renderer GPU_Renderer;
 typedef struct GPU_Image
 {
 	struct GPU_Renderer* renderer;
+	GPU_Target* target;
 	void* data;
 	Uint16 w, h;
 	int channels;
@@ -44,14 +46,15 @@ typedef struct GPU_Image
  * \see GPU_LoadTarget()
  * \see GPU_FreeTarget()
  */
-typedef struct GPU_Target
+struct GPU_Target
 {
 	struct GPU_Renderer* renderer;
+	GPU_Image* image;
 	void* data;
 	Uint16 w, h;
 	Uint8 useClip;
 	SDL_Rect clipRect;
-} GPU_Target;
+};
 
 /*! Texture filtering options.  These affect the quality/interpolation of colors when images are scaled. 
  * \see GPU_SetImageFilter()
@@ -344,7 +347,7 @@ SDL_Surface* GPU_LoadSurface(const char* filename);
 /*! Copy SDL_Surface data into a new GPU_Image.  Don't forget to SDL_FreeSurface() the surface and GPU_FreeImage() the image.*/
 GPU_Image* GPU_CopyImageFromSurface(SDL_Surface* surface);
 
-/*! Deletes an image in the proper way for this renderer. */
+/*! Deletes an image in the proper way for this renderer.  Also deletes the corresponding GPU_Target if applicable.  Be careful not to use that target afterward! */
 void GPU_FreeImage(GPU_Image* image);
 
 /*! Copies software surface data to a hardware texture.  Draws data with the upper left corner being (x,y).  */
@@ -353,7 +356,7 @@ void GPU_SubSurfaceCopy(SDL_Surface* src, SDL_Rect* srcrect, GPU_Target* dest, S
 /*! \return The renderer's main display surface/framebuffer. */
 GPU_Target* GPU_GetDisplayTarget(void);
 
-/*! Creates a new render target from the given image. */
+/*! Creates a new render target from the given image.  It can then be accessed from image->target. */
 GPU_Target* GPU_LoadTarget(GPU_Image* image);
 
 /*! Deletes a render target in the proper way for this renderer. */
