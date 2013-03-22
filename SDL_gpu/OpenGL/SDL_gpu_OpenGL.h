@@ -27,7 +27,6 @@ typedef struct TargetData_OpenGL
 {
 	GLuint handle;
 	GLenum format;
-	GLuint textureHandle;
 } TargetData_OpenGL;
 
 
