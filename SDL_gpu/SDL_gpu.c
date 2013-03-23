@@ -247,6 +247,14 @@ GPU_Image* GPU_CopyImage(GPU_Image* image)
 	return current_renderer->CopyImage(current_renderer, image);
 }
 
+void GPU_UpdateImage(GPU_Image* image, const SDL_Rect* rect, SDL_Surface* surface)
+{
+	if(current_renderer == NULL || current_renderer->UpdateImage == NULL)
+		return;
+	
+	current_renderer->UpdateImage(current_renderer, image, rect, surface);
+}
+
 SDL_Surface* GPU_LoadSurface(const char* filename)
 {
 	int width, height, channels;
