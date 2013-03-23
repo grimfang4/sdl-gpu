@@ -252,7 +252,33 @@ SDL_Surface* GPU_LoadSurface(const char* filename)
 	int width, height, channels;
 	Uint32 Rmask, Gmask, Bmask, Amask = 0;
 	
+	if(filename == NULL)
+        return NULL;
+	
+	#ifdef ANDROID
+	unsigned char* data;
+	if(strlen(filename) > 0 && filename[0] != '/')
+	{
+        // Must use SDL_RWops to access the assets directory automatically
+        SDL_RWops* rwops = SDL_RWFromFile(filename, "r");
+        if(rwops == NULL)
+            return NULL;
+        int data_bytes = SDL_RWseek(rwops, 0, SEEK_END);
+        SDL_RWseek(rwops, 0, SEEK_SET);
+        unsigned char* c_data = (unsigned char*)malloc(data_bytes);
+        SDL_RWread(rwops, c_data, 1, data_bytes);
+        data = stbi_load_from_memory(c_data, data_bytes, &width, &height, &channels, 0);
+        free(c_data);
+        SDL_FreeRW(rwops);
+	}
+	else
+    {
+        // Absolute filename
+        data = stbi_load(filename, &width, &height, &channels, 0);
+    }
+	#else
 	unsigned char* data = stbi_load(filename, &width, &height, &channels, 0);
+	#endif
 	
 	if(data == NULL)
 	{

@@ -9,23 +9,46 @@
 #include <math.h>
 #include <strings.h>
 
-#define FORCE_POWER_OF_TWO
-
-#ifdef FORCE_POWER_OF_TWO
-#define POT_FLAG SOIL_FLAG_POWER_OF_TWO
-#else
-#define POT_FLAG 0
-#endif
+static Uint8 isExtensionSupported(const char* extension_str)
+{
+    return (strstr((char const*)glGetString(GL_EXTENSIONS), extension_str ) != NULL);
+}
 
 static Uint8 checkExtension(const char* str)
 {
-    if(!glewIsExtensionSupported(str))
+    if(!isExtensionSupported(str))
     {
-        GPU_LogError("Error: Extension %s is not supported.\n", str);
+        GPU_LogError("OpenGL error: %s is not supported.\n", str);
         return 0;
     }
     return 1;
 }
+
+static Uint8 NPOT_enabled = 0;
+
+static void initNPOT(void)
+{
+    NPOT_enabled = isExtensionSupported("GL_OES_texture_npot");
+}
+
+
+
+static inline Uint8 isPowerOfTwo(unsigned int x)
+{
+  return ((x != 0) && !(x & (x - 1)));
+}
+
+static inline unsigned int getNearestPowerOf2(unsigned int n)
+{
+	unsigned int x = 1;
+	while(x < n)
+	{
+		x <<= 1;
+	}
+	return x;
+}
+
+
 
 static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags)
 {
@@ -91,11 +114,14 @@ static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags
         fprintf(stderr, "Error: %s\n", glewGetErrorString(err));
     }
 
-    checkExtension("GL_EXT_framebuffer_object");
-    checkExtension("GL_ARB_framebuffer_object"); // glGenerateMipmap
-    checkExtension("GL_EXT_framebuffer_blit");
+    checkExtension("GL_OES_framebuffer_object");
+    checkExtension("GL_OES_blend_func_separate");
+    checkExtension("GL_OES_blend_subtract");  // for glBlendEquationOES
+    
 #endif
 
+    initNPOT();
+    
     GPU_LogInfo("Setting up OpenGL state.\n");
     glEnable( GL_TEXTURE_2D );
     glClearColor( 0.0f, 0.0f, 0.0f, 0.0f );
@@ -308,26 +334,29 @@ static GPU_Camera SetCamera(GPU_Renderer* renderer, GPU_Target* screen, GPU_Came
 }
 
 
-static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint8 channels)
+static GPU_Image* CreateUninitializedImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint8 channels)
 {
     if(channels < 3 || channels > 4)
     {
-        GPU_LogError("GPU_CreateImage() could not create an image with %d color channels.  Try 3 or 4 instead.\n", channels);
+        GPU_LogError("GPU_CreateUninitializedImage() could not create an image with %d color channels.  Try 3 or 4 instead.\n", channels);
         return NULL;
     }
-
-    SOIL_Texture texture;
-
-    unsigned char* pixels = (unsigned char*)malloc(w*h*channels);
-    memset(pixels, 0, w*h*channels);
-
-
-    texture = SOIL_create_OGL_texture(pixels, w, h, channels, 0, POT_FLAG);
-    if(texture.texture == 0)
+	
+	GLuint handle;
+	GLenum format;
+	if(channels == 3)
+		format = GL_RGB;
+	else
+		format = GL_RGBA;
+	
+	glGenTextures( 1, &handle );
+    if(handle == 0)
     {
-        free(pixels);
+        GPU_LogError("GPU_CreateUninitializedImage() failed to generate a texture handle.\n");
         return NULL;
     }
+    
+    glBindTexture( GL_TEXTURE_2D, handle );
 
     // Set the texture's stretching properties
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
@@ -344,17 +373,61 @@ static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint8 
     result->data = data;
     result->renderer = renderer;
     result->channels = channels;
-    data->handle = texture.texture;
-    data->format = texture.format;
+    data->handle = handle;
+    data->format = format;
     data->hasMipmaps = 0;
 
-    result->w = w;//texture.data_width;
-    result->h = h;//texture.data_height;
-    data->tex_w = texture.width;
-    data->tex_h = texture.height;
+    result->w = w;
+    result->h = h;
+    // POT textures will change this later
+    data->tex_w = w;
+    data->tex_h = h;
+	
+    glBindTexture( GL_TEXTURE_2D, 0 );
 
-    free(pixels);
+    return result;
+}
 
+
+static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint8 channels)
+{
+    if(channels < 3 || channels > 4)
+    {
+        GPU_LogError("GPU_CreateImage() could not create an image with %d color channels.  Try 3 or 4 instead.\n", channels);
+        return NULL;
+    }
+
+    GPU_Image* result = CreateUninitializedImage(renderer, w, h, channels);
+    
+    if(result == NULL)
+    {
+        GPU_LogError("GPU_CreateImage() could not create %ux%ux%u image.\n", w, h, channels);
+        return NULL;
+    }
+    
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture( GL_TEXTURE_2D, ((ImageData_OpenGLES_1*)(result->data))->handle );
+    
+    GLenum internal_format = ((ImageData_OpenGLES_1*)(result->data))->format;
+    w = result->w;
+    h = result->h;
+    if(!NPOT_enabled)
+    {
+        if(!isPowerOfTwo(w))
+            w = getNearestPowerOf2(w);
+        if(!isPowerOfTwo(h))
+            h = getNearestPowerOf2(h);
+    }
+    
+    // Initialize texture
+    glTexImage2D(GL_TEXTURE_2D, 0, internal_format, w, h, 0, 
+                                   internal_format, GL_UNSIGNED_BYTE, NULL);
+    // Tell SDL_gpu what we got.
+    ((ImageData_OpenGLES_1*)(result->data))->tex_w = w;
+    ((ImageData_OpenGLES_1*)(result->data))->tex_h = h;
+    
+    glBindTexture( GL_TEXTURE_2D, 0 );
+    
     return result;
 }
 
@@ -369,6 +442,8 @@ static GPU_Image* LoadImage(GPU_Renderer* renderer, const char* filename)
     
     GPU_Image* result = renderer->CopyImageFromSurface(renderer, surface);
     SDL_FreeSurface(surface);
+    
+    return result;
 }
 
 
@@ -481,55 +556,6 @@ static GPU_Image* CopyImage(GPU_Renderer* renderer, GPU_Image* image)
 }
 
 
-// From LazyFoo and everywhere
-GLuint nextPowerOfTwo(GLuint n)
-{
-    if(n != 0)
-    {
-        n--;
-        n |= (n >> 1); //Or first 2 bits
-        n |= (n >> 2); //Or next 2 bits
-        n |= (n >> 4); //Or next 4 bits
-        n |= (n >> 8); //Or next 8 bits
-        n |= (n >> 16); //Or next 16 bits
-        n++;
-    }
-
-    return n;
-}
-
-Uint8 isPowerOfTwo(GLuint n)
-{
-    return ((n & (n-1)) == 0);
-}
-
-SDL_Surface* convertToPOTSurface(SDL_Surface* surface)
-{
-    if(surface == NULL || surface->w == 0 || surface->h == 0)
-        return NULL;
-
-    GLint w, h;
-    w = nextPowerOfTwo(surface->w);
-    h = nextPowerOfTwo(surface->h);
-    // Create new surface of the correct dimensions
-    SDL_Surface* result = SDL_CreateRGBSurface(SDL_SWSURFACE, w, h, surface->format->BitsPerPixel, surface->format->Rmask, surface->format->Gmask, surface->format->Bmask, surface->format->Amask);
-
-    /*
-    // Copy image data without alpha blending
-    SDL_BlendMode blendMode = SDL_GetSurfaceBlendMode(surface, &blendMode);
-    SDL_SetSurfaceBlendMode(surface, SDL_BLENDMODE_NONE);
-    SDL_BlitSurface(surface, NULL, result, NULL);
-    SDL_SetSurfaceBlendMode(surface, blendMode);*/
-
-    // Copy the data
-    if(!copy_to_subimage(surface->pixels, surface->w, surface->h, surface->format->BytesPerPixel, result->pixels, result->w, result->h))
-    {
-        SDL_FreeSurface(result);
-        return NULL;
-    }
-
-    return result;
-}
 
 
 // Returns 0 if a direct conversion is safe.  Returns 1 if a copy is needed.  Returns -1 on error.
@@ -808,81 +834,56 @@ static int InitImageWithSurface(GPU_Renderer* renderer, GPU_Image* image, SDL_Su
 		return 0;
 	}
     
-    //GPU_LogError("Original Pitch: %d, Bpp: %d\n", surface->pitch, surface->format->BytesPerPixel);
+    Uint8 need_power_of_two_upload = 0;
+    unsigned int w = newSurface->w;
+    unsigned int h = newSurface->h;
+    if(!NPOT_enabled)
+    {
+        if(!isPowerOfTwo(w))
+        {
+            w = getNearestPowerOf2(w);
+            need_power_of_two_upload = 1;
+        }
+        if(!isPowerOfTwo(h))
+        {
+            h = getNearestPowerOf2(h);
+            need_power_of_two_upload = 1;
+        }
+    }
+    
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, data->handle);
     int alignment = 1;
     if(newSurface->format->BytesPerPixel == 4)
         alignment = 4;
     
-    // FIXME: Support POT textures here
-    //GPU_LogError("New Pitch: %d, Bpp: %d, Alignment: %d\n", newSurface->pitch, newSurface->format->BytesPerPixel, alignment);
     glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
     //glPixelStorei(GL_UNPACK_ROW_LENGTH,
     //                          (newSurface->pitch / newSurface->format->BytesPerPixel));
-    glTexImage2D(GL_TEXTURE_2D, 0, internal_format, newSurface->w,
-                                newSurface->h, 0, original_format, GL_UNSIGNED_BYTE,
-                                newSurface->pixels);
+    if(!need_power_of_two_upload)
+    {
+        glTexImage2D(GL_TEXTURE_2D, 0, internal_format, newSurface->w, newSurface->h, 0, 
+                                       original_format, GL_UNSIGNED_BYTE, newSurface->pixels);
+    }
+    else
+    {
+        // Create POT texture
+        glTexImage2D(GL_TEXTURE_2D, 0, internal_format, w, h, 0, 
+                                       original_format, GL_UNSIGNED_BYTE, NULL);
+        
+        // Upload NPOT data
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, newSurface->w, newSurface->h,
+                                          original_format, GL_UNSIGNED_BYTE, newSurface->pixels);
+        
+        // Tell SDL_gpu what we did.
+        ((ImageData_OpenGLES_1*)(image->data))->tex_w = w;
+        ((ImageData_OpenGLES_1*)(image->data))->tex_h = h;
+    }
     
 	// Delete temporary surface
     if(surface != newSurface)
         SDL_FreeSurface(newSurface);
     return 1;
-}
-
-
-static GPU_Image* CreateUninitializedImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint8 channels)
-{
-    if(channels < 3 || channels > 4)
-    {
-        GPU_LogError("GPU_CreateUninitializedImage() could not create an image with %d color channels.  Try 3 or 4 instead.\n", channels);
-        return NULL;
-    }
-	
-	GLuint handle;
-	GLenum format;
-	if(channels == 3)
-		format = GL_RGB;
-	else
-		format = GL_RGBA;
-	
-	glGenTextures( 1, &handle );
-    if(handle == 0)
-    {
-        GPU_LogError("GPU_CreateUninitializedImage() failed to generate a texture handle.\n");
-        return NULL;
-    }
-    
-    glBindTexture( GL_TEXTURE_2D, handle );
-
-    // Set the texture's stretching properties
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
-    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
-
-    GPU_Image* result = (GPU_Image*)malloc(sizeof(GPU_Image));
-    ImageData_OpenGLES_1* data = (ImageData_OpenGLES_1*)malloc(sizeof(ImageData_OpenGLES_1));
-    result->target = NULL;
-    result->data = data;
-    result->renderer = renderer;
-    result->channels = channels;
-    data->handle = handle;
-    data->format = format;
-    data->hasMipmaps = 0;
-
-    result->w = w;
-    result->h = h;
-    // POT textures will change this later
-    data->tex_w = w;
-    data->tex_h = h;
-	
-    glBindTexture( GL_TEXTURE_2D, 0 );
-
-    return result;
 }
 
 // From SDL_CreateTextureFromSurface
@@ -919,19 +920,19 @@ static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surf
     {
         channels = 3;
     }
-
+    
     image = CreateUninitializedImage(renderer, surface->w, surface->h, channels);
-    if (!image) {
+    if(image == NULL)
         return NULL;
-    }
 
-    if (SDL_MUSTLOCK(surface)) {
+    if(SDL_MUSTLOCK(surface))
+    {
         SDL_LockSurface(surface);
         InitImageWithSurface(renderer, image, surface);
         SDL_UnlockSurface(surface);
-    } else {
-        InitImageWithSurface(renderer, image, surface);
     }
+    else
+        InitImageWithSurface(renderer, image, surface);
 
     return image;
 }
@@ -1356,7 +1357,7 @@ static void GenerateMipmaps(GPU_Renderer* renderer, GPU_Image* image)
 {
     if(image == NULL)
         return;
-
+        
     glBindTexture( GL_TEXTURE_2D, ((ImageData_OpenGLES_1*)image->data)->handle );
     glGenerateMipmap(GL_TEXTURE_2D);
     ((ImageData_OpenGLES_1*)image->data)->hasMipmaps = 1;
@@ -1780,7 +1781,7 @@ static void SetImageFilter(GPU_Renderer* renderer, GPU_Image* image, GPU_FilterE
 
 static void SetBlendMode(GPU_Renderer* renderer, GPU_BlendEnum mode)
 {
-    /*if(mode == GPU_BLEND_NORMAL)
+    if(mode == GPU_BLEND_NORMAL)
     {
     	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     	glBlendEquation(GL_FUNC_ADD);
@@ -1810,16 +1811,6 @@ static void SetBlendMode(GPU_Renderer* renderer, GPU_BlendEnum mode)
     	glBlendFuncSeparate(GL_ONE, GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA);
     	glBlendEquation(GL_FUNC_SUBTRACT);
     }
-    else if(mode == GPU_BLEND_DARKEN)
-    {
-    	glBlendFunc(GL_ONE, GL_ONE);
-    	glBlendEquation(GL_MIN);
-    }
-    else if(mode == GPU_BLEND_LIGHTEN)
-    {
-    	glBlendFunc(GL_ONE, GL_ONE);
-    	glBlendEquation(GL_MAX);
-    }
     else if(mode == GPU_BLEND_DIFFERENCE)
     {
     	glBlendFuncSeparate(GL_ONE, GL_ONE, GL_ONE, GL_ZERO);
@@ -1834,7 +1825,7 @@ static void SetBlendMode(GPU_Renderer* renderer, GPU_BlendEnum mode)
     {
     	glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA);
     	glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
-    }*/
+    }
 }
 
 
