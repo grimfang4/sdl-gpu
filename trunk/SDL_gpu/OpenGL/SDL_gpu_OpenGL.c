@@ -671,18 +671,18 @@ static SDL_Surface* copySurfaceIfNeeded(GLenum glFormat, SDL_Surface* surface, G
 }
 
 // From SDL_UpdateTexture()
-static int UpdateImage(GPU_Renderer* renderer, GPU_Image* image,
-                 const SDL_Rect* rect, SDL_Surface* surface)
+static void UpdateImage(GPU_Renderer* renderer, GPU_Image* image, const SDL_Rect* rect, SDL_Surface* surface)
 {
-    ImageData_OpenGL* data = (ImageData_OpenGL*)image->data;
     if(renderer == NULL || image == NULL || surface == NULL)
-        return 0;
+        return;
+    
+    ImageData_OpenGL* data = (ImageData_OpenGL*)image->data;
     
     SDL_Surface* newSurface = copySurfaceIfNeeded(data->format, surface, NULL);
     if(newSurface == NULL)
 	{
         GPU_LogError("GPU_UpdateImage() failed to convert surface to proper pixel format.\n");
-		return 0;
+		return;
 	}
 		
 	
@@ -700,7 +700,10 @@ static int UpdateImage(GPU_Renderer* renderer, GPU_Image* image,
     
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, data->handle);
-    //glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    int alignment = 1;
+    if(newSurface->format->BytesPerPixel == 4)
+        alignment = 4;
+    glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
     //glPixelStorei(GL_UNPACK_ROW_LENGTH,
     //                          (newSurface->pitch / newSurface->format->BytesPerPixel));
     glTexSubImage2D(GL_TEXTURE_2D, 0, updateRect.x, updateRect.y, updateRect.w,
@@ -710,7 +713,6 @@ static int UpdateImage(GPU_Renderer* renderer, GPU_Image* image,
 	// Delete temporary surface
     if(surface != newSurface)
         SDL_FreeSurface(newSurface);
-    return 1;
 }
 
 // From SDL_UpdateTexture()
@@ -1845,6 +1847,7 @@ GPU_Renderer* GPU_CreateRenderer_OpenGL(void)
     renderer->LoadImage = &LoadImage;
     renderer->SaveImage = &SaveImage;
     renderer->CopyImage = &CopyImage;
+    renderer->UpdateImage = &UpdateImage;
     renderer->CopyImageFromSurface = &CopyImageFromSurface;
     renderer->SubSurfaceCopy = &SubSurfaceCopy;
     renderer->FreeImage = &FreeImage;

@@ -143,6 +143,9 @@ struct GPU_Renderer
 	/*! \see GPU_CopyImage() */
 	GPU_Image* (*CopyImage)(GPU_Renderer* renderer, GPU_Image* image);
 	
+	/*! \see GPU_UpdateImage */
+	void (*UpdateImage)(GPU_Renderer* renderer, GPU_Image* image, const SDL_Rect* rect, SDL_Surface* surface);
+	
 	/*! \see GPU_CopyImageFromSurface() */
 	GPU_Image* (*CopyImageFromSurface)(GPU_Renderer* renderer, SDL_Surface* surface);
 	
@@ -340,6 +343,9 @@ Uint8 GPU_SaveImage(GPU_Image* image, const char* filename);
 
 /*! Copy an image to a new image.  Don't forget to GPU_FreeImage() both. */
 GPU_Image* GPU_CopyImage(GPU_Image* image);
+
+/*! Update an image from surface data. */
+void GPU_UpdateImage(GPU_Image* image, const SDL_Rect* rect, SDL_Surface* surface);
 
 /*! Load surface from an image file that is supported by this renderer.  Don't forget to SDL_FreeSurface() it. */
 SDL_Surface* GPU_LoadSurface(const char* filename);
