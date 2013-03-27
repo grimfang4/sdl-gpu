@@ -15,6 +15,9 @@ svn checkout http://sdl-gpu.googlecode.com/svn/trunk/ sdl-gpu
 To check out everything, including the pre-generated documentation:
 svn checkout http://sdl-gpu.googlecode.com/svn/ sdl-gpu
 
+For just the current library code, use:
+svn checkout http://sdl-gpu.googlecode.com/svn/trunk/ sdl-gpu
+
 
 ============
 DEPENDENCIES
@@ -22,16 +25,15 @@ DEPENDENCIES
 
 SDL 1.2 or SDL 2.0 (www.libsdl.org)
 A rendering backend
-	Currently implemented: OpenGL, OpenGLES_1
+	Currently implemented: OpenGL 1.1, OpenGL 2.0, OpenGLESv1
 
 
 ===================
 SELECTING RENDERERS
 ===================
 
-Currently, the build process does not handle the selection of renderers to include in the library.
-You must manually change the file references in <trunk>/CMakeLists.txt and <trunk>/SDL_gpu/CMakeLists.txt.
-Also, the renderer must be specified in GPU_RegisterRenderers() in SDL_gpu_Renderer.c.
+Currently, multiple renderers are not supported.  The renderer can be selected by defining SDL_GPU_USE_OPENGL, SDL_GPU_USE_OPENGLES, and SDL_GPU_USE_OPENGLv1 according to your needs.
+
 
 ========
 BUILDING
