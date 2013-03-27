@@ -3,6 +3,8 @@
 
 #include "glew.h"
 #include "SDL_gpu_OpenGL.h"
+#include "stb_image.h"
+#include "stb_image_write.h"
 
 
 GPU_Renderer* GPU_CreateRenderer_OpenGL(void);

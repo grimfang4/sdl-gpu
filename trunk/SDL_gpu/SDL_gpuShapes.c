@@ -1,11 +1,7 @@
 #include "SDL_gpu.h"
 #include <string.h>
 
-#ifndef SDL_GPU_USE_OPENGLES_1
-    #include "OpenGL/SDL_gpu_OpenGL_internal.h"
-#else
-    #include "OpenGLES_1/SDL_gpu_OpenGLES_1_internal.h"
-#endif
+#include "OpenGL_common/SDL_gpu_OpenGL_internal.h"
 
 static GPU_ShapeRenderer* shapeRenderer = NULL;
 
