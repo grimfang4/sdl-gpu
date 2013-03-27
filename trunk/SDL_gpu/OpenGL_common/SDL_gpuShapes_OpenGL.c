@@ -100,6 +100,24 @@ static inline void set_vertex(float* verts, int index, float x, float y, float z
 }
 
 
+static inline void draw_vertices(GLfloat* glverts, int num_vertices, GLenum prim_type)
+{
+    #ifdef SDL_GPU_USE_OPENGLv1
+        glBegin(prim_type);
+        int size = 3*num_vertices;
+        for(int i = 0; i < size; i += 3)
+        {
+            glVertex3f(glverts[i], glverts[i+1], glverts[i+2]);
+        }
+        glEnd();
+    #else
+        glVertexPointer(3, GL_FLOAT, 0, glverts);
+        glEnableClientState(GL_VERTEX_ARRAY);
+        glDrawArrays(prim_type, 0, num_vertices);
+        glDisableClientState(GL_VERTEX_ARRAY);
+    #endif
+}
+
 
 static float SetThickness(GPU_ShapeRenderer* renderer, float thickness)
 {
@@ -121,15 +139,12 @@ static void Pixel(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, floa
 		glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
 
 		GLfloat glverts[3];
-		glVertexPointer(3, GL_FLOAT, 0, glverts);
-		glEnableClientState(GL_VERTEX_ARRAY);
 
 		glverts[0] = x;
 		glverts[1] = y;
 		glverts[2] = z;
-
-		glDrawArrays(GL_POINTS, 0, 1);
-		glDisableClientState(GL_VERTEX_ARRAY);
+        
+        draw_vertices(glverts, 1, GL_POINTS);
 
     END;
 }
@@ -141,8 +156,6 @@ static void Line(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, floa
         glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
 
         GLfloat glverts[6];
-        glVertexPointer(3, GL_FLOAT, 0, glverts);
-        glEnableClientState(GL_VERTEX_ARRAY);
 
         glverts[0] = x1;
         glverts[1] = y1;
@@ -151,8 +164,7 @@ static void Line(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, floa
         glverts[4] = y2;
         glverts[5] = z;
 
-        glDrawArrays(GL_LINES, 0, 2);
-        glDisableClientState(GL_VERTEX_ARRAY);
+        draw_vertices(glverts, 2, GL_LINES);
 
     END;
 }
@@ -238,10 +250,7 @@ static void Arc(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, float 
     glverts[i*3+1] = y+dy;
     glverts[i*3+2] = z;
 
-    glEnableClientState(GL_VERTEX_ARRAY);
-    glVertexPointer(3, GL_FLOAT, 0, glverts);
-    glDrawArrays(GL_LINE_STRIP, 0, numSegments+2);
-    glDisableClientState(GL_VERTEX_ARRAY);
+    draw_vertices(glverts, numSegments+2, GL_LINE_STRIP);
 
     /*glBegin(GL_LINE_STRIP);
     dx = radius*cos(t*RADPERDEG);
@@ -344,10 +353,7 @@ static void ArcFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, 
     glverts[i*3+1] = y+dy;
     glverts[i*3+2] = z;
     
-    glEnableClientState(GL_VERTEX_ARRAY);
-    glVertexPointer(3, GL_FLOAT, 0, glverts);
-    glDrawArrays(GL_TRIANGLE_FAN, 0, numSegments+3);
-    glDisableClientState(GL_VERTEX_ARRAY);
+    draw_vertices(glverts, numSegments+3, GL_TRIANGLE_FAN);
 
     /*glBegin(GL_TRIANGLE_FAN);
     glVertex3f(x, y, z);
@@ -377,8 +383,6 @@ static void Circle(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, flo
     int numSegments = 360/dt+1;
 
     GLfloat glverts[numSegments*3];
-    glVertexPointer(3, GL_FLOAT, 0, glverts);
-    glEnableClientState(GL_VERTEX_ARRAY);
 
     int i;
     for(i = 0; i < numSegments; i++)
@@ -391,8 +395,7 @@ static void Circle(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, flo
         t += dt;
     }
 
-    glDrawArrays(GL_LINE_LOOP, 0, numSegments);
-    glDisableClientState(GL_VERTEX_ARRAY);
+    draw_vertices(glverts, numSegments, GL_LINE_LOOP);
 
     END;
 }
@@ -409,8 +412,6 @@ static void CircleFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float 
     int numSegments = 360/dt+1;
 
     GLfloat glverts[(1+numSegments)*3];
-    glVertexPointer(3, GL_FLOAT, 0, glverts);
-    glEnableClientState(GL_VERTEX_ARRAY);
 
     glverts[0] = x;
     glverts[1] = y;
@@ -426,8 +427,7 @@ static void CircleFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float 
         t += dt;
     }
 
-    glDrawArrays(GL_TRIANGLE_FAN, 0, 1+numSegments);
-    glDisableClientState(GL_VERTEX_ARRAY);
+    draw_vertices(glverts, 1+numSegments, GL_TRIANGLE_FAN);
 
     /*glBegin(GL_TRIANGLE_FAN);
     dx = radius*cos(t*RADPERDEG);
@@ -452,8 +452,6 @@ static void Tri(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, float
     glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
 
     GLfloat glverts[9];
-    glVertexPointer(3, GL_FLOAT, 0, glverts);
-    glEnableClientState(GL_VERTEX_ARRAY);
 
     glverts[0] = x1;
     glverts[1] = y1;
@@ -465,8 +463,7 @@ static void Tri(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, float
     glverts[7] = y3;
     glverts[8] = z;
 
-    glDrawArrays(GL_LINE_LOOP, 0, 3);
-    glDisableClientState(GL_VERTEX_ARRAY);
+    draw_vertices(glverts, 3, GL_LINE_LOOP);
 
     END;
 }
@@ -478,8 +475,6 @@ static void TriFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1,
     glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
 
     GLfloat glverts[9];
-    glVertexPointer(3, GL_FLOAT, 0, glverts);
-    glEnableClientState(GL_VERTEX_ARRAY);
 
     glverts[0] = x1;
     glverts[1] = y1;
@@ -491,8 +486,7 @@ static void TriFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1,
     glverts[7] = y3;
     glverts[8] = z;
 
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 3);
-    glDisableClientState(GL_VERTEX_ARRAY);
+    draw_vertices(glverts, 3, GL_TRIANGLE_STRIP);
 
     END;
 }
@@ -504,8 +498,6 @@ static void Rect(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, floa
     glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
 
     GLfloat glverts[12];
-    glVertexPointer(3, GL_FLOAT, 0, glverts);
-    glEnableClientState(GL_VERTEX_ARRAY);
 
     glverts[0] = x1;
     glverts[1] = y1;
@@ -520,8 +512,7 @@ static void Rect(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, floa
     glverts[10] = y1;
     glverts[11] = z;
 
-    glDrawArrays(GL_LINE_LOOP, 0, 4);
-    glDisableClientState(GL_VERTEX_ARRAY);
+    draw_vertices(glverts, 4, GL_LINE_LOOP);
 
     END;
 }
@@ -533,8 +524,6 @@ static void RectFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1
     glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
 
     GLfloat glverts[12];
-    glVertexPointer(3, GL_FLOAT, 0, glverts);
-    glEnableClientState(GL_VERTEX_ARRAY);
 
     glverts[0] = x1;
     glverts[1] = y1;
@@ -549,8 +538,7 @@ static void RectFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1
     glverts[10] = y2;
     glverts[11] = z;
 
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-    glDisableClientState(GL_VERTEX_ARRAY);
+    draw_vertices(glverts, 4, GL_TRIANGLE_STRIP);
 
     END;
 }
@@ -573,26 +561,22 @@ static void RectRound(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1,
     BEGIN;
 
     glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
-
+    
+    //int numVerts = 8 + (int(M_PI*5)+1)*4;  // 8 + (15.7 + 1)*4
+    float glverts[120*3];
+    
     float i;
-    /*glBegin(GL_LINE_LOOP);
-        glVertex3f(x1+radius,y1, z);
-        glVertex3f(x2-radius,y1, z);
-        for(i=(float)M_PI*1.5f;i<M_PI*2;i+=0.1f)
-    		glVertex3f(x2-radius+cos(i)*radius,y1+radius+sin(i)*radius, z);
-    	glVertex3f(x2,y1+radius, z);
-    	glVertex3f(x2,y2-radius, z);
-    	for(i=0;i<(float)M_PI*0.5f;i+=0.1f)
-    		glVertex3f(x2-radius+cos(i)*radius,y2-radius+sin(i)*radius, z);
-    	glVertex3f(x2-radius,y2, z);
-    	glVertex3f(x1+radius,y2, z);
-    	for(i=(float)M_PI*0.5f;i<M_PI;i+=0.1f)
-    		glVertex3f(x1+radius+cos(i)*radius,y2-radius+sin(i)*radius, z);
-    	glVertex3f(x1,y2-radius, z);
-        glVertex3f(x1,y1+radius, z);
-        for(i=(float)M_PI;i<M_PI*1.5f;i+=0.1f)
-                glVertex3f(x1+radius+cos(i)*radius,y1+radius+sin(i)*radius, z);
-    glEnd();*/
+    int n = 0;
+    for(i=(float)M_PI*1.5f;i<M_PI*2;i+=0.1f)
+        set_vertex(glverts, n++, x2-radius+cos(i)*radius,y1+radius+sin(i)*radius, z);
+    for(i=0;i<(float)M_PI*0.5f;i+=0.1f)
+        set_vertex(glverts, n++, x2-radius+cos(i)*radius,y2-radius+sin(i)*radius, z);
+    for(i=(float)M_PI*0.5f;i<M_PI;i+=0.1f)
+        set_vertex(glverts, n++, x1+radius+cos(i)*radius,y2-radius+sin(i)*radius, z);
+    for(i=(float)M_PI;i<M_PI*1.5f;i+=0.1f)
+        set_vertex(glverts, n++, x1+radius+cos(i)*radius,y1+radius+sin(i)*radius, z);
+
+    draw_vertices(glverts, n, GL_LINE_LOOP);
 
     END;
 }
@@ -618,8 +602,6 @@ static void RectRoundFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, flo
     
     //int numVerts = 8 + (int(M_PI*5)+1)*4;  // 8 + (15.7 + 1)*4
     float glverts[120*3];
-    glVertexPointer(3, GL_FLOAT, 0, glverts);
-    glEnableClientState(GL_VERTEX_ARRAY);
     
     float i;
     int n = 0;
@@ -640,8 +622,7 @@ static void RectRoundFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, flo
     for(i=(float)M_PI;i<M_PI*1.5f;i+=0.1f)
         set_vertex(glverts, n++, x1+radius+cos(i)*radius,y1+radius+sin(i)*radius, z);
 
-    glDrawArrays(GL_TRIANGLE_FAN, 0, n);
-    glDisableClientState(GL_VERTEX_ARRAY);
+    draw_vertices(glverts, n, GL_TRIANGLE_FAN);
     
     END;
 }
@@ -651,14 +632,17 @@ static void Polygon(GPU_ShapeRenderer* renderer, GPU_Target* target, Uint16 n, f
     BEGIN;
 
     glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
-
-    int i;
-    /*glBegin(GL_LINE_LOOP);
-    for(i = 0; i < 2*n; i+=2)
+    
+    int numIndices = 2*n;
+    float glverts[numIndices*3];
+    
+    int i, j;
+    for(i = 0, j = 0; i < numIndices; i+=2, j++)
     {
-                glVertex3f(vertices[i], vertices[i+1], z);
+        set_vertex(glverts, j, vertices[i], vertices[i+1], z);
     }
-    glEnd();*/
+    
+    draw_vertices(glverts, n, GL_LINE_LOOP);
 
     END;
 }
@@ -668,13 +652,17 @@ static void PolygonFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, Uint1
     BEGIN;
 
     glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
-    int i;
-    /*glBegin(GL_TRIANGLE_FAN);
-    for(i = 0; i < 2*n; i+=2)
+    
+    int numIndices = 2*n;
+    float glverts[numIndices*3];
+    
+    int i, j;
+    for(i = 0, j = 0; i < numIndices; i+=2, j++)
     {
-                glVertex3f(vertices[i], vertices[i+1], z);
+        set_vertex(glverts, j, vertices[i], vertices[i+1], z);
     }
-    glEnd();*/
+    
+    draw_vertices(glverts, n, GL_TRIANGLE_FAN);
 
     END;
 }
