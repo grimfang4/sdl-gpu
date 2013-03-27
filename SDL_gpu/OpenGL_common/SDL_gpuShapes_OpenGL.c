@@ -4,7 +4,7 @@
 #define _WINGDI_H
 #endif
 
-#include "SDL_gpu_OpenGLES_1_internal.h"
+#include "SDL_gpu_OpenGL_internal.h"
 #include <math.h>
 
 #ifndef M_PI
@@ -25,25 +25,25 @@ static void Circle(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, flo
 
 
 #ifdef SDL_GPU_USE_SDL2
-#define GET_WINDOW(shape_renderer) ((GPU_RendererData_OpenGLES_1*)shape_renderer->renderer->data)->window
+    #define GET_WINDOW(shape_renderer) ((GPU_RendererData_OpenGL*)shape_renderer->renderer->data)->window
 #else
-#define GET_WINDOW(shape_renderer) SDL_GetVideoSurface()
+	#define GET_WINDOW(shape_renderer) SDL_GetVideoSurface()
 #endif
 
 
 #define BEGIN \
 	if(target == NULL) \
-		return; \
-	if(renderer->renderer != target->renderer) \
-		return; \
-	float z = ((RendererData_OpenGLES_1*)renderer->renderer->data)->z;	\
-	 \
-	/* Bind the FBO */ \
-	glBindFramebuffer(GL_FRAMEBUFFER, ((TargetData_OpenGLES_1*)target->data)->handle); \
-	/*glPushAttrib(GL_COLOR_BUFFER_BIT);*/ \
-	if(target->useClip) \
-	{ \
-		glEnable(GL_SCISSOR_TEST); \
+                return; \
+        if(renderer->renderer != target->renderer) \
+                return; \
+        float z = ((RendererData_OpenGL*)renderer->renderer->data)->z;  \
+         \
+        /* Bind the FBO */ \
+        glBindFramebuffer(GL_FRAMEBUFFER, ((TargetData_OpenGL*)target->data)->handle); \
+        /*glPushAttrib(GL_COLOR_BUFFER_BIT);*/ \
+        if(target->useClip) \
+        { \
+                glEnable(GL_SCISSOR_TEST); \
 		int y = (renderer->renderer->display == target? renderer->renderer->display->h - (target->clipRect.y + target->clipRect.h) : target->clipRect.y); \
 		float xFactor = ((float)renderer->renderer->window_w)/renderer->renderer->display->w; \
 		float yFactor = ((float)renderer->renderer->window_h)/renderer->renderer->display->h; \
@@ -81,7 +81,7 @@ static void Circle(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, flo
     } \
 	if(target->useClip) \
 	{ \
-		glDisable(GL_SCISSOR_TEST); \
+			glDisable(GL_SCISSOR_TEST); \
 	} \
 	/*glPopAttrib();*/ \
 	glColor4ub(255, 255, 255, 255); \
@@ -89,35 +89,47 @@ static void Circle(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, flo
 	glEnable( GL_TEXTURE_2D );
 
 
+
+	
+	
+static inline void set_vertex(float* verts, int index, float x, float y, float z)
+{
+    verts[index*3] = x;
+    verts[index*3 + 1] = y;
+    verts[index*3 + 2] = z;
+}
+
+
+
 static float SetThickness(GPU_ShapeRenderer* renderer, float thickness)
 {
-    float old = ((ShapeRendererData_OpenGLES_1*)renderer->data)->line_thickness;
-    ((ShapeRendererData_OpenGLES_1*)renderer->data)->line_thickness = thickness;
-    glLineWidth(thickness);
-    return old;
+	float old = ((ShapeRendererData_OpenGL*)renderer->data)->line_thickness;
+	((ShapeRendererData_OpenGL*)renderer->data)->line_thickness = thickness;
+	glLineWidth(thickness);
+	return old;
 }
 
 static float GetThickness(GPU_ShapeRenderer* renderer)
 {
-    return ((ShapeRendererData_OpenGLES_1*)renderer->data)->line_thickness;
+    return ((ShapeRendererData_OpenGL*)renderer->data)->line_thickness;
 }
 
 static void Pixel(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, float y, SDL_Color color)
 {
-    BEGIN;
+	BEGIN;
+	
+		glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
 
-    glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
+		GLfloat glverts[3];
+		glVertexPointer(3, GL_FLOAT, 0, glverts);
+		glEnableClientState(GL_VERTEX_ARRAY);
 
-    GLfloat glverts[3];
-    glVertexPointer(3, GL_FLOAT, 0, glverts);
-    glEnableClientState(GL_VERTEX_ARRAY);
+		glverts[0] = x;
+		glverts[1] = y;
+		glverts[2] = z;
 
-    glverts[0] = x;
-    glverts[1] = y;
-    glverts[2] = z;
-
-    glDrawArrays(GL_POINTS, 0, 1);
-    glDisableClientState(GL_VERTEX_ARRAY);
+		glDrawArrays(GL_POINTS, 0, 1);
+		glDisableClientState(GL_VERTEX_ARRAY);
 
     END;
 }
@@ -126,21 +138,21 @@ static void Line(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, floa
 {
     BEGIN;
 
-	glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
+        glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
 
-	GLfloat glverts[6];
-	glVertexPointer(3, GL_FLOAT, 0, glverts);
-	glEnableClientState(GL_VERTEX_ARRAY);
+        GLfloat glverts[6];
+        glVertexPointer(3, GL_FLOAT, 0, glverts);
+        glEnableClientState(GL_VERTEX_ARRAY);
 
-	glverts[0] = x1;
-	glverts[1] = y1;
-	glverts[2] = z;
-	glverts[3] = x2;
-	glverts[4] = y2;
-	glverts[5] = z;
+        glverts[0] = x1;
+        glverts[1] = y1;
+        glverts[2] = z;
+        glverts[3] = x2;
+        glverts[4] = y2;
+        glverts[5] = z;
 
-	glDrawArrays(GL_LINES, 0, 2);
-	glDisableClientState(GL_VERTEX_ARRAY);
+        glDrawArrays(GL_LINES, 0, 2);
+        glDisableClientState(GL_VERTEX_ARRAY);
 
     END;
 }
@@ -239,8 +251,8 @@ static void Arc(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, float 
     {
     	t += dt;
     	dx = radius*cos(t*RADPERDEG);
-    	dy = radius*sin(t*RADPERDEG);
-    	glVertex3f(x+dx, y+dy, z);
+        dy = radius*sin(t*RADPERDEG);
+        glVertex3f(x+dx, y+dy, z);
     }
     glEnd();*/
 
@@ -346,8 +358,8 @@ static void ArcFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, 
     	glVertex3f(x+dx, y+dy, z);
     	t += dt;
     	dx = radius*cos(t*RADPERDEG);
-    	dy = radius*sin(t*RADPERDEG);
-    	glVertex3f(x+dx, y+dy, z);
+        dy = radius*sin(t*RADPERDEG);
+        glVertex3f(x+dx, y+dy, z);
     }
     glEnd();*/
 
@@ -425,8 +437,8 @@ static void CircleFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float 
     {
     	t += dt;
     	dx = radius*cos(t*RADPERDEG);
-    	dy = radius*sin(t*RADPERDEG);
-    	glVertex3f(x+dx, y+dy, z);
+        dy = radius*sin(t*RADPERDEG);
+        glVertex3f(x+dx, y+dy, z);
     }
     glEnd();*/
 
@@ -564,9 +576,9 @@ static void RectRound(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1,
 
     float i;
     /*glBegin(GL_LINE_LOOP);
-    	glVertex3f(x1+radius,y1, z);
-    	glVertex3f(x2-radius,y1, z);
-    	for(i=(float)M_PI*1.5f;i<M_PI*2;i+=0.1f)
+        glVertex3f(x1+radius,y1, z);
+        glVertex3f(x2-radius,y1, z);
+        for(i=(float)M_PI*1.5f;i<M_PI*2;i+=0.1f)
     		glVertex3f(x2-radius+cos(i)*radius,y1+radius+sin(i)*radius, z);
     	glVertex3f(x2,y1+radius, z);
     	glVertex3f(x2,y2-radius, z);
@@ -577,19 +589,12 @@ static void RectRound(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1,
     	for(i=(float)M_PI*0.5f;i<M_PI;i+=0.1f)
     		glVertex3f(x1+radius+cos(i)*radius,y2-radius+sin(i)*radius, z);
     	glVertex3f(x1,y2-radius, z);
-    	glVertex3f(x1,y1+radius, z);
-    	for(i=(float)M_PI;i<M_PI*1.5f;i+=0.1f)
-    		glVertex3f(x1+radius+cos(i)*radius,y1+radius+sin(i)*radius, z);
+        glVertex3f(x1,y1+radius, z);
+        for(i=(float)M_PI;i<M_PI*1.5f;i+=0.1f)
+                glVertex3f(x1+radius+cos(i)*radius,y1+radius+sin(i)*radius, z);
     glEnd();*/
 
     END;
-}
-
-static inline void set_vertex(float* verts, int index, float x, float y, float z)
-{
-    verts[index*3] = x;
-    verts[index*3 + 1] = y;
-    verts[index*3 + 2] = z;
 }
 
 static void RectRoundFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, float radius, SDL_Color color)
@@ -651,9 +656,7 @@ static void Polygon(GPU_ShapeRenderer* renderer, GPU_Target* target, Uint16 n, f
     /*glBegin(GL_LINE_LOOP);
     for(i = 0; i < 2*n; i+=2)
     {
-    	float y = vertices[i+1];
-
-    	glVertex3f(vertices[i], y, z);
+                glVertex3f(vertices[i], vertices[i+1], z);
     }
     glEnd();*/
 
@@ -669,9 +672,7 @@ static void PolygonFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, Uint1
     /*glBegin(GL_TRIANGLE_FAN);
     for(i = 0; i < 2*n; i+=2)
     {
-    	float y = vertices[i+1];
-
-    	glVertex3f(vertices[i], y, z);
+                glVertex3f(vertices[i], vertices[i+1], z);
     }
     glEnd();*/
 
@@ -685,7 +686,7 @@ static void PolygonBlit(GPU_ShapeRenderer* renderer, GPU_Image* src, SDL_Rect* s
     glEnable( GL_TEXTURE_2D );
 
     // Bind the texture to which subsequent calls refer
-    glBindTexture( GL_TEXTURE_2D, ((ImageData_OpenGLES_1*)src->data)->handle );
+        glBindTexture( GL_TEXTURE_2D, ((ImageData_OpenGL*)src->data)->handle );
 
     // Set repeat mode
     // FIXME: Save old mode and reset it later
@@ -699,12 +700,12 @@ static void PolygonBlit(GPU_ShapeRenderer* renderer, GPU_Image* src, SDL_Rect* s
     /*glBegin(GL_TRIANGLE_FAN);
     for(i = 0; i < 2*n; i+=2)
     {
-    	float x = vertices[i];
+        float x = vertices[i];
     	float y = vertices[i+1];
 
     	glTexCoord2f((x - textureX)*scaleX/src->w, (y - textureY)*scaleY/src->h);
 
-    	glVertex3f(x, y, z);
+        glVertex3f(x, y, z);
     }
     glEnd();*/
 
@@ -722,11 +723,11 @@ static void PolygonBlit(GPU_ShapeRenderer* renderer, GPU_Image* src, SDL_Rect* s
 
 
 
-GPU_ShapeRenderer* GPU_CreateShapeRenderer_OpenGLES_1(void)
+GPU_ShapeRenderer* GPU_CreateShapeRenderer_OpenGL(void)
 {
     GPU_ShapeRenderer* renderer = (GPU_ShapeRenderer*)malloc(sizeof(GPU_ShapeRenderer));
 
-    renderer->data = (ShapeRendererData_OpenGLES_1*)malloc(sizeof(ShapeRendererData_OpenGLES_1));
+        renderer->data = (ShapeRendererData_OpenGL*)malloc(sizeof(ShapeRendererData_OpenGL));
 
     renderer->SetThickness = &SetThickness;
     renderer->SetThickness(renderer, 1.0f);
@@ -750,7 +751,7 @@ GPU_ShapeRenderer* GPU_CreateShapeRenderer_OpenGLES_1(void)
     return renderer;
 }
 
-void GPU_FreeShapeRenderer_OpenGLES_1(GPU_ShapeRenderer* renderer)
+void GPU_FreeShapeRenderer_OpenGL(GPU_ShapeRenderer* renderer)
 {
     if(renderer == NULL)
         return;

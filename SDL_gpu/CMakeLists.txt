@@ -2,78 +2,66 @@ set(SDL_gpu_SRCS
 	SDL_gpu.c
 	SDL_gpuShapes.c
 	SDL_gpu_Renderer.c
-	OpenGL/SDL_gpu_OpenGL.c
-	OpenGL/SDL_gpuShapes_OpenGL.c
+	OpenGL_common/SDL_gpu_OpenGL.c
+	OpenGL_common/SDL_gpuShapes_OpenGL.c
 	externals/glew/glew.c
-	externals/SOIL/SOIL.c
-	externals/SOIL/image_DXT.c
-	externals/SOIL/image_helper.c
-	externals/SOIL/stb_image.c
-	externals/SOIL/stb_image_write.c
+	externals/stb_image/stb_image.c
+	externals/stb_image/stb_image_write.c
 )
 set(SDL_gpu_HDRS
 	SDL_gpu.h
-	OpenGL/SDL_gpu_OpenGL.h
-	OpenGL/SDL_gpu_OpenGL_internal.h
+	OpenGL_common/SDL_gpu_OpenGL.h
+	OpenGL_common/SDL_gpu_OpenGL_internal.h
 	externals/glew/glew.h
 	externals/glew/glxew.h
 	externals/glew/wglew.h
-	externals/SOIL/SOIL.h
-	externals/SOIL/image_DXT.h
-	externals/SOIL/image_helper.h
-	externals/SOIL/stb_image.h
-	externals/SOIL/stb_image_write.h
+	externals/stb_image/stb_image.h
+	externals/stb_image/stb_image_write.h
 )
 set(SDL_gpu_install_HDRS
 	SDL_gpu.h
-	OpenGL/SDL_gpu_OpenGL.h
+	OpenGL_common/SDL_gpu_OpenGL.h
 )
 
+# Set the appropriate library name so SDL_gpu and SDL2_gpu can co-exist.
+if ( NOT SDL_gpu_USE_SDL2)
+	set (SDL_gpu_OUTPUT_NAME "SDL_gpu")
+else ( NOT SDL_gpu_USE_SDL2)
+	set (SDL_gpu_OUTPUT_NAME "SDL2_gpu")
+endif ( NOT SDL_gpu_USE_SDL2)
+
+# Build the shared library (.so or .dll)
 if(SDL_gpu_BUILD_SHARED)
 	add_library(SDL_gpu_shared SHARED
 		${SDL_gpu_HDRS}
 		${SDL_gpu_SRCS}
 	)
-	if (SDL_gpu_USE_SDL2)
 	set_target_properties(SDL_gpu_shared PROPERTIES
-		OUTPUT_NAME "SDL2_gpu"
+		OUTPUT_NAME ${SDL_gpu_OUTPUT_NAME}
 		CLEAN_DIRECT_OUTPUT 1
 		VERSION ${SDL_gpu_VERSION}
 	)
-	else (SDL_gpu_USE_SDL2)
-	set_target_properties(SDL_gpu_shared PROPERTIES
-		OUTPUT_NAME "SDL_gpu"
-		CLEAN_DIRECT_OUTPUT 1
-		VERSION ${SDL_gpu_VERSION}
-	)
-	endif (SDL_gpu_USE_SDL2)
 	set_target_properties(SDL_gpu_shared PROPERTIES LINKER_LANGUAGE C)
 endif()
 
+# Build the static library (.a)
 if(SDL_gpu_BUILD_STATIC)
 	add_library(SDL_gpu STATIC
 		${SDL_gpu_HDRS}
 		${SDL_gpu_SRCS}
 	)
-	if (SDL_gpu_USE_SDL2)
 	set_target_properties(SDL_gpu PROPERTIES
-		OUTPUT_NAME "SDL2_gpu"
+		OUTPUT_NAME ${SDL_gpu_OUTPUT_NAME}
 		CLEAN_DIRECT_OUTPUT 1
 		VERSION ${SDL_gpu_VERSION}
 	)
-	else (SDL_gpu_USE_SDL2)
-	set_target_properties(SDL_gpu PROPERTIES
-		OUTPUT_NAME "SDL_gpu"
-		CLEAN_DIRECT_OUTPUT 1
-		VERSION ${SDL_gpu_VERSION}
-	)
-	endif (SDL_gpu_USE_SDL2)
 	set_target_properties(SDL_gpu PROPERTIES LINKER_LANGUAGE C)
 endif()
 
 # These are used to create visual studio folders.
 source_group(Common FILES ${SDL_gpu_SRCS} ${SDL_gpu_HDRS})
 
+# Install the library
 if(SDL_gpu_INSTALL)
 	# install headers
 	install(FILES ${SDL_gpu_install_HDRS} DESTINATION include/SDL)
