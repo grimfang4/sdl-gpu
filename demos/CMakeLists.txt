@@ -14,6 +14,9 @@ target_link_libraries (transform-demo SDL_gpu)
 add_executable(sprite-demo sprite/main.c)
 target_link_libraries (sprite-demo SDL_gpu)
 
+add_executable(sprite-stress-demo sprite-stress/main.c)
+target_link_libraries (sprite-stress-demo SDL_gpu)
+
 add_executable(rotate-demo rotate/main.c)
 target_link_libraries (rotate-demo SDL_gpu)
 
