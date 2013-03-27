@@ -88,6 +88,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <tr><td colspan="2"><h2><a name="pub-attribs"></a>
 Data Fields</h2></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">struct <a class="el" href="structGPU__Renderer.html">GPU_Renderer</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structGPU__Target_ae7c4dc75c9501c2ed398fb07f639f215.html#ae7c4dc75c9501c2ed398fb07f639f215">renderer</a></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top"><a class="el" href="structGPU__Image.html">GPU_Image</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structGPU__Target_a3f03819757048191d987551bb3c15948.html#a3f03819757048191d987551bb3c15948">image</a></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">void *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structGPU__Target_a3f1dfed8a826602962bb36427dc049a1.html#a3f1dfed8a826602962bb36427dc049a1">data</a></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">Uint16&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structGPU__Target_ae4fe71b1ea23f746d1ebae5ac0545ef3.html#ae4fe71b1ea23f746d1ebae5ac0545ef3">w</a></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">Uint16&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structGPU__Target_a4224c06521958365d4338456c99a27b3.html#a4224c06521958365d4338456c99a27b3">h</a></td></tr>
@@ -95,7 +96,10 @@ Data Fields</h2></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">SDL_Rect&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structGPU__Target_a9e94238346bc9affd2bf4aea515041fe.html#a9e94238346bc9affd2bf4aea515041fe">clipRect</a></td></tr>
 </table>
 <hr/><a name="details" id="details"></a><h2>Detailed Description</h2>
-<div class="textblock"><p>Render target object for use as a blitting destination. A <a class="el" href="structGPU__Target.html">GPU_Target</a> can be created from a <a class="el" href="structGPU__Image.html">GPU_Image</a> with <a class="el" href="SDL__gpu_8c_a9309779815fb4ac856a7c12473679086.html#a9309779815fb4ac856a7c12473679086">GPU_LoadTarget()</a>. </p>
+<div class="textblock"><p>Render target object for use as a blitting destination. A <a class="el" href="structGPU__Target.html">GPU_Target</a> can be created from a <a class="el" href="structGPU__Image.html">GPU_Image</a> with <a class="el" href="SDL__gpu_8c_a9309779815fb4ac856a7c12473679086.html#a9309779815fb4ac856a7c12473679086">GPU_LoadTarget()</a>. Free the memory with <a class="el" href="SDL__gpu_8c_ae91a88a8b9572bf7f42d07825bc01425.html#ae91a88a8b9572bf7f42d07825bc01425">GPU_FreeTarget()</a> when you're done. </p>
+<dl class="see"><dt><b>See also:</b></dt><dd><a class="el" href="SDL__gpu_8c_a9309779815fb4ac856a7c12473679086.html#a9309779815fb4ac856a7c12473679086">GPU_LoadTarget()</a> </dd>
+<dd>
+<a class="el" href="SDL__gpu_8c_ae91a88a8b9572bf7f42d07825bc01425.html#ae91a88a8b9572bf7f42d07825bc01425">GPU_FreeTarget()</a> </dd></dl>
 </div><hr/>The documentation for this struct was generated from the following file:<ul>
 <li><a class="el" href="SDL__gpu_8h_source.html">SDL_gpu.h</a></li>
 </ul>
@@ -117,7 +121,7 @@ Data Fields</h2></td></tr>
 
 
 <hr class="footer"/><address class="footer"><small>
-Generated on Sat Dec 15 2012 16:14:56 for SDL_gpu by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Wed Mar 27 2013 14:07:55 for SDL_gpu by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.7.6.1
 </small></address>

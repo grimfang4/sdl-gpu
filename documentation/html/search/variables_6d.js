@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['makergbtransparent',['MakeRGBTransparent',['../structGPU__Renderer_aea2a3385ea98ef5049299cb06fc115d2.html#aea2a3385ea98ef5049299cb06fc115d2',1,'GPU_Renderer']]]
+  ['makergbtransparent',['MakeRGBTransparent',['../structGPU__Renderer_a796780cfa7a9597de17bf117e9f175b9.html#a796780cfa7a9597de17bf117e9f175b9',1,'GPU_Renderer']]]
 ];
