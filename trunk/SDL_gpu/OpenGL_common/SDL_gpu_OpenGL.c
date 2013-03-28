@@ -51,6 +51,26 @@ static inline unsigned int getNearestPowerOf2(unsigned int n)
         return x;
 }
 
+static inline void bindTexture(GPU_Renderer* renderer, GLuint handle)
+{
+    // Bind the texture to which subsequent calls refer
+    if(handle != ((RendererData_OpenGL*)renderer->data)->last_texture)
+    {
+        glBindTexture( GL_TEXTURE_2D, handle );
+        ((RendererData_OpenGL*)renderer->data)->last_texture = handle;
+    }
+}
+
+static inline void bindFramebuffer(GPU_Renderer* renderer, GLuint handle)
+{
+    // Bind the FBO
+    if(handle != ((RendererData_OpenGL*)renderer->data)->last_framebuffer)
+    {
+        glBindFramebuffer(GL_FRAMEBUFFER, handle);
+        ((RendererData_OpenGL*)renderer->data)->last_framebuffer = handle;
+    }
+}
+
 
 
 static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags)
@@ -168,6 +188,11 @@ static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags
     renderer->display->clipRect.y = 0;
     renderer->display->clipRect.w = renderer->display->w;
     renderer->display->clipRect.h = renderer->display->h;
+    
+    /*RendererData_OpenGL* rdata = (RendererData_OpenGL*)renderer->data;
+    rdata->blit_buffer_max_size = 4000;
+    rdata->blit_buffer_size = 0;
+    rdata->blit_buffer = (float*)malloc(sizeof(float)*blit_buffer_max_size);*/
 
     return renderer->display;
 }
@@ -360,7 +385,7 @@ static GPU_Image* CreateUninitializedImage(GPU_Renderer* renderer, Uint16 w, Uin
         return NULL;
     }
     
-    glBindTexture( GL_TEXTURE_2D, handle );
+    bindTexture( renderer, handle );
 
     // Set the texture's stretching properties
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
@@ -386,8 +411,6 @@ static GPU_Image* CreateUninitializedImage(GPU_Renderer* renderer, Uint16 w, Uin
     // POT textures will change this later
     data->tex_w = w;
     data->tex_h = h;
-        
-    glBindTexture( GL_TEXTURE_2D, 0 );
 
     return result;
 }
@@ -410,7 +433,7 @@ static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint8 
     }
     
     glEnable(GL_TEXTURE_2D);
-    glBindTexture( GL_TEXTURE_2D, ((ImageData_OpenGL*)(result->data))->handle );
+    bindTexture( renderer, ((ImageData_OpenGL*)(result->data))->handle );
     
     GLenum internal_format = ((ImageData_OpenGL*)(result->data))->format;
     w = result->w;
@@ -429,8 +452,6 @@ static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint8 
     // Tell SDL_gpu what we got.
     ((ImageData_OpenGL*)(result->data))->tex_w = w;
     ((ImageData_OpenGL*)(result->data))->tex_h = h;
-    
-    glBindTexture( GL_TEXTURE_2D, 0 );
     
     return result;
 }
@@ -451,19 +472,18 @@ static GPU_Image* LoadImage(GPU_Renderer* renderer, const char* filename)
 }
 
 
-static void readTexPixels(GPU_Target* source, unsigned int width, unsigned int height, GLint format, GLubyte* pixels)
+static void readTexPixels(GPU_Renderer* renderer, GPU_Target* source, unsigned int width, unsigned int height, GLint format, GLubyte* pixels)
 {
-    glBindFramebuffer(GL_FRAMEBUFFER, ((TargetData_OpenGL*)source->data)->handle);
+    bindFramebuffer(renderer, ((TargetData_OpenGL*)source->data)->handle);
     glReadPixels(0, 0, width, height, format, GL_UNSIGNED_BYTE, pixels);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-static unsigned char* getRawImageData(GPU_Image* image)
+static unsigned char* getRawImageData(GPU_Renderer* renderer, GPU_Image* image)
 {
     unsigned char* data = (unsigned char*)malloc(image->w * image->h * image->channels);
 
     GPU_Target* tgt = GPU_LoadTarget(image);
-    readTexPixels(tgt, image->w, image->h, ((ImageData_OpenGL*)image->data)->format, data);
+    readTexPixels(renderer, tgt, image->w, image->h, ((ImageData_OpenGL*)image->data)->format, data);
     GPU_FreeTarget(tgt);
 
     return data;
@@ -497,7 +517,7 @@ static Uint8 SaveImage(GPU_Renderer* renderer, GPU_Image* image, const char* fil
         return 0;
     }
 
-    data = getRawImageData(image);
+    data = getRawImageData(renderer, image);
     
     if(data == NULL)
     {
@@ -814,7 +834,7 @@ static void UpdateImage(GPU_Renderer* renderer, GPU_Image* image, const SDL_Rect
         
     
     glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, data->handle);
+    bindTexture(renderer, data->handle);
     int alignment = 1;
     if(newSurface->format->BytesPerPixel == 4)
         alignment = 4;
@@ -865,7 +885,7 @@ static int InitImageWithSurface(GPU_Renderer* renderer, GPU_Image* image, SDL_Su
     }
     
     glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, data->handle);
+    bindTexture(renderer, data->handle);
     int alignment = 1;
     if(newSurface->format->BytesPerPixel == 4)
         alignment = 4;
@@ -986,7 +1006,7 @@ static void SubSurfaceCopy(GPU_Renderer* renderer, SDL_Surface* src, SDL_Rect* s
         r.h = src->h;
     }
 
-    glBindTexture( GL_TEXTURE_2D, ((ImageData_OpenGL*)dest->image->data)->handle );
+    bindTexture( renderer, ((ImageData_OpenGL*)dest->image->data)->handle );
 
     //GLenum texture_format = GL_RGBA;//((ImageData_OpenGL*)image->data)->format;
 
@@ -1055,7 +1075,7 @@ static GPU_Target* LoadTarget(GPU_Renderer* renderer, GPU_Image* image)
     GLuint handle;
     // Create framebuffer object
     glGenFramebuffers(1, &handle);
-    glBindFramebuffer(GL_FRAMEBUFFER, handle);
+    bindFramebuffer(renderer, handle);
 
     // Attach the texture to it
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ((ImageData_OpenGL*)image->data)->handle, 0);
@@ -1063,8 +1083,6 @@ static GPU_Target* LoadTarget(GPU_Renderer* renderer, GPU_Image* image)
     GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if(status != GL_FRAMEBUFFER_COMPLETE)
         return NULL;
-
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     GPU_Target* result = (GPU_Target*)malloc(sizeof(GPU_Target));
     TargetData_OpenGL* data = (TargetData_OpenGL*)malloc(sizeof(TargetData_OpenGL));
@@ -1112,10 +1130,10 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_T
 
 
     // Bind the texture to which subsequent calls refer
-    glBindTexture( GL_TEXTURE_2D, ((ImageData_OpenGL*)src->data)->handle );
+    bindTexture( renderer, ((ImageData_OpenGL*)src->data)->handle );
 
     // Bind the FBO
-    glBindFramebuffer(GL_FRAMEBUFFER, ((TargetData_OpenGL*)dest->data)->handle);
+    bindFramebuffer(renderer, ((TargetData_OpenGL*)dest->data)->handle);
 
     // Modify the viewport and projection matrix if rendering to a texture
     GLint vp[4];
@@ -1243,7 +1261,6 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_T
     glMatrixMode( GL_PROJECTION );
     glPopMatrix();
     glMatrixMode( GL_MODELVIEW );
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     // restore viewport and projection
     if(renderer->display != dest)
@@ -1393,7 +1410,7 @@ static void GenerateMipmaps(GPU_Renderer* renderer, GPU_Image* image)
     if(image == NULL)
         return;
         
-    glBindTexture( GL_TEXTURE_2D, ((ImageData_OpenGL*)image->data)->handle );
+    bindTexture( renderer, ((ImageData_OpenGL*)image->data)->handle );
     glGenerateMipmap(GL_TEXTURE_2D);
     ((ImageData_OpenGL*)image->data)->hasMipmaps = 1;
 
@@ -1436,7 +1453,7 @@ static void ReplaceRGB(GPU_Renderer* renderer, GPU_Image* image, Uint8 from_r, U
     if(renderer != image->renderer)
         return;
 
-    glBindTexture( GL_TEXTURE_2D, ((ImageData_OpenGL*)image->data)->handle );
+    bindTexture( renderer, ((ImageData_OpenGL*)image->data)->handle );
 
     GLint textureWidth, textureHeight;
 
@@ -1449,7 +1466,7 @@ static void ReplaceRGB(GPU_Renderer* renderer, GPU_Image* image, Uint8 from_r, U
     GLubyte *buffer = (GLubyte *)malloc(textureWidth*textureHeight*image->channels);
 
     GPU_Target* tgt = GPU_LoadTarget(image);
-    readTexPixels(tgt, textureWidth, textureHeight, texture_format, buffer);
+    readTexPixels(renderer, tgt, textureWidth, textureHeight, texture_format, buffer);
     GPU_FreeTarget(tgt);
 
     int x,y,i;
@@ -1480,7 +1497,7 @@ static void MakeRGBTransparent(GPU_Renderer* renderer, GPU_Image* image, Uint8 r
     if(renderer != image->renderer)
         return;
 
-    glBindTexture( GL_TEXTURE_2D, ((ImageData_OpenGL*)image->data)->handle );
+    bindTexture( renderer, ((ImageData_OpenGL*)image->data)->handle );
 
     GLint textureWidth, textureHeight;
 
@@ -1493,7 +1510,7 @@ static void MakeRGBTransparent(GPU_Renderer* renderer, GPU_Image* image, Uint8 r
     GLubyte *buffer = (GLubyte *)malloc(textureWidth*textureHeight*4);
 
     GPU_Target* tgt = GPU_LoadTarget(image);
-    readTexPixels(tgt, textureWidth, textureHeight, texture_format, buffer);
+    readTexPixels(renderer, tgt, textureWidth, textureHeight, texture_format, buffer);
     GPU_FreeTarget(tgt);
 
     int x,y,i;
@@ -1618,7 +1635,7 @@ static void ShiftHSV(GPU_Renderer* renderer, GPU_Image* image, int hue, int satu
     if(renderer != image->renderer)
         return;
 
-    glBindTexture( GL_TEXTURE_2D, ((ImageData_OpenGL*)image->data)->handle );
+    bindTexture( renderer, ((ImageData_OpenGL*)image->data)->handle );
 
     GLint textureWidth, textureHeight;
 
@@ -1631,7 +1648,7 @@ static void ShiftHSV(GPU_Renderer* renderer, GPU_Image* image, int hue, int satu
     GLenum texture_format = ((ImageData_OpenGL*)image->data)->format;
 
     GPU_Target* tgt = GPU_LoadTarget(image);
-    readTexPixels(tgt, textureWidth, textureHeight, texture_format, buffer);
+    readTexPixels(renderer, tgt, textureWidth, textureHeight, texture_format, buffer);
     GPU_FreeTarget(tgt);
 
     int x,y,i;
@@ -1684,7 +1701,7 @@ static void ShiftHSVExcept(GPU_Renderer* renderer, GPU_Image* image, int hue, in
     if(renderer != image->renderer)
         return;
 
-    glBindTexture( GL_TEXTURE_2D, ((ImageData_OpenGL*)image->data)->handle );
+    bindTexture( renderer, ((ImageData_OpenGL*)image->data)->handle );
 
     GLint textureWidth, textureHeight;
 
@@ -1697,7 +1714,7 @@ static void ShiftHSVExcept(GPU_Renderer* renderer, GPU_Image* image, int hue, in
     GLenum texture_format = ((ImageData_OpenGL*)image->data)->format;
 
     GPU_Target* tgt = GPU_LoadTarget(image);
-    readTexPixels(tgt, textureWidth, textureHeight, texture_format, buffer);
+    readTexPixels(renderer, tgt, textureWidth, textureHeight, texture_format, buffer);
     GPU_FreeTarget(tgt);
 
     int x,y,i;
@@ -1762,8 +1779,7 @@ static SDL_Color GetPixel(GPU_Renderer* renderer, GPU_Target* target, Sint16 x, 
     if(x < 0 || y < 0 || x >= target->w || y >= target->h)
         return result;
 
-    // Bind the FBO
-    glBindFramebuffer(GL_FRAMEBUFFER, ((TargetData_OpenGL*)target->data)->handle);
+    bindFramebuffer(renderer, ((TargetData_OpenGL*)target->data)->handle);
 
     unsigned char pixels[4];
     glReadPixels(x, y, 1, 1, ((TargetData_OpenGL*)target->data)->format, GL_UNSIGNED_BYTE, pixels);
@@ -1772,8 +1788,6 @@ static SDL_Color GetPixel(GPU_Renderer* renderer, GPU_Target* target, Sint16 x, 
     result.g = pixels[1];
     result.b = pixels[2];
     result.unused = pixels[3];
-
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     return result;
 }
@@ -1785,7 +1799,7 @@ static void SetImageFilter(GPU_Renderer* renderer, GPU_Image* image, GPU_FilterE
     if(renderer != image->renderer)
         return;
 
-    glBindTexture( GL_TEXTURE_2D, ((ImageData_OpenGL*)image->data)->handle );
+    bindTexture( renderer, ((ImageData_OpenGL*)image->data)->handle );
 
     GLenum minFilter = GL_NEAREST;
     GLenum magFilter = GL_NEAREST;
@@ -1887,7 +1901,7 @@ static void Clear(GPU_Renderer* renderer, GPU_Target* target)
     if(renderer != target->renderer)
         return;
 
-    glBindFramebuffer(GL_FRAMEBUFFER, ((TargetData_OpenGL*)target->data)->handle);
+    bindFramebuffer(renderer, ((TargetData_OpenGL*)target->data)->handle);
     SDL_Rect viewport = getViewport();
     glViewport(0,0,target->w, target->h);
 
@@ -1913,7 +1927,6 @@ static void Clear(GPU_Renderer* renderer, GPU_Target* target)
     }
 
     setViewport(viewport);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 
@@ -1924,7 +1937,7 @@ static void ClearRGBA(GPU_Renderer* renderer, GPU_Target* target, Uint8 r, Uint8
     if(renderer != target->renderer)
         return;
 
-    glBindFramebuffer(GL_FRAMEBUFFER, ((TargetData_OpenGL*)target->data)->handle);
+    bindFramebuffer(renderer, ((TargetData_OpenGL*)target->data)->handle);
 
     SDL_Rect viewport = getViewport();
     glViewport(0,0,target->w, target->h);
@@ -1949,7 +1962,6 @@ static void ClearRGBA(GPU_Renderer* renderer, GPU_Target* target, Uint8 r, Uint8
     }
 
     setViewport(viewport);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 static void Flip(GPU_Renderer* renderer)
