@@ -465,51 +465,32 @@ void GPU_GenerateMipmaps(GPU_Image* image)
 
 SDL_Rect GPU_SetClipRect(GPU_Target* target, SDL_Rect rect)
 {
-	if(target == NULL)
+	if(target == NULL || current_renderer == NULL || current_renderer->SetClip == NULL)
 	{
 		SDL_Rect r = {0,0,0,0};
 		return r;
 	}
 	
-	target->useClip = 1;
-	
-	SDL_Rect r = target->clipRect;
-	
-	target->clipRect = rect;
-	
-	return r;
+	return current_renderer->SetClip(current_renderer, target, rect.x, rect.y, rect.w, rect.h);
 }
 
 SDL_Rect GPU_SetClip(GPU_Target* target, Sint16 x, Sint16 y, Uint16 w, Uint16 h)
 {
-	if(target == NULL)
+	if(target == NULL || current_renderer == NULL || current_renderer->SetClip == NULL)
 	{
 		SDL_Rect r = {0,0,0,0};
 		return r;
 	}
 	
-	target->useClip = 1;
-	
-	SDL_Rect r = target->clipRect;
-	
-	target->clipRect.x = x;
-	target->clipRect.y = y;
-	target->clipRect.w = w;
-	target->clipRect.h = h;
-	
-	return r;
+	return current_renderer->SetClip(current_renderer, target, x, y, w, h);
 }
 
 void GPU_ClearClip(GPU_Target* target)
 {
-	if(target == NULL)
-		return;
+	if(target == NULL || current_renderer == NULL || current_renderer->ClearClip == NULL)
+        return;
 	
-	target->useClip = 0;
-	target->clipRect.x = 0;
-	target->clipRect.y = 0;
-	target->clipRect.w = target->w;
-	target->clipRect.h = target->h;
+	current_renderer->ClearClip(current_renderer, target);
 }
 
 
@@ -641,6 +622,14 @@ void GPU_ClearRGBA(GPU_Target* target, Uint8 r, Uint8 g, Uint8 b, Uint8 a)
 		return;
 	
 	current_renderer->ClearRGBA(current_renderer, target, r, g, b, a);
+}
+
+void GPU_FlushBlitBuffer(void)
+{
+	if(current_renderer == NULL || current_renderer->FlushBlitBuffer == NULL)
+		return;
+	
+	current_renderer->FlushBlitBuffer(current_renderer);
 }
 
 void GPU_Flip(void)

@@ -30,7 +30,12 @@
     #define GL_FUNC_REVERSE_SUBTRACT GL_FUNC_REVERSE_SUBTRACT_OES
 #endif
 
-#define GPU_BLIT_BUFFER_STRIDE (sizeof(float)*5)
+// Forces a flush when limit is reached (roughly 1000 sprites)
+#define GPU_BLIT_BUFFER_INIT_MAX_SIZE 6000
+// x, y, z, s, t
+#define GPU_BLIT_BUFFER_FLOATS_PER_VERTEX 5
+// bytes per vertex
+#define GPU_BLIT_BUFFER_STRIDE (sizeof(float)*GPU_BLIT_BUFFER_FLOATS_PER_VERTEX)
 #define GPU_BLIT_BUFFER_VERTEX_OFFSET 0
 #define GPU_BLIT_BUFFER_TEX_COORD_OFFSET 3
 
@@ -44,11 +49,11 @@ typedef struct RendererData_OpenGL
 	float z;
 	Uint8 blending;
 	
-	GLuint last_texture;
-	GLuint last_framebuffer;
-	/*float* blit_buffer;  // Holds sets of 4 vertices and 4 tex coords interleaved (e.g. [x0, y0, z0, s0, t0, ...]).
+	GPU_Image* last_image;
+	GPU_Target* last_target;
+	float* blit_buffer;  // Holds sets of 4 vertices and 4 tex coords interleaved (e.g. [x0, y0, z0, s0, t0, ...]).
 	int blit_buffer_size;
-	int blit_buffer_max_size;*/
+	int blit_buffer_max_size;
 } RendererData_OpenGL;
 
 typedef struct ImageData_OpenGL
