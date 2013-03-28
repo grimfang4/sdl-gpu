@@ -23,6 +23,26 @@
 static void Circle(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, float y, float radius, SDL_Color color);
 
 
+static inline void bindTexture(GPU_Renderer* renderer, GLuint handle)
+{
+    // Bind the texture to which subsequent calls refer
+    if(handle != ((RendererData_OpenGL*)renderer->data)->last_texture)
+    {
+        glBindTexture( GL_TEXTURE_2D, handle );
+        ((RendererData_OpenGL*)renderer->data)->last_texture = handle;
+    }
+}
+
+static inline void bindFramebuffer(GPU_Renderer* renderer, GLuint handle)
+{
+    // Bind the FBO
+    if(handle != ((RendererData_OpenGL*)renderer->data)->last_framebuffer)
+    {
+        glBindFramebuffer(GL_FRAMEBUFFER, handle);
+        ((RendererData_OpenGL*)renderer->data)->last_framebuffer = handle;
+    }
+}
+
 
 #ifdef SDL_GPU_USE_SDL2
     #define GET_WINDOW(shape_renderer) ((GPU_RendererData_OpenGL*)shape_renderer->renderer->data)->window
@@ -38,8 +58,7 @@ static void Circle(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, flo
                 return; \
         float z = ((RendererData_OpenGL*)renderer->renderer->data)->z;  \
          \
-        /* Bind the FBO */ \
-        glBindFramebuffer(GL_FRAMEBUFFER, ((TargetData_OpenGL*)target->data)->handle); \
+        bindFramebuffer(renderer->renderer, ((TargetData_OpenGL*)target->data)->handle); \
         /*glPushAttrib(GL_COLOR_BUFFER_BIT);*/ \
         if(target->useClip) \
         { \
@@ -85,7 +104,6 @@ static void Circle(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, flo
 	} \
 	/*glPopAttrib();*/ \
 	glColor4ub(255, 255, 255, 255); \
-	glBindFramebuffer(GL_FRAMEBUFFER, 0); \
 	glEnable( GL_TEXTURE_2D );
 
 
@@ -670,11 +688,12 @@ static void PolygonFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, Uint1
 static void PolygonBlit(GPU_ShapeRenderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* target, Uint16 n, float* vertices, float textureX, float textureY, float angle, float scaleX, float scaleY)
 {
     BEGIN;
-
+    
+    (void)z;
+/*
     glEnable( GL_TEXTURE_2D );
 
-    // Bind the texture to which subsequent calls refer
-        glBindTexture( GL_TEXTURE_2D, ((ImageData_OpenGL*)src->data)->handle );
+    bindTexture( renderer->renderer, ((ImageData_OpenGL*)src->data)->handle );
 
     // Set repeat mode
     // FIXME: Save old mode and reset it later
@@ -685,7 +704,7 @@ static void PolygonBlit(GPU_ShapeRenderer* renderer, GPU_Image* src, SDL_Rect* s
     // TODO: Use 'srcrect'
 
     int i;
-    /*glBegin(GL_TRIANGLE_FAN);
+    glBegin(GL_TRIANGLE_FAN);
     for(i = 0; i < 2*n; i+=2)
     {
         float x = vertices[i];
@@ -695,11 +714,11 @@ static void PolygonBlit(GPU_ShapeRenderer* renderer, GPU_Image* src, SDL_Rect* s
 
         glVertex3f(x, y, z);
     }
-    glEnd();*/
+    glEnd();
 
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
-
+*/
     END;
 }
 
