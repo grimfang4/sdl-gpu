@@ -23,23 +23,30 @@
 static void Circle(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, float y, float radius, SDL_Color color);
 
 
-static inline void bindTexture(GPU_Renderer* renderer, GLuint handle)
+
+static inline void bindTexture(GPU_Renderer* renderer, GPU_Image* image)
 {
     // Bind the texture to which subsequent calls refer
-    if(handle != ((RendererData_OpenGL*)renderer->data)->last_texture)
+    if(image != ((RendererData_OpenGL*)renderer->data)->last_image)
     {
+        GLuint handle = ((ImageData_OpenGL*)image->data)->handle;
+        renderer->FlushBlitBuffer(renderer);
+        
         glBindTexture( GL_TEXTURE_2D, handle );
-        ((RendererData_OpenGL*)renderer->data)->last_texture = handle;
+        ((RendererData_OpenGL*)renderer->data)->last_image = image;
     }
 }
 
-static inline void bindFramebuffer(GPU_Renderer* renderer, GLuint handle)
+static inline void bindFramebuffer(GPU_Renderer* renderer, GPU_Target* target)
 {
     // Bind the FBO
-    if(handle != ((RendererData_OpenGL*)renderer->data)->last_framebuffer)
+    if(target != ((RendererData_OpenGL*)renderer->data)->last_target)
     {
+        GLuint handle = ((TargetData_OpenGL*)target->data)->handle;
+        renderer->FlushBlitBuffer(renderer);
+        
         glBindFramebuffer(GL_FRAMEBUFFER, handle);
-        ((RendererData_OpenGL*)renderer->data)->last_framebuffer = handle;
+        ((RendererData_OpenGL*)renderer->data)->last_target = target;
     }
 }
 
@@ -58,7 +65,8 @@ static inline void bindFramebuffer(GPU_Renderer* renderer, GLuint handle)
                 return; \
         float z = ((RendererData_OpenGL*)renderer->renderer->data)->z;  \
          \
-        bindFramebuffer(renderer->renderer, ((TargetData_OpenGL*)target->data)->handle); \
+        renderer->renderer->FlushBlitBuffer(renderer->renderer); \
+        bindFramebuffer(renderer->renderer, target); \
         /*glPushAttrib(GL_COLOR_BUFFER_BIT);*/ \
         if(target->useClip) \
         { \

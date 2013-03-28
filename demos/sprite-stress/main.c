@@ -24,7 +24,7 @@ int main(int argc, char* argv[])
 	
 	printf("Using renderer: %s\n", GPU_GetCurrentRendererID());
 	
-	GPU_Image* image = GPU_LoadImage("data/test3.png");
+	GPU_Image* image = GPU_LoadImage("data/small_test.png");
 	if(image == NULL)
 		return -1;
 	
@@ -68,6 +68,8 @@ int main(int argc, char* argv[])
 					if(numSprites < maxSprites)
 						numSprites += 100;
                     GPU_LogError("Sprites: %d\n", numSprites);
+                    frameCount = 0;
+                    startTime = SDL_GetTicks();
 				}
 				else if(event.key.keysym.sym == SDLK_MINUS)
 				{
@@ -76,6 +78,8 @@ int main(int argc, char* argv[])
 					if(numSprites < 1)
                         numSprites = 1;
                     GPU_LogError("Sprites: %d\n", numSprites);
+                    frameCount = 0;
+                    startTime = SDL_GetTicks();
 				}
 			}
 		}

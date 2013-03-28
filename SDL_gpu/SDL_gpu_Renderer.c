@@ -1,6 +1,7 @@
 #include "SDL_gpu.h"
 #include <string.h>
 #include <strings.h>
+int strcasecmp(const char*, const char *);
 
 #include "OpenGL_common/SDL_gpu_OpenGL_internal.h"
 

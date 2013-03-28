@@ -191,6 +191,12 @@ struct GPU_Renderer
 	/*! \see GPU_GenerateMipmaps() */
 	void (*GenerateMipmaps)(GPU_Renderer* renderer, GPU_Image* image);
 
+	/*! \see GPU_SetClip() */
+	SDL_Rect (*SetClip)(GPU_Renderer* renderer, GPU_Target* target, Sint16 x, Sint16 y, Uint16 w, Uint16 h);
+
+	/*! \see GPU_ClearClip() */
+	void (*ClearClip)(GPU_Renderer* renderer, GPU_Target* target);
+
 	/*! \see GPU_GetBlending() */
 	Uint8 (*GetBlending)(GPU_Renderer* renderer);
 
@@ -225,6 +231,8 @@ struct GPU_Renderer
 	void (*Clear)(GPU_Renderer* renderer, GPU_Target* target);
 	/*! \see GPU_ClearRGBA() */
 	void (*ClearRGBA)(GPU_Renderer* renderer, GPU_Target* target, Uint8 r, Uint8 g, Uint8 b, Uint8 a);
+	/*! \see GPU_FlushBlitBuffer() */
+	void (*FlushBlitBuffer)(GPU_Renderer* renderer);
 	/*! \see GPU_Flip() */
 	void (*Flip)(GPU_Renderer* renderer);
 	
@@ -480,6 +488,9 @@ void GPU_Clear(GPU_Target* target);
 
 /*! Fills the given render target with a color. */
 void GPU_ClearRGBA(GPU_Target* target, Uint8 r, Uint8 g, Uint8 b, Uint8 a);
+
+/*! Send all buffered blitting data to the last target. */
+void GPU_FlushBlitBuffer(void);
 
 /*! Updates the physical display (monitor) with the contents of the display surface/framebuffer. */
 void GPU_Flip(void);
