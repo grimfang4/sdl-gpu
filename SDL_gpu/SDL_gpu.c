@@ -87,10 +87,25 @@ GPU_Target* GPU_Init(const char* renderer_id, Uint16 w, Uint16 h, Uint32 flags)
 	
 	if(GPU_GetNumActiveRenderers() == 0)
 	{
-		if(SDL_Init(SDL_INIT_VIDEO) < 0)
-		{
-			return NULL;
-		}
+	    Uint32 subsystems = SDL_WasInit(SDL_INIT_EVERYTHING);
+	    if(!subsystems)
+        {
+            // Nothing has been set up, so init SDL and the video subsystem.
+            if(SDL_Init(SDL_INIT_VIDEO) < 0)
+            {
+                GPU_LogError("GPU_Init() failed to initialize SDL.\n");
+                return NULL;
+            }
+        }
+        else if(!(subsystems & SDL_INIT_VIDEO))
+        {
+            // Something already set up SDL, so just init video.
+            if(SDL_InitSubSystem(SDL_INIT_VIDEO) < 0)
+            {
+                GPU_LogError("GPU_Init() failed to initialize SDL video subsystem.\n");
+                return NULL;
+            }
+        }
 	}
 	
 	
