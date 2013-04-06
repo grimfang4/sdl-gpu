@@ -53,8 +53,10 @@ static inline void bindFramebuffer(GPU_Renderer* renderer, GPU_Target* target)
 
 #ifdef SDL_GPU_USE_SDL2
     #define GET_WINDOW(shape_renderer) ((GPU_RendererData_OpenGL*)shape_renderer->renderer->data)->window
+    #define GET_ALPHA(sdl_color) (sdl_color.a)
 #else
 	#define GET_WINDOW(shape_renderer) SDL_GetVideoSurface()
+    #define GET_ALPHA(sdl_color) (sdl_color.unused)
 #endif
 
 
@@ -162,7 +164,7 @@ static void Pixel(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, floa
 {
 	BEGIN;
 	
-		glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
+		glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, GET_ALPHA(color)/255.5f);
 
 		GLfloat glverts[3];
 
@@ -179,7 +181,7 @@ static void Line(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, floa
 {
     BEGIN;
 
-        glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
+        glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, GET_ALPHA(color)/255.5f);
 
         GLfloat glverts[6];
 
@@ -250,7 +252,7 @@ static void Arc(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, float 
 
     BEGIN;
 
-    glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
+    glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, GET_ALPHA(color)/255.5f);
     float t = startAngle;
     float dt = (1 - (endAngle - startAngle)/360) * 5;  // A segment every 5 degrees of a full circle
     float dx, dy;
@@ -350,7 +352,7 @@ static void ArcFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, 
 
     BEGIN;
 
-    glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
+    glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, GET_ALPHA(color)/255.5f);
     float t = startAngle;
     float dt = (1 - (endAngle - startAngle)/360) * 5;  // A segment every 5 degrees of a full circle
     float dx, dy;
@@ -402,7 +404,7 @@ static void Circle(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, flo
 {
     BEGIN;
 
-    glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
+    glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, GET_ALPHA(color)/255.5f);
     float t = 0;
     float dt = 5;  // A segment every 5 degrees of a full circle
     float dx, dy;
@@ -430,7 +432,7 @@ static void CircleFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float 
 {
     BEGIN;
 
-    glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
+    glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, GET_ALPHA(color)/255.5f);
     float t = 0;
     float dt = 5;  // A segment every 5 degrees of a full circle
     float dx, dy;
@@ -475,7 +477,7 @@ static void Tri(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, float
 {
     BEGIN;
 
-    glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
+    glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, GET_ALPHA(color)/255.5f);
 
     GLfloat glverts[9];
 
@@ -498,7 +500,7 @@ static void TriFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1,
 {
     BEGIN;
 
-    glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
+    glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, GET_ALPHA(color)/255.5f);
 
     GLfloat glverts[9];
 
@@ -521,7 +523,7 @@ static void Rect(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, floa
 {
     BEGIN;
 
-    glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
+    glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, GET_ALPHA(color)/255.5f);
 
     GLfloat glverts[12];
 
@@ -547,7 +549,7 @@ static void RectFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1
 {
     BEGIN;
 
-    glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
+    glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, GET_ALPHA(color)/255.5f);
 
     GLfloat glverts[12];
 
@@ -586,7 +588,7 @@ static void RectRound(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1,
 
     BEGIN;
 
-    glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
+    glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, GET_ALPHA(color)/255.5f);
     
     //int numVerts = 8 + (int(M_PI*5)+1)*4;  // 8 + (15.7 + 1)*4
     float glverts[120*3];
@@ -624,7 +626,7 @@ static void RectRoundFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, flo
 
     BEGIN;
 
-    glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
+    glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, GET_ALPHA(color)/255.5f);
     
     //int numVerts = 8 + (int(M_PI*5)+1)*4;  // 8 + (15.7 + 1)*4
     float glverts[120*3];
@@ -657,7 +659,7 @@ static void Polygon(GPU_ShapeRenderer* renderer, GPU_Target* target, Uint16 n, f
 {
     BEGIN;
 
-    glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
+    glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, GET_ALPHA(color)/255.5f);
     
     int numIndices = 2*n;
     float glverts[numIndices*3];
@@ -677,7 +679,7 @@ static void PolygonFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, Uint1
 {
     BEGIN;
 
-    glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, color.unused/255.5f);
+    glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, GET_ALPHA(color)/255.5f);
     
     int numIndices = 2*n;
     float glverts[numIndices*3];
