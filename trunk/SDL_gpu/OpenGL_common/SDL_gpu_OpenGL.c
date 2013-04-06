@@ -1977,7 +1977,11 @@ static SDL_Color GetPixel(GPU_Renderer* renderer, GPU_Target* target, Sint16 x, 
     result.r = pixels[0];
     result.g = pixels[1];
     result.b = pixels[2];
+    #ifdef SDL_GPU_USE_SDL2
+    result.a = pixels[3];
+    #else
     result.unused = pixels[3];
+    #endif
 
     return result;
 }
