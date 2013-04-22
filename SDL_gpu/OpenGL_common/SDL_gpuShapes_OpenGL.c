@@ -20,35 +20,15 @@
 #endif
 
 
+
 static void Circle(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, float y, float radius, SDL_Color color);
 
 
+void extBindFramebuffer(GLuint handle);
 
-static inline void bindTexture(GPU_Renderer* renderer, GPU_Image* image)
-{
-    // Bind the texture to which subsequent calls refer
-    if(image != ((RendererData_OpenGL*)renderer->data)->last_image)
-    {
-        GLuint handle = ((ImageData_OpenGL*)image->data)->handle;
-        renderer->FlushBlitBuffer(renderer);
-        
-        glBindTexture( GL_TEXTURE_2D, handle );
-        ((RendererData_OpenGL*)renderer->data)->last_image = image;
-    }
-}
+void bindTexture(GPU_Renderer* renderer, GPU_Image* image);
 
-static inline void bindFramebuffer(GPU_Renderer* renderer, GPU_Target* target)
-{
-    // Bind the FBO
-    if(target != ((RendererData_OpenGL*)renderer->data)->last_target)
-    {
-        GLuint handle = ((TargetData_OpenGL*)target->data)->handle;
-        renderer->FlushBlitBuffer(renderer);
-        
-        glBindFramebuffer(GL_FRAMEBUFFER, handle);
-        ((RendererData_OpenGL*)renderer->data)->last_target = target;
-    }
-}
+Uint8 bindFramebuffer(GPU_Renderer* renderer, GPU_Target* target);
 
 
 #ifdef SDL_GPU_USE_SDL2
@@ -68,7 +48,8 @@ static inline void bindFramebuffer(GPU_Renderer* renderer, GPU_Target* target)
         float z = ((RendererData_OpenGL*)renderer->renderer->data)->z;  \
          \
         renderer->renderer->FlushBlitBuffer(renderer->renderer); \
-        bindFramebuffer(renderer->renderer, target); \
+        if(bindFramebuffer(renderer->renderer, target)) \
+        { \
         /*glPushAttrib(GL_COLOR_BUFFER_BIT);*/ \
         if(target->useClip) \
         { \
@@ -114,7 +95,8 @@ static inline void bindFramebuffer(GPU_Renderer* renderer, GPU_Target* target)
 	} \
 	/*glPopAttrib();*/ \
 	glColor4ub(255, 255, 255, 255); \
-	glEnable( GL_TEXTURE_2D );
+	glEnable( GL_TEXTURE_2D ); \
+    }
 
 
 
@@ -133,7 +115,8 @@ static inline void draw_vertices(GLfloat* glverts, int num_vertices, GLenum prim
     #ifdef SDL_GPU_USE_OPENGLv1
         glBegin(prim_type);
         int size = 3*num_vertices;
-        for(int i = 0; i < size; i += 3)
+        int i;
+        for(i = 0; i < size; i += 3)
         {
             glVertex3f(glverts[i], glverts[i+1], glverts[i+2]);
         }
