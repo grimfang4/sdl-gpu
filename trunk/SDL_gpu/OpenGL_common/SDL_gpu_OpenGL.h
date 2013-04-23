@@ -30,6 +30,16 @@
     #define GL_FUNC_REVERSE_SUBTRACT GL_FUNC_REVERSE_SUBTRACT_OES
 #endif
 
+#if defined(GL_EXT_bgr) && !defined(GL_BGR)
+    #define GL_BGR GL_BGR_EXT
+#endif
+#if defined(GL_EXT_bgra) && !defined(GL_BGRA)
+    #define GL_BGRA GL_BGRA_EXT
+#endif
+#if defined(GL_EXT_abgr) && !defined(GL_ABGR)
+    #define GL_ABGR GL_ABGR_EXT
+#endif
+
 // Forces a flush when limit is reached (roughly 1000 sprites)
 #define GPU_BLIT_BUFFER_INIT_MAX_SIZE 6000
 // x, y, z, s, t

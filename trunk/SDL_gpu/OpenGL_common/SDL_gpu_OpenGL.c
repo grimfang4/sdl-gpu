@@ -15,7 +15,11 @@ int strcasecmp(const char*, const char *);
 
 static Uint8 isExtensionSupported(const char* extension_str)
 {
+#ifdef SDL_GPU_USE_OPENGL
+    return glewIsExtensionSupported(extension_str);
+#else
     return (strstr((const char*)glGetString(GL_EXTENSIONS), extension_str ) != NULL);
+#endif
 }
 
 static Uint8 checkExtension(const char* str)
@@ -28,12 +32,13 @@ static Uint8 checkExtension(const char* str)
     return 1;
 }
 
-static GPU_FeatureEnum enabled_features = 0xFFFFFF; //GPU_FEATURE_ALL;
+static GPU_FeatureEnum enabled_features = 0xFFFFFFFF;  // Pretend to support them all if using incompatible headers
 
-static void initNPOT(void)
+static void init_features(void)
 {
+    // NPOT textures
 #ifdef SDL_GPU_USE_OPENGL
-    if(glewIsExtensionSupported("GL_ARB_texture_non_power_of_two"))
+    if(isExtensionSupported("GL_ARB_texture_non_power_of_two"))
         enabled_features |= GPU_FEATURE_NON_POWER_OF_TWO;
     else
         enabled_features &= ~GPU_FEATURE_NON_POWER_OF_TWO;
@@ -43,12 +48,10 @@ static void initNPOT(void)
     else
         enabled_features &= ~GPU_FEATURE_NON_POWER_OF_TWO;
 #endif
-}
-
-static void initFBO(void)
-{
+    
+    // FBO
 #ifdef SDL_GPU_USE_OPENGL
-    if(glewIsExtensionSupported("GL_EXT_framebuffer_object"))
+    if(isExtensionSupported("GL_EXT_framebuffer_object"))
         enabled_features |= GPU_FEATURE_RENDER_TARGETS;
     else
         enabled_features &= ~GPU_FEATURE_RENDER_TARGETS;
@@ -58,10 +61,8 @@ static void initFBO(void)
     else
         enabled_features &= ~GPU_FEATURE_RENDER_TARGETS;
 #endif
-}
 
-static void initBLEND(void)
-{
+    // Blending
 #ifdef SDL_GPU_USE_OPENGL
     enabled_features |= GPU_FEATURE_BLEND_EQUATIONS;
     enabled_features |= GPU_FEATURE_BLEND_FUNC_SEPARATE;
@@ -75,6 +76,15 @@ static void initBLEND(void)
     else
         enabled_features &= ~GPU_FEATURE_BLEND_FUNC_SEPARATE;
 #endif
+    
+    // GL texture formats
+    if(isExtensionSupported("GL_EXT_bgr"))
+        enabled_features |= GPU_FEATURE_GL_BGR;
+    if(isExtensionSupported("GL_EXT_bgra"))
+        enabled_features |= GPU_FEATURE_GL_BGRA;
+    if(isExtensionSupported("GL_EXT_abgr"))
+        enabled_features |= GPU_FEATURE_GL_ABGR;
+    
 }
 
 void extBindFramebuffer(GLuint handle)
@@ -263,9 +273,7 @@ static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags
 
 #endif
 
-    initNPOT();
-    initFBO();
-    initBLEND();
+    init_features();
 
     glEnable( GL_TEXTURE_2D );
     glClearColor( 0.0f, 0.0f, 0.0f, 0.0f );
@@ -718,84 +726,169 @@ static GPU_Image* CopyImage(GPU_Renderer* renderer, GPU_Image* image)
 
 
 
-// Returns 0 if a direct conversion is safe.  Returns 1 if a copy is needed.  Returns -1 on error.
+// Returns 0 if a direct conversion (asking OpenGL to do it) is safe.  Returns 1 if a copy is needed.  Returns -1 on error.
+// The surfaceFormatResult is used to specify what direct conversion format the surface pixels are in (source format).
+#ifdef SDL_GPU_USE_OPENGLES
+// OpenGLES does not do direct conversion.  Internal format (glFormat) and original format (surfaceFormatResult) must be the same.
 static int compareFormats(GLenum glFormat, SDL_Surface* surface, GLenum* surfaceFormatResult)
 {
     SDL_PixelFormat* format = surface->format;
     switch(glFormat)
     {
+    // 3-channel formats
     case GL_RGB:
+        if(format->BytesPerPixel != 3)
+            return 1;
+        if(format->Rmask == 0xFF0000 && format->Gmask == 0x00FF00 && format->Bmask == 0x0000FF)
+        {
+            if(surfaceFormatResult != NULL)
+                *surfaceFormatResult = GL_RGB;
+            return 0;
+        }
+        return 1;
 #ifdef GL_BGR
     case GL_BGR:
-#endif
-        //GPU_LogError("Wanted 3 channels, got %d\n", format->BytesPerPixel);
-        if(format->BytesPerPixel != 3) return 1;
-
-        //SDL_BYTEORDER == SDL_LIL_ENDIAN case BGR
-        if (format->Rmask == 0x0000FF && format->Gmask == 0x00FF00 && format->Bmask == 0xFF0000) {
-            if ( surfaceFormatResult != NULL) {
-#ifdef GL_BGR
-                *surfaceFormatResult = GL_BGR;
-#else
-                GPU_LogError("GL_BGR is unsupported, using GL_RGB\n");
-                *surfaceFormatResult = GL_RGB;
-#endif
-            }
-            return 0;
-            //SDL_BYTEORDER == SDL_BIG_ENDIAN case RGB
-        } else if (format->Rmask == 0xFF0000 && format->Gmask == 0x00FF00 && format->Bmask == 0x0000FF) {
-            if ( surfaceFormatResult != NULL) {
-                *surfaceFormatResult = GL_RGB;
-            }
-            return 0;
-        } else {
+        if(format->BytesPerPixel != 3)
             return 1;
+        if(format->Rmask == 0x0000FF && format->Gmask == 0x00FF00 && format->Bmask == 0xFF0000)
+        {
+            if(enabled_features & GPU_FEATURE_GL_BGR)
+            {
+                if(surfaceFormatResult != NULL)
+                    *surfaceFormatResult = GL_BGR;
+            }
+            else
+                return 1;
+            return 0;
         }
+        return 1;
+#endif
 
+    // 4-channel formats
+    case GL_RGBA:
+        if(format->BytesPerPixel != 4)
+            return 1;
+        if (format->Rmask == 0xFF000000 && format->Gmask == 0x00FF0000 && format->Bmask == 0x0000FF00)
+        {
+            if(surfaceFormatResult != NULL)
+                *surfaceFormatResult = GL_RGBA;
+            return 0;
+        }
+        return 1;
+#ifdef GL_BGRA
+    case GL_BGRA:
+        if(format->BytesPerPixel != 4)
+            return 1;
+        if (format->Rmask == 0x0000FF00 && format->Gmask == 0x00FF0000 && format->Bmask == 0xFF000000)
+        {
+            if(surfaceFormatResult != NULL)
+                *surfaceFormatResult = GL_BGRA;
+            return 0;
+        }
+        return 1;
+#endif
+#ifdef GL_ABGR
+    case GL_ABGR:
+        if(format->BytesPerPixel != 4)
+            return 1;
+        if (format->Rmask == 0x000000FF && format->Gmask == 0x0000FF00 && format->Bmask == 0x00FF0000)
+        {
+            if(surfaceFormatResult != NULL)
+                *surfaceFormatResult = GL_ABGR;
+            return 0;
+        }
+        return 1;
+#endif
+    default:
+        GPU_LogError("GPU_UpdateImage() was passed an image with an invalid format.\n");
+        return -1;
+    }
+}
+#else
+static int compareFormats(GLenum glFormat, SDL_Surface* surface, GLenum* surfaceFormatResult)
+{
+    SDL_PixelFormat* format = surface->format;
+    switch(glFormat)
+    {
+    // 3-channel formats
+    case GL_RGB:
+    case GL_BGR:
+        if(format->BytesPerPixel != 3)
+            return 1;
+
+        // Looks like RGB?  Easy!
+        if(format->Rmask == 0xFF0000 && format->Gmask == 0x00FF00 && format->Bmask == 0x0000FF)
+        {
+            if(surfaceFormatResult != NULL)
+                *surfaceFormatResult = GL_RGB;
+            return 0;
+        }
+        // Looks like BGR?
+        else if(format->Rmask == 0x0000FF && format->Gmask == 0x00FF00 && format->Bmask == 0xFF0000)
+        {
+#ifdef GL_BGR
+            if(enabled_features & GPU_FEATURE_GL_BGR)
+            {
+                if(surfaceFormatResult != NULL)
+                    *surfaceFormatResult = GL_BGR;
+                return 0;
+            }
+#endif
+        }
+        return 1;
+    
+    // 4-channel formats
     case GL_RGBA:
 #ifdef GL_BGRA
     case GL_BGRA:
 #endif
-#ifdef GL_ABGR_EXT
-    case GL_ABGR_EXT:
+#ifdef GL_ABGR
+    case GL_ABGR:
 #endif
-        //GPU_LogError("Wanted 4 channels, got %d\n", format->BytesPerPixel);
-        if(format->BytesPerPixel != 4) return 1;
+        if(format->BytesPerPixel != 4)
+            return 1;
 
-        //SDL_BYTEORDER == SDL_LIL_ENDIAN case ABGR
-        if(format->Rmask == 0x000000FF && format->Gmask == 0x0000FF00 && format->Bmask == 0x00FF0000) {
-            if ( surfaceFormatResult != NULL) {
-#ifdef GL_ABGR_EXT
-                *surfaceFormatResult = GL_ABGR_EXT;
-#else
-                GPU_LogError("GL_ABGR_EXT is unsupported, using GL_RGBA\n");
+        // Looks like RGBA?  Easy!
+        if(format->Rmask == 0xFF000000 && format->Gmask == 0x00FF0000 && format->Bmask == 0x0000FF00)
+        {
+            if(surfaceFormatResult != NULL)
                 *surfaceFormatResult = GL_RGBA;
-#endif
+            return 0;
+        }
+        // Looks like ABGR?
+        else if(format->Rmask == 0x000000FF && format->Gmask == 0x0000FF00 && format->Bmask == 0x00FF0000)
+        {
+#ifdef GL_ABGR
+            if(enabled_features & GPU_FEATURE_GL_ABGR)
+            {
+                if(surfaceFormatResult != NULL)
+                    *surfaceFormatResult = GL_ABGR;
+                return 0;
             }
-            return 0;
-            //SDL_BYTEORDER == SDL_BIG_ENDIAN case RGBA
-        } else if (format->Rmask == 0xFF000000 && format->Gmask == 0x00FF0000 && format->Bmask == 0x0000FF00) {
-            if ( surfaceFormatResult != NULL) {
-                *surfaceFormatResult = GL_RGBA;
-            }
-            return 0;
-            //Something custom BGRA
-#ifdef GL_BGRA
-        } else if (format->Rmask == 0x0000FF00 && format->Gmask == 0x00FF0000 && format->Bmask == 0xFF000000) {
-            if(surfaceFormatResult != NULL) *surfaceFormatResult = GL_BGRA;
-            return 0;
 #endif
         }
-        //GPU_LogError("Masks don't match: %X, %X, %X\n", format->Rmask, format->Gmask, format->Bmask);
+        // Looks like BGRA?
+        else if(format->Rmask == 0x0000FF00 && format->Gmask == 0x00FF0000 && format->Bmask == 0xFF000000)
+        {
+#ifdef GL_BGRA
+            if(enabled_features & GPU_FEATURE_GL_BGRA)
+            {
+                if(surfaceFormatResult != NULL)
+                    *surfaceFormatResult = GL_BGRA;
+                return 0;
+            }
+#endif
+        }
         return 1;
     default:
         GPU_LogError("GPU_UpdateImage() was passed an image with an invalid format.\n");
         return -1;
     }
 }
+#endif
 
 
-// From SDL_AllocFormat()
+// Adapted from SDL_AllocFormat()
 static SDL_PixelFormat* AllocFormat(GLenum glFormat)
 {
     // Yes, I need to do the whole thing myself... :(
@@ -806,32 +899,53 @@ static SDL_PixelFormat* AllocFormat(GLenum glFormat)
     {
     case GL_RGB:
         channels = 3;
+        #if SDL_BYTEORDER == SDL_BIG_ENDIAN
+        Rmask = 0xFF0000;
+        Gmask = 0x00FF00;
+        Bmask = 0x0000FF;
+        #else
         Rmask = 0x0000FF;
         Gmask = 0x00FF00;
         Bmask = 0xFF0000;
+        #endif
         break;
 #ifdef GL_BGR
     case GL_BGR:
         channels = 3;
-        Rmask = 0xFF0000;
+        #if SDL_BYTEORDER == SDL_BIG_ENDIAN
+        Bmask = 0xFF0000;
         Gmask = 0x00FF00;
+        Rmask = 0x0000FF;
+        #else
         Bmask = 0x0000FF;
+        Gmask = 0x00FF00;
+        Rmask = 0xFF0000;
+        #endif
         break;
 #endif
     case GL_RGBA:
-        channels = 4;
-        Rmask = 0x000000FF;
-        Gmask = 0x0000FF00;
-        Bmask = 0x00FF0000;
-        Amask = 0xFF000000;
-        break;
-#ifdef GL_BGRA
-    case GL_BGRA:
         channels = 4;
         Rmask = 0xFF000000;
         Gmask = 0x00FF0000;
         Bmask = 0x0000FF00;
         Amask = 0x000000FF;
+        break;
+#ifdef GL_BGRA
+    case GL_BGRA:
+        channels = 4;
+        Bmask = 0xFF000000;
+        Gmask = 0x00FF0000;
+        Rmask = 0x0000FF00;
+        Amask = 0x000000FF;
+        break;
+#endif
+#ifdef GL_ABGR
+    case GL_ABGR:
+        channels = 4;
+        Amask = 0xFF000000;
+        Bmask = 0x00FF0000;
+        Gmask = 0x0000FF00;
+        Rmask = 0x000000FF;
         break;
 #endif
     default:
@@ -976,10 +1090,11 @@ static void UpdateImage(GPU_Renderer* renderer, GPU_Image* image, const SDL_Rect
 // From SDL_UpdateTexture()
 static int InitImageWithSurface(GPU_Renderer* renderer, GPU_Image* image, SDL_Surface* surface)
 {
-    ImageData_OpenGL* data = (ImageData_OpenGL*)image->data;
     if(renderer == NULL || image == NULL || surface == NULL)
         return 0;
 
+    ImageData_OpenGL* data = (ImageData_OpenGL*)image->data;
+    
     GLenum internal_format = data->format;
     GLenum original_format = internal_format;
 

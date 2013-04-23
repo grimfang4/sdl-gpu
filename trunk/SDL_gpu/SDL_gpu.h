@@ -59,12 +59,19 @@ struct GPU_Target
 /*! Important GPU features which may not be supported depending on a device's extension support.  Can be OR'd together.
  * \see GPU_IsFeatureEnabled()
  */
-typedef unsigned int GPU_FeatureEnum;
+typedef Uint32 GPU_FeatureEnum;
 static const GPU_FeatureEnum GPU_FEATURE_NON_POWER_OF_TWO = 0x1;
 static const GPU_FeatureEnum GPU_FEATURE_RENDER_TARGETS = 0x2;
 static const GPU_FeatureEnum GPU_FEATURE_BLEND_EQUATIONS = 0x4;
 static const GPU_FeatureEnum GPU_FEATURE_BLEND_FUNC_SEPARATE = 0x8;
-static const GPU_FeatureEnum GPU_FEATURE_ALL = 0xFFFFFF;
+static const GPU_FeatureEnum GPU_FEATURE_GL_BGR = 0x10;
+static const GPU_FeatureEnum GPU_FEATURE_GL_BGRA = 0x20;
+static const GPU_FeatureEnum GPU_FEATURE_GL_ABGR = 0x40;
+
+/*! Combined feature flags */
+#define GPU_FEATURE_ALL_BASE GPU_FEATURE_RENDER_TARGETS
+#define GPU_FEATURE_ALL_BLEND_MODES (GPU_FEATURE_BLEND_EQUATIONS | GPU_FEATURE_BLEND_FUNC_SEPARATE)
+#define GPU_FEATURE_ALL_GL_FORMATS (GPU_FEATURE_GL_BGR | GPU_FEATURE_GL_BGRA | GPU_FEATURE_GL_ABGR)
 
 /*! Texture filtering options.  These affect the quality/interpolation of colors when images are scaled. 
  * \see GPU_SetImageFilter()
