@@ -28,43 +28,58 @@ static Uint8 checkExtension(const char* str)
     return 1;
 }
 
-static Uint8 NPOT_enabled = 0;
-static Uint8 FBO_enabled = 0;
-static Uint8 BLENDEQ_enabled = 0;
-static Uint8 BLENDFUNCSEP_enabled = 0;
+static GPU_FeatureEnum enabled_features = 0xFFFFFF; //GPU_FEATURE_ALL;
 
 static void initNPOT(void)
 {
 #ifdef SDL_GPU_USE_OPENGL
-    NPOT_enabled = glewIsExtensionSupported("GL_ARB_texture_non_power_of_two");
+    if(glewIsExtensionSupported("GL_ARB_texture_non_power_of_two"))
+        enabled_features |= GPU_FEATURE_NON_POWER_OF_TWO;
+    else
+        enabled_features &= ~GPU_FEATURE_NON_POWER_OF_TWO;
 #elif defined(SDL_GPU_USE_OPENGLES)
-	NPOT_enabled = isExtensionSupported("GL_OES_texture_npot");
+	if(isExtensionSupported("GL_OES_texture_npot"))
+        enabled_features |= GPU_FEATURE_NON_POWER_OF_TWO;
+    else
+        enabled_features &= ~GPU_FEATURE_NON_POWER_OF_TWO;
 #endif
 }
 
 static void initFBO(void)
 {
 #ifdef SDL_GPU_USE_OPENGL
-    FBO_enabled = glewIsExtensionSupported("GL_EXT_framebuffer_object");
+    if(glewIsExtensionSupported("GL_EXT_framebuffer_object"))
+        enabled_features |= GPU_FEATURE_RENDER_TARGETS;
+    else
+        enabled_features &= ~GPU_FEATURE_RENDER_TARGETS;
 #elif defined(SDL_GPU_USE_OPENGLES)
-	FBO_enabled = isExtensionSupported("GL_OES_framebuffer_object");
+	if(isExtensionSupported("GL_OES_framebuffer_object"))
+        enabled_features |= GPU_FEATURE_RENDER_TARGETS;
+    else
+        enabled_features &= ~GPU_FEATURE_RENDER_TARGETS;
 #endif
 }
 
 static void initBLEND(void)
 {
 #ifdef SDL_GPU_USE_OPENGL
-    BLENDEQ_enabled = 1;
-    BLENDFUNCSEP_enabled = 1;
+    enabled_features |= GPU_FEATURE_BLEND_EQUATIONS;
+    enabled_features |= GPU_FEATURE_BLEND_FUNC_SEPARATE;
 #elif defined(SDL_GPU_USE_OPENGLES)
-	BLENDEQ_enabled = isExtensionSupported("GL_OES_blend_subtract");
-	BLENDFUNCSEP_enabled = isExtensionSupported("GL_OES_blend_func_separate");
+	if(isExtensionSupported("GL_OES_blend_subtract"))
+        enabled_features |= GPU_FEATURE_BLEND_EQUATIONS;
+    else
+        enabled_features &= ~GPU_FEATURE_BLEND_EQUATIONS;
+	if(isExtensionSupported("GL_OES_blend_func_separate"))
+        enabled_features |= GPU_FEATURE_BLEND_FUNC_SEPARATE;
+    else
+        enabled_features &= ~GPU_FEATURE_BLEND_FUNC_SEPARATE;
 #endif
 }
 
 void extBindFramebuffer(GLuint handle)
 {
-    if(FBO_enabled)
+    if(enabled_features & GPU_FEATURE_RENDER_TARGETS)
         glBindFramebuffer(GL_FRAMEBUFFER, handle);
 }
 
@@ -109,7 +124,7 @@ static inline void flushAndBindTexture(GPU_Renderer* renderer, GLuint handle)
 // Returns false if it can't be bound
 Uint8 bindFramebuffer(GPU_Renderer* renderer, GPU_Target* target)
 {
-    if(FBO_enabled)
+    if(enabled_features & GPU_FEATURE_RENDER_TARGETS)
     {
         // Bind the FBO
         if(target != ((RendererData_OpenGL*)renderer->data)->last_target)
@@ -172,7 +187,6 @@ static inline void flushAndClearBlitBufferIfCurrentFramebuffer(GPU_Renderer* ren
         ((RendererData_OpenGL*)renderer->data)->last_target = NULL;
     }
 }
-
 
 static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags)
 {
@@ -299,6 +313,12 @@ static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags
     rdata->blit_buffer = (float*)malloc(sizeof(float)*rdata->blit_buffer_max_size*numFloatsPerVertex);
 
     return renderer->display;
+}
+
+
+static Uint8 IsFeatureEnabled(GPU_Renderer* renderer, GPU_FeatureEnum feature)
+{
+    return ((enabled_features & feature) == feature);
 }
 
 
@@ -546,7 +566,7 @@ static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint8 
     GLenum internal_format = ((ImageData_OpenGL*)(result->data))->format;
     w = result->w;
     h = result->h;
-    if(!NPOT_enabled)
+    if(!(enabled_features & GPU_FEATURE_NON_POWER_OF_TWO))
     {
         if(!isPowerOfTwo(w))
             w = getNearestPowerOf2(w);
@@ -783,6 +803,7 @@ static int compareFormats(GLenum glFormat, SDL_Surface* surface, GLenum* surface
     }
 }
 
+
 // From SDL_AllocFormat()
 static SDL_PixelFormat* AllocFormat(GLenum glFormat)
 {
@@ -981,7 +1002,7 @@ static int InitImageWithSurface(GPU_Renderer* renderer, GPU_Image* image, SDL_Su
     Uint8 need_power_of_two_upload = 0;
     unsigned int w = newSurface->w;
     unsigned int h = newSurface->h;
-    if(!NPOT_enabled)
+    if(!(enabled_features & GPU_FEATURE_NON_POWER_OF_TWO))
     {
         if(!isPowerOfTwo(w))
         {
@@ -1184,7 +1205,7 @@ static GPU_Target* LoadTarget(GPU_Renderer* renderer, GPU_Image* image)
     if(image->target != NULL)
         return image->target;
         
-    if(!FBO_enabled)
+    if(!(enabled_features & GPU_FEATURE_RENDER_TARGETS))
         return NULL;
     
     GLuint handle;
@@ -1226,7 +1247,7 @@ static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
     if(target == NULL || target == renderer->display)
         return;
     
-    if(FBO_enabled)
+    if(enabled_features & GPU_FEATURE_RENDER_TARGETS)
     {
         flushAndClearBlitBufferIfCurrentFramebuffer(renderer, target);
         glDeleteFramebuffers(1, &((TargetData_OpenGL*)target->data)->handle);
@@ -2079,70 +2100,70 @@ static void SetBlendMode(GPU_Renderer* renderer, GPU_BlendEnum mode)
     if(mode == GPU_BLEND_NORMAL)
     {
     	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        if(!BLENDEQ_enabled)
+        if(!(enabled_features & GPU_FEATURE_BLEND_EQUATIONS))
             return;  // TODO: Return false so we can avoid depending on it if it fails
     	glBlendEquation(GL_FUNC_ADD);
     }
     else if(mode == GPU_BLEND_MULTIPLY)
     {
-        if(!BLENDFUNCSEP_enabled)
+        if(!(enabled_features & GPU_FEATURE_BLEND_FUNC_SEPARATE))
             return;
     	glBlendFuncSeparate(GL_DST_COLOR, GL_ZERO, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        if(!BLENDEQ_enabled)
+        if(!(enabled_features & GPU_FEATURE_BLEND_EQUATIONS))
             return;
     	glBlendEquation(GL_FUNC_ADD);
     }
     else if(mode == GPU_BLEND_ADD)
     {
     	glBlendFunc(GL_ONE, GL_ONE);
-        if(!BLENDEQ_enabled)
+        if(!(enabled_features & GPU_FEATURE_BLEND_EQUATIONS))
             return;
     	glBlendEquation(GL_FUNC_ADD);
     }
     else if(mode == GPU_BLEND_SUBTRACT)
     {
-        if(!BLENDEQ_enabled)
+        if(!(enabled_features & GPU_FEATURE_BLEND_EQUATIONS))
             return;
     	glBlendFunc(GL_ONE, GL_ONE);
     	glBlendEquation(GL_FUNC_SUBTRACT);
     }
     else if(mode == GPU_BLEND_ADD_COLOR)
     {
-        if(!BLENDFUNCSEP_enabled)
+        if(!(enabled_features & GPU_FEATURE_BLEND_FUNC_SEPARATE))
             return;
     	glBlendFuncSeparate(GL_ONE, GL_ONE, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        if(!BLENDEQ_enabled)
+        if(!(enabled_features & GPU_FEATURE_BLEND_EQUATIONS))
             return;
     	glBlendEquation(GL_FUNC_ADD);
     }
     else if(mode == GPU_BLEND_SUBTRACT_COLOR)
     {
-        if(!BLENDFUNCSEP_enabled)
+        if(!(enabled_features & GPU_FEATURE_BLEND_FUNC_SEPARATE))
             return;
-        if(!BLENDEQ_enabled)
+        if(!(enabled_features & GPU_FEATURE_BLEND_EQUATIONS))
             return;
         glBlendFuncSeparate(GL_ONE, GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA);
         glBlendEquation(GL_FUNC_SUBTRACT);
     }
     else if(mode == GPU_BLEND_DIFFERENCE)
     {
-        if(!BLENDFUNCSEP_enabled)
+        if(!(enabled_features & GPU_FEATURE_BLEND_FUNC_SEPARATE))
             return;
-        if(!BLENDEQ_enabled)
+        if(!(enabled_features & GPU_FEATURE_BLEND_EQUATIONS))
             return;
         glBlendFuncSeparate(GL_ONE, GL_ONE, GL_ONE, GL_ZERO);
     	glBlendEquation(GL_FUNC_SUBTRACT);
     }
     else if(mode == GPU_BLEND_PUNCHOUT)
     {
-        if(!BLENDEQ_enabled)
+        if(!(enabled_features & GPU_FEATURE_BLEND_EQUATIONS))
             return;
     	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     	glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
     }
     else if(mode == GPU_BLEND_CUTOUT)
     {
-        if(!BLENDEQ_enabled)
+        if(!(enabled_features & GPU_FEATURE_BLEND_EQUATIONS))
             return;
     	glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA);
     	glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
@@ -2393,6 +2414,7 @@ GPU_Renderer* GPU_CreateRenderer_OpenGL(void)
     memset(renderer->data, 0, sizeof(RendererData_OpenGL));
 
     renderer->Init = &Init;
+    renderer->IsFeatureEnabled = &IsFeatureEnabled;
     renderer->SetAsCurrent = &SetAsCurrent;
     renderer->SetDisplayResolution = &SetDisplayResolution;
     renderer->SetVirtualResolution = &SetVirtualResolution;

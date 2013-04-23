@@ -1,6 +1,7 @@
 #include "SDL.h"
 #include "SDL_gpu.h"
 #include <math.h>
+#include "../common/compat.h"
 
 void printRenderers(void)
 {
@@ -41,7 +42,7 @@ int main(int argc, char* argv[])
 		colors[i].r = rand()%256;
 		colors[i].g = rand()%256;
 		colors[i].b = rand()%256;
-		colors[i].unused = rand()%256;
+		GET_ALPHA(colors[i]) = rand()%256;
 	}
 	
 	

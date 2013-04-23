@@ -120,6 +120,14 @@ GPU_Target* GPU_Init(const char* renderer_id, Uint16 w, Uint16 h, Uint32 flags)
 	return renderer->Init(renderer, w, h, flags);
 }
 
+Uint8 GPU_IsFeatureEnabled(GPU_FeatureEnum feature)
+{
+	if(current_renderer == NULL || current_renderer->IsFeatureEnabled == NULL)
+		return 0;
+	
+	return current_renderer->IsFeatureEnabled(current_renderer, feature);
+}
+
 int GPU_ToggleFullscreen(void)
 {
 	if(current_renderer == NULL || current_renderer->ToggleFullscreen == NULL)

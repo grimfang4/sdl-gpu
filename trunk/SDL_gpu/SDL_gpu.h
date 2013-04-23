@@ -56,6 +56,16 @@ struct GPU_Target
 	SDL_Rect clipRect;
 };
 
+/*! Important GPU features which may not be supported depending on a device's extension support.  Can be OR'd together.
+ * \see GPU_IsFeatureEnabled()
+ */
+typedef unsigned int GPU_FeatureEnum;
+static const GPU_FeatureEnum GPU_FEATURE_NON_POWER_OF_TWO = 0x1;
+static const GPU_FeatureEnum GPU_FEATURE_RENDER_TARGETS = 0x2;
+static const GPU_FeatureEnum GPU_FEATURE_BLEND_EQUATIONS = 0x4;
+static const GPU_FeatureEnum GPU_FEATURE_BLEND_FUNC_SEPARATE = 0x8;
+static const GPU_FeatureEnum GPU_FEATURE_ALL = 0xFFFFFF;
+
 /*! Texture filtering options.  These affect the quality/interpolation of colors when images are scaled. 
  * \see GPU_SetImageFilter()
  */
@@ -112,6 +122,9 @@ struct GPU_Renderer
 	
 	/*! \see GPU_Init() */
 	GPU_Target* (*Init)(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags);
+	
+	/*! \see GPU_IsFeatureEnabled() */
+	Uint8 (*IsFeatureEnabled)(GPU_Renderer* renderer, GPU_FeatureEnum feature);
 	
 	/*! Sets up this renderer to act as the current renderer.  Called automatically by GPU_SetCurrentRenderer(). */
 	void (*SetAsCurrent)(GPU_Renderer* renderer);
@@ -258,6 +271,12 @@ void GPU_LogError(const char* format, ...);
 // Setup calls
 /*! Initializes SDL and SDL_gpu.  Creates a window and renderer context. */
 GPU_Target* GPU_Init(const char* renderer_id, Uint16 w, Uint16 h, Uint32 flags);
+
+/*! Checks for important GPU features which may not be supported depending on a device's extension support.  Feature flags (GPU_FEATURE_*) can be bitwise OR'd together. 
+ * \return 1 is all of the passed features are enabled/supported
+ * \return 0 if any of the passed features are disabled/unsupported
+ */
+Uint8 GPU_IsFeatureEnabled(GPU_FeatureEnum feature);
 
 /*! Get the actual resolution of the window. */
 void GPU_GetDisplayResolution(int* w, int* h);
