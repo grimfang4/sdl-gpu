@@ -37,4 +37,10 @@
 #endif
 
 
+#ifdef SDL_GPU_USE_SDL2
+    #define GET_ALPHA(sdl_color) (sdl_color.a)
+#else
+    #define GET_ALPHA(sdl_color) (sdl_color.unused)
+#endif
+
 #endif

@@ -1,6 +1,7 @@
 #include "SDL.h"
 #include "SDL_gpu.h"
 #include <math.h>
+#include "../common/compat.h"
 
 void printRenderers(void)
 {
@@ -53,7 +54,7 @@ int main(int argc, char* argv[])
 		SDL_GetMouseState(&mx, &my);
 		SDL_Color c = GPU_GetPixel(target, mx - 50, my - 50);
 		
-		GPU_ClearRGBA(screen, c.r, c.g, c.b, c.unused);
+		GPU_ClearRGBA(screen, c.r, c.g, c.b, GET_ALPHA(c));
 		
 		GPU_Blit(image, NULL, screen, image->w/2 + 50, image->h/2 + 50);
 		
