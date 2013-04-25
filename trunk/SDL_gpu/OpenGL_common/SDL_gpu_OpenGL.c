@@ -619,9 +619,18 @@ static unsigned char* getRawImageData(GPU_Renderer* renderer, GPU_Image* image)
 {
     unsigned char* data = (unsigned char*)malloc(image->w * image->h * image->channels);
 
-    GPU_Target* tgt = GPU_LoadTarget(image);
+    GPU_Target* tgt = image->target;
+    Uint8 loadedTarget = 0;
+    if(tgt == NULL)
+    {
+        tgt = GPU_LoadTarget(image);
+        loadedTarget = 1;
+    }
+    
     readTexPixels(renderer, tgt, image->w, image->h, ((ImageData_OpenGL*)image->data)->format, data);
-    GPU_FreeTarget(tgt);
+    
+    if(loadedTarget)
+        GPU_FreeTarget(tgt);
 
     return data;
 }
@@ -739,7 +748,7 @@ static int compareFormats(GLenum glFormat, SDL_Surface* surface, GLenum* surface
     case GL_RGB:
         if(format->BytesPerPixel != 3)
             return 1;
-        if(format->Rmask == 0xFF0000 && format->Gmask == 0x00FF00 && format->Bmask == 0x0000FF)
+        if(format->Rmask == 0x0000FF && format->Gmask == 0x00FF00 && format->Bmask == 0xFF0000)
         {
             if(surfaceFormatResult != NULL)
                 *surfaceFormatResult = GL_RGB;
@@ -750,7 +759,7 @@ static int compareFormats(GLenum glFormat, SDL_Surface* surface, GLenum* surface
     case GL_BGR:
         if(format->BytesPerPixel != 3)
             return 1;
-        if(format->Rmask == 0x0000FF && format->Gmask == 0x00FF00 && format->Bmask == 0xFF0000)
+        if(format->Rmask == 0xFF0000 && format->Gmask == 0x00FF00 && format->Bmask == 0x0000FF)
         {
             if(enabled_features & GPU_FEATURE_GL_BGR)
             {
@@ -768,7 +777,7 @@ static int compareFormats(GLenum glFormat, SDL_Surface* surface, GLenum* surface
     case GL_RGBA:
         if(format->BytesPerPixel != 4)
             return 1;
-        if (format->Rmask == 0xFF000000 && format->Gmask == 0x00FF0000 && format->Bmask == 0x0000FF00)
+        if (format->Rmask == 0x000000FF && format->Gmask == 0x0000FF00 && format->Bmask == 0x00FF0000)
         {
             if(surfaceFormatResult != NULL)
                 *surfaceFormatResult = GL_RGBA;
@@ -779,7 +788,7 @@ static int compareFormats(GLenum glFormat, SDL_Surface* surface, GLenum* surface
     case GL_BGRA:
         if(format->BytesPerPixel != 4)
             return 1;
-        if (format->Rmask == 0x0000FF00 && format->Gmask == 0x00FF0000 && format->Bmask == 0xFF000000)
+        if (format->Rmask == 0x00FF0000 && format->Gmask == 0x0000FF00 && format->Bmask == 0x000000FF)
         {
             if(surfaceFormatResult != NULL)
                 *surfaceFormatResult = GL_BGRA;
@@ -791,7 +800,7 @@ static int compareFormats(GLenum glFormat, SDL_Surface* surface, GLenum* surface
     case GL_ABGR:
         if(format->BytesPerPixel != 4)
             return 1;
-        if (format->Rmask == 0x000000FF && format->Gmask == 0x0000FF00 && format->Bmask == 0x00FF0000)
+        if (format->Rmask == 0xFF000000 && format->Gmask == 0x00FF0000 && format->Bmask == 0x0000FF00)
         {
             if(surfaceFormatResult != NULL)
                 *surfaceFormatResult = GL_ABGR;
@@ -817,14 +826,14 @@ static int compareFormats(GLenum glFormat, SDL_Surface* surface, GLenum* surface
             return 1;
 
         // Looks like RGB?  Easy!
-        if(format->Rmask == 0xFF0000 && format->Gmask == 0x00FF00 && format->Bmask == 0x0000FF)
+        else if(format->Rmask == 0x0000FF && format->Gmask == 0x00FF00 && format->Bmask == 0xFF0000)
         {
             if(surfaceFormatResult != NULL)
                 *surfaceFormatResult = GL_RGB;
             return 0;
         }
         // Looks like BGR?
-        else if(format->Rmask == 0x0000FF && format->Gmask == 0x00FF00 && format->Bmask == 0xFF0000)
+        if(format->Rmask == 0xFF0000 && format->Gmask == 0x00FF00 && format->Bmask == 0x0000FF)
         {
 #ifdef GL_BGR
             if(enabled_features & GPU_FEATURE_GL_BGR)
@@ -849,14 +858,14 @@ static int compareFormats(GLenum glFormat, SDL_Surface* surface, GLenum* surface
             return 1;
 
         // Looks like RGBA?  Easy!
-        if(format->Rmask == 0xFF000000 && format->Gmask == 0x00FF0000 && format->Bmask == 0x0000FF00)
+        else if(format->Rmask == 0x000000FF && format->Gmask == 0x0000FF00 && format->Bmask == 0x00FF0000)
         {
             if(surfaceFormatResult != NULL)
                 *surfaceFormatResult = GL_RGBA;
             return 0;
         }
         // Looks like ABGR?
-        else if(format->Rmask == 0x000000FF && format->Gmask == 0x0000FF00 && format->Bmask == 0x00FF0000)
+        if(format->Rmask == 0xFF000000 && format->Gmask == 0x00FF0000 && format->Bmask == 0x0000FF00)
         {
 #ifdef GL_ABGR
             if(enabled_features & GPU_FEATURE_GL_ABGR)
@@ -868,7 +877,7 @@ static int compareFormats(GLenum glFormat, SDL_Surface* surface, GLenum* surface
 #endif
         }
         // Looks like BGRA?
-        else if(format->Rmask == 0x0000FF00 && format->Gmask == 0x00FF0000 && format->Bmask == 0xFF000000)
+        else if(format->Rmask == 0x00FF0000 && format->Gmask == 0x0000FF00 && format->Bmask == 0x000000FF)
         {
 #ifdef GL_BGRA
             if(enabled_features & GPU_FEATURE_GL_BGRA)
@@ -893,34 +902,22 @@ static SDL_PixelFormat* AllocFormat(GLenum glFormat)
 {
     // Yes, I need to do the whole thing myself... :(
     int channels;
-    Uint32 Rmask, Gmask, Bmask, Amask, mask;
+    Uint32 Rmask, Gmask, Bmask, Amask = 0, mask;
 
     switch(glFormat)
     {
     case GL_RGB:
         channels = 3;
-        #if SDL_BYTEORDER == SDL_BIG_ENDIAN
-        Rmask = 0xFF0000;
-        Gmask = 0x00FF00;
-        Bmask = 0x0000FF;
-        #else
         Rmask = 0x0000FF;
         Gmask = 0x00FF00;
         Bmask = 0xFF0000;
-        #endif
         break;
 #ifdef GL_BGR
     case GL_BGR:
         channels = 3;
-        #if SDL_BYTEORDER == SDL_BIG_ENDIAN
-        Bmask = 0xFF0000;
-        Gmask = 0x00FF00;
-        Rmask = 0x0000FF;
-        #else
         Bmask = 0x0000FF;
         Gmask = 0x00FF00;
         Rmask = 0xFF0000;
-        #endif
         break;
 #endif
     case GL_RGBA:
@@ -951,6 +948,8 @@ static SDL_PixelFormat* AllocFormat(GLenum glFormat)
     default:
         return NULL;
     }
+    
+    //GPU_LogError("AllocFormat(): %d, Masks: %X %X %X %X\n", glFormat, Rmask, Gmask, Bmask, Amask);
 
     SDL_PixelFormat* result = (SDL_PixelFormat*)malloc(sizeof(SDL_PixelFormat));
     memset(result, 0, sizeof(SDL_PixelFormat));
@@ -1133,6 +1132,7 @@ static int InitImageWithSurface(GPU_Renderer* renderer, GPU_Image* image, SDL_Su
     //                          (newSurface->pitch / newSurface->format->BytesPerPixel));
     if(!need_power_of_two_upload)
     {
+        //GPU_LogError("InitImageWithSurface(), Copy? %d, internal: %d, original: %d\n", (newSurface != surface), internal_format, original_format);
         glTexImage2D(GL_TEXTURE_2D, 0, internal_format, newSurface->w, newSurface->h, 0,
                      original_format, GL_UNSIGNED_BYTE, newSurface->pixels);
     }
@@ -1155,6 +1155,44 @@ static int InitImageWithSurface(GPU_Renderer* renderer, GPU_Image* image, SDL_Su
     if(surface != newSurface)
         SDL_FreeSurface(newSurface);
     return 1;
+}
+
+
+static inline Uint32 getPixel(SDL_Surface *Surface, int x, int y)
+{
+    Uint8* bits;
+    Uint32 bpp;
+
+    if(x < 0 || x >= Surface->w)
+        return 0;  // Best I could do for errors
+
+    bpp = Surface->format->BytesPerPixel;
+    bits = ((Uint8*)Surface->pixels) + y*Surface->pitch + x*bpp;
+
+    switch (bpp)
+    {
+        case 1:
+            return *((Uint8*)Surface->pixels + y * Surface->pitch + x);
+            break;
+        case 2:
+            return *((Uint16*)Surface->pixels + y * Surface->pitch/2 + x);
+            break;
+        case 3:
+            // Endian-correct, but slower
+            {
+            Uint8 r, g, b;
+            r = *((bits)+Surface->format->Rshift/8);
+            g = *((bits)+Surface->format->Gshift/8);
+            b = *((bits)+Surface->format->Bshift/8);
+            return SDL_MapRGB(Surface->format, r, g, b);
+            }
+            break;
+        case 4:
+            return *((Uint32*)Surface->pixels + y * Surface->pitch/4 + x);
+            break;
+    }
+
+    return 0;  // FIXME: Handle errors better
 }
 
 // From SDL_CreateTextureFromSurface
@@ -1191,7 +1229,11 @@ static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surf
     {
         channels = 3;
     }
-
+    
+    //GPU_LogError("Format...  Channels: %d, BPP: %d, Masks: %X %X %X %X\n", channels, fmt->BytesPerPixel, fmt->Rmask, fmt->Gmask, fmt->Bmask, fmt->Amask);
+    
+    //Uint32 pix = getPixel(surface, 128, 128);
+    //GPU_LogError("Middle pixel: %X\n", pix);
     image = CreateUninitializedImage(renderer, surface->w, surface->h, channels);
     if(image == NULL)
         return NULL;
