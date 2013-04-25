@@ -6,6 +6,7 @@
 
 #include "SDL_gpu_OpenGL_internal.h"
 #include <math.h>
+#include <string.h>
 #include <strings.h>
 int strcasecmp(const char*, const char *);
 
@@ -635,6 +636,14 @@ static unsigned char* getRawImageData(GPU_Renderer* renderer, GPU_Image* image)
     return data;
 }
 
+// From http://stackoverflow.com/questions/5309471/getting-file-extension-in-c
+static const char *get_filename_ext(const char *filename)
+{
+    const char *dot = strrchr(filename, '.');
+    if(!dot || dot == filename)
+        return "";
+    return dot + 1;
+}
 
 static Uint8 SaveImage(GPU_Renderer* renderer, GPU_Image* image, const char* filename)
 {
@@ -648,20 +657,7 @@ static Uint8 SaveImage(GPU_Renderer* renderer, GPU_Image* image, const char* fil
         return 0;
     }
 
-    if(strlen(filename) < 5)
-    {
-        GPU_LogError("GPU_SaveImage() failed: Unsupported format.\n");
-        return 0;
-    }
-
-    extension = filename + strlen(filename)-1 - 3;
-
-    /* FIXME: Doesn't support length 4 extensions yet */
-    if(extension[0] != '.')
-    {
-        GPU_LogError("GPU_SaveImage() failed: Unsupported format.\n");
-        return 0;
-    }
+    extension = get_filename_ext(filename);
 
     data = getRawImageData(renderer, image);
 
@@ -671,7 +667,6 @@ static Uint8 SaveImage(GPU_Renderer* renderer, GPU_Image* image, const char* fil
         return 0;
     }
 
-    extension++;
     if(strcasecmp(extension, "png") == 0)
         result = stbi_write_png(filename, image->w, image->h, image->channels, (const unsigned char *const)data, 0);
     else if(strcasecmp(extension, "bmp") == 0)
