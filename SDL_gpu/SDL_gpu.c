@@ -325,16 +325,23 @@ SDL_Surface* GPU_LoadSurface(const char* filename)
 	
 	if(channels == 3)
 	{
+	    // These are reversed from what SDL_image uses...  That is bad. :(  Needs testing.
+	    #if SDL_BYTEORDER == SDL_BIG_ENDIAN
 		Rmask = 0xff0000;
 		Gmask = 0x00ff00;
 		Bmask = 0x0000ff;
+		#else
+		Rmask = 0x0000ff;
+		Gmask = 0x00ff00;
+		Bmask = 0xff0000;
+		#endif
 	}
 	else
 	{
-		Rmask = 0xff000000;
-		Gmask = 0x00ff0000;
-		Bmask = 0x0000ff00;
-		Amask = 0x000000ff;
+		Rmask = 0x000000ff;
+		Gmask = 0x0000ff00;
+		Bmask = 0x00ff0000;
+		Amask = 0xff000000;
 	}
 	
 	SDL_Surface* result = SDL_CreateRGBSurfaceFrom(data, width, height, channels*8, width*channels, Rmask, Gmask, Bmask, Amask);

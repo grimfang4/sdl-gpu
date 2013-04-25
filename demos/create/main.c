@@ -2,6 +2,8 @@
 #include "SDL_gpu.h"
 #include <math.h>
 
+#define IMAGE_FILE "data/test.bmp"
+
 void printRenderers(void)
 {
 	const char* renderers[GPU_GetNumRegisteredRenderers()];
@@ -28,13 +30,15 @@ int main(int argc, char* argv[])
 	
 	printf("Using renderer: %s\n", GPU_GetCurrentRendererID());
 	
-	GPU_Image* image = GPU_LoadImage("data/test.bmp");
+	GPU_LogError("Loading image\n");
+	GPU_Image* image = GPU_LoadImage(IMAGE_FILE);
 	if(image == NULL)
     {
         GPU_LogError("Failed to load image.\n");
 		return -1;
     }
 	
+	GPU_LogError("Loading image1\n");
 	GPU_Image* image1 = GPU_CreateImage(200, 200, 4);
 	if(image1 == NULL)
     {
@@ -45,6 +49,7 @@ int main(int argc, char* argv[])
 	GPU_ClearRGBA(image1_tgt, 0, 0, 255, 255);
 	GPU_FreeTarget(image1_tgt);
 	
+	GPU_LogError("Loading image2\n");
 	GPU_Image* image2 = GPU_CopyImage(image);
 	if(image2 == NULL)
     {
@@ -52,7 +57,8 @@ int main(int argc, char* argv[])
 		return -1;
     }
 	
-	SDL_Surface* surface = SDL_LoadBMP("data/test.bmp");
+	SDL_Surface* surface = SDL_LoadBMP(IMAGE_FILE);
+	GPU_LogError("Loading image3\n");
 	GPU_Image* image3 = GPU_CopyImageFromSurface(surface);
 	SDL_FreeSurface(surface);
 	if(image == NULL)
