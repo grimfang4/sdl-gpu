@@ -169,6 +169,15 @@ struct GPU_Renderer
 	/*! \see GPU_CopyImageFromSurface() */
 	GPU_Image* (*CopyImageFromSurface)(GPU_Renderer* renderer, SDL_Surface* surface);
 	
+	/*! \see GPU_CopyImageFromTarget() */
+	GPU_Image* (*CopyImageFromTarget)(GPU_Renderer* renderer, GPU_Target* target);
+	
+	/*! \see GPU_CopySurfaceFromTarget() */
+	SDL_Surface* (*CopySurfaceFromTarget)(GPU_Renderer* renderer, GPU_Target* target);
+	
+	/*! \see GPU_CopySurfaceFromImage() */
+	SDL_Surface* (*CopySurfaceFromImage)(GPU_Renderer* renderer, GPU_Image* image);
+	
 	/*! \see GPU_FreeImage() */
 	void (*FreeImage)(GPU_Renderer* renderer, GPU_Image* image);
 	
@@ -375,6 +384,9 @@ GPU_Image* GPU_LoadImage(const char* filename);
 /*! Save image to a file.  The file type is deduced from the extension.  Returns 0 on failure. */
 Uint8 GPU_SaveImage(GPU_Image* image, const char* filename);
 
+/*! Save surface to a file.  The file type is deduced from the extension.  Returns 0 on failure. */
+Uint8 GPU_SaveSurface(SDL_Surface* surface, const char* filename);
+
 /*! Copy an image to a new image.  Don't forget to GPU_FreeImage() both. */
 GPU_Image* GPU_CopyImage(GPU_Image* image);
 
@@ -386,6 +398,15 @@ SDL_Surface* GPU_LoadSurface(const char* filename);
 
 /*! Copy SDL_Surface data into a new GPU_Image.  Don't forget to SDL_FreeSurface() the surface and GPU_FreeImage() the image.*/
 GPU_Image* GPU_CopyImageFromSurface(SDL_Surface* surface);
+
+/*! Copy GPU_Target data into a new GPU_Image.  Don't forget to GPU_FreeImage() the image.*/
+GPU_Image* GPU_CopyImageFromTarget(GPU_Target* target);
+
+/*! Copy GPU_Target data into a new SDL_Surface.  Don't forget to SDL_FreeSurface() the surface.*/
+SDL_Surface* GPU_CopySurfaceFromTarget(GPU_Target* target);
+
+/*! Copy GPU_Image data into a new SDL_Surface.  Don't forget to SDL_FreeSurface() the surface and GPU_FreeImage() the image.*/
+SDL_Surface* GPU_CopySurfaceFromImage(GPU_Image* image);
 
 /*! Deletes an image in the proper way for this renderer.  Also deletes the corresponding GPU_Target if applicable.  Be careful not to use that target afterward! */
 void GPU_FreeImage(GPU_Image* image);

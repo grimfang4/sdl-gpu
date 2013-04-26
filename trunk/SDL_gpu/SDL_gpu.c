@@ -349,12 +349,81 @@ SDL_Surface* GPU_LoadSurface(const char* filename)
 	return result;
 }
 
+#include "stb_image.h"
+#include "stb_image_write.h"
+
+// From http://stackoverflow.com/questions/5309471/getting-file-extension-in-c
+static const char *get_filename_ext(const char *filename)
+{
+    const char *dot = strrchr(filename, '.');
+    if(!dot || dot == filename)
+        return "";
+    return dot + 1;
+}
+
+Uint8 GPU_SaveSurface(SDL_Surface* surface, const char* filename)
+{
+    const char* extension;
+    Uint8 result;
+    unsigned char* data;
+
+    if(surface == NULL || filename == NULL ||
+            surface->w < 1 || surface->h < 1)
+    {
+        return 0;
+    }
+
+    extension = get_filename_ext(filename);
+
+    data = surface->pixels;
+
+    if(strcasecmp(extension, "png") == 0)
+        result = stbi_write_png(filename, surface->w, surface->h, surface->format->BytesPerPixel, (const unsigned char *const)data, 0);
+    else if(strcasecmp(extension, "bmp") == 0)
+        result = stbi_write_bmp(filename, surface->w, surface->h, surface->format->BytesPerPixel, (void*)data);
+    else if(strcasecmp(extension, "tga") == 0)
+        result = stbi_write_tga(filename, surface->w, surface->h, surface->format->BytesPerPixel, (void*)data);
+    //else if(strcasecmp(extension, "dds") == 0)
+    //    result = stbi_write_dds(filename, surface->w, surface->h, surface->format->BytesPerPixel, (const unsigned char *const)data);
+    else
+    {
+        GPU_LogError("GPU_SaveSurface() failed: Unsupported format (%s).\n", extension);
+        result = 0;
+    }
+
+    return result;
+}
+
 GPU_Image* GPU_CopyImageFromSurface(SDL_Surface* surface)
 {
 	if(current_renderer == NULL || current_renderer->CopyImageFromSurface == NULL)
 		return NULL;
 	
 	return current_renderer->CopyImageFromSurface(current_renderer, surface);
+}
+
+GPU_Image* GPU_CopyImageFromTarget(GPU_Target* target)
+{
+	if(current_renderer == NULL || current_renderer->CopyImageFromTarget == NULL)
+		return NULL;
+	
+	return current_renderer->CopyImageFromTarget(current_renderer, target);
+}
+
+SDL_Surface* GPU_CopySurfaceFromTarget(GPU_Target* target)
+{
+	if(current_renderer == NULL || current_renderer->CopySurfaceFromTarget == NULL)
+		return NULL;
+	
+	return current_renderer->CopySurfaceFromTarget(current_renderer, target);
+}
+
+SDL_Surface* GPU_CopySurfaceFromImage(GPU_Image* image)
+{
+	if(current_renderer == NULL || current_renderer->CopySurfaceFromImage == NULL)
+		return NULL;
+	
+	return current_renderer->CopySurfaceFromImage(current_renderer, image);
 }
 
 void GPU_FreeImage(GPU_Image* image)
