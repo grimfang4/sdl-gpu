@@ -14,6 +14,9 @@ int strcasecmp(const char*, const char *);
 #define M_PI 3.14159265358979323846
 #endif
 
+static SDL_PixelFormat* AllocFormat(GLenum glFormat);
+static void FreeFormat(SDL_PixelFormat* format);
+
 static Uint8 isExtensionSupported(const char* extension_str)
 {
 #ifdef SDL_GPU_USE_OPENGL
@@ -305,6 +308,7 @@ static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags
     renderer->display->data = (TargetData_OpenGL*)malloc(sizeof(TargetData_OpenGL));
 
     ((TargetData_OpenGL*)renderer->display->data)->handle = 0;
+    ((TargetData_OpenGL*)renderer->display->data)->format = GL_RGBA;
     renderer->display->renderer = renderer;
     renderer->display->w = renderer->window_w;
     renderer->display->h = renderer->window_h;
@@ -609,29 +613,76 @@ static GPU_Image* LoadImage(GPU_Renderer* renderer, const char* filename)
 }
 
 
-static void readTexPixels(GPU_Renderer* renderer, GPU_Target* source, unsigned int width, unsigned int height, GLint format, GLubyte* pixels)
+static Uint8 readTargetPixels(GPU_Renderer* renderer, GPU_Target* source, GLint format, GLubyte* pixels)
 {
+    if(source == NULL)
+        return 0;
     flushBlitBufferIfCurrentFramebuffer(renderer, source);
     if(bindFramebuffer(renderer, source))
-        glReadPixels(0, 0, width, height, format, GL_UNSIGNED_BYTE, pixels);
+    {
+        glReadPixels(0, 0, source->w, source->h, format, GL_UNSIGNED_BYTE, pixels);
+        return 1;
+    }
+    return 0;
+}
+
+static Uint8 readImagePixels(GPU_Renderer* renderer, GPU_Image* source, GLint format, GLubyte* pixels)
+{
+    if(source == NULL)
+        return 0;
+    
+    // No glGetTexImage() in OpenGLES
+    #ifdef SDL_GPU_USE_OPENGLES
+    // Load up the target
+    Uint8 created_target = 0;
+    if(source->target == NULL)
+    {
+        renderer->LoadTarget(renderer, source);
+        created_target = 1;
+    }
+    // Get the data
+    Uint8 result = readTargetPixels(renderer, source->target, format, pixels);
+    // Free the target
+    if(created_target)
+        renderer->FreeTarget(source->target);
+    return result;
+    #else
+    // Bind the texture temporarily
+    glBindTexture(GL_TEXTURE_2D, ((ImageData_OpenGL*)source->data)->handle);
+    // Get the data
+    glGetTexImage(GL_TEXTURE_2D, 0, format, GL_UNSIGNED_BYTE, pixels);
+    // Rebind the last texture
+    if(((RendererData_OpenGL*)renderer->data)->last_image != NULL)
+        glBindTexture(GL_TEXTURE_2D, ((ImageData_OpenGL*)(((RendererData_OpenGL*)renderer->data)->last_image)->data)->handle);
+    return 1;
+    #endif
+}
+
+static unsigned char* getRawTargetData(GPU_Renderer* renderer, GPU_Target* target)
+{
+    int channels = 4;
+    if(target->image != NULL)
+        channels = target->image->channels;
+    unsigned char* data = (unsigned char*)malloc(target->w * target->h * channels);
+    
+    if(!readTargetPixels(renderer, target, ((TargetData_OpenGL*)target->data)->format, data))
+    {
+        free(data);
+        return NULL;
+    }
+
+    return data;
 }
 
 static unsigned char* getRawImageData(GPU_Renderer* renderer, GPU_Image* image)
 {
     unsigned char* data = (unsigned char*)malloc(image->w * image->h * image->channels);
 
-    GPU_Target* tgt = image->target;
-    Uint8 loadedTarget = 0;
-    if(tgt == NULL)
+    if(!readImagePixels(renderer, image, ((ImageData_OpenGL*)image->data)->format, data))
     {
-        tgt = GPU_LoadTarget(image);
-        loadedTarget = 1;
+        free(data);
+        return NULL;
     }
-
-    readTexPixels(renderer, tgt, image->w, image->h, ((ImageData_OpenGL*)image->data)->format, data);
-
-    if(loadedTarget)
-        GPU_FreeTarget(tgt);
 
     return data;
 }
@@ -681,6 +732,56 @@ static Uint8 SaveImage(GPU_Renderer* renderer, GPU_Image* image, const char* fil
         result = 0;
     }
 
+    free(data);
+    return result;
+}
+
+static SDL_Surface* CopySurfaceFromTarget(GPU_Renderer* renderer, GPU_Target* target)
+{
+    unsigned char* data;
+    SDL_Surface* result;
+
+    if(target == NULL || target->w < 1 || target->h < 1)
+        return NULL;
+
+    data = getRawTargetData(renderer, target);
+
+    if(data == NULL)
+    {
+        GPU_LogError("GPU_CopySurfaceFromTarget() failed: Could not retrieve target data.\n");
+        return NULL;
+    }
+    
+    SDL_PixelFormat* format = AllocFormat(((TargetData_OpenGL*)target->data)->format);
+    
+    result = SDL_CreateRGBSurfaceFrom(data, target->w, target->h, format->BitsPerPixel, target->w*format->BytesPerPixel, format->Rmask, format->Gmask, format->Bmask, format->Amask);
+    
+    FreeFormat(format);
+    free(data);
+    return result;
+}
+
+static SDL_Surface* CopySurfaceFromImage(GPU_Renderer* renderer, GPU_Image* image)
+{
+    unsigned char* data;
+    SDL_Surface* result;
+
+    if(image == NULL || image->w < 1 || image->h < 1)
+        return NULL;
+
+    data = getRawImageData(renderer, image);
+
+    if(data == NULL)
+    {
+        GPU_LogError("GPU_CopySurfaceFromImage() failed: Could not retrieve image data.\n");
+        return NULL;
+    }
+    
+    SDL_PixelFormat* format = AllocFormat(((ImageData_OpenGL*)image->data)->format);
+    
+    result = SDL_CreateRGBSurfaceFrom(data, image->w, image->h, format->BitsPerPixel, image->w*format->BytesPerPixel, format->Rmask, format->Gmask, format->Bmask, format->Amask);
+    
+    FreeFormat(format);
     free(data);
     return result;
 }
@@ -1114,7 +1215,7 @@ static int InitImageWithSurface(GPU_Renderer* renderer, GPU_Image* image, SDL_Su
     //                          (newSurface->pitch / newSurface->format->BytesPerPixel));
     if(!need_power_of_two_upload)
     {
-        //GPU_LogError("InitImageWithSurface(), Copy? %d, internal: %d, original: %d\n", (newSurface != surface), internal_format, original_format);
+        //GPU_LogError("InitImageWithSurface(), Copy? %d, internal: %d, original: %d, GL_RGB: %d, GL_RGBA: %d\n", (newSurface != surface), internal_format, original_format, GL_RGB, GL_RGBA);
         glTexImage2D(GL_TEXTURE_2D, 0, internal_format, newSurface->w, newSurface->h, 0,
                      original_format, GL_UNSIGNED_BYTE, newSurface->pixels);
     }
@@ -1211,9 +1312,9 @@ static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surf
     {
         channels = 3;
     }
-
+    
     //GPU_LogError("Format...  Channels: %d, BPP: %d, Masks: %X %X %X %X\n", channels, fmt->BytesPerPixel, fmt->Rmask, fmt->Gmask, fmt->Bmask, fmt->Amask);
-
+    
     //Uint32 pix = getPixel(surface, 128, 128);
     //GPU_LogError("Middle pixel: %X\n", pix);
     image = CreateUninitializedImage(renderer, surface->w, surface->h, channels);
@@ -1229,6 +1330,16 @@ static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surf
     else
         InitImageWithSurface(renderer, image, surface);
 
+    return image;
+}
+
+
+static GPU_Image* CopyImageFromTarget(GPU_Renderer* renderer, GPU_Target* target)
+{
+    // TODO: Implement this for real
+    SDL_Surface* temp = renderer->CopySurfaceFromTarget(renderer, target);
+    GPU_Image* image = renderer->CopyImageFromSurface(renderer, temp);
+    SDL_FreeSurface(temp);
     return image;
 }
 
@@ -1848,9 +1959,7 @@ static void ReplaceRGB(GPU_Renderer* renderer, GPU_Image* image, Uint8 from_r, U
     // FIXME: Does not take into account GL_PACK_ALIGNMENT
     GLubyte *buffer = (GLubyte *)malloc(textureWidth*textureHeight*image->channels);
 
-    GPU_Target* tgt = GPU_LoadTarget(image);
-    readTexPixels(renderer, tgt, textureWidth, textureHeight, texture_format, buffer);
-    GPU_FreeTarget(tgt);
+    readImagePixels(renderer, image, texture_format, buffer);
 
     int x,y,i;
     for(y = 0; y < textureHeight; y++)
@@ -1892,11 +2001,9 @@ static void MakeRGBTransparent(GPU_Renderer* renderer, GPU_Image* image, Uint8 r
     GLenum texture_format = ((ImageData_OpenGL*)image->data)->format;
 
     // FIXME: Does not take into account GL_PACK_ALIGNMENT
-    GLubyte *buffer = (GLubyte *)malloc(textureWidth*textureHeight*4);
+    GLubyte *buffer = (GLubyte *)malloc(textureWidth*textureHeight*image->channels);
 
-    GPU_Target* tgt = GPU_LoadTarget(image);
-    readTexPixels(renderer, tgt, textureWidth, textureHeight, texture_format, buffer);
-    GPU_FreeTarget(tgt);
+    readImagePixels(renderer, image, texture_format, buffer);
 
     int x,y,i;
     for(y = 0; y < textureHeight; y++)
@@ -2034,9 +2141,7 @@ static void ShiftHSV(GPU_Renderer* renderer, GPU_Image* image, int hue, int satu
 
     GLenum texture_format = ((ImageData_OpenGL*)image->data)->format;
 
-    GPU_Target* tgt = GPU_LoadTarget(image);
-    readTexPixels(renderer, tgt, textureWidth, textureHeight, texture_format, buffer);
-    GPU_FreeTarget(tgt);
+    readImagePixels(renderer, image, texture_format, buffer);
 
     int x,y,i;
     for(y = 0; y < textureHeight; y++)
@@ -2102,9 +2207,7 @@ static void ShiftHSVExcept(GPU_Renderer* renderer, GPU_Image* image, int hue, in
 
     GLenum texture_format = ((ImageData_OpenGL*)image->data)->format;
 
-    GPU_Target* tgt = GPU_LoadTarget(image);
-    readTexPixels(renderer, tgt, textureWidth, textureHeight, texture_format, buffer);
-    GPU_FreeTarget(tgt);
+    readImagePixels(renderer, image, texture_format, buffer);
 
     int x,y,i;
     for(y = 0; y < textureHeight; y++)
@@ -2559,6 +2662,9 @@ GPU_Renderer* GPU_CreateRenderer_OpenGL(void)
     renderer->CopyImage = &CopyImage;
     renderer->UpdateImage = &UpdateImage;
     renderer->CopyImageFromSurface = &CopyImageFromSurface;
+    renderer->CopyImageFromTarget = &CopyImageFromTarget;
+    renderer->CopySurfaceFromTarget = &CopySurfaceFromTarget;
+    renderer->CopySurfaceFromImage = &CopySurfaceFromImage;
     renderer->SubSurfaceCopy = &SubSurfaceCopy;
     renderer->FreeImage = &FreeImage;
 
