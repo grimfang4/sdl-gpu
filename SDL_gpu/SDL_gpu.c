@@ -238,6 +238,14 @@ GPU_Camera GPU_SetCamera(GPU_Target* screen, GPU_Camera* cam)
 	return current_renderer->SetCamera(current_renderer, screen, cam);
 }
 
+SDL_Window* GPU_GetWindow(GPU_Target* target)
+{
+	if(current_renderer == NULL || current_renderer->GetWindow == NULL)
+		return NULL;
+	
+	return current_renderer->GetWindow(current_renderer, target);
+}
+
 GPU_Image* GPU_CreateImage(Uint16 w, Uint16 h, Uint8 channels)
 {
 	if(current_renderer == NULL || current_renderer->CreateImage == NULL)

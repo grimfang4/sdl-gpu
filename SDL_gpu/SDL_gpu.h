@@ -8,14 +8,14 @@
 /* Auto-detect if we're using the SDL2 API by the headers available. */
 #if SDL_VERSION_ATLEAST(2,0,0)
     #define SDL_GPU_USE_SDL2
+#else
+    #define SDL_Window SDL_Surface
 #endif
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-
 
 
 typedef struct GPU_Renderer GPU_Renderer;
@@ -147,6 +147,9 @@ struct GPU_Renderer
 	
 	/*! \see GPU_ToggleFullscreen() */
 	int (*ToggleFullscreen)(GPU_Renderer* renderer);
+	
+	/*! \see GPU_GetWindow() */
+	SDL_Window* (*GetWindow)(GPU_Renderer* renderer, GPU_Target* target);
 
 	/*! \see GPU_SetCamera() */
 	GPU_Camera (*SetCamera)(GPU_Renderer* renderer, GPU_Target* screen, GPU_Camera* cam);
@@ -364,12 +367,14 @@ GPU_Camera GPU_GetDefaultCamera(void);
 GPU_Camera GPU_GetCamera(void);
 
 
-// Defined by renderer
 /*! Sets the current renderer's current camera.
  * \param screen The target to affect. (currently affects every target regardless)
  * \param cam A pointer to the camera data to use or NULL to use the default camera.
  * \return The old camera. */
 GPU_Camera GPU_SetCamera(GPU_Target* screen, GPU_Camera* cam);
+
+/*! \return The SDL_Window (or SDL_Surface in SDL 1.2) associated with the given target.  NULL if the target does not render to a window. */
+SDL_Window* GPU_GetWindow(GPU_Target* target);
 
 /*! Create a new, blank image with a format determined by the number of channels requested.  Don't forget to GPU_FreeImage() it. 
 	 * \param w Image width in pixels

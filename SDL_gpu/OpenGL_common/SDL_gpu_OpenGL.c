@@ -143,7 +143,9 @@ Uint8 bindFramebuffer(GPU_Renderer* renderer, GPU_Target* target)
         // Bind the FBO
         if(target != ((RendererData_OpenGL*)renderer->data)->last_target)
         {
-            GLuint handle = ((TargetData_OpenGL*)target->data)->handle;
+            GLuint handle = 0;
+            if(target != NULL)
+                handle = ((TargetData_OpenGL*)target->data)->handle;
             renderer->FlushBlitBuffer(renderer);
 
             extBindFramebuffer(handle);
@@ -503,6 +505,18 @@ static GPU_Camera SetCamera(GPU_Renderer* renderer, GPU_Target* screen, GPU_Came
     return result;
 }
 
+static SDL_Window* GetWindow(GPU_Renderer* renderer, GPU_Target* target)
+{
+    if(target == NULL || target != renderer->display)
+        return NULL;
+    
+    #ifdef SDL_GPU_USE_SDL2
+    return ((RendererData_OpenGL*)renderer->data)->window;
+    #else
+    return SDL_GetVideoSurface();
+    #endif
+}
+
 
 static GPU_Image* CreateUninitializedImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint8 channels)
 {
@@ -788,43 +802,35 @@ static SDL_Surface* CopySurfaceFromImage(GPU_Renderer* renderer, GPU_Image* imag
 
 static GPU_Image* CopyImage(GPU_Renderer* renderer, GPU_Image* image)
 {
-    GLboolean old_blend;
-    glGetBooleanv(GL_BLEND, &old_blend);
-    if(old_blend)
-        renderer->SetBlending(renderer, 0);
-
+    // FIXME: Will not work if FBOs are disabled
+    Uint8 loaded_target = 0;
+    
     GPU_Image* result = renderer->CreateImage(renderer, image->w, image->h, image->channels);
-
-    GPU_Target* tgt = renderer->LoadTarget(renderer, result);
-
-    // Clear the clipRect
-    SDL_Rect clip;
-    Uint8 useClip = tgt->useClip;
-    if(useClip)
+    if(result == NULL)
+        return NULL;
+    
+    bindTexture(renderer, result);
+    
+    if(image->target == NULL)
     {
-        clip = tgt->clipRect;
-        GPU_ClearClip(tgt);
+        renderer->LoadTarget(renderer, image);
+        loaded_target = 1;
     }
-
-    Uint16 w = renderer->display->w;
-    Uint16 h = renderer->display->h;
-
-    renderer->SetVirtualResolution(renderer, renderer->window_w, renderer->window_h);
-    renderer->Blit(renderer, image, NULL, tgt, tgt->w/2, tgt->h/2);
-    renderer->SetVirtualResolution(renderer, w, h);
-
-    renderer->FreeTarget(renderer, tgt);
-
-    if(useClip)
+    
+    GPU_Target* last_target = ((RendererData_OpenGL*)renderer->data)->last_target;
+    
+    if(bindFramebuffer(renderer, image->target))
     {
-        tgt->useClip = 1;
-        tgt->clipRect = clip;
+        glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, result->w, result->h);
+        GPU_LogError("CopyImage: %d\n", glGetError());
+        bindFramebuffer(renderer, last_target);
     }
-
-
-    if(old_blend)
-        renderer->SetBlending(renderer, 1);
-
+    
+    if(loaded_target)
+    {
+        renderer->FreeTarget(renderer, image->target);
+    }
+    
     return result;
 }
 
@@ -2655,6 +2661,7 @@ GPU_Renderer* GPU_CreateRenderer_OpenGL(void)
 
     renderer->ToggleFullscreen = &ToggleFullscreen;
     renderer->SetCamera = &SetCamera;
+    renderer->GetWindow = &GetWindow;
 
     renderer->CreateImage = &CreateImage;
     renderer->LoadImage = &LoadImage;
