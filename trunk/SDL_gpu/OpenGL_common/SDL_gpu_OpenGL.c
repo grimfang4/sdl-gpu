@@ -684,6 +684,19 @@ static unsigned char* getRawTargetData(GPU_Renderer* renderer, GPU_Target* targe
         free(data);
         return NULL;
     }
+    
+    // Flip the data vertically (OpenGL framebuffer is read upside down)
+    int pitch = target->w * channels;
+    unsigned char* copy = (unsigned char*)malloc(pitch);
+    int y;
+    for(y = 0; y < target->h/2; y++)
+    {
+        unsigned char* top = &data[target->w * y * channels];
+        unsigned char* bottom = &data[target->w * (target->h - y - 1) * channels];
+        memcpy(copy, top, pitch);
+        memcpy(top, bottom, pitch);
+        memcpy(bottom, copy, pitch);
+    }
 
     return data;
 }
@@ -771,7 +784,6 @@ static SDL_Surface* CopySurfaceFromTarget(GPU_Renderer* renderer, GPU_Target* ta
     result = SDL_CreateRGBSurfaceFrom(data, target->w, target->h, format->BitsPerPixel, target->w*format->BytesPerPixel, format->Rmask, format->Gmask, format->Bmask, format->Amask);
     
     FreeFormat(format);
-    free(data);
     return result;
 }
 
@@ -796,43 +808,19 @@ static SDL_Surface* CopySurfaceFromImage(GPU_Renderer* renderer, GPU_Image* imag
     result = SDL_CreateRGBSurfaceFrom(data, image->w, image->h, format->BitsPerPixel, image->w*format->BytesPerPixel, format->Rmask, format->Gmask, format->Bmask, format->Amask);
     
     FreeFormat(format);
-    free(data);
     return result;
 }
 
-static GPU_Image* CopyImage(GPU_Renderer* renderer, GPU_Image* image)
-{
-    // FIXME: Will not work if FBOs are disabled
-    Uint8 loaded_target = 0;
-    
-    GPU_Image* result = renderer->CreateImage(renderer, image->w, image->h, image->channels);
-    if(result == NULL)
-        return NULL;
-    
-    bindTexture(renderer, result);
-    
-    if(image->target == NULL)
-    {
-        renderer->LoadTarget(renderer, image);
-        loaded_target = 1;
-    }
-    
-    GPU_Target* last_target = ((RendererData_OpenGL*)renderer->data)->last_target;
-    
-    if(bindFramebuffer(renderer, image->target))
-    {
-        glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, result->w, result->h);
-        GPU_LogError("CopyImage: %d\n", glGetError());
-        bindFramebuffer(renderer, last_target);
-    }
-    
-    if(loaded_target)
-    {
-        renderer->FreeTarget(renderer, image->target);
-    }
-    
-    return result;
-}
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1128,54 +1116,6 @@ static SDL_Surface* copySurfaceIfNeeded(GLenum glFormat, SDL_Surface* surface, G
 }
 
 // From SDL_UpdateTexture()
-static void UpdateImage(GPU_Renderer* renderer, GPU_Image* image, const SDL_Rect* rect, SDL_Surface* surface)
-{
-    if(renderer == NULL || image == NULL || surface == NULL)
-        return;
-
-    ImageData_OpenGL* data = (ImageData_OpenGL*)image->data;
-    GLenum original_format = data->format;
-
-    SDL_Surface* newSurface = copySurfaceIfNeeded(data->format, surface, &original_format);
-    if(newSurface == NULL)
-    {
-        GPU_LogError("GPU_UpdateImage() failed to convert surface to proper pixel format.\n");
-        return;
-    }
-
-
-    SDL_Rect updateRect;
-    if(rect != NULL)
-        updateRect = *rect;
-    else
-    {
-        updateRect.x = 0;
-        updateRect.y = 0;
-        updateRect.w = newSurface->w;
-        updateRect.h = newSurface->h;
-    }
-
-
-    glEnable(GL_TEXTURE_2D);
-    if(image->target != NULL)
-        flushBlitBufferIfCurrentFramebuffer(renderer, image->target);
-    bindTexture(renderer, image);
-    int alignment = 1;
-    if(newSurface->format->BytesPerPixel == 4)
-        alignment = 4;
-    glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
-    //glPixelStorei(GL_UNPACK_ROW_LENGTH,
-    //                          (newSurface->pitch / newSurface->format->BytesPerPixel));
-    glTexSubImage2D(GL_TEXTURE_2D, 0, updateRect.x, updateRect.y, updateRect.w,
-                    updateRect.h, original_format, GL_UNSIGNED_BYTE,
-                    newSurface->pixels);
-
-    // Delete temporary surface
-    if(surface != newSurface)
-        SDL_FreeSurface(newSurface);
-}
-
-// From SDL_UpdateTexture()
 static int InitImageWithSurface(GPU_Renderer* renderer, GPU_Image* image, SDL_Surface* surface)
 {
     if(renderer == NULL || image == NULL || surface == NULL)
@@ -1244,6 +1184,76 @@ static int InitImageWithSurface(GPU_Renderer* renderer, GPU_Image* image, SDL_Su
     if(surface != newSurface)
         SDL_FreeSurface(newSurface);
     return 1;
+}
+
+static GPU_Image* CopyImage(GPU_Renderer* renderer, GPU_Image* image)
+{
+    if(image == NULL)
+        return NULL;
+    
+    GPU_Image* result = CreateUninitializedImage(renderer, image->w, image->h, image->channels);
+    if(result == NULL)
+        return NULL;
+    
+    SDL_Surface* surface = renderer->CopySurfaceFromImage(renderer, image);
+    if(surface == NULL)
+        return NULL;
+    
+    InitImageWithSurface(renderer, result, surface);
+    
+    SDL_FreeSurface(surface);
+    
+    return result;
+}
+
+
+
+// From SDL_UpdateTexture()
+static void UpdateImage(GPU_Renderer* renderer, GPU_Image* image, const SDL_Rect* rect, SDL_Surface* surface)
+{
+    if(renderer == NULL || image == NULL || surface == NULL)
+        return;
+
+    ImageData_OpenGL* data = (ImageData_OpenGL*)image->data;
+    GLenum original_format = data->format;
+
+    SDL_Surface* newSurface = copySurfaceIfNeeded(data->format, surface, &original_format);
+    if(newSurface == NULL)
+    {
+        GPU_LogError("GPU_UpdateImage() failed to convert surface to proper pixel format.\n");
+        return;
+    }
+
+
+    SDL_Rect updateRect;
+    if(rect != NULL)
+        updateRect = *rect;
+    else
+    {
+        updateRect.x = 0;
+        updateRect.y = 0;
+        updateRect.w = newSurface->w;
+        updateRect.h = newSurface->h;
+    }
+
+
+    glEnable(GL_TEXTURE_2D);
+    if(image->target != NULL)
+        flushBlitBufferIfCurrentFramebuffer(renderer, image->target);
+    bindTexture(renderer, image);
+    int alignment = 1;
+    if(newSurface->format->BytesPerPixel == 4)
+        alignment = 4;
+    glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
+    //glPixelStorei(GL_UNPACK_ROW_LENGTH,
+    //                          (newSurface->pitch / newSurface->format->BytesPerPixel));
+    glTexSubImage2D(GL_TEXTURE_2D, 0, updateRect.x, updateRect.y, updateRect.w,
+                    updateRect.h, original_format, GL_UNSIGNED_BYTE,
+                    newSurface->pixels);
+
+    // Delete temporary surface
+    if(surface != newSurface)
+        SDL_FreeSurface(newSurface);
 }
 
 
@@ -1342,10 +1352,13 @@ static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surf
 
 static GPU_Image* CopyImageFromTarget(GPU_Renderer* renderer, GPU_Target* target)
 {
-    // TODO: Implement this for real
-    SDL_Surface* temp = renderer->CopySurfaceFromTarget(renderer, target);
-    GPU_Image* image = renderer->CopyImageFromSurface(renderer, temp);
-    SDL_FreeSurface(temp);
+    if(target == NULL)
+        return NULL;
+    
+    SDL_Surface* surface = renderer->CopySurfaceFromTarget(renderer, target);
+    GPU_Image* image = renderer->CopyImageFromSurface(renderer, surface);
+    SDL_FreeSurface(surface);
+    
     return image;
 }
 
