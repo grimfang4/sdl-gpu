@@ -8,11 +8,11 @@ void printRenderers(void)
 	const char* renderers[GPU_GetNumRegisteredRenderers()];
 	GPU_GetRegisteredRendererList(renderers);
 	
-	printf("Available renderers:\n");
+	GPU_LogError("Available renderers:\n");
 	int i;
 	for(i = 0; i < GPU_GetNumRegisteredRenderers(); i++)
 	{
-		printf("%d) %s\n", i+1, renderers[i]);
+		GPU_LogError("%d) %s\n", i+1, renderers[i]);
 	}
 }
 
@@ -24,19 +24,30 @@ int main(int argc, char* argv[])
 	if(screen == NULL)
 		return -1;
 	
-	printf("Using renderer: %s\n", GPU_GetCurrentRendererID());
+	GPU_LogError("Using renderer: %s\n", GPU_GetCurrentRendererID());
 	
 	GPU_Image* image = GPU_LoadImage("data/test.bmp");
 	//GPU_Image* image = GPU_LoadImage("data/big_test.png");
 	if(image == NULL)
 		return -1;
 	
+	// Copying the annoying way
 	GPU_Image* image1 = GPU_CreateImage(image->w, image->h, 4);
 	GPU_Target* image1_tgt = GPU_LoadTarget(image1);
 	GPU_Blit(image, NULL, image1_tgt, image1_tgt->w/2, image1_tgt->h/2);
 	GPU_FreeTarget(image1_tgt);
 	
+	// Copying the normal way
 	GPU_Image* image2 = GPU_CopyImage(image);
+	
+	// Copying from a surface dump
+	SDL_Surface* surface = GPU_CopySurfaceFromImage(image);
+    //GPU_SaveSurface(surface, "save_surf1.bmp");
+	GPU_Image* image3 = GPU_CopyImageFromSurface(surface);
+	SDL_FreeSurface(surface);
+	
+	// A buffer for window capture
+	GPU_Image* image4 = NULL;
 	
 	
 	Uint8* keystates = SDL_GetKeyState(NULL);
@@ -58,6 +69,12 @@ int main(int argc, char* argv[])
 			{
 				if(event.key.keysym.sym == SDLK_ESCAPE)
 					done = 1;
+				else if(event.key.keysym.sym == SDLK_SPACE)
+                {
+                    // Take a window capture
+                    GPU_FreeImage(image4);
+                    image4 = GPU_CopyImageFromTarget(screen);
+                }
 			}
 		}
 		
@@ -91,23 +108,28 @@ int main(int argc, char* argv[])
 		
 		GPU_SetCamera(screen, &camera);
 		
-		GPU_Blit(image, NULL, screen, screen->w/2, image->h/2);
-		GPU_Blit(image1, NULL, screen, screen->w/2 - image1->w/2, screen->h/2 + image1->h/2);
-		//GPU_Blit(image1, NULL, screen, image1->w/2, image1->h/2);
-		GPU_Blit(image2, NULL, screen, screen->w/2 + image2->w/2, screen->h/2 + image2->h/2);
+		GPU_Blit(image, NULL, screen, 128, 128);
+		GPU_Blit(image1, NULL, screen, 128 + 256, 128);
+		GPU_Blit(image2, NULL, screen, 128 + 512, 128);
+		GPU_Blit(image3, NULL, screen, 128, 128 + 256);
+		
+		if(image4 != NULL)
+            GPU_BlitScale(image4, NULL, screen, 3*screen->w/4, 3*screen->h/4, 0.25f, 0.25f);
 		
 		GPU_Flip();
 		
 		frameCount++;
 		if(frameCount%500 == 0)
-			printf("Average FPS: %.2f\n", 1000.0f*frameCount/(SDL_GetTicks() - startTime));
+			GPU_LogError("Average FPS: %.2f\n", 1000.0f*frameCount/(SDL_GetTicks() - startTime));
 	}
 	
-	printf("Average FPS: %.2f\n", 1000.0f*frameCount/(SDL_GetTicks() - startTime));
+	GPU_LogError("Average FPS: %.2f\n", 1000.0f*frameCount/(SDL_GetTicks() - startTime));
 	
 	GPU_FreeImage(image);
 	GPU_FreeImage(image1);
 	GPU_FreeImage(image2);
+	GPU_FreeImage(image3);
+	GPU_FreeImage(image4);
 	GPU_Quit();
 	
 	return 0;
