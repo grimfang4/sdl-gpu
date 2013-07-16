@@ -43,6 +43,7 @@ typedef struct GPU_Image
 	void* data;
 	Uint16 w, h;
 	int channels;
+	int refcount;
 } GPU_Image;
 
 

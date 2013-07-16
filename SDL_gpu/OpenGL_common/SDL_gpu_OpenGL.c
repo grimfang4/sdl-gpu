@@ -557,6 +557,7 @@ static GPU_Image* CreateUninitializedImage(GPU_Renderer* renderer, Uint16 w, Uin
     result->data = data;
     result->renderer = renderer;
     result->channels = channels;
+    result->refcount = 1;
     data->handle = handle;
     data->format = format;
     data->hasMipmaps = 0;
@@ -1372,6 +1373,12 @@ static void FreeImage(GPU_Renderer* renderer, GPU_Image* image)
 {
     if(image == NULL)
         return;
+    
+    if(image->refcount > 1)
+    {
+        image->refcount--;
+        return;
+    }
 
     // Delete the attached target first
     if(image->target != NULL)
