@@ -216,6 +216,12 @@ void GPU_GetVirtualCoords(float* x, float* y, float displayX, float displayY)
 		*y = (displayY*current_renderer->display->h)/current_renderer->window_h;
 }
 
+GPU_Rect GPU_MakeRect(float x, float y, float w, float h)
+{
+    GPU_Rect r = {x, y, w, h};
+    return r;
+}
+
 GPU_Camera GPU_GetDefaultCamera(void)
 {
 	GPU_Camera cam = {0.0f, 0.0f, -10.0f, 0.0f, 1.0f};
@@ -278,7 +284,7 @@ GPU_Image* GPU_CopyImage(GPU_Image* image)
 	return current_renderer->CopyImage(current_renderer, image);
 }
 
-void GPU_UpdateImage(GPU_Image* image, const SDL_Rect* rect, SDL_Surface* surface)
+void GPU_UpdateImage(GPU_Image* image, const GPU_Rect* rect, SDL_Surface* surface)
 {
 	if(current_renderer == NULL || current_renderer->UpdateImage == NULL)
 		return;
@@ -443,7 +449,7 @@ void GPU_FreeImage(GPU_Image* image)
 }
 
 
-void GPU_SubSurfaceCopy(SDL_Surface* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y)
+void GPU_SubSurfaceCopy(SDL_Surface* src, GPU_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y)
 {
 	if(current_renderer == NULL || current_renderer->SubSurfaceCopy == NULL)
         return;
@@ -480,7 +486,7 @@ void GPU_FreeTarget(GPU_Target* target)
 
 
 
-int GPU_Blit(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y)
+int GPU_Blit(GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest, float x, float y)
 {
 	if(current_renderer == NULL || current_renderer->Blit == NULL)
 		return -2;
@@ -489,7 +495,7 @@ int GPU_Blit(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float
 }
 
 
-int GPU_BlitRotate(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float angle)
+int GPU_BlitRotate(GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest, float x, float y, float angle)
 {
 	if(current_renderer == NULL || current_renderer->BlitRotate == NULL)
 		return -2;
@@ -497,7 +503,7 @@ int GPU_BlitRotate(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x,
 	return current_renderer->BlitRotate(current_renderer, src, srcrect, dest, x, y, angle);
 }
 
-int GPU_BlitScale(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float scaleX, float scaleY)
+int GPU_BlitScale(GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest, float x, float y, float scaleX, float scaleY)
 {
 	if(current_renderer == NULL || current_renderer->BlitScale == NULL)
 		return -2;
@@ -505,7 +511,7 @@ int GPU_BlitScale(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, 
 	return current_renderer->BlitScale(current_renderer, src, srcrect, dest, x, y, scaleX, scaleY);
 }
 
-int GPU_BlitTransform(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float angle, float scaleX, float scaleY)
+int GPU_BlitTransform(GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest, float x, float y, float angle, float scaleX, float scaleY)
 {
 	if(current_renderer == NULL || current_renderer->BlitTransform == NULL)
 		return -2;
@@ -513,7 +519,7 @@ int GPU_BlitTransform(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float
 	return current_renderer->BlitTransform(current_renderer, src, srcrect, dest, x, y, angle, scaleX, scaleY);
 }
 
-int GPU_BlitTransformX(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float pivot_x, float pivot_y, float angle, float scaleX, float scaleY)
+int GPU_BlitTransformX(GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest, float x, float y, float pivot_x, float pivot_y, float angle, float scaleX, float scaleY)
 {
 	if(current_renderer == NULL || current_renderer->BlitTransformX == NULL)
 		return -2;
@@ -521,7 +527,7 @@ int GPU_BlitTransformX(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, floa
 	return current_renderer->BlitTransformX(current_renderer, src, srcrect, dest, x, y, pivot_x, pivot_y, angle, scaleX, scaleY);
 }
 
-int GPU_BlitTransformMatrix(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float* matrix3x3)
+int GPU_BlitTransformMatrix(GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest, float x, float y, float* matrix3x3)
 {
 	if(current_renderer == NULL || current_renderer->BlitTransformMatrix == NULL || matrix3x3 == NULL)
 		return -2;
@@ -557,22 +563,22 @@ void GPU_GenerateMipmaps(GPU_Image* image)
 
 
 
-SDL_Rect GPU_SetClipRect(GPU_Target* target, SDL_Rect rect)
+GPU_Rect GPU_SetClipRect(GPU_Target* target, GPU_Rect rect)
 {
 	if(target == NULL || current_renderer == NULL || current_renderer->SetClip == NULL)
 	{
-		SDL_Rect r = {0,0,0,0};
+		GPU_Rect r = {0,0,0,0};
 		return r;
 	}
 	
 	return current_renderer->SetClip(current_renderer, target, rect.x, rect.y, rect.w, rect.h);
 }
 
-SDL_Rect GPU_SetClip(GPU_Target* target, Sint16 x, Sint16 y, Uint16 w, Uint16 h)
+GPU_Rect GPU_SetClip(GPU_Target* target, Sint16 x, Sint16 y, Uint16 w, Uint16 h)
 {
 	if(target == NULL || current_renderer == NULL || current_renderer->SetClip == NULL)
 	{
-		SDL_Rect r = {0,0,0,0};
+		GPU_Rect r = {0,0,0,0};
 		return r;
 	}
 	

@@ -155,40 +155,40 @@ void GPU_TriFilled(GPU_Target* target, float x1, float y1, float x2, float y2, f
 	shapeRenderer->TriFilled(shapeRenderer, target, x1, y1, x2, y2, x3, y3, color);
 }
 
-void GPU_Rect(GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color)
+void GPU_Rectangle(GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color)
 {
 	CHECK_RENDERER();
-	if(shapeRenderer->Rect == NULL)
+	if(shapeRenderer->Rectangle == NULL)
 		return;
 	
-	shapeRenderer->Rect(shapeRenderer, target, x1, y1, x2, y2, color);
+	shapeRenderer->Rectangle(shapeRenderer, target, x1, y1, x2, y2, color);
 }
 
-void GPU_RectFilled(GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color)
+void GPU_RectangleFilled(GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color)
 {
 	CHECK_RENDERER();
-	if(shapeRenderer->RectFilled == NULL)
+	if(shapeRenderer->RectangleFilled == NULL)
 		return;
 	
-	shapeRenderer->RectFilled(shapeRenderer, target, x1, y1, x2, y2, color);
+	shapeRenderer->RectangleFilled(shapeRenderer, target, x1, y1, x2, y2, color);
 }
 
-void GPU_RectRound(GPU_Target* target, float x1, float y1, float x2, float y2, float radius, SDL_Color color)
+void GPU_RectangleRound(GPU_Target* target, float x1, float y1, float x2, float y2, float radius, SDL_Color color)
 {
 	CHECK_RENDERER();
-	if(shapeRenderer->RectRound == NULL)
+	if(shapeRenderer->RectangleRound == NULL)
 		return;
 	
-	shapeRenderer->RectRound(shapeRenderer, target, x1, y1, x2, y2, radius, color);
+	shapeRenderer->RectangleRound(shapeRenderer, target, x1, y1, x2, y2, radius, color);
 }
 
-void GPU_RectRoundFilled(GPU_Target* target, float x1, float y1, float x2, float y2, float radius, SDL_Color color)
+void GPU_RectangleRoundFilled(GPU_Target* target, float x1, float y1, float x2, float y2, float radius, SDL_Color color)
 {
 	CHECK_RENDERER();
-	if(shapeRenderer->RectRoundFilled == NULL)
+	if(shapeRenderer->RectangleRoundFilled == NULL)
 		return;
 	
-	shapeRenderer->RectRoundFilled(shapeRenderer, target, x1, y1, x2, y2, radius, color);
+	shapeRenderer->RectangleRoundFilled(shapeRenderer, target, x1, y1, x2, y2, radius, color);
 }
 
 void GPU_Polygon(GPU_Target* target, Uint16 n, float* vertices, SDL_Color color)
@@ -210,7 +210,7 @@ void GPU_PolygonFilled(GPU_Target* target, Uint16 n, float* vertices, SDL_Color 
 }
 
 
-void GPU_PolygonBlit(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* target, Uint16 n, float* vertices, float textureX, float textureY, float angle, float scaleX, float scaleY)
+void GPU_PolygonBlit(GPU_Image* src, GPU_Rect* srcrect, GPU_Target* target, Uint16 n, float* vertices, float textureX, float textureY, float angle, float scaleX, float scaleY)
 {
 	CHECK_RENDERER();
 	if(shapeRenderer->PolygonBlit == NULL)
