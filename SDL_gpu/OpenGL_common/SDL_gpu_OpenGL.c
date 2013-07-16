@@ -1209,7 +1209,7 @@ static GPU_Image* CopyImage(GPU_Renderer* renderer, GPU_Image* image)
 
 
 // From SDL_UpdateTexture()
-static void UpdateImage(GPU_Renderer* renderer, GPU_Image* image, const SDL_Rect* rect, SDL_Surface* surface)
+static void UpdateImage(GPU_Renderer* renderer, GPU_Image* image, const GPU_Rect* rect, SDL_Surface* surface)
 {
     if(renderer == NULL || image == NULL || surface == NULL)
         return;
@@ -1225,7 +1225,7 @@ static void UpdateImage(GPU_Renderer* renderer, GPU_Image* image, const SDL_Rect
     }
 
 
-    SDL_Rect updateRect;
+    GPU_Rect updateRect;
     if(rect != NULL)
         updateRect = *rect;
     else
@@ -1234,6 +1234,11 @@ static void UpdateImage(GPU_Renderer* renderer, GPU_Image* image, const SDL_Rect
         updateRect.y = 0;
         updateRect.w = newSurface->w;
         updateRect.h = newSurface->h;
+        if(updateRect.w < 0.0f || updateRect.h < 0.0f)
+        {
+            GPU_LogError("GPU_UpdateImage(): Given negative rect: %dx%d\n", (int)updateRect.w, (int)updateRect.h);
+            return;
+        }
     }
 
 
@@ -1380,7 +1385,7 @@ static void FreeImage(GPU_Renderer* renderer, GPU_Image* image)
 
 
 
-static void SubSurfaceCopy(GPU_Renderer* renderer, SDL_Surface* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y)
+static void SubSurfaceCopy(GPU_Renderer* renderer, SDL_Surface* src, GPU_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y)
 {
     if(renderer == NULL || src == NULL || dest == NULL || dest->image == NULL)
         return;
@@ -1388,7 +1393,7 @@ static void SubSurfaceCopy(GPU_Renderer* renderer, SDL_Surface* src, SDL_Rect* s
     if(renderer != dest->renderer)
         return;
 
-    SDL_Rect r;
+    GPU_Rect r;
     if(srcrect != NULL)
         r = *srcrect;
     else
@@ -1397,6 +1402,11 @@ static void SubSurfaceCopy(GPU_Renderer* renderer, SDL_Surface* src, SDL_Rect* s
         r.y = 0;
         r.w = src->w;
         r.h = src->h;
+        if(r.w < 0.0f || r.h < 0.0f)
+        {
+            GPU_LogError("GPU_SubSurfaceCopy(): Given negative rectangle: %.2fx%.2f\n", r.w, r.h);
+            return;
+        }
     }
 
     bindTexture(renderer, dest->image);
@@ -1407,7 +1417,7 @@ static void SubSurfaceCopy(GPU_Renderer* renderer, SDL_Surface* src, SDL_Rect* s
 
     if(temp == NULL)
     {
-        GPU_LogError("GPU_SubSurfaceCopy(): Failed to create new %dx%d RGB surface.\n", r.w, r.h);
+        GPU_LogError("GPU_SubSurfaceCopy(): Failed to create new %dx%d RGB surface.\n", (int)r.w, (int)r.h);
         return;
     }
 
@@ -1421,7 +1431,9 @@ static void SubSurfaceCopy(GPU_Renderer* renderer, SDL_Surface* src, SDL_Rect* s
     SDL_SetAlpha(src, 0, src->format->alpha);
 #endif
 
-    SDL_BlitSurface(src, &r, temp, NULL);
+    SDL_Rect destrect = {r.x, r.y, r.w, r.h};
+    SDL_BlitSurface(src, &destrect, temp, NULL);
+    // FIXME: What if destrect does not equal r anymore?
 
 #ifdef SDL_GPU_USE_SDL2
     SDL_SetSurfaceBlendMode(src, blendmode);
@@ -1521,7 +1533,7 @@ static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
 
 
 
-static int Blit(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y)
+static int Blit(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest, float x, float y)
 {
     if(src == NULL || dest == NULL)
         return -1;
@@ -1632,7 +1644,7 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_T
 }
 
 
-static int BlitRotate(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float angle)
+static int BlitRotate(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest, float x, float y, float angle)
 {
     if(src == NULL || dest == NULL)
         return -1;
@@ -1640,7 +1652,7 @@ static int BlitRotate(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect,
     return renderer->BlitTransformX(renderer, src, srcrect, dest, x, y, src->w/2.0f, src->h/2.0f, angle, 1.0f, 1.0f);
 }
 
-static int BlitScale(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float scaleX, float scaleY)
+static int BlitScale(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest, float x, float y, float scaleX, float scaleY)
 {
     if(src == NULL || dest == NULL)
         return -1;
@@ -1648,7 +1660,7 @@ static int BlitScale(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, 
     return renderer->BlitTransformX(renderer, src, srcrect, dest, x, y, src->w/2.0f, src->h/2.0f, 0.0f, scaleX, scaleY);
 }
 
-static int BlitTransform(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float angle, float scaleX, float scaleY)
+static int BlitTransform(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest, float x, float y, float angle, float scaleX, float scaleY)
 {
     if(src == NULL || dest == NULL)
         return -1;
@@ -1656,7 +1668,7 @@ static int BlitTransform(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcre
     return renderer->BlitTransformX(renderer, src, srcrect, dest, x, y, src->w/2.0f, src->h/2.0f, angle, scaleX, scaleY);
 }
 
-static int BlitTransformX(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float pivot_x, float pivot_y, float angle, float scaleX, float scaleY)
+static int BlitTransformX(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest, float x, float y, float pivot_x, float pivot_y, float angle, float scaleX, float scaleY)
 {
     if(src == NULL || dest == NULL)
         return -1;
@@ -1830,7 +1842,7 @@ static int BlitTransformX(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcr
     return 0;
 }
 
-static int BlitTransformMatrix(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float* matrix3x3)
+static int BlitTransformMatrix(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest, float x, float y, float* matrix3x3)
 {
     if(src == NULL || dest == NULL)
         return -1;
@@ -1893,18 +1905,18 @@ static void GenerateMipmaps(GPU_Renderer* renderer, GPU_Image* image)
 
 
 
-static SDL_Rect SetClip(GPU_Renderer* renderer, GPU_Target* target, Sint16 x, Sint16 y, Uint16 w, Uint16 h)
+static GPU_Rect SetClip(GPU_Renderer* renderer, GPU_Target* target, Sint16 x, Sint16 y, Uint16 w, Uint16 h)
 {
     if(target == NULL)
     {
-        SDL_Rect r = {0,0,0,0};
+        GPU_Rect r = {0,0,0,0};
         return r;
     }
 
     flushBlitBufferIfCurrentFramebuffer(renderer, target);
     target->useClip = 1;
 
-    SDL_Rect r = target->clipRect;
+    GPU_Rect r = target->clipRect;
 
     target->clipRect.x = x;
     target->clipRect.y = y;
@@ -2425,16 +2437,22 @@ static void SetBlendMode(GPU_Renderer* renderer, GPU_BlendEnum mode)
 
 
 
-SDL_Rect getViewport()
+GPU_Rect getViewport()
 {
-    int v[4];
-    glGetIntegerv(GL_VIEWPORT, v);
-    SDL_Rect r = {v[0], v[1], v[2], v[3]};
+    float v[4];
+    glGetFloatv(GL_VIEWPORT, v);
+    GPU_Rect r = {v[0], v[1], v[2], v[3]};
     return r;
 }
 
-void setViewport(SDL_Rect rect)
+void setViewport(GPU_Rect rect)
 {
+    if(rect.w < 0.0f || rect.h < 0.0f)
+    {
+        GPU_LogError("SDL_gpu: Couldn't set viewport to negative rect: %dx%d\n", (int)rect.w, (int)rect.h);
+        return;
+    }
+    
     glViewport(rect.x, rect.y, rect.w, rect.h);
 }
 
@@ -2449,7 +2467,7 @@ static void Clear(GPU_Renderer* renderer, GPU_Target* target)
     flushBlitBufferIfCurrentFramebuffer(renderer, target);
     if(bindFramebuffer(renderer, target))
     {
-        SDL_Rect viewport = getViewport();
+        GPU_Rect viewport = getViewport();
         glViewport(0,0,target->w, target->h);
 
         if(target->useClip)
@@ -2488,7 +2506,7 @@ static void ClearRGBA(GPU_Renderer* renderer, GPU_Target* target, Uint8 r, Uint8
     flushBlitBufferIfCurrentFramebuffer(renderer, target);
     if(bindFramebuffer(renderer, target))
     {
-        SDL_Rect viewport = getViewport();
+        GPU_Rect viewport = getViewport();
         glViewport(0,0,target->w, target->h);
 
         if(target->useClip)

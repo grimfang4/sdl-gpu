@@ -79,7 +79,7 @@ int main(int argc, char* argv[])
 		
 		SDL_Rect area = {target->w/2 - 150, target->h/2 - 150, 300, 300};
 		SDL_Color red = {255, 0, 0, 255};
-		GPU_Rect(target, area.x, area.y, area.x + area.w, area.y + area.h, red);
+		GPU_Rectangle(target, area.x, area.y, area.x + area.w, area.y + area.h, red);
 		
 		float scale_x = 0.25f;
 		float scale_y = 0.5f;

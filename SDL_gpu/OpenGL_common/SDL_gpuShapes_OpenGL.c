@@ -502,7 +502,7 @@ static void TriFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1,
     END;
 }
 
-static void Rect(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color)
+static void Rectangle(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color)
 {
     BEGIN;
 
@@ -528,7 +528,7 @@ static void Rect(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, floa
     END;
 }
 
-static void RectFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color)
+static void RectangleFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color)
 {
     BEGIN;
 
@@ -554,7 +554,7 @@ static void RectFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1
     END;
 }
 
-static void RectRound(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, float radius, SDL_Color color)
+static void RectangleRound(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, float radius, SDL_Color color)
 {
     if(y2 < y1)
     {
@@ -592,7 +592,7 @@ static void RectRound(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1,
     END;
 }
 
-static void RectRoundFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, float radius, SDL_Color color)
+static void RectangleRoundFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, float radius, SDL_Color color)
 {
     if(y2 < y1)
     {
@@ -740,10 +740,10 @@ GPU_ShapeRenderer* GPU_CreateShapeRenderer_OpenGL(void)
     renderer->CircleFilled = &CircleFilled;
     renderer->Tri = &Tri;
     renderer->TriFilled = &TriFilled;
-    renderer->Rect = &Rect;
-    renderer->RectFilled = &RectFilled;
-    renderer->RectRound = &RectRound;
-    renderer->RectRoundFilled = &RectRoundFilled;
+    renderer->Rectangle = &Rectangle;
+    renderer->RectangleFilled = &RectangleFilled;
+    renderer->RectangleRound = &RectangleRound;
+    renderer->RectangleRoundFilled = &RectangleRoundFilled;
     renderer->Polygon = &Polygon;
     renderer->PolygonFilled = &PolygonFilled;
     renderer->PolygonBlit = &PolygonBlit;

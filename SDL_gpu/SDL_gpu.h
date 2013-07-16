@@ -21,6 +21,12 @@ extern "C" {
 typedef struct GPU_Renderer GPU_Renderer;
 typedef struct GPU_Target GPU_Target;
 
+typedef struct GPU_Rect
+{
+    float x, y;
+    float w, h;
+} GPU_Rect;
+
 /*! Image object for containing pixel/texture data.
  * A GPU_Image can be created with GPU_CreateImage(), GPU_LoadImage(), GPU_CopyImage(), or GPU_CopyImageFromSurface().
  * Free the memory with GPU_FreeImage() when you're done.
@@ -53,7 +59,7 @@ struct GPU_Target
 	void* data;
 	Uint16 w, h;
 	Uint8 useClip;
-	SDL_Rect clipRect;
+	GPU_Rect clipRect;
 };
 
 /*! Important GPU features which may not be supported depending on a device's extension support.  Can be OR'd together.
@@ -167,7 +173,7 @@ struct GPU_Renderer
 	GPU_Image* (*CopyImage)(GPU_Renderer* renderer, GPU_Image* image);
 	
 	/*! \see GPU_UpdateImage */
-	void (*UpdateImage)(GPU_Renderer* renderer, GPU_Image* image, const SDL_Rect* rect, SDL_Surface* surface);
+	void (*UpdateImage)(GPU_Renderer* renderer, GPU_Image* image, const GPU_Rect* rect, SDL_Surface* surface);
 	
 	/*! \see GPU_CopyImageFromSurface() */
 	GPU_Image* (*CopyImageFromSurface)(GPU_Renderer* renderer, SDL_Surface* surface);
@@ -185,7 +191,7 @@ struct GPU_Renderer
 	void (*FreeImage)(GPU_Renderer* renderer, GPU_Image* image);
 	
     /*! \see GPU_SubSurfaceCopy() */
-    void (*SubSurfaceCopy)(GPU_Renderer* renderer, SDL_Surface* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y);
+    void (*SubSurfaceCopy)(GPU_Renderer* renderer, SDL_Surface* src, GPU_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y);
 
 	/*! \see GPU_GetDisplayTarget() */
 	GPU_Target* (*GetDisplayTarget)(GPU_Renderer* renderer);
@@ -197,22 +203,22 @@ struct GPU_Renderer
 	void (*FreeTarget)(GPU_Renderer* renderer, GPU_Target* target);
 
 	/*! \see GPU_Blit() */
-	int (*Blit)(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y);
+	int (*Blit)(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest, float x, float y);
 	
 	/*! \see GPU_BlitRotate() */
-	int (*BlitRotate)(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float angle);
+	int (*BlitRotate)(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest, float x, float y, float angle);
 	
 	/*! \see GPU_BlitScale() */
-	int (*BlitScale)(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float scaleX, float scaleY);
+	int (*BlitScale)(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest, float x, float y, float scaleX, float scaleY);
 	
 	/*! \see GPU_BlitTransform */
-	int (*BlitTransform)(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float angle, float scaleX, float scaleY);
+	int (*BlitTransform)(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest, float x, float y, float angle, float scaleX, float scaleY);
 	
 	/*! \see GPU_BlitTransformX() */
-	int (*BlitTransformX)(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float pivot_x, float pivot_y, float angle, float scaleX, float scaleY);
+	int (*BlitTransformX)(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest, float x, float y, float pivot_x, float pivot_y, float angle, float scaleX, float scaleY);
 	
 	/*! \see GPU_BlitTransformMatrix() */
-	int (*BlitTransformMatrix)(GPU_Renderer* renderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float* matrix3x3);
+	int (*BlitTransformMatrix)(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest, float x, float y, float* matrix3x3);
 	
 	/*! \see GPU_SetX() */
 	float (*SetZ)(GPU_Renderer* renderer, float z);
@@ -224,7 +230,7 @@ struct GPU_Renderer
 	void (*GenerateMipmaps)(GPU_Renderer* renderer, GPU_Image* image);
 
 	/*! \see GPU_SetClip() */
-	SDL_Rect (*SetClip)(GPU_Renderer* renderer, GPU_Target* target, Sint16 x, Sint16 y, Uint16 w, Uint16 h);
+	GPU_Rect (*SetClip)(GPU_Renderer* renderer, GPU_Target* target, Sint16 x, Sint16 y, Uint16 w, Uint16 h);
 
 	/*! \see GPU_ClearClip() */
 	void (*ClearClip)(GPU_Renderer* renderer, GPU_Target* target);
@@ -360,6 +366,9 @@ void GPU_SetCurrentRenderer(const char* id);
 /*! \return The current renderer */
 GPU_Renderer* GPU_GetCurrentRenderer(void);
 
+/*! \return A GPU_Rect with the given values. */
+GPU_Rect GPU_MakeRect(float x, float y, float w, float h);
+
 /*! \return A GPU_Camera with position (0, 0, -10), angle of 0, and zoom of 1. */
 GPU_Camera GPU_GetDefaultCamera(void);
 
@@ -396,7 +405,7 @@ Uint8 GPU_SaveSurface(SDL_Surface* surface, const char* filename);
 GPU_Image* GPU_CopyImage(GPU_Image* image);
 
 /*! Update an image from surface data. */
-void GPU_UpdateImage(GPU_Image* image, const SDL_Rect* rect, SDL_Surface* surface);
+void GPU_UpdateImage(GPU_Image* image, const GPU_Rect* rect, SDL_Surface* surface);
 
 /*! Load surface from an image file that is supported by this renderer.  Don't forget to SDL_FreeSurface() it. */
 SDL_Surface* GPU_LoadSurface(const char* filename);
@@ -417,7 +426,7 @@ SDL_Surface* GPU_CopySurfaceFromImage(GPU_Image* image);
 void GPU_FreeImage(GPU_Image* image);
 
 /*! Copies software surface data to a hardware texture.  Draws data with the upper left corner being (x,y).  */
-void GPU_SubSurfaceCopy(SDL_Surface* src, SDL_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y);
+void GPU_SubSurfaceCopy(SDL_Surface* src, GPU_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y);
 
 /*! \return The renderer's main display surface/framebuffer. */
 GPU_Target* GPU_GetDisplayTarget(void);
@@ -432,14 +441,14 @@ void GPU_FreeTarget(GPU_Target* target);
     * \param srcrect The region of the source image to use.
     * \param x Destination x-position
     * \param y Destination y-position */
-int GPU_Blit(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y);
+int GPU_Blit(GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest, float x, float y);
 
 /*! Rotates and draws the 'src' image to the 'dest' render target.
     * \param srcrect The region of the source image to use.
     * \param x Destination x-position
     * \param y Destination y-position
     * \param angle Rotation angle (in degrees) */
-int GPU_BlitRotate(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float angle);
+int GPU_BlitRotate(GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest, float x, float y, float angle);
 
 /*! Scales and draws the 'src' image to the 'dest' render target.
     * \param srcrect The region of the source image to use.
@@ -447,7 +456,7 @@ int GPU_BlitRotate(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x,
     * \param y Destination y-position
     * \param scaleX Horizontal stretch factor
     * \param scaleY Vertical stretch factor */
-int GPU_BlitScale(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float scaleX, float scaleY);
+int GPU_BlitScale(GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest, float x, float y, float scaleX, float scaleY);
 
 /*! Scales, rotates, and draws the 'src' image to the 'dest' render target.
     * \param srcrect The region of the source image to use.
@@ -456,7 +465,7 @@ int GPU_BlitScale(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, 
     * \param angle Rotation angle (in degrees)
     * \param scaleX Horizontal stretch factor
     * \param scaleY Vertical stretch factor */
-int GPU_BlitTransform(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float angle, float scaleX, float scaleY);
+int GPU_BlitTransform(GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest, float x, float y, float angle, float scaleX, float scaleY);
 
 	
 /*! Scales, rotates around a pivot point, and draws the 'src' image to the 'dest' render target.  The drawing point (x, y) coincides with the pivot point on the src image (pivot_x, pivot_y).
@@ -468,7 +477,7 @@ int GPU_BlitTransform(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float
 	* \param angle Rotation angle (in degrees)
 	* \param scaleX Horizontal stretch factor
 	* \param scaleY Vertical stretch factor */
-int GPU_BlitTransformX(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float pivot_x, float pivot_y, float angle, float scaleX, float scaleY);
+int GPU_BlitTransformX(GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest, float x, float y, float pivot_x, float pivot_y, float angle, float scaleX, float scaleY);
 
 
 /*! Transforms and draws the 'src' image to the 'dest' render target.
@@ -476,7 +485,7 @@ int GPU_BlitTransformX(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, floa
 	* \param x Destination x-position
 	* \param y Destination y-position
 	* \param matrix3x3 3x3 matrix in column-major order (index = row + column*numColumns) */
-int GPU_BlitTransformMatrix(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* dest, float x, float y, float* matrix3x3);
+int GPU_BlitTransformMatrix(GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest, float x, float y, float* matrix3x3);
 
 
 /*! Sets the renderer's z-depth.
@@ -491,10 +500,10 @@ float GPU_GetZ(void);
 void GPU_GenerateMipmaps(GPU_Image* image);
 
 /*! Sets the clipping rect for the given render target. */
-SDL_Rect GPU_SetClipRect(GPU_Target* target, SDL_Rect rect);
+GPU_Rect GPU_SetClipRect(GPU_Target* target, GPU_Rect rect);
 
 /*! Sets the clipping rect for the given render target. */
-SDL_Rect GPU_SetClip(GPU_Target* target, Sint16 x, Sint16 y, Uint16 w, Uint16 h);
+GPU_Rect GPU_SetClip(GPU_Target* target, Sint16 x, Sint16 y, Uint16 w, Uint16 h);
 
 /*! Clears (resets) the clipping rect for the given render target. */
 void GPU_ClearClip(GPU_Target* target);
@@ -581,19 +590,19 @@ struct GPU_ShapeRenderer
 
 	void (*TriFilled)(GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, float x1, float y1, float x2, float y2, float x3, float y3, SDL_Color color);
 
-	void (*Rect)(GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color);
+	void (*Rectangle)(GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color);
 
-	void (*RectFilled)(GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color);
+	void (*RectangleFilled)(GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color);
 
-	void (*RectRound)(GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, float x1, float y1, float x2, float y2, float radius, SDL_Color color);
+	void (*RectangleRound)(GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, float x1, float y1, float x2, float y2, float radius, SDL_Color color);
 
-	void (*RectRoundFilled)(GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, float x1, float y1, float x2, float y2, float radius, SDL_Color color);
+	void (*RectangleRoundFilled)(GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, float x1, float y1, float x2, float y2, float radius, SDL_Color color);
 
 	void (*Polygon)(GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, Uint16 n, float* vertices, SDL_Color color);
 
 	void (*PolygonFilled)(GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, Uint16 n, float* vertices, SDL_Color color);
 
-	void (*PolygonBlit)(GPU_ShapeRenderer* shapeRenderer, GPU_Image* src, SDL_Rect* srcrect, GPU_Target* target, Uint16 n, float* vertices, float textureX, float textureY, float angle, float scaleX, float scaleY);
+	void (*PolygonBlit)(GPU_ShapeRenderer* shapeRenderer, GPU_Image* src, GPU_Rect* srcrect, GPU_Target* target, Uint16 n, float* vertices, float textureX, float textureY, float angle, float scaleX, float scaleY);
 	
 	void* data;
 	
@@ -624,19 +633,19 @@ void GPU_Tri(GPU_Target* target, float x1, float y1, float x2, float y2, float x
 
 void GPU_TriFilled(GPU_Target* target, float x1, float y1, float x2, float y2, float x3, float y3, SDL_Color color);
 
-void GPU_Rect(GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color);
+void GPU_Rectangle(GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color);
 
-void GPU_RectFilled(GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color);
+void GPU_RectangleFilled(GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color);
 
-void GPU_RectRound(GPU_Target* target, float x1, float y1, float x2, float y2, float radius, SDL_Color color);
+void GPU_RectangleRound(GPU_Target* target, float x1, float y1, float x2, float y2, float radius, SDL_Color color);
 
-void GPU_RectRoundFilled(GPU_Target* target, float x1, float y1, float x2, float y2, float radius, SDL_Color color);
+void GPU_RectangleRoundFilled(GPU_Target* target, float x1, float y1, float x2, float y2, float radius, SDL_Color color);
 
 void GPU_Polygon(GPU_Target* target, Uint16 n, float* vertices, SDL_Color color);
 
 void GPU_PolygonFilled(GPU_Target* target, Uint16 n, float* vertices, SDL_Color color);
 
-void GPU_PolygonBlit(GPU_Image* src, SDL_Rect* srcrect, GPU_Target* target, Uint16 n, float* vertices, float textureX, float textureY, float angle, float scaleX, float scaleY);
+void GPU_PolygonBlit(GPU_Image* src, GPU_Rect* srcrect, GPU_Target* target, Uint16 n, float* vertices, float textureX, float textureY, float angle, float scaleX, float scaleY);
 
 
 

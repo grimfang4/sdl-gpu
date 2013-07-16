@@ -219,13 +219,13 @@ int main(int argc, char* argv[])
 			case 4:
 				for(i = 0; i < numRects; i++)
 				{
-					GPU_Rect(screen, rx1[i], ry1[i], rx2[i], ry2[i], colors[i]);
+					GPU_Rectangle(screen, rx1[i], ry1[i], rx2[i], ry2[i], colors[i]);
 				}
 				break;
 			case 5:
 				for(i = 0; i < numRects; i++)
 				{
-					GPU_RectFilled(screen, rx1[i], ry1[i], rx2[i], ry2[i], colors[i]);
+					GPU_RectangleFilled(screen, rx1[i], ry1[i], rx2[i], ry2[i], colors[i]);
 				}
 				break;
 			case 6:
@@ -255,13 +255,13 @@ int main(int argc, char* argv[])
 			case 10:
 				for(i = 0; i < numRects; i++)
 				{
-					GPU_RectRound(screen, rx1[i], ry1[i], rx2[i], ry2[i], rr[i], colors[i]);
+					GPU_RectangleRound(screen, rx1[i], ry1[i], rx2[i], ry2[i], rr[i], colors[i]);
 				}
 				break;
 			case 11:
 				for(i = 0; i < numRects; i++)
 				{
-					GPU_RectRoundFilled(screen, rx1[i], ry1[i], rx2[i], ry2[i], rr[i], colors[i]);
+					GPU_RectangleRoundFilled(screen, rx1[i], ry1[i], rx2[i], ry2[i], rr[i], colors[i]);
 				}
 				break;
 			case 12:
