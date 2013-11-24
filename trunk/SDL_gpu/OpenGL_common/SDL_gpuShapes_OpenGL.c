@@ -505,25 +505,69 @@ static void TriFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1,
 static void Rectangle(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color)
 {
     BEGIN;
+    
+    if(y2 < y1)
+    {
+        float y = y1;
+        y1 = y2;
+        y2 = y;
+    }
+    if(x2 < x1)
+    {
+        float x = x1;
+        x1 = x2;
+        x2 = x;
+    }
+    
+	float thickness = ((ShapeRendererData_OpenGL*)renderer->data)->line_thickness;
 
     glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, GET_ALPHA(color)/255.5f);
 
-    GLfloat glverts[12];
-
-    glverts[0] = x1;
-    glverts[1] = y1;
+    GLfloat glverts[30];
+    
+    float t = thickness/2;
+    
+    glverts[0] = x1 - t;
+    glverts[1] = y1 - t;
     glverts[2] = z;
-    glverts[3] = x1;
-    glverts[4] = y2;
+    
+    glverts[3] = x1 + t;
+    glverts[4] = y1 + t;
     glverts[5] = z;
-    glverts[6] = x2;
-    glverts[7] = y2;
+    
+    glverts[6] = x2 + t;
+    glverts[7] = y1 - t;
     glverts[8] = z;
-    glverts[9] = x2;
-    glverts[10] = y1;
+    
+    glverts[9] = x2 - t;
+    glverts[10] = y1 + t;
     glverts[11] = z;
-
-    draw_vertices(glverts, 4, GL_LINE_LOOP);
+    
+    glverts[12] = x2 + t;
+    glverts[13] = y2 + t;
+    glverts[14] = z;
+    
+    glverts[15] = x2 - t;
+    glverts[16] = y2 - t;
+    glverts[17] = z;
+    
+    glverts[18] = x1 - t;
+    glverts[19] = y2 + t;
+    glverts[20] = z;
+    
+    glverts[21] = x1 + t;
+    glverts[22] = y2 - t;
+    glverts[23] = z;
+    
+    glverts[24] = x1 - t;
+    glverts[25] = y1 - t;
+    glverts[26] = z;
+    
+    glverts[27] = x1 + t;
+    glverts[28] = y1 + t;
+    glverts[29] = z;
+    
+    draw_vertices(glverts, 10, GL_TRIANGLE_STRIP);
 
     END;
 }
