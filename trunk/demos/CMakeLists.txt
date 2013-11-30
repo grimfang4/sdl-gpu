@@ -1,4 +1,9 @@
 include_directories (${SDL_gpu_SOURCE_DIR})
+include_directories(${SDL_gpu_SOURCE_DIR}/SDL_gpu/OpenGL_common)
+
+add_executable(init-demo init/main.c)
+target_link_libraries (init-demo SDL_gpu)
+
 add_executable(create-demo create/main.c)
 target_link_libraries (create-demo SDL_gpu)
 
@@ -70,3 +75,9 @@ target_link_libraries (features-demo SDL_gpu)
 
 add_executable(save-demo save/main.c)
 target_link_libraries (save-demo SDL_gpu)
+
+add_executable(shader-demo shader/main.c)
+target_link_libraries (shader-demo SDL_gpu)
+
+add_executable(3d-demo 3d/main.c)
+target_link_libraries (3d-demo SDL_gpu)
