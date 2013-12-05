@@ -744,3 +744,191 @@ void GPU_Flip(void)
 	current_renderer->Flip(current_renderer);
 }
 
+
+
+
+
+// Shader API
+
+
+Uint32 GPU_CompileShader_RW(int shader_type, SDL_RWops* shader_source)
+{
+	if(current_renderer == NULL || current_renderer->CompileShader_RW == NULL)
+		return 0;
+	
+	return current_renderer->CompileShader_RW(current_renderer, shader_type, shader_source);
+}
+
+Uint32 GPU_LoadShader(int shader_type, const char* filename)
+{
+    SDL_RWops* rwops = SDL_RWFromFile(filename, "r");
+    Uint32 result = GPU_CompileShader_RW(shader_type, rwops);
+    SDL_RWclose(rwops);
+    return result;
+}
+
+Uint32 GPU_CompileShader(int shader_type, const char* shader_source)
+{
+	if(current_renderer == NULL || current_renderer->CompileShader == NULL)
+		return 0;
+	
+	return current_renderer->CompileShader(current_renderer, shader_type, shader_source);
+}
+
+Uint32 GPU_LinkShaderProgram(Uint32 program_object)
+{
+	if(current_renderer == NULL || current_renderer->LinkShaderProgram == NULL)
+		return 0;
+	
+	return current_renderer->LinkShaderProgram(current_renderer, program_object);
+}
+
+Uint32 GPU_LinkShaders(Uint32 shader_object1, Uint32 shader_object2)
+{
+	if(current_renderer == NULL || current_renderer->LinkShaders == NULL)
+		return 0;
+	
+	return current_renderer->LinkShaders(current_renderer, shader_object1, shader_object2);
+}
+
+void GPU_FreeShader(Uint32 shader_object)
+{
+	if(current_renderer == NULL || current_renderer->FreeShader == NULL)
+		return;
+	
+	current_renderer->FreeShader(current_renderer, shader_object);
+}
+
+void GPU_FreeShaderProgram(Uint32 program_object)
+{
+	if(current_renderer == NULL || current_renderer->FreeShaderProgram == NULL)
+		return;
+	
+	current_renderer->FreeShaderProgram(current_renderer, program_object);
+}
+
+void GPU_AttachShader(Uint32 program_object, Uint32 shader_object)
+{
+	if(current_renderer == NULL || current_renderer->AttachShader == NULL)
+		return;
+	
+	current_renderer->AttachShader(current_renderer, program_object, shader_object);
+}
+
+void GPU_DetachShader(Uint32 program_object, Uint32 shader_object)
+{
+	if(current_renderer == NULL || current_renderer->DetachShader == NULL)
+		return;
+	
+	current_renderer->DetachShader(current_renderer, program_object, shader_object);
+}
+
+void GPU_ActivateShaderProgram(Uint32 program_object)
+{
+	if(current_renderer == NULL || current_renderer->ActivateShaderProgram == NULL)
+		return;
+	
+	current_renderer->ActivateShaderProgram(current_renderer, program_object);
+}
+
+void GPU_DeactivateShaderProgram(void)
+{
+	if(current_renderer == NULL || current_renderer->DeactivateShaderProgram == NULL)
+		return;
+	
+	current_renderer->DeactivateShaderProgram(current_renderer);
+}
+
+const char* GPU_GetShaderMessage(void)
+{
+	if(current_renderer == NULL || current_renderer->GetShaderMessage == NULL)
+		return NULL;
+	
+	return current_renderer->GetShaderMessage(current_renderer);
+}
+
+int GPU_GetUniformLocation(Uint32 program_object, const char* uniform_name)
+{
+	if(current_renderer == NULL || current_renderer->GetUniformLocation == NULL)
+		return 0;
+	
+	return current_renderer->GetUniformLocation(current_renderer, program_object, uniform_name);
+}
+
+
+
+void GPU_GetUniformiv(Uint32 program_object, int location, int* values)
+{
+	if(current_renderer == NULL || current_renderer->GetUniformiv == NULL)
+		return;
+	
+	current_renderer->GetUniformiv(current_renderer, program_object, location, values);
+}
+
+void GPU_SetUniformi(int location, int value)
+{
+	if(current_renderer == NULL || current_renderer->SetUniformi == NULL)
+		return;
+	
+	current_renderer->SetUniformi(current_renderer, location, value);
+}
+
+void GPU_SetUniformiv(int location, int num_elements_per_value, int num_values, int* values)
+{
+	if(current_renderer == NULL || current_renderer->SetUniformiv == NULL)
+		return;
+	
+	current_renderer->SetUniformiv(current_renderer, location, num_elements_per_value, num_values, values);
+}
+
+
+void GPU_GetUniformuiv(Uint32 program_object, int location, unsigned int* values)
+{
+	if(current_renderer == NULL || current_renderer->GetUniformuiv == NULL)
+		return;
+	
+	current_renderer->GetUniformuiv(current_renderer, program_object, location, values);
+}
+
+void GPU_SetUniformui(int location, unsigned int value)
+{
+	if(current_renderer == NULL || current_renderer->SetUniformui == NULL)
+		return;
+	
+	current_renderer->SetUniformui(current_renderer, location, value);
+}
+
+void GPU_SetUniformuiv(int location, int num_elements_per_value, int num_values, unsigned int* values)
+{
+	if(current_renderer == NULL || current_renderer->SetUniformuiv == NULL)
+		return;
+	
+	current_renderer->SetUniformuiv(current_renderer, location, num_elements_per_value, num_values, values);
+}
+
+
+void GPU_GetUniformfv(Uint32 program_object, int location, float* values)
+{
+	if(current_renderer == NULL || current_renderer->GetUniformfv == NULL)
+		return;
+	
+	current_renderer->GetUniformfv(current_renderer, program_object, location, values);
+}
+
+void GPU_SetUniformf(int location, float value)
+{
+	if(current_renderer == NULL || current_renderer->SetUniformf == NULL)
+		return;
+	
+	current_renderer->SetUniformf(current_renderer, location, value);
+}
+
+void GPU_SetUniformfv(int location, int num_elements_per_value, int num_values, float* values)
+{
+	if(current_renderer == NULL || current_renderer->SetUniformfv == NULL)
+		return;
+	
+	current_renderer->SetUniformfv(current_renderer, location, num_elements_per_value, num_values, values);
+}
+
+

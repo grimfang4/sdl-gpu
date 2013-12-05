@@ -74,11 +74,16 @@ static const GPU_FeatureEnum GPU_FEATURE_BLEND_FUNC_SEPARATE = 0x8;
 static const GPU_FeatureEnum GPU_FEATURE_GL_BGR = 0x10;
 static const GPU_FeatureEnum GPU_FEATURE_GL_BGRA = 0x20;
 static const GPU_FeatureEnum GPU_FEATURE_GL_ABGR = 0x40;
+static const GPU_FeatureEnum GPU_FEATURE_VERTEX_SHADER = 0x100;
+static const GPU_FeatureEnum GPU_FEATURE_FRAGMENT_SHADER = 0x200;
+static const GPU_FeatureEnum GPU_FEATURE_PIXEL_SHADER = 0x200;
+static const GPU_FeatureEnum GPU_FEATURE_GEOMETRY_SHADER = 0x400;
 
 /*! Combined feature flags */
 #define GPU_FEATURE_ALL_BASE GPU_FEATURE_RENDER_TARGETS
 #define GPU_FEATURE_ALL_BLEND_MODES (GPU_FEATURE_BLEND_EQUATIONS | GPU_FEATURE_BLEND_FUNC_SEPARATE)
 #define GPU_FEATURE_ALL_GL_FORMATS (GPU_FEATURE_GL_BGR | GPU_FEATURE_GL_BGRA | GPU_FEATURE_GL_ABGR)
+#define GPU_FEATURE_ALL_SHADERS (GPU_FEATURE_FRAGMENT_SHADER | GPU_FEATURE_PIXEL_SHADER | GPU_FEATURE_GEOMETRY_SHADER)
 
 /*! Texture filtering options.  These affect the quality/interpolation of colors when images are scaled. 
  * \see GPU_SetImageFilter()
@@ -274,6 +279,70 @@ struct GPU_Renderer
 	void (*FlushBlitBuffer)(GPU_Renderer* renderer);
 	/*! \see GPU_Flip() */
 	void (*Flip)(GPU_Renderer* renderer);
+	
+	
+    /*! \see GPU_CompileShader_RW() */
+	Uint32 (*CompileShader_RW)(GPU_Renderer* renderer, int shader_type, SDL_RWops* shader_source);
+	
+    /*! \see GPU_CompileShader() */
+    Uint32 (*CompileShader)(GPU_Renderer* renderer, int shader_type, const char* shader_source);
+
+    /*! \see GPU_LinkShaderProgram() */
+    Uint32 (*LinkShaderProgram)(GPU_Renderer* renderer, Uint32 program_object);
+
+    /*! \see GPU_LinkShaders() */
+    Uint32 (*LinkShaders)(GPU_Renderer* renderer, Uint32 shader_object1, Uint32 shader_object2);
+
+    /*! \see GPU_FreeShader() */
+    void (*FreeShader)(GPU_Renderer* renderer, Uint32 shader_object);
+
+    /*! \see GPU_FreeShaderProgram() */
+    void (*FreeShaderProgram)(GPU_Renderer* renderer, Uint32 program_object);
+
+    /*! \see GPU_AttachShader() */
+    void (*AttachShader)(GPU_Renderer* renderer, Uint32 program_object, Uint32 shader_object);
+
+    /*! \see GPU_DetachShader() */
+    void (*DetachShader)(GPU_Renderer* renderer, Uint32 program_object, Uint32 shader_object);
+
+    /*! \see GPU_ActivateShaderProgram() */
+    void (*ActivateShaderProgram)(GPU_Renderer* renderer, Uint32 program_object);
+
+    /*! \see GPU_DeactivateShaderProgram() */
+    void (*DeactivateShaderProgram)(GPU_Renderer* renderer);
+
+    /*! \see GPU_GetShaderMessage() */
+    const char* (*GetShaderMessage)(GPU_Renderer* renderer);
+
+    /*! \see GPU_GetUniformLocation() */
+    int (*GetUniformLocation)(GPU_Renderer* renderer, Uint32 program_object, const char* uniform_name);
+
+    /*! \see GPU_GetUniformiv() */
+    void (*GetUniformiv)(GPU_Renderer* renderer, Uint32 program_object, int location, int* values);
+
+    /*! \see GPU_SetUniformi() */
+    void (*SetUniformi)(GPU_Renderer* renderer, int location, int value);
+
+    /*! \see GPU_SetUniformiv() */
+    void (*SetUniformiv)(GPU_Renderer* renderer, int location, int num_elements_per_value, int num_values, int* values);
+
+    /*! \see GPU_GetUniformuiv() */
+    void (*GetUniformuiv)(GPU_Renderer* renderer, Uint32 program_object, int location, unsigned int* values);
+
+    /*! \see GPU_SetUniformui() */
+    void (*SetUniformui)(GPU_Renderer* renderer, int location, unsigned int value);
+
+    /*! \see GPU_SetUniformuiv() */
+    void (*SetUniformuiv)(GPU_Renderer* renderer, int location, int num_elements_per_value, int num_values, unsigned int* values);
+
+    /*! \see GPU_GetUniformfv() */
+    void (*GetUniformfv)(GPU_Renderer* renderer, Uint32 program_object, int location, float* values);
+
+    /*! \see GPU_SetUniformf() */
+    void (*SetUniformf)(GPU_Renderer* renderer, int location, float value);
+
+    /*! \see GPU_SetUniformfv() */
+    void (*SetUniformfv)(GPU_Renderer* renderer, int location, int num_elements_per_value, int num_values, float* values);
 	
 	/*! Renderer-specific data. */
 	void* data;
@@ -557,6 +626,85 @@ void GPU_FlushBlitBuffer(void);
 /*! Updates the physical display (monitor) with the contents of the display surface/framebuffer. */
 void GPU_Flip(void);
 
+
+
+
+
+// Shaders
+
+#define GPU_VERTEX_SHADER 0
+#define GPU_FRAGMENT_SHADER 1
+#define GPU_PIXEL_SHADER 1
+#define GPU_GEOMETRY_SHADER 2
+
+/*! Loads shader source from an SDL_RWops, compiles it, and returns the new shader object. */
+Uint32 GPU_CompileShader_RW(int shader_type, SDL_RWops* shader_source);
+
+/*! Loads shader source from a file, compiles it, and returns the new shader object. */
+Uint32 GPU_LoadShader(int shader_type, const char* filename);
+
+/*! Compiles shader source and returns the new shader object. */
+Uint32 GPU_CompileShader(int shader_type, const char* shader_source);
+
+/*! Links a shader program with any attached shader objects. */
+Uint32 GPU_LinkShaderProgram(Uint32 program_object);
+
+/*! Creates and links a shader program with the given shader objects. */
+Uint32 GPU_LinkShaders(Uint32 shader_object1, Uint32 shader_object2);
+
+/*! Deletes a shader object. */
+void GPU_FreeShader(Uint32 shader_object);
+
+/*! Deletes a shader program. */
+void GPU_FreeShaderProgram(Uint32 program_object);
+
+/*! Attaches a shader object to a shader program for future linking. */
+void GPU_AttachShader(Uint32 program_object, Uint32 shader_object);
+
+/*! Detaches a shader object from a shader program. */
+void GPU_DetachShader(Uint32 program_object, Uint32 shader_object);
+
+/*! Activates the given shader program. */
+void GPU_ActivateShaderProgram(Uint32 program_object);
+
+/*! Deactivates the current shader program (activates program 0). */
+void GPU_DeactivateShaderProgram(void);
+
+/*! Returns the last shader log message. */
+const char* GPU_GetShaderMessage(void);
+
+/*! Returns an integer representing the location of the specified uniform shader variable. */
+int GPU_GetUniformLocation(Uint32 program_object, const char* uniform_name);
+
+/*! Fills "values" with the value of the uniform shader variable at the given location. */
+void GPU_GetUniformiv(Uint32 program_object, int location, int* values);
+
+/*! Sets the value of the integer uniform shader variable at the given location.
+    This is equivalent to calling GPU_SetUniformiv(location, 1, 1, &value). */
+void GPU_SetUniformi(int location, int value);
+
+/*! Sets the value of the integer uniform shader variable at the given location. */
+void GPU_SetUniformiv(int location, int num_elements_per_value, int num_values, int* values);
+
+/*! Fills "values" with the value of the uniform shader variable at the given location. */
+void GPU_GetUniformuiv(Uint32 program_object, int location, unsigned int* values);
+
+/*! Sets the value of the unsigned integer uniform shader variable at the given location.
+    This is equivalent to calling GPU_SetUniformuiv(location, 1, 1, &value). */
+void GPU_SetUniformui(int location, unsigned int value);
+
+/*! Sets the value of the unsigned integer uniform shader variable at the given location. */
+void GPU_SetUniformuiv(int location, int num_elements_per_value, int num_values, unsigned int* values);
+
+/*! Fills "values" with the value of the uniform shader variable at the given location. */
+void GPU_GetUniformfv(Uint32 program_object, int location, float* values);
+
+/*! Sets the value of the floating point uniform shader variable at the given location.
+    This is equivalent to calling GPU_SetUniformfv(location, 1, 1, &value). */
+void GPU_SetUniformf(int location, float value);
+
+/*! Sets the value of the floating point uniform shader variable at the given location. */
+void GPU_SetUniformfv(int location, int num_elements_per_value, int num_values, float* values);
 
 
 
