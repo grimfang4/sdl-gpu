@@ -21,11 +21,37 @@ extern "C" {
 typedef struct GPU_Renderer GPU_Renderer;
 typedef struct GPU_Target GPU_Target;
 
+/*! A struct representing a rectangular area with floating point precision.
+ * \see GPU_MakeRect() 
+ */
 typedef struct GPU_Rect
 {
     float x, y;
     float w, h;
 } GPU_Rect;
+
+typedef unsigned int GPU_RendererEnum;
+static const GPU_RendererEnum GPU_RENDERER_UNKNOWN = 0x0;  // invalid value
+static const GPU_RendererEnum GPU_RENDERER_DEFAULT = 0x1;
+static const GPU_RendererEnum GPU_RENDERER_OPENGL = 0x2;
+static const GPU_RendererEnum GPU_RENDERER_OPENGLES = 0x4;
+static const GPU_RendererEnum GPU_RENDERER_DIRECT3D = 0x8;
+
+/*! Renderer ID object for identifying a specific renderer.
+ * \see GPU_MakeRendererID()
+ * \see GPU_MakeRendererIDRequest()
+ * \see GPU_Init()
+ * \see GPU_InitRenderer()
+ */
+typedef struct GPU_RendererID
+{
+    GPU_RendererEnum id;
+    int major_version;
+    int minor_version;
+    Uint32 flags;
+    
+    int index;
+} GPU_RendererID;
 
 /*! Image object for containing pixel/texture data.
  * A GPU_Image can be created with GPU_CreateImage(), GPU_LoadImage(), GPU_CopyImage(), or GPU_CopyImageFromSurface().
@@ -121,11 +147,12 @@ typedef struct GPU_Camera
 	float zoom;
 } GPU_Camera;
 
+
 /*! Renderer object which specializes the API to a particular backend. */
 struct GPU_Renderer
 {
-	/*! String identifier of the renderer. */
-	char* id;
+	/*! Struct identifier of the renderer. */
+	GPU_RendererID id;
 	
 	/*! Main display surface/framebuffer.  Virtual dimensions can be gotten from this. */
 	GPU_Target* display;
@@ -140,7 +167,7 @@ struct GPU_Renderer
 	GPU_Camera camera;
 	
 	/*! \see GPU_Init() */
-	GPU_Target* (*Init)(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags);
+	GPU_Target* (*Init)(GPU_Renderer* renderer, GPU_RendererID renderer_request, Uint16 w, Uint16 h, Uint32 flags);
 	
 	/*! \see GPU_IsFeatureEnabled() */
 	Uint8 (*IsFeatureEnabled)(GPU_Renderer* renderer, GPU_FeatureEnum feature);
@@ -364,11 +391,17 @@ void GPU_LogError(const char* format, ...);
 
 
 // Setup calls
+/*! Initializes SDL and SDL_gpu.  Creates a window and the default renderer context. */
+GPU_Target* GPU_Init(Uint16 w, Uint16 h, Uint32 flags);
+
 /*! Initializes SDL and SDL_gpu.  Creates a window and renderer context. */
-GPU_Target* GPU_Init(const char* renderer_id, Uint16 w, Uint16 h, Uint32 flags);
+GPU_Target* GPU_InitRenderer(GPU_RendererID renderer_request, Uint16 w, Uint16 h, Uint32 flags);
+
+/*! Returns the default renderer ID for the current platform. */
+GPU_RendererID GPU_GetDefaultRendererID(void);
 
 /*! Checks for important GPU features which may not be supported depending on a device's extension support.  Feature flags (GPU_FEATURE_*) can be bitwise OR'd together. 
- * \return 1 is all of the passed features are enabled/supported
+ * \return 1 if all of the passed features are enabled/supported
  * \return 0 if any of the passed features are disabled/unsupported
  */
 Uint8 GPU_IsFeatureEnabled(GPU_FeatureEnum feature);
@@ -403,35 +436,51 @@ int GPU_ToggleFullscreen(void);
 
 
 // Renderer controls
-/*! Gets the current renderer identifier string. */
-const char* GPU_GetCurrentRendererID(void);
 
-/*! Gets the renderer identifier string for the given renderer index. */
-const char* GPU_GetRendererID(unsigned int index);
+/*! Returns the default GPU_RendererID for the current platform. */
+GPU_RendererID GPU_GetDefaultRendererID(void);
+
+/*! Translates a GPU_RendererEnum into a string. */
+const char* GPU_GetRendererEnumString(GPU_RendererEnum id);
+
+/*! Returns an initialized GPU_RendererRequestID. */
+GPU_RendererID GPU_MakeRendererIDRequest(GPU_RendererEnum id, int major_version, int minor_version, Uint32 flags);
+
+/*! Returns an initialized GPU_RendererID. */
+GPU_RendererID GPU_MakeRendererID(GPU_RendererEnum id, int major_version, int minor_version, int index);
+
+/*! Gets the current renderer identifier. */
+GPU_RendererID GPU_GetCurrentRendererID(void);
+
+/*! Gets the renderer identifier for the given registration index. */
+GPU_RendererID GPU_GetRendererID(unsigned int index);
 
 /*! Gets the number of active (created) renderers. */
 int GPU_GetNumActiveRenderers(void);
 
 /*! Gets an array of identifiers for the active renderers. */
-void GPU_GetActiveRendererList(const char** renderers_array);
+void GPU_GetActiveRendererList(GPU_RendererID* renderers_array);
 
 /*! Gets the number of registered (available) renderers. */
 int GPU_GetNumRegisteredRenderers(void);
 
 /*! Gets an array of identifiers for the registered (available) renderers. */
-void GPU_GetRegisteredRendererList(const char** renderers_array);
+void GPU_GetRegisteredRendererList(GPU_RendererID* renderers_array);
 
 /*! Creates a new renderer matching the given identifier. */
-GPU_Renderer* GPU_AddRenderer(const char* id);
+GPU_Renderer* GPU_AddRenderer(GPU_RendererID id);
 
 /*! Deletes the renderer matching the given identifier. */
-void GPU_RemoveRenderer(const char* id);
+void GPU_RemoveRenderer(GPU_RendererID id);
+
+/*! Gets the renderer for the given renderer index. */
+GPU_Renderer* GPU_GetRenderer(unsigned int index);
 
 /*! \return The renderer matching the given identifier. */
-GPU_Renderer* GPU_GetRendererByID(const char* id);
+GPU_Renderer* GPU_GetRendererByID(GPU_RendererID id);
 
 /*! Switches the current renderer to the renderer matching the given identifier. */
-void GPU_SetCurrentRenderer(const char* id);
+void GPU_SetCurrentRenderer(GPU_RendererID id);
 
 /*! \return The current renderer */
 GPU_Renderer* GPU_GetCurrentRenderer(void);

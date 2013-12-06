@@ -1,19 +1,6 @@
 #include "SDL.h"
 #include "SDL_gpu.h"
-#include "SDL_gpu_OpenGL.h"
-
-void printRenderers(void)
-{
-	const char* renderers[GPU_GetNumRegisteredRenderers()];
-	GPU_GetRegisteredRendererList(renderers);
-	
-	printf("Available renderers:\n");
-	int i;
-	for(i = 0; i < GPU_GetNumRegisteredRenderers(); i++)
-	{
-		printf("%d) %s\n", i+1, renderers[i]);
-	}
-}
+#include "common.h"
 
 
 void load_shaders(Uint32* v, Uint32* f, Uint32* p)
@@ -54,11 +41,11 @@ int main(int argc, char* argv[])
 {
 	printRenderers();
 	
-	GPU_Target* screen = GPU_Init(NULL, 800, 600, 0);
+	GPU_Target* screen = GPU_Init(800, 600, 0);
 	if(screen == NULL)
 		return -1;
 	
-	printf("Using renderer: %s\n", GPU_GetCurrentRendererID());
+	printCurrentRenderer();
 	
 	GPU_Image* image = GPU_LoadImage("data/test.bmp");
 	if(image == NULL)

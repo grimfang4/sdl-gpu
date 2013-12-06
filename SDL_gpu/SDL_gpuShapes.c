@@ -23,13 +23,13 @@ void GPU_LoadShapeRenderer(void)
 		freeShapeRendererFn = NULL;
 	}
 	
-	const char* rendererID = GPU_GetCurrentRendererID();
+	GPU_RendererID rendererID = GPU_GetCurrentRendererID();
 	GPU_Renderer* renderer = GPU_GetRendererByID(rendererID);
 	if(renderer == NULL)
 		return;
 	
     #ifndef SDL_GPU_USE_OPENGLES_1
-	if(strcmp(rendererID, "OpenGL") == 0)
+	if(rendererID.id == GPU_RENDERER_OPENGL)
 	{
 		GPU_ShapeRenderer* sr = GPU_CreateShapeRenderer_OpenGL();
 		if(sr == NULL)
@@ -40,7 +40,7 @@ void GPU_LoadShapeRenderer(void)
 	}
 	#else
 	
-	if(strcmp(rendererID, "OpenGLES_1") == 0)
+	if(rendererID.id == GPU_RENDERER_OPENGLES)
 	{
 		GPU_ShapeRenderer* sr = GPU_CreateShapeRenderer_OpenGLES_1();
 		if(sr == NULL)

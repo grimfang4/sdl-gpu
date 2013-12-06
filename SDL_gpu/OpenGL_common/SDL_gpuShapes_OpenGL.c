@@ -727,6 +727,7 @@ static void PolygonBlit(GPU_ShapeRenderer* renderer, GPU_Image* src, GPU_Rect* s
     BEGIN;
     
     (void)z;
+    // TODO: Do this!
 /*
     glEnable( GL_TEXTURE_2D );
 
