@@ -271,6 +271,8 @@ static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request,
     renderer->window_w = screen->w;
     renderer->window_h = screen->h;
 #endif
+    glGetIntegerv(GL_MAJOR_VERSION, &renderer->id.major_version);
+    glGetIntegerv(GL_MINOR_VERSION, &renderer->id.minor_version);
 
 #ifdef SDL_GPU_USE_OPENGL
     GLenum err = glewInit();
