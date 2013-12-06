@@ -214,6 +214,13 @@ static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request,
 {
 #ifdef SDL_GPU_USE_SDL2
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+    if(renderer_request.major_version < 1)
+    {
+        renderer_request.major_version = 1;
+        renderer_request.minor_version = 1;
+    }
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, renderer_request.major_version);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, renderer_request.minor_version);
 #else
     Uint8 useDoubleBuffering = flags & SDL_DOUBLEBUF;
     if(useDoubleBuffering)
