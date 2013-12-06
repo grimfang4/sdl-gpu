@@ -94,7 +94,6 @@ Uint8 bindFramebuffer(GPU_Renderer* renderer, GPU_Target* target);
 			glDisable(GL_SCISSOR_TEST); \
 	} \
 	/*glPopAttrib();*/ \
-	glColor4ub(255, 255, 255, 255); \
 	glEnable( GL_TEXTURE_2D ); \
     }
 
@@ -130,6 +129,30 @@ static inline void draw_vertices(GLfloat* glverts, int num_vertices, GLenum prim
 }
 
 
+static inline void draw_vertices_textured(GLfloat* glverts, GLfloat* gltexcoords, int num_vertices, GLenum prim_type)
+{
+    #ifdef SDL_GPU_USE_OPENGLv1
+        glBegin(prim_type);
+        int size = 3*num_vertices;
+        int i, j;
+        for(i = 0, j = 0; i < size; i += 3, j+=2)
+        {
+            glTexCoord2f(gltexcoords[j], gltexcoords[j+1]);
+            glVertex3f(glverts[i], glverts[i+1], glverts[i+2]);
+        }
+        glEnd();
+    #else
+        glVertexPointer(3, GL_FLOAT, 0, glverts);
+        glTexCoordPointer(2, GL_FLOAT, 0, gltexcoords);
+        glEnableClientState(GL_VERTEX_ARRAY);
+        glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+        glDrawArrays(prim_type, 0, num_vertices);
+        glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+        glDisableClientState(GL_VERTEX_ARRAY);
+    #endif
+}
+
+
 static float SetThickness(GPU_ShapeRenderer* renderer, float thickness)
 {
 	float old = ((ShapeRendererData_OpenGL*)renderer->data)->line_thickness;
@@ -156,6 +179,8 @@ static void Pixel(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, floa
 		glverts[2] = z;
         
         draw_vertices(glverts, 1, GL_POINTS);
+        
+        glColor4ub(255, 255, 255, 255);
 
     END;
 }
@@ -176,6 +201,8 @@ static void Line(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, floa
         glverts[5] = z;
 
         draw_vertices(glverts, 2, GL_LINES);
+        
+        glColor4ub(255, 255, 255, 255);
 
     END;
 }
@@ -275,6 +302,8 @@ static void Arc(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, float 
         glVertex3f(x+dx, y+dy, z);
     }
     glEnd();*/
+        
+    glColor4ub(255, 255, 255, 255);
 
     END;
 }
@@ -379,6 +408,8 @@ static void ArcFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, 
         glVertex3f(x+dx, y+dy, z);
     }
     glEnd();*/
+    
+    glColor4ub(255, 255, 255, 255);
 
     END;
 }
@@ -407,6 +438,8 @@ static void Circle(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, flo
     }
 
     draw_vertices(glverts, numSegments, GL_LINE_LOOP);
+    
+    glColor4ub(255, 255, 255, 255);
 
     END;
 }
@@ -452,6 +485,8 @@ static void CircleFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float 
         glVertex3f(x+dx, y+dy, z);
     }
     glEnd();*/
+    
+    glColor4ub(255, 255, 255, 255);
 
     END;
 }
@@ -475,6 +510,8 @@ static void Tri(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, float
     glverts[8] = z;
 
     draw_vertices(glverts, 3, GL_LINE_LOOP);
+    
+    glColor4ub(255, 255, 255, 255);
 
     END;
 }
@@ -498,6 +535,8 @@ static void TriFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1,
     glverts[8] = z;
 
     draw_vertices(glverts, 3, GL_TRIANGLE_STRIP);
+    
+    glColor4ub(255, 255, 255, 255);
 
     END;
 }
@@ -568,6 +607,8 @@ static void Rectangle(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1,
     glverts[29] = z;
     
     draw_vertices(glverts, 10, GL_TRIANGLE_STRIP);
+    
+    glColor4ub(255, 255, 255, 255);
 
     END;
 }
@@ -594,6 +635,8 @@ static void RectangleFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, flo
     glverts[11] = z;
 
     draw_vertices(glverts, 4, GL_TRIANGLE_STRIP);
+    
+    glColor4ub(255, 255, 255, 255);
 
     END;
 }
@@ -632,6 +675,8 @@ static void RectangleRound(GPU_ShapeRenderer* renderer, GPU_Target* target, floa
         set_vertex(glverts, n++, x1+radius+cos(i)*radius,y1+radius+sin(i)*radius, z);
 
     draw_vertices(glverts, n, GL_LINE_LOOP);
+    
+    glColor4ub(255, 255, 255, 255);
 
     END;
 }
@@ -679,6 +724,8 @@ static void RectangleRoundFilled(GPU_ShapeRenderer* renderer, GPU_Target* target
 
     draw_vertices(glverts, n, GL_TRIANGLE_FAN);
     
+    glColor4ub(255, 255, 255, 255);
+    
     END;
 }
 
@@ -698,6 +745,8 @@ static void Polygon(GPU_ShapeRenderer* renderer, GPU_Target* target, Uint16 n, f
     }
     
     draw_vertices(glverts, n, GL_LINE_LOOP);
+    
+    glColor4ub(255, 255, 255, 255);
 
     END;
 }
@@ -718,6 +767,8 @@ static void PolygonFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, Uint1
     }
     
     draw_vertices(glverts, n, GL_TRIANGLE_FAN);
+    
+    glColor4ub(255, 255, 255, 255);
 
     END;
 }
@@ -726,37 +777,42 @@ static void PolygonBlit(GPU_ShapeRenderer* renderer, GPU_Image* src, GPU_Rect* s
 {
     BEGIN;
     
-    (void)z;
-    // TODO: Do this!
-/*
-    glEnable( GL_TEXTURE_2D );
-
-    bindTexture( renderer->renderer, ((ImageData_OpenGL*)src->data)->handle );
-
+    GLuint handle = ((ImageData_OpenGL*)src->data)->handle;
+    renderer->renderer->FlushBlitBuffer(renderer->renderer);
+    
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture( GL_TEXTURE_2D, handle );
+    ((RendererData_OpenGL*)renderer->data)->last_image = src;
+    
     // Set repeat mode
     // FIXME: Save old mode and reset it later
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
-
+    
     // TODO: Add rotation of texture using 'angle'
     // TODO: Use 'srcrect'
-
-    int i;
-    glBegin(GL_TRIANGLE_FAN);
-    for(i = 0; i < 2*n; i+=2)
+    
+    int numIndices = 2*n;
+    float glverts[numIndices*3];
+    float gltexcoords[numIndices*2];
+    
+    int i, j;
+    for(i = 0, j = 0; i < numIndices; i+=2, j++)
     {
         float x = vertices[i];
     	float y = vertices[i+1];
 
-    	glTexCoord2f((x - textureX)*scaleX/src->w, (y - textureY)*scaleY/src->h);
-
-        glVertex3f(x, y, z);
+    	gltexcoords[i] = (x - textureX)*scaleX/src->w;
+    	gltexcoords[i+1] = (y - textureY)*scaleY/src->h;
+    	
+        set_vertex(glverts, j, vertices[i], vertices[i+1], z);
     }
-    glEnd();
+    
+    draw_vertices_textured(glverts, gltexcoords, n, GL_TRIANGLE_FAN);
 
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
-*/
+    
     END;
 }
 
