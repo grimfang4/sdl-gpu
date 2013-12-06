@@ -210,7 +210,7 @@ static inline void flushAndClearBlitBufferIfCurrentFramebuffer(GPU_Renderer* ren
     }
 }
 
-static GPU_Target* Init(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint32 flags)
+static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request, Uint16 w, Uint16 h, Uint32 flags)
 {
 #ifdef SDL_GPU_USE_SDL2
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
@@ -2932,7 +2932,7 @@ static void SetUniformfv(GPU_Renderer* renderer, int location, int num_elements_
 
 
 
-GPU_Renderer* GPU_CreateRenderer_OpenGL(void)
+GPU_Renderer* GPU_CreateRenderer_OpenGL(GPU_RendererID request)
 {
     GPU_Renderer* renderer = (GPU_Renderer*)malloc(sizeof(GPU_Renderer));
     if(renderer == NULL)
@@ -2940,7 +2940,8 @@ GPU_Renderer* GPU_CreateRenderer_OpenGL(void)
 
     memset(renderer, 0, sizeof(GPU_Renderer));
 
-    renderer->id = "OpenGL";
+    renderer->id = request;
+    renderer->id.id = GPU_RENDERER_OPENGL;
     renderer->display = NULL;
     renderer->camera = GPU_GetDefaultCamera();
 

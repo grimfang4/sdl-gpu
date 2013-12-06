@@ -1,22 +1,10 @@
 #include "SDL.h"
 #include "SDL_gpu.h"
 #include <math.h>
-#include "../common/compat.h"
+#include "compat.h"
+#include "common.h"
 
 #define PI 3.14159265359
-
-void printRenderers(void)
-{
-	const char* renderers[GPU_GetNumRegisteredRenderers()];
-	GPU_GetRegisteredRendererList(renderers);
-	
-	printf("Available renderers:\n");
-	int i;
-	for(i = 0; i < GPU_GetNumRegisteredRenderers(); i++)
-	{
-		printf("%d) %s\n", i+1, renderers[i]);
-	}
-}
 
 
 void getScreenToWorld(float screenX, float screenY, float* worldX, float* worldY)
@@ -86,11 +74,11 @@ int main(int argc, char* argv[])
 {
 	printRenderers();
 	
-	GPU_Target* screen = GPU_Init(NULL, 800, 600, 0);
+	GPU_Target* screen = GPU_Init(800, 600, 0);
 	if(screen == NULL)
 		return -1;
 	
-	printf("Using renderer: %s\n", GPU_GetCurrentRendererID());
+	printCurrentRenderer();
 	
 	
 	Uint32 startTime = SDL_GetTicks();

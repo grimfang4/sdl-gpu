@@ -1,30 +1,18 @@
 #include "SDL.h"
 #include "SDL_gpu.h"
 #include <math.h>
-#include "../common/compat.h"
-
-void printRenderers(void)
-{
-	const char* renderers[GPU_GetNumRegisteredRenderers()];
-	GPU_GetRegisteredRendererList(renderers);
-	
-	GPU_LogError("Available renderers:\n");
-	int i;
-	for(i = 0; i < GPU_GetNumRegisteredRenderers(); i++)
-	{
-		GPU_LogError("%d) %s\n", i+1, renderers[i]);
-	}
-}
+#include "compat.h"
+#include "common.h"
 
 int main(int argc, char* argv[])
 {
 	printRenderers();
 	
-	GPU_Target* screen = GPU_Init(NULL, 800, 600, 0);
+	GPU_Target* screen = GPU_Init(800, 600, 0);
 	if(screen == NULL)
 		return -1;
 	
-	GPU_LogError("Using renderer: %s\n", GPU_GetCurrentRendererID());
+	printCurrentRenderer();
 	
 	GPU_Image* image = GPU_LoadImage("data/test.bmp");
 	//GPU_Image* image = GPU_LoadImage("data/big_test.png");

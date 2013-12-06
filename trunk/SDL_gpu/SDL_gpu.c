@@ -10,14 +10,14 @@ void GPU_InitRendererRegister(void);
 
 static GPU_Renderer* current_renderer = NULL;
 
-const char* GPU_GetCurrentRendererID(void)
+GPU_RendererID GPU_GetCurrentRendererID(void)
 {
 	if(current_renderer == NULL)
-		return NULL;
+		return GPU_MakeRendererID(GPU_RENDERER_UNKNOWN, 0, 0, -1);
 	return current_renderer->id;
 }
 
-void GPU_SetCurrentRenderer(const char* id)
+void GPU_SetCurrentRenderer(GPU_RendererID id)
 {
 	current_renderer = GPU_GetRendererByID(id);
 	
@@ -73,17 +73,23 @@ void GPU_LogError(const char* format, ...)
 }
 
 
-GPU_Target* GPU_Init(const char* renderer_id, Uint16 w, Uint16 h, Uint32 flags)
+static Uint32 isolate_renderer_flags(Uint32 flags)
+{
+    // TODO: Make video/window/renderer flags combinable and make this work right.
+    return 0;
+}
+
+
+
+
+GPU_Target* GPU_Init(Uint16 w, Uint16 h, Uint32 flags)
+{
+    return GPU_InitRenderer(GPU_MakeRendererIDRequest(GPU_RENDERER_DEFAULT, 0, 0, isolate_renderer_flags(flags)), w, h, flags);
+}
+
+GPU_Target* GPU_InitRenderer(GPU_RendererID renderer_request, Uint16 w, Uint16 h, Uint32 flags)
 {
 	GPU_InitRendererRegister();
-	
-	if(renderer_id == NULL)
-	{
-		renderer_id = GPU_GetRendererID(0);
-		if(renderer_id == NULL)
-			return NULL;
-	}
-	
 	
 	if(GPU_GetNumActiveRenderers() == 0)
 	{
@@ -109,15 +115,13 @@ GPU_Target* GPU_Init(const char* renderer_id, Uint16 w, Uint16 h, Uint32 flags)
 	}
 	
 	
-	GPU_Renderer* renderer = GPU_GetRendererByID(renderer_id);
-	if(renderer == NULL)
-		renderer = GPU_AddRenderer(renderer_id);
+	GPU_Renderer* renderer = GPU_AddRenderer(renderer_request);
 	if(renderer == NULL || renderer->Init == NULL)
 		return NULL;
 	
 	GPU_SetCurrentRenderer(renderer->id);
 	
-	return renderer->Init(renderer, w, h, flags);
+	return renderer->Init(renderer, renderer_request, w, h, flags);
 }
 
 Uint8 GPU_IsFeatureEnabled(GPU_FeatureEnum feature)
@@ -219,6 +223,18 @@ void GPU_GetVirtualCoords(float* x, float* y, float displayX, float displayY)
 GPU_Rect GPU_MakeRect(float x, float y, float w, float h)
 {
     GPU_Rect r = {x, y, w, h};
+    return r;
+}
+
+GPU_RendererID GPU_MakeRendererIDRequest(GPU_RendererEnum id, int major_version, int minor_version, Uint32 flags)
+{
+    GPU_RendererID r = {id, major_version, minor_version, flags, -1};
+    return r;
+}
+
+GPU_RendererID GPU_MakeRendererID(GPU_RendererEnum id, int major_version, int minor_version, int index)
+{
+    GPU_RendererID r = {id, major_version, minor_version, 0, index};
     return r;
 }
 

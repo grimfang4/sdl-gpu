@@ -7,7 +7,7 @@
 #include "stb_image_write.h"
 
 
-GPU_Renderer* GPU_CreateRenderer_OpenGL(void);
+GPU_Renderer* GPU_CreateRenderer_OpenGL(GPU_RendererID request);
 void GPU_FreeRenderer_OpenGL(GPU_Renderer* renderer);
 
 GPU_ShapeRenderer* GPU_CreateShapeRenderer_OpenGL(void);

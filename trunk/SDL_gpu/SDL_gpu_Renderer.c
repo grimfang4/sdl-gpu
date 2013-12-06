@@ -13,13 +13,13 @@ int strcasecmp(const char*, const char *);
 
 typedef struct RendererRegistration
 {
-	char* id;
-	GPU_Renderer* (*createFn)(void);
+	GPU_RendererID id;
+	GPU_Renderer* (*createFn)(GPU_RendererID request);
 	void (*freeFn)(GPU_Renderer*);
 } RendererRegistration;
 
 static Uint8 initialized = 0;
-// FIXME: This is a temporary holder in lieu of a map.
+// FIXME: This is a temporary holder in lieu of a map/vector.
 static GPU_Renderer* rendererMap[MAX_ACTIVE_RENDERERS];
 static RendererRegistration rendererRegister[MAX_REGISTERED_RENDERERS];
 
@@ -40,7 +40,7 @@ int GPU_GetNumActiveRenderers(void)
 	return count;
 }
 
-void GPU_GetActiveRendererList(const char** renderers_array)
+void GPU_GetActiveRendererList(GPU_RendererID* renderers_array)
 {
 	GPU_InitRendererRegister();
 
@@ -66,13 +66,13 @@ int GPU_GetNumRegisteredRenderers(void)
 	int i;
 	for(i = 0; i < MAX_REGISTERED_RENDERERS; i++)
 	{
-		if(rendererRegister[i].id != NULL)
+		if(rendererRegister[i].id.id != GPU_RENDERER_UNKNOWN)
 			count++;
 	}
 	return count;
 }
 
-void GPU_GetRegisteredRendererList(const char** renderers_array)
+void GPU_GetRegisteredRendererList(GPU_RendererID* renderers_array)
 {
 	GPU_InitRendererRegister();
 
@@ -81,7 +81,7 @@ void GPU_GetRegisteredRendererList(const char** renderers_array)
 	int i;
 	for(i = 0; i < MAX_REGISTERED_RENDERERS; i++)
 	{
-		if(rendererRegister[i].id != NULL)
+		if(rendererRegister[i].id.id != GPU_RENDERER_UNKNOWN)
 		{
 			renderers_array[count] = rendererRegister[i].id;
 			count++;
@@ -90,10 +90,10 @@ void GPU_GetRegisteredRendererList(const char** renderers_array)
 }
 
 
-const char* GPU_GetRendererID(unsigned int index)
+GPU_RendererID GPU_GetRendererID(unsigned int index)
 {
 	if(index >= MAX_REGISTERED_RENDERERS)
-		return NULL;
+		return GPU_MakeRendererID(GPU_RENDERER_UNKNOWN, 0, 0, -1);
 	
 	return rendererRegister[index].id;
 }
@@ -105,9 +105,8 @@ void GPU_RegisterRenderers()
 	if(i >= MAX_REGISTERED_RENDERERS)
 		return;
 	
-	const char* id = "OpenGL";
-	rendererRegister[i].id = (char*)malloc(strlen(id) + 1);
-	strcpy(rendererRegister[i].id, id);
+	rendererRegister[i].id.id = GPU_RENDERER_OPENGL;
+	rendererRegister[i].id.index = i;
 	rendererRegister[i].createFn = &GPU_CreateRenderer_OpenGL;
 	rendererRegister[i].freeFn = &GPU_FreeRenderer_OpenGL;
 	
@@ -126,7 +125,8 @@ void GPU_InitRendererRegister(void)
 	int i;
 	for(i = 0; i < MAX_REGISTERED_RENDERERS; i++)
 	{
-		rendererRegister[i].id = NULL;
+		rendererRegister[i].id.id = GPU_RENDERER_UNKNOWN;
+		rendererRegister[i].id.index = i;
 		rendererRegister[i].createFn = NULL;
 		rendererRegister[i].freeFn = NULL;
 	}
@@ -140,19 +140,50 @@ void GPU_InitRendererRegister(void)
 	GPU_RegisterRenderers();
 }
 
-GPU_Renderer* GPU_CreateRenderer(const char* id)
+
+
+
+
+GPU_RendererID GPU_GetDefaultRendererID(void)
+{
+    #ifdef ANDROID
+    return GPU_MakeRendererIDRequest(GPU_RENDERER_OPENGLES, 1, 1, 0);
+    #else
+    return GPU_MakeRendererIDRequest(GPU_RENDERER_OPENGL, 1, 1, 0);
+    #endif
+}
+
+const char* GPU_GetRendererEnumString(GPU_RendererEnum id)
+{
+    if(id == GPU_RENDERER_DEFAULT)
+        id = GPU_GetDefaultRendererID().id;
+    
+    if(id == GPU_RENDERER_OPENGL)
+        return "OpenGL";
+    if(id == GPU_RENDERER_OPENGLES)
+        return "OpenGLES";
+    if(id == GPU_RENDERER_DIRECT3D)
+        return "Direct3D";
+    
+    return "Unknown";
+}
+
+
+GPU_Renderer* GPU_CreateRenderer(GPU_RendererID id)
 {
 	GPU_Renderer* result = NULL;
 	int i;
 	for(i = 0; i < MAX_REGISTERED_RENDERERS; i++)
 	{
-		if(rendererRegister[i].id == NULL)
+		if(rendererRegister[i].id.id == GPU_RENDERER_UNKNOWN)
 			continue;
 		
-		if(strcasecmp(id, rendererRegister[i].id) == 0)
+		if(id.id == rendererRegister[i].id.id)
 		{
 			if(rendererRegister[i].createFn != NULL)
-				result = rendererRegister[i].createFn();
+            {
+				result = rendererRegister[i].createFn(id);
+            }
 			break;
 		}
 	}
@@ -163,33 +194,31 @@ GPU_Renderer* GPU_CreateRenderer(const char* id)
 }
 
 
+GPU_Renderer* GPU_GetRenderer(unsigned int index)
+{
+	if(index >= MAX_ACTIVE_RENDERERS)
+		return NULL;
+	
+	return rendererMap[index];
+}
 
 // Get a renderer from the map.
-GPU_Renderer* GPU_GetRendererByID(const char* id)
+GPU_Renderer* GPU_GetRendererByID(GPU_RendererID id)
 {
 	GPU_InitRendererRegister();
 	
-	if(id == NULL)
+	if(id.index < 0)
 		return NULL;
-	
-	int i;
-	for(i = 0; i < MAX_ACTIVE_RENDERERS; i++)
-	{
-		if(rendererMap[i] == NULL)
-			continue;
-		
-		if(strcasecmp(id, rendererMap[i]->id) == 0)
-		{
-			return rendererMap[i];
-		}
-	}
-	
-	return NULL;
+    
+    return GPU_GetRenderer(id.index);
 }
 
 // Create a new renderer based on a registered id and store it in the map.
-GPU_Renderer* GPU_AddRenderer(const char* id)
+GPU_Renderer* GPU_AddRenderer(GPU_RendererID id)
 {
+    if(id.id == GPU_RENDERER_DEFAULT)
+        id = GPU_GetDefaultRendererID();
+    
 	int i;
 	for(i = 0; i < MAX_ACTIVE_RENDERERS; i++)
 	{
@@ -197,8 +226,15 @@ GPU_Renderer* GPU_AddRenderer(const char* id)
 		{
 			// Create
 			GPU_Renderer* renderer = GPU_CreateRenderer(id);
+			if(renderer == NULL)
+            {
+                // TODO: Add more info here
+                GPU_LogError("Failed to create new renderer.\n");
+                return NULL;
+            }
 			// Add
 			rendererMap[i] = renderer;
+			renderer->id.index = i;
 			// Return
 			return renderer;
 		}
@@ -212,10 +248,10 @@ void GPU_FreeRenderer(GPU_Renderer* renderer)
 	int i;
 	for(i = 0; i < MAX_REGISTERED_RENDERERS; i++)
 	{
-		if(rendererRegister[i].id == NULL)
+		if(rendererRegister[i].id.id == GPU_RENDERER_UNKNOWN)
 			continue;
 		
-		if(strcasecmp(renderer->id, rendererRegister[i].id) == 0)
+		if(renderer->id.id == rendererRegister[i].id.id)
 		{
 			rendererRegister[i].freeFn(renderer);
 			return;
@@ -224,7 +260,7 @@ void GPU_FreeRenderer(GPU_Renderer* renderer)
 }
 
 // Remove a renderer from the map and free it.
-void GPU_RemoveRenderer(const char* id)
+void GPU_RemoveRenderer(GPU_RendererID id)
 {
 	int i;
 	for(i = 0; i < MAX_ACTIVE_RENDERERS; i++)
@@ -232,7 +268,7 @@ void GPU_RemoveRenderer(const char* id)
 		if(rendererMap[i] == NULL)
 			continue;
 		
-		if(strcasecmp(id, rendererMap[i]->id) == 0)
+		if(i == id.index && id.id == rendererMap[i]->id.id)
 		{
 			GPU_FreeRenderer(rendererMap[i]);
 			rendererMap[i] = NULL;

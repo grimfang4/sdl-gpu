@@ -1,34 +1,22 @@
 #include "SDL.h"
 #include "SDL_gpu.h"
 #include <math.h>
+#include "common.h"
 
 #define IMAGE_FILE "data/test.bmp"
-
-void printRenderers(void)
-{
-	const char* renderers[GPU_GetNumRegisteredRenderers()];
-	GPU_GetRegisteredRendererList(renderers);
-	
-	printf("Available renderers:\n");
-	int i;
-	for(i = 0; i < GPU_GetNumRegisteredRenderers(); i++)
-	{
-		printf("%d) %s\n", i+1, renderers[i]);
-	}
-}
 
 int main(int argc, char* argv[])
 {
 	printRenderers();
 	
-	GPU_Target* screen = GPU_Init(NULL, 800, 600, 0);
+	GPU_Target* screen = GPU_Init(800, 600, 0);
 	if(screen == NULL)
     {
         GPU_LogError("Failed to init SDL_gpu.\n");
 		return -1;
     }
 	
-	printf("Using renderer: %s\n", GPU_GetCurrentRendererID());
+	printCurrentRenderer();
 	
 	GPU_LogError("Loading image\n");
 	GPU_Image* image = GPU_LoadImage(IMAGE_FILE);
