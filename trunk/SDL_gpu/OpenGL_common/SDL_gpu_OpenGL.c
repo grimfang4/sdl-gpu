@@ -1870,7 +1870,10 @@ static int BlitTransformMatrix(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect*
         return -1;
     if(renderer != src->renderer || renderer != dest->renderer)
         return -2;
-
+    
+    // TODO: See below.
+    renderer->FlushBlitBuffer(renderer);
+    
     glPushMatrix();
 
     // column-major 3x3 to column-major 4x4 (and scooting the translations to the homogeneous column)
@@ -1882,7 +1885,11 @@ static int BlitTransformMatrix(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect*
     glTranslatef(x, y, 0);
     glMultMatrixf(matrix);
 
-    int result = GPU_Blit(src, srcrect, dest, 0, 0);
+    int result = renderer->Blit(renderer, src, srcrect, dest, 0, 0);
+    
+    // Popping the matrix will revert the transform before it can be used, so we have to flush for now.
+    // TODO: Do the matrix math myself on the vertex coords.
+    renderer->FlushBlitBuffer(renderer);
 
     glPopMatrix();
 
