@@ -20,7 +20,7 @@ int main(int argc, char* argv[])
 	if(image == NULL || surf == NULL || tgt == NULL || image2 == NULL)
 		return -1;
 	
-	SDL_Rect rect = {71, 64, 96, 52};
+	GPU_Rect rect = {71, 64, 96, 52};
 	GPU_SubSurfaceCopy(surf, &rect, tgt, 0, 0);
 	GPU_FreeTarget(tgt);
 	tgt = NULL;
