@@ -1472,9 +1472,11 @@ static void SubSurfaceCopy(GPU_Renderer* renderer, SDL_Surface* src, GPU_Rect* s
     }
 
     // Copy image to dest
+    GPU_FlushBlitBuffer();
     Uint8 blending = GPU_GetBlending();
     GPU_SetBlending(0);
     GPU_Blit(image, NULL, dest, x + r.w/2, y + r.h/2);
+    GPU_FlushBlitBuffer();
     GPU_SetBlending(blending);
 
     // Using glTexSubImage might be more efficient
