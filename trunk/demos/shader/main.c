@@ -8,16 +8,12 @@ void load_shaders(Uint32* v, Uint32* f, Uint32* p)
     *v = GPU_LoadShader(GPU_VERTEX_SHADER, "shader/test.vert");
     
     if(!*v)
-    {
         GPU_LogError("Failed to load vertex shader: %s\n", GPU_GetShaderMessage());
-    }
     
     *f = GPU_LoadShader(GPU_FRAGMENT_SHADER, "shader/test.frag");
     
     if(!*f)
-    {
         GPU_LogError("Failed to load fragment shader: %s\n", GPU_GetShaderMessage());
-    }
     
     *p = GPU_LinkShaders(*v, *f);
     
@@ -100,6 +96,18 @@ int main(int argc, char* argv[])
 				{
 					if(numSprites > 0)
 						numSprites--;
+				}
+				else if(event.key.keysym.sym == SDLK_SPACE)
+				{
+				    if(screen->renderer->current_shader_program == screen->renderer->default_shader_program)
+                        GPU_ActivateShaderProgram(p);
+                    else
+                        GPU_ActivateShaderProgram(0);
+                    
+                    
+                    uloc = GPU_GetUniformLocation(p, "tex");
+                    GPU_SetUniformi(uloc, 0);
+                    timeloc = GPU_GetUniformLocation(p, "time");
 				}
 			}
 		}

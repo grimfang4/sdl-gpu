@@ -14,6 +14,38 @@ int strcasecmp(const char*, const char *);
 #define M_PI 3.14159265358979323846
 #endif
 
+
+// Default shaders
+
+#define DEFAULT_VERTEX_SHADER_SOURCE \
+"#version 120\n\
+\
+varying vec4 color;\n\
+varying vec2 texCoord;\n\
+\
+void main(void)\n\
+{\n\
+	color = gl_Color;\n\
+	texCoord = vec2(gl_MultiTexCoord0);\n\
+	gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\n\
+}"
+
+#define DEFAULT_FRAGMENT_SHADER_SOURCE \
+"#version 120\n\
+\
+varying vec4 color;\n\
+varying vec2 texCoord;\n\
+\
+uniform sampler2D tex;\n\
+\
+void main(void)\n\
+{\n\
+    gl_FragColor = texture2D(tex, texCoord) * color;\n\
+}"
+
+
+
+
 static SDL_PixelFormat* AllocFormat(GLenum glFormat);
 static void FreeFormat(SDL_PixelFormat* format);
 
@@ -341,6 +373,37 @@ static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request,
     rdata->blit_buffer_size = 0;
     int numFloatsPerVertex = 5;  // x, y, z, s, t
     rdata->blit_buffer = (float*)malloc(sizeof(float)*rdata->blit_buffer_max_size*numFloatsPerVertex);
+    
+    
+    renderer->default_shader_program = 0;
+    renderer->current_shader_program = 0;
+    
+    // FIXME: Check for GLES
+    // Do we need a default shader?
+    if(renderer->id.major_version >= 2)
+    {
+        Uint32 v = renderer->CompileShader(renderer, GPU_VERTEX_SHADER, DEFAULT_VERTEX_SHADER_SOURCE);
+        
+        if(!v)
+            GPU_LogError("Failed to load default vertex shader: %s\n", renderer->GetShaderMessage(renderer));
+        
+        Uint32 f = renderer->CompileShader(renderer, GPU_FRAGMENT_SHADER, DEFAULT_FRAGMENT_SHADER_SOURCE);
+        
+        if(!f)
+            GPU_LogError("Failed to load default fragment shader: %s\n", renderer->GetShaderMessage(renderer));
+        
+        Uint32 p = renderer->LinkShaders(renderer, v, f);
+        
+        if(!p)
+            GPU_LogError("Failed to link default shader program: %s\n", renderer->GetShaderMessage(renderer));
+        
+        glUseProgram(p);
+        
+        renderer->default_shader_program = renderer->current_shader_program = p;
+        
+        int uloc = renderer->GetUniformLocation(renderer, p, "tex");
+        renderer->SetUniformi(renderer, uloc, 0);
+    }
 
     return renderer->display;
 }
@@ -2834,12 +2897,26 @@ static void DetachShader(GPU_Renderer* renderer, Uint32 program_object, Uint32 s
 
 static void ActivateShaderProgram(GPU_Renderer* renderer, Uint32 program_object)
 {
+    if(renderer->current_shader_program == program_object)
+        return;
+    
+    if(program_object == 0) // Implies default shader
+        program_object = renderer->default_shader_program;
+    
     glUseProgram(program_object);
+    renderer->current_shader_program = program_object;  // TODO: Change to a property of GPU_Target.
+    
+    if(program_object == renderer->default_shader_program)
+    {
+        // Eh, uniforms will default to 0 anyhow, right?
+        int uloc = renderer->GetUniformLocation(renderer, program_object, "tex");
+        renderer->SetUniformi(renderer, uloc, 0);
+    }
 }
 
 static void DeactivateShaderProgram(GPU_Renderer* renderer)
 {
-    glUseProgram(0);
+    renderer->ActivateShaderProgram(renderer, 0);
 }
 
 static const char* GetShaderMessage(GPU_Renderer* renderer)
