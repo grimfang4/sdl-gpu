@@ -82,3 +82,6 @@ target_link_libraries (shader-demo SDL_gpu)
 
 add_executable(3d-demo 3d/main.c common/common.c)
 target_link_libraries (3d-demo SDL_gpu)
+
+add_executable(windows-demo windows/main.c common/common.c)
+target_link_libraries (windows-demo SDL_gpu)
