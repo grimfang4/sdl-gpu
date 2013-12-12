@@ -105,7 +105,7 @@ void GPU_RegisterRenderers()
 	if(i >= MAX_REGISTERED_RENDERERS)
 		return;
 	
-	rendererRegister[i].id.id = GPU_RENDERER_OPENGL;
+	rendererRegister[i].id = GPU_GetDefaultRendererID();
 	rendererRegister[i].id.index = i;
 	rendererRegister[i].createFn = &GPU_CreateRenderer_OpenGL;
 	rendererRegister[i].freeFn = &GPU_FreeRenderer_OpenGL;
@@ -189,7 +189,7 @@ GPU_Renderer* GPU_CreateRenderer(GPU_RendererID id)
 	}
 	
 	if(result == NULL)
-		GPU_LogError("Could not create renderer: \"%s\" was not found in the renderer registry.\n", id);
+		GPU_LogError("Could not create renderer: \"%s\" was not found in the renderer registry.\n", GPU_GetRendererEnumString(id.id));
 	return result;
 }
 
@@ -232,6 +232,7 @@ GPU_Renderer* GPU_AddRenderer(GPU_RendererID id)
                 GPU_LogError("Failed to create new renderer.\n");
                 return NULL;
             }
+            
 			// Add
 			rendererMap[i] = renderer;
 			renderer->id.index = i;

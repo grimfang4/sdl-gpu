@@ -15,9 +15,13 @@ int strcasecmp(const char*, const char *);
 #endif
 
 
+#ifndef GL_VERTEX_SHADER
+#define SDL_GPU_DISABLE_SHADERS
+#endif
+
 // Default shaders
 
-#define DEFAULT_VERTEX_SHADER_SOURCE \
+#define TEXTURED_VERTEX_SHADER_SOURCE \
 "#version 120\n\
 \
 varying vec4 color;\n\
@@ -30,7 +34,7 @@ void main(void)\n\
 	gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\n\
 }"
 
-#define DEFAULT_FRAGMENT_SHADER_SOURCE \
+#define TEXTURED_FRAGMENT_SHADER_SOURCE \
 "#version 120\n\
 \
 varying vec4 color;\n\
@@ -41,6 +45,27 @@ uniform sampler2D tex;\n\
 void main(void)\n\
 {\n\
     gl_FragColor = texture2D(tex, texCoord) * color;\n\
+}"
+
+#define UNTEXTURED_VERTEX_SHADER_SOURCE \
+"#version 120\n\
+\
+varying vec4 color;\n\
+\
+void main(void)\n\
+{\n\
+	color = gl_Color;\n\
+	gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\n\
+}"
+
+#define UNTEXTURED_FRAGMENT_SHADER_SOURCE \
+"#version 120\n\
+\
+varying vec4 color;\n\
+\
+void main(void)\n\
+{\n\
+    gl_FragColor = color;\n\
 }"
 
 
@@ -303,8 +328,20 @@ static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request,
     renderer->window_w = screen->w;
     renderer->window_h = screen->h;
 #endif
+    
+    #ifdef GL_MAJOR_VERSION
     glGetIntegerv(GL_MAJOR_VERSION, &renderer->id.major_version);
     glGetIntegerv(GL_MINOR_VERSION, &renderer->id.minor_version);
+    #else
+    // GLES doesn't have GL_MAJOR_VERSION.  Check via version string instead.
+    const char* version_string = glGetString(GL_VERSION);
+    if(sscanf(version_string, "OpenGL ES-C%*c %d.%d", &renderer->id.major_version, &renderer->id.minor_version) <= 0)
+    {
+        GPU_LogError("Failed to parse OpenGLES version string.  Defaulting to version 1.1.\n");
+        renderer->id.major_version = 1;
+        renderer->id.minor_version = 1;
+    }
+    #endif
 
 #ifdef SDL_GPU_USE_OPENGL
     GLenum err = glewInit();
@@ -375,35 +412,54 @@ static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request,
     rdata->blit_buffer = (float*)malloc(sizeof(float)*rdata->blit_buffer_max_size*numFloatsPerVertex);
     
     
-    renderer->default_shader_program = 0;
+    renderer->default_textured_shader_program = 0;
+    renderer->default_untextured_shader_program = 0;
     renderer->current_shader_program = 0;
     
-    // FIXME: Check for GLES
+    
+    #ifndef SDL_GPU_DISABLE_SHADERS
     // Do we need a default shader?
     if(renderer->id.major_version >= 2)
     {
-        Uint32 v = renderer->CompileShader(renderer, GPU_VERTEX_SHADER, DEFAULT_VERTEX_SHADER_SOURCE);
+        // Textured shader
+        Uint32 v = renderer->CompileShader(renderer, GPU_VERTEX_SHADER, TEXTURED_VERTEX_SHADER_SOURCE);
         
         if(!v)
-            GPU_LogError("Failed to load default vertex shader: %s\n", renderer->GetShaderMessage(renderer));
+            GPU_LogError("Failed to load default textured vertex shader: %s\n", renderer->GetShaderMessage(renderer));
         
-        Uint32 f = renderer->CompileShader(renderer, GPU_FRAGMENT_SHADER, DEFAULT_FRAGMENT_SHADER_SOURCE);
+        Uint32 f = renderer->CompileShader(renderer, GPU_FRAGMENT_SHADER, TEXTURED_FRAGMENT_SHADER_SOURCE);
         
         if(!f)
-            GPU_LogError("Failed to load default fragment shader: %s\n", renderer->GetShaderMessage(renderer));
+            GPU_LogError("Failed to load default textured fragment shader: %s\n", renderer->GetShaderMessage(renderer));
         
         Uint32 p = renderer->LinkShaders(renderer, v, f);
         
         if(!p)
-            GPU_LogError("Failed to link default shader program: %s\n", renderer->GetShaderMessage(renderer));
+            GPU_LogError("Failed to link default textured shader program: %s\n", renderer->GetShaderMessage(renderer));
+        
+        renderer->default_textured_shader_program = p;
+        
+        // Untextured shader
+        v = renderer->CompileShader(renderer, GPU_VERTEX_SHADER, UNTEXTURED_VERTEX_SHADER_SOURCE);
+        
+        if(!v)
+            GPU_LogError("Failed to load default untextured vertex shader: %s\n", renderer->GetShaderMessage(renderer));
+        
+        f = renderer->CompileShader(renderer, GPU_FRAGMENT_SHADER, UNTEXTURED_FRAGMENT_SHADER_SOURCE);
+        
+        if(!f)
+            GPU_LogError("Failed to load default untextured fragment shader: %s\n", renderer->GetShaderMessage(renderer));
+        
+        p = renderer->LinkShaders(renderer, v, f);
+        
+        if(!p)
+            GPU_LogError("Failed to link default untextured shader program: %s\n", renderer->GetShaderMessage(renderer));
         
         glUseProgram(p);
         
-        renderer->default_shader_program = renderer->current_shader_program = p;
-        
-        int uloc = renderer->GetUniformLocation(renderer, p, "tex");
-        renderer->SetUniformi(renderer, uloc, 0);
+        renderer->default_untextured_shader_program = renderer->current_shader_program = p;
     }
+    #endif
 
     return renderer->display;
 }
@@ -1634,6 +1690,9 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_T
     // Bind the FBO
     if(bindFramebuffer(renderer, dest))
     {
+        if(renderer->current_shader_program == renderer->default_untextured_shader_program)
+            renderer->ActivateShaderProgram(renderer, renderer->default_textured_shader_program);
+        
         Uint16 tex_w = ((ImageData_OpenGL*)src->data)->tex_w;
         Uint16 tex_h = ((ImageData_OpenGL*)src->data)->tex_h;
 
@@ -1769,6 +1828,9 @@ static int BlitTransformX(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcr
     // Bind the FBO
     if(bindFramebuffer(renderer, dest))
     {
+        if(renderer->current_shader_program == renderer->default_untextured_shader_program)
+            renderer->ActivateShaderProgram(renderer, renderer->default_textured_shader_program);
+        
         Uint16 tex_w = ((ImageData_OpenGL*)src->data)->tex_w;
         Uint16 tex_h = ((ImageData_OpenGL*)src->data)->tex_h;
 
@@ -2808,6 +2870,9 @@ static Uint32 CompileShader(GPU_Renderer* renderer, int shader_type, const char*
 {
     // Create the proper new shader object
     GLuint shader_object = 0;
+    
+    #ifndef SDL_GPU_DISABLE_SHADERS
+    
     switch(shader_type)
     {
     case GPU_VERTEX_SHADER:
@@ -2816,9 +2881,11 @@ static Uint32 CompileShader(GPU_Renderer* renderer, int shader_type, const char*
     case GPU_FRAGMENT_SHADER:
         shader_object = glCreateShader(GL_FRAGMENT_SHADER);
         break;
+    #ifdef GL_GEOMETRY_SHADER
     case GPU_GEOMETRY_SHADER:
         shader_object = glCreateShader(GL_GEOMETRY_SHADER);
         break;
+    #endif
     }
     
     if(shader_object == 0)
@@ -2844,11 +2911,14 @@ static Uint32 CompileShader(GPU_Renderer* renderer, int shader_type, const char*
         return 0;
     }
     
+    #endif
+    
     return shader_object;
 }
 
 static Uint32 LinkShaderProgram(GPU_Renderer* renderer, Uint32 program_object)
 {
+    #ifndef SDL_GPU_DISABLE_SHADERS
 	glLinkProgram(program_object);
 	
 	int linked;
@@ -2861,57 +2931,66 @@ static Uint32 LinkShaderProgram(GPU_Renderer* renderer, Uint32 program_object)
         glDeleteProgram(program_object);
         return 0;
     }
+	#endif
     
 	return program_object;
 }
 
 static Uint32 LinkShaders(GPU_Renderer* renderer, Uint32 shader_object1, Uint32 shader_object2)
 {
+    #ifndef SDL_GPU_DISABLE_SHADERS
     GLuint p = glCreateProgram();
 
 	glAttachShader(p, shader_object1);
 	glAttachShader(p, shader_object2);
 	
 	return renderer->LinkShaderProgram(renderer, p);
+	#else
+	return 0;
+	#endif
 }
 
 static void FreeShader(GPU_Renderer* renderer, Uint32 shader_object)
 {
+    #ifndef SDL_GPU_DISABLE_SHADERS
     glDeleteShader(shader_object);
+    #endif
 }
 
 static void FreeShaderProgram(GPU_Renderer* renderer, Uint32 program_object)
 {
+    #ifndef SDL_GPU_DISABLE_SHADERS
     glDeleteProgram(program_object);
+    #endif
 }
 
 static void AttachShader(GPU_Renderer* renderer, Uint32 program_object, Uint32 shader_object)
 {
+    #ifndef SDL_GPU_DISABLE_SHADERS
     glAttachShader(program_object, shader_object);
+    #endif
 }
 
 static void DetachShader(GPU_Renderer* renderer, Uint32 program_object, Uint32 shader_object)
 {
+    #ifndef SDL_GPU_DISABLE_SHADERS
     glDetachShader(program_object, shader_object);
+    #endif
 }
 
 static void ActivateShaderProgram(GPU_Renderer* renderer, Uint32 program_object)
 {
+    #ifndef SDL_GPU_DISABLE_SHADERS
     if(renderer->current_shader_program == program_object)
         return;
     
     if(program_object == 0) // Implies default shader
-        program_object = renderer->default_shader_program;
+        program_object = renderer->default_untextured_shader_program;
     
     glUseProgram(program_object);
-    renderer->current_shader_program = program_object;  // TODO: Change to a property of GPU_Target.
+    #endif
     
-    if(program_object == renderer->default_shader_program)
-    {
-        // Eh, uniforms will default to 0 anyhow, right?
-        int uloc = renderer->GetUniformLocation(renderer, program_object, "tex");
-        renderer->SetUniformi(renderer, uloc, 0);
-    }
+    renderer->current_shader_program = program_object;  // TODO: Change to a property of GPU_Target.
 }
 
 static void DeactivateShaderProgram(GPU_Renderer* renderer)
@@ -2926,23 +3005,32 @@ static const char* GetShaderMessage(GPU_Renderer* renderer)
 
 static int GetUniformLocation(GPU_Renderer* renderer, Uint32 program_object, const char* uniform_name)
 {
+    #ifndef SDL_GPU_DISABLE_SHADERS
     return glGetUniformLocation(program_object, uniform_name);
+    #else
+    return -1;
+    #endif
 }
 
 
 
 static void GetUniformiv(GPU_Renderer* renderer, Uint32 program_object, int location, int* values)
 {
+    #ifndef SDL_GPU_DISABLE_SHADERS
     glGetUniformiv(program_object, location, values);
+    #endif
 }
 
 static void SetUniformi(GPU_Renderer* renderer, int location, int value)
 {
+    #ifndef SDL_GPU_DISABLE_SHADERS
     glUniform1i(location, value);
+    #endif
 }
 
 static void SetUniformiv(GPU_Renderer* renderer, int location, int num_elements_per_value, int num_values, int* values)
 {
+    #ifndef SDL_GPU_DISABLE_SHADERS
     switch(num_elements_per_value)
     {
         case 1:
@@ -2958,21 +3046,27 @@ static void SetUniformiv(GPU_Renderer* renderer, int location, int num_elements_
         glUniform4iv(location, num_values, values);
         break;
     }
+    #endif
 }
 
 
 static void GetUniformuiv(GPU_Renderer* renderer, Uint32 program_object, int location, unsigned int* values)
 {
+    #ifndef SDL_GPU_DISABLE_SHADERS
     glGetUniformuiv(program_object, location, values);
+    #endif
 }
 
 static void SetUniformui(GPU_Renderer* renderer, int location, unsigned int value)
 {
+    #ifndef SDL_GPU_DISABLE_SHADERS
     glUniform1ui(location, value);
+    #endif
 }
 
 static void SetUniformuiv(GPU_Renderer* renderer, int location, int num_elements_per_value, int num_values, unsigned int* values)
 {
+    #ifndef SDL_GPU_DISABLE_SHADERS
     switch(num_elements_per_value)
     {
         case 1:
@@ -2988,21 +3082,27 @@ static void SetUniformuiv(GPU_Renderer* renderer, int location, int num_elements
         glUniform4uiv(location, num_values, values);
         break;
     }
+    #endif
 }
 
 
 static void GetUniformfv(GPU_Renderer* renderer, Uint32 program_object, int location, float* values)
 {
+    #ifndef SDL_GPU_DISABLE_SHADERS
     glGetUniformfv(program_object, location, values);
+    #endif
 }
 
 static void SetUniformf(GPU_Renderer* renderer, int location, float value)
 {
+    #ifndef SDL_GPU_DISABLE_SHADERS
     glUniform1f(location, value);
+    #endif
 }
 
 static void SetUniformfv(GPU_Renderer* renderer, int location, int num_elements_per_value, int num_values, float* values)
 {
+    #ifndef SDL_GPU_DISABLE_SHADERS
     switch(num_elements_per_value)
     {
         case 1:
@@ -3018,6 +3118,7 @@ static void SetUniformfv(GPU_Renderer* renderer, int location, int num_elements_
         glUniform4fv(location, num_values, values);
         break;
     }
+    #endif
 }
 
 
@@ -3033,7 +3134,13 @@ GPU_Renderer* GPU_CreateRenderer_OpenGL(GPU_RendererID request)
     memset(renderer, 0, sizeof(GPU_Renderer));
 
     renderer->id = request;
-    renderer->id.id = GPU_RENDERER_OPENGL;
+    if(request.id == GPU_RENDERER_DEFAULT)
+        renderer->id.id = GPU_GetDefaultRendererID().id;
+    else if(request.id == GPU_RENDERER_OPENGLES)
+        renderer->id.id = GPU_RENDERER_OPENGLES;
+    else
+        renderer->id.id = GPU_RENDERER_OPENGL;
+    
     renderer->display = NULL;
     renderer->camera = GPU_GetDefaultCamera();
 

@@ -28,6 +28,23 @@
     #define GL_FUNC_ADD GL_FUNC_ADD_OES
     #define GL_FUNC_SUBTRACT GL_FUNC_SUBTRACT_OES
     #define GL_FUNC_REVERSE_SUBTRACT GL_FUNC_REVERSE_SUBTRACT_OES
+    
+/*#elif defined(SDL_GPU_USE_OPENGLESv2)
+    #include "GLES2/gl2.h"
+    #include "GLES2/gl2ext.h"
+
+    #define glFrustum glFrustumf
+    #define glOrtho glOrthof
+    #define glGenerateMipmap glGenerateMipmapOES
+    #define glDeleteFramebuffers glDeleteFramebuffersOES
+    #define glGenFramebuffers glGenFramebuffersOES
+    #define glFramebufferTexture2D glFramebufferTexture2DOES
+    #define glCheckFramebufferStatus glCheckFramebufferStatusOES
+    #define glBindFramebuffer glBindFramebufferOES
+    #define glBindFramebufferEXT glBindFramebufferOES
+
+    #define glBlendEquation glBlendEquationOES
+    #define glBlendFuncSeparate glBlendFuncSeparateOES*/
 #endif
 
 #if defined(GL_EXT_bgr) && !defined(GL_BGR)
