@@ -114,11 +114,10 @@ GPU_Target* GPU_InitRenderer(GPU_RendererID renderer_request, Uint16 w, Uint16 h
         }
 	}
 	
-	
 	GPU_Renderer* renderer = GPU_AddRenderer(renderer_request);
 	if(renderer == NULL || renderer->Init == NULL)
 		return NULL;
-	
+    
 	GPU_SetCurrentRenderer(renderer->id);
 	
 	return renderer->Init(renderer, renderer_request, w, h, flags);

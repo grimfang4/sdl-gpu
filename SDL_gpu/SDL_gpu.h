@@ -374,7 +374,8 @@ struct GPU_Renderer
 	/*! Renderer-specific data. */
 	void* data;
 	
-	Uint32 default_shader_program;
+	Uint32 default_textured_shader_program;
+	Uint32 default_untextured_shader_program;
 	Uint32 current_shader_program;
 	
 };

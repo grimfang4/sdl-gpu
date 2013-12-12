@@ -61,6 +61,55 @@ Uint8 bindFramebuffer(GPU_Renderer* renderer, GPU_Target* target);
 	} \
 	 \
 	glDisable( GL_TEXTURE_2D ); \
+	\
+    if(renderer->renderer->current_shader_program == renderer->renderer->default_textured_shader_program) \
+        renderer->renderer->ActivateShaderProgram(renderer->renderer, renderer->renderer->default_untextured_shader_program); \
+    \
+	GLint vp[4]; \
+    if(renderer->renderer->display != target) \
+    { \
+        glGetIntegerv(GL_VIEWPORT, vp); \
+        \
+        unsigned int w = target->w; \
+        unsigned int h = target->h; \
+        \
+        glViewport( 0, 0, w, h); \
+        \
+        glMatrixMode( GL_PROJECTION ); \
+        glPushMatrix(); \
+        glLoadIdentity(); \
+        \
+        glOrtho(0.0f, w, 0.0f, h, -1.0f, 1.0f); /* Special inverted orthographic projection because tex coords are inverted already. */ \
+        \
+        glMatrixMode( GL_MODELVIEW ); \
+    }
+
+
+#define BEGIN_TEXTURED \
+	if(target == NULL) \
+                return; \
+        if(renderer->renderer != target->renderer) \
+                return; \
+        float z = ((RendererData_OpenGL*)renderer->renderer->data)->z;  \
+         \
+        renderer->renderer->FlushBlitBuffer(renderer->renderer); \
+        if(bindFramebuffer(renderer->renderer, target)) \
+        { \
+        /*glPushAttrib(GL_COLOR_BUFFER_BIT);*/ \
+        if(target->useClip) \
+        { \
+                glEnable(GL_SCISSOR_TEST); \
+		int y = (renderer->renderer->display == target? renderer->renderer->display->h - (target->clipRect.y + target->clipRect.h) : target->clipRect.y); \
+		float xFactor = ((float)renderer->renderer->window_w)/renderer->renderer->display->w; \
+		float yFactor = ((float)renderer->renderer->window_h)/renderer->renderer->display->h; \
+		glScissor(target->clipRect.x * xFactor, y * yFactor, target->clipRect.w * xFactor, target->clipRect.h * yFactor); \
+	} \
+	 \
+	glEnable( GL_TEXTURE_2D ); \
+	\
+    if(renderer->renderer->current_shader_program == renderer->renderer->default_untextured_shader_program) \
+        renderer->renderer->ActivateShaderProgram(renderer->renderer, renderer->renderer->default_textured_shader_program); \
+    \
 	GLint vp[4]; \
     if(renderer->renderer->display != target) \
     { \
@@ -775,12 +824,11 @@ static void PolygonFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, Uint1
 
 static void PolygonBlit(GPU_ShapeRenderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_Target* target, Uint16 n, float* vertices, float textureX, float textureY, float angle, float scaleX, float scaleY)
 {
-    BEGIN;
+    BEGIN_TEXTURED;
     
     GLuint handle = ((ImageData_OpenGL*)src->data)->handle;
     renderer->renderer->FlushBlitBuffer(renderer->renderer);
     
-    glEnable(GL_TEXTURE_2D);
     glBindTexture( GL_TEXTURE_2D, handle );
     ((RendererData_OpenGL*)renderer->data)->last_image = src;
     
