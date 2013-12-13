@@ -3,8 +3,6 @@
 #include <strings.h>
 int strcasecmp(const char*, const char *);
 
-#include "OpenGL_common/SDL_gpu_OpenGL_internal.h"
-
 #define MAX_ACTIVE_RENDERERS 20
 #define MAX_REGISTERED_RENDERERS 2
 
@@ -98,6 +96,13 @@ GPU_RendererID GPU_GetRendererID(unsigned int index)
 	return rendererRegister[index].id;
 }
 
+GPU_Renderer* GPU_CreateRenderer_OpenGL_1(GPU_RendererID request);
+void GPU_FreeRenderer_OpenGL_1(GPU_Renderer* renderer);
+GPU_Renderer* GPU_CreateRenderer_OpenGL_2(GPU_RendererID request);
+void GPU_FreeRenderer_OpenGL_2(GPU_Renderer* renderer);
+GPU_Renderer* GPU_CreateRenderer_GLES_1(GPU_RendererID request);
+void GPU_FreeRenderer_GLES_1(GPU_Renderer* renderer);
+
 void GPU_RegisterRenderers()
 {
 	int i = 0;
@@ -105,14 +110,39 @@ void GPU_RegisterRenderers()
 	if(i >= MAX_REGISTERED_RENDERERS)
 		return;
 	
-	rendererRegister[i].id = GPU_GetDefaultRendererID();
-	rendererRegister[i].id.index = i;
-	rendererRegister[i].createFn = &GPU_CreateRenderer_OpenGL;
-	rendererRegister[i].freeFn = &GPU_FreeRenderer_OpenGL;
+	#ifndef SDL_GPU_DISABLE_OPENGL
+        #ifndef SDL_GPU_DISABLE_OPENGL_1
+        rendererRegister[i].id = GPU_MakeRendererID(GPU_RENDERER_OPENGL_1, 1, 1, i);
+        rendererRegister[i].createFn = &GPU_CreateRenderer_OpenGL_1;
+        rendererRegister[i].freeFn = &GPU_FreeRenderer_OpenGL_1;
+        
+        i++;
+        if(i >= MAX_REGISTERED_RENDERERS)
+            return;
+        #endif
 	
-	i++;
-	if(i >= MAX_REGISTERED_RENDERERS)
-		return;
+        #ifndef SDL_GPU_DISABLE_OPENGL_2
+        rendererRegister[i].id = GPU_MakeRendererID(GPU_RENDERER_OPENGL_2, 2, 0, i);
+        rendererRegister[i].createFn = &GPU_CreateRenderer_OpenGL_2;
+        rendererRegister[i].freeFn = &GPU_FreeRenderer_OpenGL_2;
+        
+        i++;
+        if(i >= MAX_REGISTERED_RENDERERS)
+            return;
+        #endif
+    #endif
+	
+	#ifndef SDL_GPU_DISABLE_GLES
+        #ifndef SDL_GPU_DISABLE_GLES_1
+        rendererRegister[i].id = GPU_MakeRendererID(GPU_RENDERER_GLES_1, 1, 1, i);
+        rendererRegister[i].createFn = &GPU_CreateRenderer_GLES_1;
+        rendererRegister[i].freeFn = &GPU_FreeRenderer_GLES_1;
+        
+        i++;
+        if(i >= MAX_REGISTERED_RENDERERS)
+            return;
+        #endif
+    #endif
 	
 }
 
@@ -146,10 +176,15 @@ void GPU_InitRendererRegister(void)
 
 GPU_RendererID GPU_GetDefaultRendererID(void)
 {
+    
     #ifdef ANDROID
-    return GPU_MakeRendererIDRequest(GPU_RENDERER_OPENGLES, 1, 1, 0);
+        #ifdef SDL_GPU_PREFER_GLES_2
+        return GPU_MakeRendererIDRequest(GPU_RENDERER_OPENGLES_2, 2, 0, 0);
+        #else
+        return GPU_MakeRendererIDRequest(GPU_RENDERER_OPENGLES_1, 1, 1, 0);
+        #endif
     #else
-    return GPU_MakeRendererIDRequest(GPU_RENDERER_OPENGL, 1, 1, 0);
+    return GPU_MakeRendererIDRequest(GPU_RENDERER_OPENGL_1, 1, 1, 0);
     #endif
 }
 
@@ -158,11 +193,21 @@ const char* GPU_GetRendererEnumString(GPU_RendererEnum id)
     if(id == GPU_RENDERER_DEFAULT)
         id = GPU_GetDefaultRendererID().id;
     
-    if(id == GPU_RENDERER_OPENGL)
+    if(id == GPU_RENDERER_OPENGL_1)
         return "OpenGL";
-    if(id == GPU_RENDERER_OPENGLES)
+    if(id == GPU_RENDERER_OPENGL_2)
+        return "OpenGL";
+    if(id == GPU_RENDERER_OPENGL_3)
+        return "OpenGL";
+    if(id == GPU_RENDERER_OPENGL_4)
+        return "OpenGL";
+    if(id == GPU_RENDERER_GLES_1)
         return "OpenGLES";
-    if(id == GPU_RENDERER_DIRECT3D)
+    if(id == GPU_RENDERER_GLES_2)
+        return "OpenGLES";
+    if(id == GPU_RENDERER_GLES_3)
+        return "OpenGLES";
+    if(id == GPU_RENDERER_D3D9)
         return "Direct3D";
     
     return "Unknown";
@@ -189,7 +234,7 @@ GPU_Renderer* GPU_CreateRenderer(GPU_RendererID id)
 	}
 	
 	if(result == NULL)
-		GPU_LogError("Could not create renderer: \"%s\" was not found in the renderer registry.\n", GPU_GetRendererEnumString(id.id));
+		GPU_LogError("Could not create renderer: \"%s %d.%d\" was not found in the renderer registry.\n", GPU_GetRendererEnumString(id.id), id.major_version, id.minor_version);
 	return result;
 }
 

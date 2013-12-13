@@ -1,15 +1,14 @@
-// Hacks to fix compile errors due to polluted namespace
-#ifdef _WIN32
-#define _WINUSER_H
-#define _WINGDI_H
-#endif
-
-#include "SDL_gpu_OpenGL_internal.h"
-#include <math.h>
-
-#ifndef M_PI
-#define M_PI 3.14159265f
-#endif
+/* This is an implementation file to be included after certain #defines have been set.
+These defines determine the code paths:
+SDL_GPU_USE_OPENGL   // "Desktop" OpenGL
+SDL_GPU_USE_GLES // "Embedded" OpenGL
+SDL_GPU_USE_GL_TIER1 // Fixed-function, glBegin, etc.
+SDL_GPU_USE_GL_TIER2 // Fixed-function, glDrawArrays, etc.
+SDL_GPU_USE_GL_TIER3 // Shader pipeline, manual transforms
+RENDERER_DATA  // Appropriate type for the renderer data (via pointer)
+IMAGE_DATA  // Appropriate type for the image data (via pointer)
+TARGET_DATA  // Appropriate type for the target data (via pointer)
+*/
 
 #ifndef DEGPERRAD
 #define DEGPERRAD 57.2957795f
@@ -21,21 +20,16 @@
 
 
 
-static void Circle(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, float y, float radius, SDL_Color color);
+static void Circle(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float radius, SDL_Color color);
 
 
-void extBindFramebuffer(GLuint handle);
-
-void bindTexture(GPU_Renderer* renderer, GPU_Image* image);
-
-Uint8 bindFramebuffer(GPU_Renderer* renderer, GPU_Target* target);
 
 
 #ifdef SDL_GPU_USE_SDL2
-    #define GET_WINDOW(shape_renderer) ((GPU_RendererData_OpenGL*)shape_renderer->renderer->data)->window
+    //#define GET_WINDOW(renderer) SDL_GetWindowFromID(renderer->windowID)
     #define GET_ALPHA(sdl_color) (sdl_color.a)
 #else
-	#define GET_WINDOW(shape_renderer) SDL_GetVideoSurface()
+	//#define GET_WINDOW(renderer) SDL_GetVideoSurface()
     #define GET_ALPHA(sdl_color) (sdl_color.unused)
 #endif
 
@@ -43,30 +37,30 @@ Uint8 bindFramebuffer(GPU_Renderer* renderer, GPU_Target* target);
 #define BEGIN \
 	if(target == NULL) \
                 return; \
-        if(renderer->renderer != target->renderer) \
+        if(renderer != target->renderer) \
                 return; \
-        float z = ((RendererData_OpenGL*)renderer->renderer->data)->z;  \
+        float z = ((RENDERER_DATA*)renderer->data)->z;  \
          \
-        renderer->renderer->FlushBlitBuffer(renderer->renderer); \
-        if(bindFramebuffer(renderer->renderer, target)) \
+        renderer->FlushBlitBuffer(renderer); \
+        if(bindFramebuffer(renderer, target)) \
         { \
         /*glPushAttrib(GL_COLOR_BUFFER_BIT);*/ \
         if(target->useClip) \
         { \
                 glEnable(GL_SCISSOR_TEST); \
-		int y = (renderer->renderer->display == target? renderer->renderer->display->h - (target->clipRect.y + target->clipRect.h) : target->clipRect.y); \
-		float xFactor = ((float)renderer->renderer->window_w)/renderer->renderer->display->w; \
-		float yFactor = ((float)renderer->renderer->window_h)/renderer->renderer->display->h; \
+		int y = (renderer->display == target? renderer->display->h - (target->clipRect.y + target->clipRect.h) : target->clipRect.y); \
+		float xFactor = ((float)renderer->window_w)/renderer->display->w; \
+		float yFactor = ((float)renderer->window_h)/renderer->display->h; \
 		glScissor(target->clipRect.x * xFactor, y * yFactor, target->clipRect.w * xFactor, target->clipRect.h * yFactor); \
 	} \
 	 \
 	glDisable( GL_TEXTURE_2D ); \
 	\
-    if(renderer->renderer->current_shader_program == renderer->renderer->default_textured_shader_program) \
-        renderer->renderer->ActivateShaderProgram(renderer->renderer, renderer->renderer->default_untextured_shader_program); \
+    if(renderer->current_shader_program == renderer->default_textured_shader_program) \
+        renderer->ActivateShaderProgram(renderer, renderer->default_untextured_shader_program); \
     \
 	GLint vp[4]; \
-    if(renderer->renderer->display != target) \
+    if(renderer->display != target) \
     { \
         glGetIntegerv(GL_VIEWPORT, vp); \
         \
@@ -88,30 +82,30 @@ Uint8 bindFramebuffer(GPU_Renderer* renderer, GPU_Target* target);
 #define BEGIN_TEXTURED \
 	if(target == NULL) \
                 return; \
-        if(renderer->renderer != target->renderer) \
+        if(renderer != target->renderer) \
                 return; \
-        float z = ((RendererData_OpenGL*)renderer->renderer->data)->z;  \
+        float z = ((RENDERER_DATA*)renderer->data)->z;  \
          \
-        renderer->renderer->FlushBlitBuffer(renderer->renderer); \
-        if(bindFramebuffer(renderer->renderer, target)) \
+        renderer->FlushBlitBuffer(renderer); \
+        if(bindFramebuffer(renderer, target)) \
         { \
         /*glPushAttrib(GL_COLOR_BUFFER_BIT);*/ \
         if(target->useClip) \
         { \
                 glEnable(GL_SCISSOR_TEST); \
-		int y = (renderer->renderer->display == target? renderer->renderer->display->h - (target->clipRect.y + target->clipRect.h) : target->clipRect.y); \
-		float xFactor = ((float)renderer->renderer->window_w)/renderer->renderer->display->w; \
-		float yFactor = ((float)renderer->renderer->window_h)/renderer->renderer->display->h; \
+		int y = (renderer->display == target? renderer->display->h - (target->clipRect.y + target->clipRect.h) : target->clipRect.y); \
+		float xFactor = ((float)renderer->window_w)/renderer->display->w; \
+		float yFactor = ((float)renderer->window_h)/renderer->display->h; \
 		glScissor(target->clipRect.x * xFactor, y * yFactor, target->clipRect.w * xFactor, target->clipRect.h * yFactor); \
 	} \
 	 \
 	glEnable( GL_TEXTURE_2D ); \
 	\
-    if(renderer->renderer->current_shader_program == renderer->renderer->default_untextured_shader_program) \
-        renderer->renderer->ActivateShaderProgram(renderer->renderer, renderer->renderer->default_textured_shader_program); \
+    if(renderer->current_shader_program == renderer->default_untextured_shader_program) \
+        renderer->ActivateShaderProgram(renderer, renderer->default_textured_shader_program); \
     \
 	GLint vp[4]; \
-    if(renderer->renderer->display != target) \
+    if(renderer->display != target) \
     { \
         glGetIntegerv(GL_VIEWPORT, vp); \
         \
@@ -130,7 +124,7 @@ Uint8 bindFramebuffer(GPU_Renderer* renderer, GPU_Target* target);
     }
 
 #define END \
-    if(renderer->renderer->display != target) \
+    if(renderer->display != target) \
     { \
         glViewport(vp[0], vp[1], vp[2], vp[3]); \
          \
@@ -160,7 +154,7 @@ static inline void set_vertex(float* verts, int index, float x, float y, float z
 
 static inline void draw_vertices(GLfloat* glverts, int num_vertices, GLenum prim_type)
 {
-    #ifdef SDL_GPU_USE_OPENGLv1
+    #ifdef SDL_GPU_USE_GL_TIER1
         glBegin(prim_type);
         int size = 3*num_vertices;
         int i;
@@ -169,7 +163,7 @@ static inline void draw_vertices(GLfloat* glverts, int num_vertices, GLenum prim
             glVertex3f(glverts[i], glverts[i+1], glverts[i+2]);
         }
         glEnd();
-    #else
+    #elif defined(SDL_GPU_USE_GL_TIER2)
         glVertexPointer(3, GL_FLOAT, 0, glverts);
         glEnableClientState(GL_VERTEX_ARRAY);
         glDrawArrays(prim_type, 0, num_vertices);
@@ -180,7 +174,7 @@ static inline void draw_vertices(GLfloat* glverts, int num_vertices, GLenum prim
 
 static inline void draw_vertices_textured(GLfloat* glverts, GLfloat* gltexcoords, int num_vertices, GLenum prim_type)
 {
-    #ifdef SDL_GPU_USE_OPENGLv1
+    #ifdef SDL_GPU_USE_GL_TIER1
         glBegin(prim_type);
         int size = 3*num_vertices;
         int i, j;
@@ -190,7 +184,7 @@ static inline void draw_vertices_textured(GLfloat* glverts, GLfloat* gltexcoords
             glVertex3f(glverts[i], glverts[i+1], glverts[i+2]);
         }
         glEnd();
-    #else
+    #elif defined(SDL_GPU_USE_GL_TIER2)
         glVertexPointer(3, GL_FLOAT, 0, glverts);
         glTexCoordPointer(2, GL_FLOAT, 0, gltexcoords);
         glEnableClientState(GL_VERTEX_ARRAY);
@@ -202,20 +196,20 @@ static inline void draw_vertices_textured(GLfloat* glverts, GLfloat* gltexcoords
 }
 
 
-static float SetThickness(GPU_ShapeRenderer* renderer, float thickness)
+static float SetThickness(GPU_Renderer* renderer, float thickness)
 {
-	float old = ((ShapeRendererData_OpenGL*)renderer->data)->line_thickness;
-	((ShapeRendererData_OpenGL*)renderer->data)->line_thickness = thickness;
+	float old = ((RENDERER_DATA*)renderer->data)->line_thickness;
+	((RENDERER_DATA*)renderer->data)->line_thickness = thickness;
 	glLineWidth(thickness);
 	return old;
 }
 
-static float GetThickness(GPU_ShapeRenderer* renderer)
+static float GetThickness(GPU_Renderer* renderer)
 {
-    return ((ShapeRendererData_OpenGL*)renderer->data)->line_thickness;
+    return ((RENDERER_DATA*)renderer->data)->line_thickness;
 }
 
-static void Pixel(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, float y, SDL_Color color)
+static void Pixel(GPU_Renderer* renderer, GPU_Target* target, float x, float y, SDL_Color color)
 {
 	BEGIN;
 	
@@ -234,7 +228,7 @@ static void Pixel(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, floa
     END;
 }
 
-static void Line(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color)
+static void Line(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color)
 {
     BEGIN;
 
@@ -257,7 +251,7 @@ static void Line(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, floa
 }
 
 
-static void Arc(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, float y, float radius, float startAngle, float endAngle, SDL_Color color)
+static void Arc(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float radius, float startAngle, float endAngle, SDL_Color color)
 {
     float originalSA = startAngle;
 
@@ -358,7 +352,7 @@ static void Arc(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, float 
 }
 
 
-static void ArcFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, float y, float radius, float startAngle, float endAngle, SDL_Color color)
+static void ArcFilled(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float radius, float startAngle, float endAngle, SDL_Color color)
 {
     float originalSA = startAngle;
 
@@ -463,7 +457,7 @@ static void ArcFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, 
     END;
 }
 
-static void Circle(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, float y, float radius, SDL_Color color)
+static void Circle(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float radius, SDL_Color color)
 {
     BEGIN;
 
@@ -493,7 +487,7 @@ static void Circle(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, flo
     END;
 }
 
-static void CircleFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x, float y, float radius, SDL_Color color)
+static void CircleFilled(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float radius, SDL_Color color)
 {
     BEGIN;
 
@@ -540,7 +534,7 @@ static void CircleFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float 
     END;
 }
 
-static void Tri(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, float x3, float y3, SDL_Color color)
+static void Tri(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, float x3, float y3, SDL_Color color)
 {
     BEGIN;
 
@@ -565,7 +559,7 @@ static void Tri(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, float
     END;
 }
 
-static void TriFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, float x3, float y3, SDL_Color color)
+static void TriFilled(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, float x3, float y3, SDL_Color color)
 {
     BEGIN;
 
@@ -590,7 +584,7 @@ static void TriFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1,
     END;
 }
 
-static void Rectangle(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color)
+static void Rectangle(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color)
 {
     BEGIN;
     
@@ -607,7 +601,7 @@ static void Rectangle(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1,
         x2 = x;
     }
     
-	float thickness = ((ShapeRendererData_OpenGL*)renderer->data)->line_thickness;
+	float thickness = ((RENDERER_DATA*)renderer->data)->line_thickness;
 
     glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, GET_ALPHA(color)/255.5f);
 
@@ -662,7 +656,7 @@ static void Rectangle(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1,
     END;
 }
 
-static void RectangleFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color)
+static void RectangleFilled(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color)
 {
     BEGIN;
 
@@ -690,7 +684,7 @@ static void RectangleFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, flo
     END;
 }
 
-static void RectangleRound(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, float radius, SDL_Color color)
+static void RectangleRound(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, float radius, SDL_Color color)
 {
     if(y2 < y1)
     {
@@ -730,7 +724,7 @@ static void RectangleRound(GPU_ShapeRenderer* renderer, GPU_Target* target, floa
     END;
 }
 
-static void RectangleRoundFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, float radius, SDL_Color color)
+static void RectangleRoundFilled(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, float radius, SDL_Color color)
 {
     if(y2 < y1)
     {
@@ -778,7 +772,7 @@ static void RectangleRoundFilled(GPU_ShapeRenderer* renderer, GPU_Target* target
     END;
 }
 
-static void Polygon(GPU_ShapeRenderer* renderer, GPU_Target* target, Uint16 n, float* vertices, SDL_Color color)
+static void Polygon(GPU_Renderer* renderer, GPU_Target* target, Uint16 n, float* vertices, SDL_Color color)
 {
     BEGIN;
 
@@ -800,7 +794,7 @@ static void Polygon(GPU_ShapeRenderer* renderer, GPU_Target* target, Uint16 n, f
     END;
 }
 
-static void PolygonFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, Uint16 n, float* vertices, SDL_Color color)
+static void PolygonFilled(GPU_Renderer* renderer, GPU_Target* target, Uint16 n, float* vertices, SDL_Color color)
 {
     BEGIN;
 
@@ -822,15 +816,15 @@ static void PolygonFilled(GPU_ShapeRenderer* renderer, GPU_Target* target, Uint1
     END;
 }
 
-static void PolygonBlit(GPU_ShapeRenderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_Target* target, Uint16 n, float* vertices, float textureX, float textureY, float angle, float scaleX, float scaleY)
+static void PolygonBlit(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_Target* target, Uint16 n, float* vertices, float textureX, float textureY, float angle, float scaleX, float scaleY)
 {
     BEGIN_TEXTURED;
     
-    GLuint handle = ((ImageData_OpenGL*)src->data)->handle;
-    renderer->renderer->FlushBlitBuffer(renderer->renderer);
+    GLuint handle = ((IMAGE_DATA*)src->data)->handle;
+    renderer->FlushBlitBuffer(renderer);
     
     glBindTexture( GL_TEXTURE_2D, handle );
-    ((RendererData_OpenGL*)renderer->data)->last_image = src;
+    ((RENDERER_DATA*)renderer->data)->last_image = src;
     
     // Set repeat mode
     // FIXME: Save old mode and reset it later
@@ -864,47 +858,3 @@ static void PolygonBlit(GPU_ShapeRenderer* renderer, GPU_Image* src, GPU_Rect* s
     END;
 }
 
-
-
-
-
-
-
-
-
-GPU_ShapeRenderer* GPU_CreateShapeRenderer_OpenGL(void)
-{
-    GPU_ShapeRenderer* renderer = (GPU_ShapeRenderer*)malloc(sizeof(GPU_ShapeRenderer));
-
-        renderer->data = (ShapeRendererData_OpenGL*)malloc(sizeof(ShapeRendererData_OpenGL));
-
-    renderer->SetThickness = &SetThickness;
-    renderer->SetThickness(renderer, 1.0f);
-    renderer->GetThickness = &GetThickness;
-    renderer->Pixel = &Pixel;
-    renderer->Line = &Line;
-    renderer->Arc = &Arc;
-    renderer->ArcFilled = &ArcFilled;
-    renderer->Circle = &Circle;
-    renderer->CircleFilled = &CircleFilled;
-    renderer->Tri = &Tri;
-    renderer->TriFilled = &TriFilled;
-    renderer->Rectangle = &Rectangle;
-    renderer->RectangleFilled = &RectangleFilled;
-    renderer->RectangleRound = &RectangleRound;
-    renderer->RectangleRoundFilled = &RectangleRoundFilled;
-    renderer->Polygon = &Polygon;
-    renderer->PolygonFilled = &PolygonFilled;
-    renderer->PolygonBlit = &PolygonBlit;
-
-    return renderer;
-}
-
-void GPU_FreeShapeRenderer_OpenGL(GPU_ShapeRenderer* renderer)
-{
-    if(renderer == NULL)
-        return;
-
-    free(renderer->data);
-    free(renderer);
-}

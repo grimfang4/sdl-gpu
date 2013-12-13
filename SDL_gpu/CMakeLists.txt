@@ -2,16 +2,20 @@ set(SDL_gpu_SRCS
 	SDL_gpu.c
 	SDL_gpuShapes.c
 	SDL_gpu_Renderer.c
-	OpenGL_common/SDL_gpu_OpenGL.c
-	OpenGL_common/SDL_gpuShapes_OpenGL.c
+	OpenGL_1/SDL_gpu_OpenGL_1.c
+	OpenGL_2/SDL_gpu_OpenGL_2.c
+	GLES_1/SDL_gpu_GLES_1.c
 	externals/glew/glew.c
 	externals/stb_image/stb_image.c
 	externals/stb_image/stb_image_write.c
 )
 set(SDL_gpu_HDRS
 	SDL_gpu.h
-	OpenGL_common/SDL_gpu_OpenGL.h
-	OpenGL_common/SDL_gpu_OpenGL_internal.h
+	GL_common/SDL_gpu_GL_common.inl
+	GL_common/SDL_gpuShapes_GL_common.inl
+	OpenGL_1/SDL_gpu_OpenGL_1.h
+	OpenGL_2/SDL_gpu_OpenGL_2.h
+	GLES_1/SDL_gpu_GLES_1.h
 	externals/glew/glew.h
 	externals/glew/glxew.h
 	externals/glew/wglew.h
@@ -20,7 +24,8 @@ set(SDL_gpu_HDRS
 )
 set(SDL_gpu_install_HDRS
 	SDL_gpu.h
-	OpenGL_common/SDL_gpu_OpenGL.h
+	OpenGL_1/SDL_gpu_OpenGL_1.h
+	GLES_1/SDL_gpu_GLES_1.h
 )
 
 # Set the appropriate library name so SDL_gpu and SDL2_gpu can co-exist.

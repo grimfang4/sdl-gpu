@@ -1,6 +1,6 @@
 #include "SDL.h"
 #include "SDL_gpu.h"
-#include "SDL_gpu_OpenGL.h"
+#include "SDL_gpu_OpenGL_1.h"
 #include "common.h"
 
 

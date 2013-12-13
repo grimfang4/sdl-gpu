@@ -30,12 +30,17 @@ typedef struct GPU_Rect
     float w, h;
 } GPU_Rect;
 
-typedef unsigned int GPU_RendererEnum;
+typedef Uint32 GPU_RendererEnum;
 static const GPU_RendererEnum GPU_RENDERER_UNKNOWN = 0x0;  // invalid value
 static const GPU_RendererEnum GPU_RENDERER_DEFAULT = 0x1;
-static const GPU_RendererEnum GPU_RENDERER_OPENGL = 0x2;
-static const GPU_RendererEnum GPU_RENDERER_OPENGLES = 0x4;
-static const GPU_RendererEnum GPU_RENDERER_DIRECT3D = 0x8;
+static const GPU_RendererEnum GPU_RENDERER_OPENGL_1 = 0x2;
+static const GPU_RendererEnum GPU_RENDERER_OPENGL_2 = 0x4;
+static const GPU_RendererEnum GPU_RENDERER_OPENGL_3 = 0x8;
+static const GPU_RendererEnum GPU_RENDERER_OPENGL_4 = 0x10;
+static const GPU_RendererEnum GPU_RENDERER_GLES_1 = 0x20;
+static const GPU_RendererEnum GPU_RENDERER_GLES_2 = 0x40;
+static const GPU_RendererEnum GPU_RENDERER_GLES_3 = 0x80;
+static const GPU_RendererEnum GPU_RENDERER_D3D9 = 0x100;
 
 /*! Renderer ID object for identifying a specific renderer.
  * \see GPU_MakeRendererID()
@@ -370,6 +375,43 @@ struct GPU_Renderer
 
     /*! \see GPU_SetUniformfv() */
     void (*SetUniformfv)(GPU_Renderer* renderer, int location, int num_elements_per_value, int num_values, float* values);
+    
+    
+    // Shapes
+    
+	float (*SetThickness)(GPU_Renderer* renderer, float thickness);
+	float (*GetThickness)(GPU_Renderer* renderer);
+	
+	void (*Pixel)(GPU_Renderer* renderer, GPU_Target* target, float x, float y, SDL_Color color);
+
+	void (*Line)(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color);
+
+	void (*Arc)(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float radius, float startAngle, float endAngle, SDL_Color color);
+	
+	void (*ArcFilled)(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float radius, float startAngle, float endAngle, SDL_Color color);
+
+	void (*Circle)(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float radius, SDL_Color color);
+
+	void (*CircleFilled)(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float radius, SDL_Color color);
+
+	void (*Tri)(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, float x3, float y3, SDL_Color color);
+
+	void (*TriFilled)(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, float x3, float y3, SDL_Color color);
+
+	void (*Rectangle)(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color);
+
+	void (*RectangleFilled)(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color);
+
+	void (*RectangleRound)(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, float radius, SDL_Color color);
+
+	void (*RectangleRoundFilled)(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, float radius, SDL_Color color);
+
+	void (*Polygon)(GPU_Renderer* renderer, GPU_Target* target, Uint16 n, float* vertices, SDL_Color color);
+
+	void (*PolygonFilled)(GPU_Renderer* renderer, GPU_Target* target, Uint16 n, float* vertices, SDL_Color color);
+
+	void (*PolygonBlit)(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_Target* target, Uint16 n, float* vertices, float textureX, float textureY, float angle, float scaleX, float scaleY);
+	
 	
 	/*! Renderer-specific data. */
 	void* data;
@@ -766,54 +808,6 @@ void GPU_SetUniformfv(int location, int num_elements_per_value, int num_values, 
 
 
 // Shapes
-
-typedef struct GPU_ShapeRenderer GPU_ShapeRenderer;
-
-struct GPU_ShapeRenderer
-{
-	GPU_Renderer* renderer;
-	
-	float (*SetThickness)(GPU_ShapeRenderer* shapeRenderer, float thickness);
-	float (*GetThickness)(GPU_ShapeRenderer* shapeRenderer);
-	
-	void (*Pixel)(GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, float x, float y, SDL_Color color);
-
-	void (*Line)(GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color);
-
-	void (*Arc)(GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, float x, float y, float radius, float startAngle, float endAngle, SDL_Color color);
-	
-	void (*ArcFilled)(GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, float x, float y, float radius, float startAngle, float endAngle, SDL_Color color);
-
-	void (*Circle)(GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, float x, float y, float radius, SDL_Color color);
-
-	void (*CircleFilled)(GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, float x, float y, float radius, SDL_Color color);
-
-	void (*Tri)(GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, float x1, float y1, float x2, float y2, float x3, float y3, SDL_Color color);
-
-	void (*TriFilled)(GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, float x1, float y1, float x2, float y2, float x3, float y3, SDL_Color color);
-
-	void (*Rectangle)(GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color);
-
-	void (*RectangleFilled)(GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color);
-
-	void (*RectangleRound)(GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, float x1, float y1, float x2, float y2, float radius, SDL_Color color);
-
-	void (*RectangleRoundFilled)(GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, float x1, float y1, float x2, float y2, float radius, SDL_Color color);
-
-	void (*Polygon)(GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, Uint16 n, float* vertices, SDL_Color color);
-
-	void (*PolygonFilled)(GPU_ShapeRenderer* shapeRenderer, GPU_Target* target, Uint16 n, float* vertices, SDL_Color color);
-
-	void (*PolygonBlit)(GPU_ShapeRenderer* shapeRenderer, GPU_Image* src, GPU_Rect* srcrect, GPU_Target* target, Uint16 n, float* vertices, float textureX, float textureY, float angle, float scaleX, float scaleY);
-	
-	void* data;
-	
-};
-
-// Called automatically (after setting a GPU_Renderer)
-void GPU_LoadShapeRenderer(void);
-
-GPU_ShapeRenderer* GPU_GetCurrentShapeRenderer(void);
 
 float GPU_SetThickness(float thickness);
 
