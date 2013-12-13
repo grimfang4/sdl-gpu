@@ -14,11 +14,17 @@ option(SDL_gpu_BUILD_STATIC "Build SDL_gpu static libraries" ON)
 option(SDL_gpu_BUILD_DEMOS "Build SDL_gpu demo programs" ON)
 option(SDL_gpu_BUILD_TOOLS "Build SDL_gpu tool programs" ON)
 option(SDL_gpu_USE_SDL2 "Use SDL2 headers and library instead of SDL1.2" OFF)
-option(SDL_gpu_USE_OPENGL "Use OpenGL backend" ON)
-option(SDL_gpu_USE_OPENGLES "Use OpenGLES backend" OFF)
-option(SDL_gpu_USE_OPENGLv1 "Restrict function calls to those compatible with OpenGL version 1.1 with extensions" OFF)
+option(SDL_gpu_DISABLE_OPENGL "Disable OpenGL renderers.  Overrides specific OpenGL renderer flags." OFF)
+option(SDL_gpu_DISABLE_GLES "Disable OpenGLES renderers.  Overrides specific GLES renderer flags." ON)
+option(SDL_gpu_DISABLE_OPENGL_1 "Disable OpenGL 1.X renderer" OFF)
+option(SDL_gpu_DISABLE_OPENGL_2 "Disable OpenGL 2.X renderer" OFF)
+option(SDL_gpu_DISABLE_OPENGL_3 "Disable OpenGL 3.X renderer" OFF)
+option(SDL_gpu_DISABLE_OPENGL_4 "Disable OpenGL 4.X renderer" OFF)
+option(SDL_gpu_DISABLE_GLES_1 "Disable OpenGLES 1.X renderer" OFF)
+option(SDL_gpu_DISABLE_GLES_2 "Disable OpenGLES 2.X renderer" OFF)
+option(SDL_gpu_DISABLE_GLES_3 "Disable OpenGLES 3.X renderer" OFF)
 
-set(SDL_gpu_VERSION 0.0.1)
+set(SDL_gpu_VERSION 0.1.0)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/CMakeTests)
 
@@ -43,34 +49,57 @@ else ( NOT SDL_gpu_USE_SDL2 )
 	link_libraries(${SDL2MAIN_LIBRARY} ${SDL2_LIBRARY})
 endif( NOT SDL_gpu_USE_SDL2 )
 
-# Find the package for OpenGL or OpenGLES
-if (SDL_gpu_USE_OPENGL)
+# Find the package for OpenGL
+if (SDL_gpu_DISABLE_OPENGL)
+	add_definitions("-DSDL_GPU_DISABLE_OPENGL")
+else (SDL_gpu_DISABLE_OPENGL)
 
 	find_package(OpenGL REQUIRED)
 	include_directories(${OPENGL_INCLUDE_DIR})
-	include_directories(SDL_gpu/externals/glew)
 	link_libraries (${OPENGL_LIBRARIES})
-	add_definitions("-DSDL_GPU_USE_OPENGL")
 	
-	if (SDL_gpu_USE_OPENGLv1)
-		add_definitions("-DSDL_GPU_USE_OPENGLv1")
-	endif (SDL_gpu_USE_OPENGLv1)
+	if (SDL_gpu_DISABLE_OPENGL_1)
+		add_definitions("-DSDL_GPU_DISABLE_OPENGL_1")
+	endif (SDL_gpu_DISABLE_OPENGL_1)
+	if (SDL_gpu_DISABLE_OPENGL_2)
+		add_definitions("-DSDL_GPU_DISABLE_OPENGL_2")
+	endif (SDL_gpu_DISABLE_OPENGL_2)
+	if (SDL_gpu_DISABLE_OPENGL_3)
+		add_definitions("-DSDL_GPU_DISABLE_OPENGL_3")
+	endif (SDL_gpu_DISABLE_OPENGL_3)
+	if (SDL_gpu_DISABLE_OPENGL_4)
+		add_definitions("-DSDL_GPU_DISABLE_OPENGL_4")
+	endif (SDL_gpu_DISABLE_OPENGL_4)
 	
-else (SDL_gpu_USE_OPENGL)
+endif (SDL_gpu_DISABLE_OPENGL)
 
-	if (SDL_gpu_USE_OPENGLES)
+# Find the package for OpenGLES
+if (SDL_gpu_DISABLE_GLES)
+	add_definitions("-DSDL_GPU_DISABLE_GLES")
+else (SDL_gpu_DISABLE_GLES)
 
-		find_package(OpenGLES REQUIRED)
-		include_directories(${OPENGLES_INCLUDE_DIR})
-		link_libraries (${OPENGLES_LIBRARIES})
-		add_definitions("-DSDL_GPU_USE_OPENGLES")
-		
-	endif (SDL_gpu_USE_OPENGLES)
+	find_package(OpenGLES REQUIRED)
+	include_directories(${OPENGLES_INCLUDE_DIR})
+	link_libraries (${OPENGLES_LIBRARIES})
+	
+	if (SDL_gpu_DISABLE_GLES_1)
+		add_definitions("-DSDL_GPU_DISABLE_GLES_1")
+	endif (SDL_gpu_DISABLE_GLES_1)
+	if (SDL_gpu_DISABLE_GLES_2)
+		add_definitions("-DSDL_GPU_DISABLE_GLES_2")
+	endif (SDL_gpu_DISABLE_GLES_2)
+	if (SDL_gpu_DISABLE_GLES_3)
+		add_definitions("-DSDL_GPU_DISABLE_GLES_3")
+	endif (SDL_gpu_DISABLE_GLES_3)
+	
+endif (SDL_gpu_DISABLE_GLES)
 
-endif (SDL_gpu_USE_OPENGL)
 
 # Make local includes look in the right places
 include_directories(SDL_gpu)
+include_directories(SDL_gpu/OpenGL_1)
+include_directories(SDL_gpu/OpenGL_2)
+include_directories(SDL_gpu/GLES_1)
 include_directories(SDL_gpu/externals/glew)
 include_directories(SDL_gpu/externals/stb_image)
 
