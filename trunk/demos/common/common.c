@@ -9,7 +9,7 @@ void printRenderers(void)
 	int i;
 	for(i = 0; i < GPU_GetNumRegisteredRenderers(); i++)
 	{
-		printf("%d) %s %d.%d\n", i+1, GPU_GetRendererEnumString(renderers[i].id), renderers[i].major_version, renderers[i].minor_version);
+		printf("%d) %s (%d.%d)\n", i+1, GPU_GetRendererEnumString(renderers[i].id), renderers[i].major_version, renderers[i].minor_version);
 	}
 }
 
@@ -18,5 +18,5 @@ void printCurrentRenderer(void)
     GPU_RendererID id = GPU_GetCurrentRendererID();
     const char* renderer_string = GPU_GetRendererEnumString(id.id);
     
-	printf("Using renderer: %s %d.%d\n", renderer_string, id.major_version, id.minor_version);
+	printf("Using renderer: %s (%d.%d)\n", renderer_string, id.major_version, id.minor_version);
 }

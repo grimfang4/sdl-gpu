@@ -195,7 +195,7 @@ int main(int argc, char* argv[])
 		GPU_Blit(img, NULL, screen, 50, 500);
 		
 		
-		GPU_Flip();
+		GPU_Flip(screen);
 		
 		frameCount++;
 		if(frameCount%500 == 0)

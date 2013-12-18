@@ -99,7 +99,7 @@ int main(int argc, char* argv[])
 			GPU_Blit(image, NULL, screen, x[i], y[i]);
 		}
 		
-		GPU_Flip();
+		GPU_Flip(screen);
 		
 		frameCount++;
 		if(frameCount%500 == 0)

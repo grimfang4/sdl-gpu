@@ -35,7 +35,7 @@ int main(int argc, char* argv[])
 		
 		GPU_Clear(screen);
 		
-		GPU_Flip();
+		GPU_Flip(screen);
 		
 		frameCount++;
 		if(frameCount%500 == 0)

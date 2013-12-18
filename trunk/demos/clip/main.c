@@ -105,7 +105,7 @@ int main(int argc, char* argv[])
 		GPU_Line(screen, 0, 0, screen->w, screen->h, lineColor);
 		GPU_Line(screen, 0, screen->h, screen->w, 0, lineColor);
 		
-		GPU_Flip();
+		GPU_Flip(screen);
 		
 		frameCount++;
 		if(frameCount%500 == 0)

@@ -26,10 +26,8 @@ static void Circle(GPU_Renderer* renderer, GPU_Target* target, float x, float y,
 
 
 #ifdef SDL_GPU_USE_SDL2
-    //#define GET_WINDOW(renderer) SDL_GetWindowFromID(renderer->windowID)
     #define GET_ALPHA(sdl_color) (sdl_color.a)
 #else
-	//#define GET_WINDOW(renderer) SDL_GetVideoSurface()
     #define GET_ALPHA(sdl_color) (sdl_color.unused)
 #endif
 
@@ -42,15 +40,16 @@ static void Circle(GPU_Renderer* renderer, GPU_Target* target, float x, float y,
         float z = ((RENDERER_DATA*)renderer->data)->z;  \
          \
         renderer->FlushBlitBuffer(renderer); \
+        makeTargetCurrent(renderer, target); \
         if(bindFramebuffer(renderer, target)) \
         { \
         /*glPushAttrib(GL_COLOR_BUFFER_BIT);*/ \
         if(target->useClip) \
         { \
                 glEnable(GL_SCISSOR_TEST); \
-		int y = (renderer->display == target? renderer->display->h - (target->clipRect.y + target->clipRect.h) : target->clipRect.y); \
-		float xFactor = ((float)renderer->window_w)/renderer->display->w; \
-		float yFactor = ((float)renderer->window_h)/renderer->display->h; \
+		int y = (renderer->current_target == target? renderer->current_target->h - (target->clipRect.y + target->clipRect.h) : target->clipRect.y); \
+		float xFactor = ((float)renderer->current_target->window_w)/renderer->current_target->w; \
+		float yFactor = ((float)renderer->current_target->window_h)/renderer->current_target->h; \
 		glScissor(target->clipRect.x * xFactor, y * yFactor, target->clipRect.w * xFactor, target->clipRect.h * yFactor); \
 	} \
 	 \
@@ -60,7 +59,7 @@ static void Circle(GPU_Renderer* renderer, GPU_Target* target, float x, float y,
         renderer->ActivateShaderProgram(renderer, renderer->default_untextured_shader_program); \
     \
 	GLint vp[4]; \
-    if(renderer->display != target) \
+    if(renderer->current_target != target) \
     { \
         glGetIntegerv(GL_VIEWPORT, vp); \
         \
@@ -87,15 +86,16 @@ static void Circle(GPU_Renderer* renderer, GPU_Target* target, float x, float y,
         float z = ((RENDERER_DATA*)renderer->data)->z;  \
          \
         renderer->FlushBlitBuffer(renderer); \
+        makeTargetCurrent(renderer, target); \
         if(bindFramebuffer(renderer, target)) \
         { \
         /*glPushAttrib(GL_COLOR_BUFFER_BIT);*/ \
         if(target->useClip) \
         { \
                 glEnable(GL_SCISSOR_TEST); \
-		int y = (renderer->display == target? renderer->display->h - (target->clipRect.y + target->clipRect.h) : target->clipRect.y); \
-		float xFactor = ((float)renderer->window_w)/renderer->display->w; \
-		float yFactor = ((float)renderer->window_h)/renderer->display->h; \
+		int y = (renderer->current_target == target? renderer->current_target->h - (target->clipRect.y + target->clipRect.h) : target->clipRect.y); \
+		float xFactor = ((float)renderer->current_target->window_w)/renderer->current_target->w; \
+		float yFactor = ((float)renderer->current_target->window_h)/renderer->current_target->h; \
 		glScissor(target->clipRect.x * xFactor, y * yFactor, target->clipRect.w * xFactor, target->clipRect.h * yFactor); \
 	} \
 	 \
@@ -105,7 +105,7 @@ static void Circle(GPU_Renderer* renderer, GPU_Target* target, float x, float y,
         renderer->ActivateShaderProgram(renderer, renderer->default_textured_shader_program); \
     \
 	GLint vp[4]; \
-    if(renderer->display != target) \
+    if(renderer->current_target != target) \
     { \
         glGetIntegerv(GL_VIEWPORT, vp); \
         \
@@ -124,7 +124,7 @@ static void Circle(GPU_Renderer* renderer, GPU_Target* target, float x, float y,
     }
 
 #define END \
-    if(renderer->display != target) \
+    if(renderer->current_target != target) \
     { \
         glViewport(vp[0], vp[1], vp[2], vp[3]); \
          \
@@ -198,15 +198,18 @@ static inline void draw_vertices_textured(GLfloat* glverts, GLfloat* gltexcoords
 
 static float SetThickness(GPU_Renderer* renderer, float thickness)
 {
-	float old = ((RENDERER_DATA*)renderer->data)->line_thickness;
-	((RENDERER_DATA*)renderer->data)->line_thickness = thickness;
+    if(renderer->current_target == NULL)
+        return 1.0f;
+    
+	float old = ((TARGET_DATA*)renderer->current_target->data)->line_thickness;
+	((TARGET_DATA*)renderer->current_target->data)->line_thickness = thickness;
 	glLineWidth(thickness);
 	return old;
 }
 
 static float GetThickness(GPU_Renderer* renderer)
 {
-    return ((RENDERER_DATA*)renderer->data)->line_thickness;
+    return ((TARGET_DATA*)renderer->current_target->data)->line_thickness;
 }
 
 static void Pixel(GPU_Renderer* renderer, GPU_Target* target, float x, float y, SDL_Color color)
@@ -601,7 +604,7 @@ static void Rectangle(GPU_Renderer* renderer, GPU_Target* target, float x1, floa
         x2 = x;
     }
     
-	float thickness = ((RENDERER_DATA*)renderer->data)->line_thickness;
+	float thickness = renderer->GetThickness(renderer);
 
     glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, GET_ALPHA(color)/255.5f);
 

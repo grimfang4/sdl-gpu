@@ -51,7 +51,7 @@ int main(int argc, char* argv[])
 		GPU_Blit(image, NULL, screen, screen->w/2, screen->h/2);
         GPU_Blit(image2, &rect, screen, rect.w/2, rect.h/2);
 		
-		GPU_Flip();
+		GPU_Flip(screen);
 		
 		frameCount++;
 		if(frameCount%500 == 0)

@@ -88,7 +88,7 @@ int main(int argc, char* argv[])
 		x += 0.0625f*image->w + 10;
 		GPU_BlitScale(image3, NULL, screen, x + 0.03125f*image->w/2, y, 0.03125f, 0.03125f);
 		
-		GPU_Flip();
+		GPU_Flip(screen);
 		
 		frameCount++;
 		if(frameCount%500 == 0)

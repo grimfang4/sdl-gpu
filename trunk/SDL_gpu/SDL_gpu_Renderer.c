@@ -194,21 +194,21 @@ const char* GPU_GetRendererEnumString(GPU_RendererEnum id)
         id = GPU_GetDefaultRendererID().id;
     
     if(id == GPU_RENDERER_OPENGL_1)
-        return "OpenGL";
+        return "OpenGL 1.x";
     if(id == GPU_RENDERER_OPENGL_2)
-        return "OpenGL";
+        return "OpenGL 2.x";
     if(id == GPU_RENDERER_OPENGL_3)
-        return "OpenGL";
+        return "OpenGL 3.x";
     if(id == GPU_RENDERER_OPENGL_4)
-        return "OpenGL";
+        return "OpenGL 4.x";
     if(id == GPU_RENDERER_GLES_1)
-        return "OpenGLES";
+        return "OpenGLES 1.x";
     if(id == GPU_RENDERER_GLES_2)
-        return "OpenGLES";
+        return "OpenGLES 2.x";
     if(id == GPU_RENDERER_GLES_3)
-        return "OpenGLES";
+        return "OpenGLES 3.x";
     if(id == GPU_RENDERER_D3D9)
-        return "Direct3D";
+        return "Direct3D 9";
     
     return "Unknown";
 }

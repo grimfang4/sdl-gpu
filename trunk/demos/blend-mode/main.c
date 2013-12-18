@@ -251,7 +251,7 @@ int main(int argc, char* argv[])
 		// Put our result on the screen target
 		GPU_BlitScale(bg, NULL, screen, screen->w/2, screen->h/2, screen->w/(float)bg->w, screen->h/(float)bg->h);
 		
-		GPU_Flip();
+		GPU_Flip(screen);
 		
 		frameCount++;
 		if(frameCount%500 == 0)

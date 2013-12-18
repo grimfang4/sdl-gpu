@@ -92,6 +92,14 @@ struct GPU_Target
 	Uint16 w, h;
 	Uint8 useClip;
 	GPU_Rect clipRect;
+	
+	Uint32 windowID;
+	
+	/*! Actual window width */
+	int window_w;
+	
+	/*! Actual window height */
+	int window_h;
 };
 
 /*! Important GPU features which may not be supported depending on a device's extension support.  Can be OR'd together.
@@ -159,14 +167,8 @@ struct GPU_Renderer
 	/*! Struct identifier of the renderer. */
 	GPU_RendererID id;
 	
-	/*! Main display surface/framebuffer.  Virtual dimensions can be gotten from this. */
-	GPU_Target* display;
-	
-	/*! Actual window width */
-	int window_w;
-	
-	/*! Actual window height */
-	int window_h;
+	/*! Current display target.  Virtual dimensions can be gotten from this. */
+	GPU_Target* current_target;
 	
 	/*! Transforms for the global view. */
 	GPU_Camera camera;
@@ -176,6 +178,13 @@ struct GPU_Renderer
 	
 	/*! \see GPU_IsFeatureEnabled() */
 	Uint8 (*IsFeatureEnabled)(GPU_Renderer* renderer, GPU_FeatureEnum feature);
+	
+    /*! \see GPU_CreateTargetFromWindow
+     * The extra parameter is used internally to reuse/reinit a target. */
+    GPU_Target* (*CreateTargetFromWindow)(GPU_Renderer* renderer, Uint32 windowID, GPU_Target* target);
+
+    /*! \see GPU_MakeCurrent */
+    void (*MakeCurrent)(GPU_Renderer* renderer, GPU_Target* target, Uint32 windowID);
 	
 	/*! Sets up this renderer to act as the current renderer.  Called automatically by GPU_SetCurrentRenderer(). */
 	void (*SetAsCurrent)(GPU_Renderer* renderer);
@@ -191,9 +200,6 @@ struct GPU_Renderer
 	
 	/*! \see GPU_ToggleFullscreen() */
 	int (*ToggleFullscreen)(GPU_Renderer* renderer);
-	
-	/*! \see GPU_GetWindow() */
-	SDL_Window* (*GetWindow)(GPU_Renderer* renderer, GPU_Target* target);
 
 	/*! \see GPU_SetCamera() */
 	GPU_Camera (*SetCamera)(GPU_Renderer* renderer, GPU_Target* screen, GPU_Camera* cam);
@@ -310,7 +316,7 @@ struct GPU_Renderer
 	/*! \see GPU_FlushBlitBuffer() */
 	void (*FlushBlitBuffer)(GPU_Renderer* renderer);
 	/*! \see GPU_Flip() */
-	void (*Flip)(GPU_Renderer* renderer);
+	void (*Flip)(GPU_Renderer* renderer, GPU_Target* target);
 	
 	
     /*! \see GPU_CompileShader_RW() */
@@ -452,6 +458,15 @@ GPU_RendererID GPU_GetDefaultRendererID(void);
  */
 Uint8 GPU_IsFeatureEnabled(GPU_FeatureEnum feature);
 
+/*! Creates a separate context for the given window using the current renderer and returns a GPU_Target that represents it. */
+GPU_Target* GPU_CreateTargetFromWindow(Uint32 windowID);
+
+/*! Makes the given window the current rendering destination for the given target.
+ * This also makes the target the current context for image loading and window operations.
+ * If the target does not represent a window, this does nothing.
+ */
+void GPU_MakeCurrent(GPU_Target* target, Uint32 windowID);
+
 /*! Get the actual resolution of the window. */
 void GPU_GetDisplayResolution(int* w, int* h);
 
@@ -546,9 +561,6 @@ GPU_Camera GPU_GetCamera(void);
  * \param cam A pointer to the camera data to use or NULL to use the default camera.
  * \return The old camera. */
 GPU_Camera GPU_SetCamera(GPU_Target* screen, GPU_Camera* cam);
-
-/*! \return The SDL_Window (or SDL_Surface in SDL 1.2) associated with the given target.  NULL if the target does not render to a window. */
-SDL_Window* GPU_GetWindow(GPU_Target* target);
 
 /*! Create a new, blank image with a format determined by the number of channels requested.  Don't forget to GPU_FreeImage() it. 
 	 * \param w Image width in pixels
@@ -718,8 +730,8 @@ void GPU_ClearRGBA(GPU_Target* target, Uint8 r, Uint8 g, Uint8 b, Uint8 a);
 /*! Send all buffered blitting data to the last target. */
 void GPU_FlushBlitBuffer(void);
 
-/*! Updates the physical display (monitor) with the contents of the display surface/framebuffer. */
-void GPU_Flip(void);
+/*! Updates the given target's associated window. */
+void GPU_Flip(GPU_Target* target);
 
 
 
