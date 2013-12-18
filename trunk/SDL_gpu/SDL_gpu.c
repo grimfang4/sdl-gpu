@@ -155,24 +155,12 @@ int GPU_ToggleFullscreen(void)
 	return current_renderer->ToggleFullscreen(current_renderer);
 }
 
-// TODO: Add error code return value
-void GPU_GetDisplayResolution(int* w, int* h)
+int GPU_SetWindowResolution(Uint16 w, Uint16 h)
 {
-    if(current_renderer == NULL)
-		return;
-    
-	if(w)
-		*w = current_renderer->current_target->window_w;
-	if(h)
-		*h = current_renderer->current_target->window_h;
-}
-
-int GPU_SetDisplayResolution(Uint16 w, Uint16 h)
-{
-	if(current_renderer == NULL || current_renderer->SetDisplayResolution == NULL || w == 0 || h == 0)
+	if(current_renderer == NULL || current_renderer->SetWindowResolution == NULL || w == 0 || h == 0)
 		return 0;
 	
-	return current_renderer->SetDisplayResolution(current_renderer, w, h);
+	return current_renderer->SetWindowResolution(current_renderer, w, h);
 }
 
 
@@ -479,12 +467,12 @@ void GPU_SubSurfaceCopy(SDL_Surface* src, GPU_Rect* srcrect, GPU_Target* dest, S
 	current_renderer->SubSurfaceCopy(current_renderer, src, srcrect, dest, x, y);
 }
 
-GPU_Target* GPU_GetDisplayTarget(void)
+GPU_Target* GPU_GetCurrentTarget(void)
 {
-	if(current_renderer == NULL || current_renderer->GetDisplayTarget == NULL)
+	if(current_renderer == NULL)
 		return NULL;
 	
-	return current_renderer->GetDisplayTarget(current_renderer);
+	return current_renderer->current_target;
 }
 
 

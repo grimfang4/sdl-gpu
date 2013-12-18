@@ -111,10 +111,8 @@ struct GPU_Target
 	
 	Uint32 windowID;
 	
-	/*! Actual window width */
+	/*! Actual window dimensions */
 	int window_w;
-	
-	/*! Actual window height */
 	int window_h;
 	
 	/*! Transforms for the global view. */
@@ -197,8 +195,8 @@ struct GPU_Renderer
 	/*! Sets up this renderer to act as the current renderer.  Called automatically by GPU_SetCurrentRenderer(). */
 	void (*SetAsCurrent)(GPU_Renderer* renderer);
 	
-	/*! \see GPU_SetDisplayResolution() */
-	int (*SetDisplayResolution)(GPU_Renderer* renderer, Uint16 w, Uint16 h);
+	/*! \see GPU_SetWindowResolution() */
+	int (*SetWindowResolution)(GPU_Renderer* renderer, Uint16 w, Uint16 h);
 	
 	/*! \see GPU_SetVirtualResolution() */
 	void (*SetVirtualResolution)(GPU_Renderer* renderer, Uint16 w, Uint16 h);
@@ -244,9 +242,6 @@ struct GPU_Renderer
 	
     /*! \see GPU_SubSurfaceCopy() */
     void (*SubSurfaceCopy)(GPU_Renderer* renderer, SDL_Surface* src, GPU_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y);
-
-	/*! \see GPU_GetDisplayTarget() */
-	GPU_Target* (*GetDisplayTarget)(GPU_Renderer* renderer);
 	
 	/*! \see GPU_LoadTarget() */
 	GPU_Target* (*LoadTarget)(GPU_Renderer* renderer, GPU_Image* image);
@@ -471,11 +466,8 @@ GPU_Target* GPU_CreateTargetFromWindow(Uint32 windowID);
  */
 void GPU_MakeCurrent(GPU_Target* target, Uint32 windowID);
 
-/*! Get the actual resolution of the window. */
-void GPU_GetDisplayResolution(int* w, int* h);
-
 /*! Change the actual size of the window. */
-int GPU_SetDisplayResolution(Uint16 w, Uint16 h);
+int GPU_SetWindowResolution(Uint16 w, Uint16 h);
 
 /*! Change the logical size of the window which the drawing commands use. */
 void GPU_SetVirtualResolution(Uint16 w, Uint16 h);
@@ -609,7 +601,7 @@ void GPU_FreeImage(GPU_Image* image);
 void GPU_SubSurfaceCopy(SDL_Surface* src, GPU_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y);
 
 /*! \return The renderer's main display surface/framebuffer. */
-GPU_Target* GPU_GetDisplayTarget(void);
+GPU_Target* GPU_GetCurrentTarget(void);
 
 /*! Creates a new render target from the given image.  It can then be accessed from image->target. */
 GPU_Target* GPU_LoadTarget(GPU_Image* image);
