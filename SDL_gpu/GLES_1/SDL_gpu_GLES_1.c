@@ -40,7 +40,7 @@ GPU_Renderer* GPU_CreateRenderer_GLES_1(GPU_RendererID request)
     renderer->CreateTargetFromWindow = &CreateTargetFromWindow;
     renderer->MakeCurrent = &MakeCurrent;
     renderer->SetAsCurrent = &SetAsCurrent;
-    renderer->SetDisplayResolution = &SetDisplayResolution;
+    renderer->SetWindowResolution = &SetWindowResolution;
     renderer->SetVirtualResolution = &SetVirtualResolution;
     renderer->Quit = &Quit;
 
@@ -59,7 +59,6 @@ GPU_Renderer* GPU_CreateRenderer_GLES_1(GPU_RendererID request)
     renderer->SubSurfaceCopy = &SubSurfaceCopy;
     renderer->FreeImage = &FreeImage;
 
-    renderer->GetDisplayTarget = &GetDisplayTarget;
     renderer->LoadTarget = &LoadTarget;
     renderer->FreeTarget = &FreeTarget;
 

@@ -592,8 +592,7 @@ static void SetAsCurrent(GPU_Renderer* renderer)
     renderer->MakeCurrent(renderer, renderer->current_target, renderer->current_target->windowID);
 }
 
-// TODO: Rename to SetWindowResolution
-static int SetDisplayResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
+static int SetWindowResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
 {
     if(renderer->current_target == NULL)
         return 0;
@@ -694,7 +693,7 @@ static int ToggleFullscreen(GPU_Renderer* renderer)
     Uint16 w = surf->w;
     Uint16 h = surf->h;
     surf->flags ^= SDL_FULLSCREEN;
-    return SetDisplayResolution(renderer, w, h);
+    return SetWindowResolution(renderer, w, h);
 #endif
 }
 
@@ -1704,11 +1703,6 @@ static void SubSurfaceCopy(GPU_Renderer* renderer, SDL_Surface* src, GPU_Rect* s
     GPU_FreeImage(image);
 
     SDL_FreeSurface(temp);
-}
-
-static GPU_Target* GetDisplayTarget(GPU_Renderer* renderer)
-{
-    return renderer->current_target;
 }
 
 
