@@ -163,7 +163,7 @@ int main(int argc, char* argv[])
                         }
                     }
                     
-                    // The main window was closed, then.
+                    // The last window was closed, then.
                     if(!closed || num_groups == 0)
                         done = 1;
                 }
@@ -172,6 +172,9 @@ int main(int argc, char* argv[])
 		
 		for(i = 0; i < max_groups; i++)
 		{
+		    if(groups[i].target == NULL)
+                continue;
+            
 			groups[i].sprite.x += groups[i].sprite.velx*dt;
 			groups[i].sprite.y += groups[i].sprite.vely*dt;
 			if(groups[i].sprite.x < 0)

@@ -55,8 +55,8 @@ static void Circle(GPU_Renderer* renderer, GPU_Target* target, float x, float y,
 	 \
 	glDisable( GL_TEXTURE_2D ); \
 	\
-    if(renderer->current_shader_program == renderer->default_textured_shader_program) \
-        renderer->ActivateShaderProgram(renderer, renderer->default_untextured_shader_program); \
+    if(target->current_shader_program == target->default_textured_shader_program) \
+        renderer->ActivateShaderProgram(renderer, target->default_untextured_shader_program); \
     \
 	GLint vp[4]; \
     if(renderer->current_target != target) \
@@ -101,8 +101,8 @@ static void Circle(GPU_Renderer* renderer, GPU_Target* target, float x, float y,
 	 \
 	glEnable( GL_TEXTURE_2D ); \
 	\
-    if(renderer->current_shader_program == renderer->default_untextured_shader_program) \
-        renderer->ActivateShaderProgram(renderer, renderer->default_textured_shader_program); \
+    if(target->current_shader_program == target->default_untextured_shader_program) \
+        renderer->ActivateShaderProgram(renderer, target->default_textured_shader_program); \
     \
 	GLint vp[4]; \
     if(renderer->current_target != target) \
