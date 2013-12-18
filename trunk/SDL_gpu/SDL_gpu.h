@@ -93,8 +93,11 @@ typedef struct GPU_Camera
 
 /*! Render target object for use as a blitting destination.
  * A GPU_Target can be created from a GPU_Image with GPU_LoadTarget().
+ * A GPU_Target can also represent a separate window with GPU_CreateTargetFromWindow().
+ * Note: You must have passed the SDL_WINDOW_OPENGL flag to SDL_CreateWindow() for OpenGL renderers to work with new windows.
  * Free the memory with GPU_FreeTarget() when you're done.
  * \see GPU_LoadTarget()
+ * \see GPU_CreateTargetFromWindow()
  * \see GPU_FreeTarget()
  */
 struct GPU_Target
@@ -113,7 +116,6 @@ struct GPU_Target
 	
 	/*! Actual window height */
 	int window_h;
-	
 	
 	/*! Transforms for the global view. */
 	GPU_Camera camera;
@@ -208,7 +210,7 @@ struct GPU_Renderer
 	int (*ToggleFullscreen)(GPU_Renderer* renderer);
 
 	/*! \see GPU_SetCamera() */
-	GPU_Camera (*SetCamera)(GPU_Renderer* renderer, GPU_Target* screen, GPU_Camera* cam);
+	GPU_Camera (*SetCamera)(GPU_Renderer* renderer, GPU_Camera* cam);
 	
     /*! \see GPU_CreateImage() */
 	GPU_Image* (*CreateImage)(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint8 channels);
@@ -554,15 +556,14 @@ GPU_Rect GPU_MakeRect(float x, float y, float w, float h);
 /*! \return A GPU_Camera with position (0, 0, -10), angle of 0, and zoom of 1. */
 GPU_Camera GPU_GetDefaultCamera(void);
 
-/*! \return The current camera of the current renderer. */
+/*! \return The current camera of the current render target. */
 GPU_Camera GPU_GetCamera(void);
 
 
-/*! Sets the current renderer's current camera.
- * \param screen The target to affect. (currently affects every target regardless)
+/*! Sets the current render target's current camera.
  * \param cam A pointer to the camera data to use or NULL to use the default camera.
  * \return The old camera. */
-GPU_Camera GPU_SetCamera(GPU_Target* screen, GPU_Camera* cam);
+GPU_Camera GPU_SetCamera(GPU_Camera* cam);
 
 /*! Create a new, blank image with a format determined by the number of channels requested.  Don't forget to GPU_FreeImage() it. 
 	 * \param w Image width in pixels
