@@ -78,6 +78,19 @@ typedef struct GPU_Image
 } GPU_Image;
 
 
+/*! Camera object that determines viewing transform.
+ * \see GPU_SetCamera() 
+ * \see GPU_GetDefaultCamera() 
+ * \see GPU_GetCamera()
+ */
+typedef struct GPU_Camera
+{
+	float x, y, z;
+	float angle;
+	float zoom;
+} GPU_Camera;
+
+
 /*! Render target object for use as a blitting destination.
  * A GPU_Target can be created from a GPU_Image with GPU_LoadTarget().
  * Free the memory with GPU_FreeTarget() when you're done.
@@ -100,6 +113,14 @@ struct GPU_Target
 	
 	/*! Actual window height */
 	int window_h;
+	
+	
+	/*! Transforms for the global view. */
+	GPU_Camera camera;
+	
+	Uint32 default_textured_shader_program;
+	Uint32 default_untextured_shader_program;
+	Uint32 current_shader_program;
 };
 
 /*! Important GPU features which may not be supported depending on a device's extension support.  Can be OR'd together.
@@ -148,18 +169,6 @@ static const GPU_BlendEnum GPU_BLEND_DIFFERENCE = 8;
 static const GPU_BlendEnum GPU_BLEND_PUNCHOUT = 9;
 static const GPU_BlendEnum GPU_BLEND_CUTOUT = 10;
 
-/*! Camera object that determines viewing transform.
- * \see GPU_SetCamera() 
- * \see GPU_GetDefaultCamera() 
- * \see GPU_GetCamera()
- */
-typedef struct GPU_Camera
-{
-	float x, y, z;
-	float angle;
-	float zoom;
-} GPU_Camera;
-
 
 /*! Renderer object which specializes the API to a particular backend. */
 struct GPU_Renderer
@@ -169,9 +178,6 @@ struct GPU_Renderer
 	
 	/*! Current display target.  Virtual dimensions can be gotten from this. */
 	GPU_Target* current_target;
-	
-	/*! Transforms for the global view. */
-	GPU_Camera camera;
 	
 	/*! \see GPU_Init() */
 	GPU_Target* (*Init)(GPU_Renderer* renderer, GPU_RendererID renderer_request, Uint16 w, Uint16 h, Uint32 flags);
@@ -421,10 +427,6 @@ struct GPU_Renderer
 	
 	/*! Renderer-specific data. */
 	void* data;
-	
-	Uint32 default_textured_shader_program;
-	Uint32 default_untextured_shader_program;
-	Uint32 current_shader_program;
 	
 };
 

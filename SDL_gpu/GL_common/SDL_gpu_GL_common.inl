@@ -482,6 +482,8 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     target->clipRect.w = target->w;
     target->clipRect.h = target->h;
     
+    target->camera = GPU_GetDefaultCamera();
+    
     // Set up GL state
     
     // Set up camera projection
@@ -493,6 +495,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     glClear( GL_COLOR_BUFFER_BIT );
     glColor4ub(255, 255, 255, 255);
 
+    // TODO: Reconcile this with the default camera used in SetCamera().
     glMatrixMode( GL_PROJECTION );
     glLoadIdentity();
 
@@ -508,9 +511,9 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     renderer->SetThickness(renderer, 1.0f);
     
     
-    renderer->default_textured_shader_program = 0;
-    renderer->default_untextured_shader_program = 0;
-    renderer->current_shader_program = 0;
+    target->default_textured_shader_program = 0;
+    target->default_untextured_shader_program = 0;
+    target->current_shader_program = 0;
     
     
     #ifndef SDL_GPU_DISABLE_SHADERS
@@ -533,7 +536,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
         if(!p)
             GPU_LogError("Failed to link default textured shader program: %s\n", renderer->GetShaderMessage(renderer));
         
-        renderer->default_textured_shader_program = p;
+        target->default_textured_shader_program = p;
         
         // Untextured shader
         v = renderer->CompileShader(renderer, GPU_VERTEX_SHADER, UNTEXTURED_VERTEX_SHADER_SOURCE);
@@ -553,7 +556,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
         
         glUseProgram(p);
         
-        renderer->default_untextured_shader_program = renderer->current_shader_program = p;
+        target->default_untextured_shader_program = target->current_shader_program = p;
     }
     #endif
 
@@ -692,25 +695,18 @@ static int ToggleFullscreen(GPU_Renderer* renderer)
 
 
 
-static GPU_Camera SetCamera(GPU_Renderer* renderer, GPU_Target* screen, GPU_Camera* cam)
+static GPU_Camera SetCamera(GPU_Renderer* renderer, GPU_Target* target, GPU_Camera* cam)
 {
-    if(screen == NULL)
-        return renderer->camera;
-
-    GPU_Camera result = renderer->camera;
+    if(target == NULL)
+        return GPU_GetDefaultCamera();
+    
+    
+    GPU_Camera result = target->camera;
 
     if(cam == NULL)
-    {
-        renderer->camera.x = 0.0f;
-        renderer->camera.y = 0.0f;
-        renderer->camera.z = -10.0f;
-        renderer->camera.angle = 0.0f;
-        renderer->camera.zoom = 1.0f;
-    }
+        target->camera = GPU_GetDefaultCamera();
     else
-    {
-        renderer->camera = *cam;
-    }
+        target->camera = *cam;
 
     renderer->FlushBlitBuffer(renderer);
 
@@ -729,21 +725,21 @@ static GPU_Camera SetCamera(GPU_Renderer* renderer, GPU_Target* screen, GPU_Came
     float zFar = 255.0f;
     glFrustum( 0.0f + renderer->camera.x, 2*fW + renderer->camera.x, 2*fH + renderer->camera.y, 0.0f + renderer->camera.y, zNear, zFar );*/
 
-    glFrustum(0.0f + renderer->camera.x, screen->w + renderer->camera.x, screen->h + renderer->camera.y, 0.0f + renderer->camera.y, 0.01f, 1.01f);
+    glFrustum(0.0f + target->camera.x, target->w + target->camera.x, target->h + target->camera.y, 0.0f + target->camera.y, 0.01f, 1.01f);
 
     //glMatrixMode( GL_MODELVIEW );
     //glLoadIdentity();
 
 
-    float offsetX = screen->w/2.0f;
-    float offsetY = screen->h/2.0f;
+    float offsetX = target->w/2.0f;
+    float offsetY = target->h/2.0f;
     glTranslatef(offsetX, offsetY, -0.01);
-    glRotatef(renderer->camera.angle, 0, 0, 1);
+    glRotatef(target->camera.angle, 0, 0, 1);
     glTranslatef(-offsetX, -offsetY, 0);
 
-    glTranslatef(renderer->camera.x + offsetX, renderer->camera.y + offsetY, 0);
-    glScalef(renderer->camera.zoom, renderer->camera.zoom, 1.0f);
-    glTranslatef(-renderer->camera.x - offsetX, -renderer->camera.y - offsetY, 0);
+    glTranslatef(target->camera.x + offsetX, target->camera.y + offsetY, 0);
+    glScalef(target->camera.zoom, target->camera.zoom, 1.0f);
+    glTranslatef(-target->camera.x - offsetX, -target->camera.y - offsetY, 0);
 
     return result;
 }
@@ -1794,8 +1790,8 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_T
     // Bind the FBO
     if(bindFramebuffer(renderer, dest))
     {
-        if(renderer->current_shader_program == renderer->default_untextured_shader_program)
-            renderer->ActivateShaderProgram(renderer, renderer->default_textured_shader_program);
+        if(dest->current_shader_program == dest->default_untextured_shader_program)
+            renderer->ActivateShaderProgram(renderer, dest->default_textured_shader_program);
         
         Uint16 tex_w = ((IMAGE_DATA*)src->data)->tex_w;
         Uint16 tex_h = ((IMAGE_DATA*)src->data)->tex_h;
@@ -1934,8 +1930,8 @@ static int BlitTransformX(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcr
     // Bind the FBO
     if(bindFramebuffer(renderer, dest))
     {
-        if(renderer->current_shader_program == renderer->default_untextured_shader_program)
-            renderer->ActivateShaderProgram(renderer, renderer->default_textured_shader_program);
+        if(dest->current_shader_program == dest->default_untextured_shader_program)
+            renderer->ActivateShaderProgram(renderer, dest->default_textured_shader_program);
         
         Uint16 tex_w = ((IMAGE_DATA*)src->data)->tex_w;
         Uint16 tex_h = ((IMAGE_DATA*)src->data)->tex_h;
@@ -3103,16 +3099,16 @@ static void DetachShader(GPU_Renderer* renderer, Uint32 program_object, Uint32 s
 static void ActivateShaderProgram(GPU_Renderer* renderer, Uint32 program_object)
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
-    if(renderer->current_shader_program == program_object)
+    if(renderer->current_target == NULL || renderer->current_target->current_shader_program == program_object)
         return;
     
     if(program_object == 0) // Implies default shader
-        program_object = renderer->default_untextured_shader_program;
+        program_object = renderer->current_target->default_untextured_shader_program;
     
     glUseProgram(program_object);
     #endif
     
-    renderer->current_shader_program = program_object;  // TODO: Change to a property of GPU_Target.
+    renderer->current_target->current_shader_program = program_object;  // TODO: Change to a property of GPU_Target.
 }
 
 static void DeactivateShaderProgram(GPU_Renderer* renderer)

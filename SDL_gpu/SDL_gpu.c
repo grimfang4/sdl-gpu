@@ -259,12 +259,11 @@ GPU_Camera GPU_GetDefaultCamera(void)
 	return cam;
 }
 
-// One camera for the whole renderer, not per-target since the use-case would be rare.
 GPU_Camera GPU_GetCamera(void)
 {
-	if(current_renderer == NULL)
+	if(current_renderer == NULL || current_renderer->current_target == NULL)
 		return GPU_GetDefaultCamera();
-	return current_renderer->camera;
+	return current_renderer->current_target->camera;
 }
 
 GPU_Camera GPU_SetCamera(GPU_Target* screen, GPU_Camera* cam)
