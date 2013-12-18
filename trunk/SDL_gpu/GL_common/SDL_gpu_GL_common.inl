@@ -363,7 +363,7 @@ static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request,
 #endif
     
     // Create or re-init the current target.  This also creates the GL context.
-    renderer->current_target = renderer->CreateTargetFromWindow(renderer, SDL_GetWindowID(window), renderer->current_target);
+    renderer->CreateTargetFromWindow(renderer, SDL_GetWindowID(window), renderer->current_target);
     
     // Update our renderer info from the current GL context.
     #ifdef GL_MAJOR_VERSION
@@ -426,19 +426,31 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     
     // Make a new context if needed and make it current
     if(created || ((TARGET_DATA*)target->data)->context == 0)
+    {
         ((TARGET_DATA*)target->data)->context = SDL_GL_CreateContext(window);
+        renderer->current_target = target;
+    }
     else
         renderer->MakeCurrent(renderer, target, target->windowID);
     
     #else
     
     SDL_Surface* screen = SDL_GetVideoSurface();
-    if(screen != NULL)
+    if(screen == NULL)
     {
-        target->windowID = 0;
-        target->window_w = screen->w;
-        target->window_h = screen->h;
+        if(created)
+        {
+            free(target->data);
+            free(target);
+        }
+        return NULL;
     }
+    
+    target->windowID = 0;
+    target->window_w = screen->w;
+    target->window_h = screen->h;
+    
+    renderer->MakeCurrent(renderer, target, target->windowID);
     
     #endif
     
@@ -580,6 +592,8 @@ static void MakeCurrent(GPU_Renderer* renderer, GPU_Target* target, Uint32 windo
             renderer->SetCamera(renderer, &target->camera);
         }
     }
+    #else
+    renderer->current_target = target;
     #endif
 }
 
@@ -618,7 +632,8 @@ static int SetWindowResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
 
     Uint16 virtualW = renderer->current_target->w;
     Uint16 virtualH = renderer->current_target->h;
-
+    
+    // TODO: This might interfere with cameras or be ruined by them.
     glEnable( GL_TEXTURE_2D );
     glClearColor( 0.0f, 0.0f, 0.0f, 0.0f );
 
