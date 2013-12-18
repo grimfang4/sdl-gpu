@@ -99,8 +99,8 @@ int main(int argc, char* argv[])
 				}
 				else if(event.key.keysym.sym == SDLK_SPACE)
 				{
-				    if(screen->renderer->current_shader_program == screen->renderer->default_textured_shader_program
-				       || screen->renderer->current_shader_program == screen->renderer->default_untextured_shader_program)
+				    if(screen->current_shader_program == screen->default_textured_shader_program
+				       || screen->current_shader_program == screen->default_untextured_shader_program)
                         GPU_ActivateShaderProgram(p);
                     else
                         GPU_ActivateShaderProgram(0);

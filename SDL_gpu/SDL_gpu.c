@@ -266,12 +266,12 @@ GPU_Camera GPU_GetCamera(void)
 	return current_renderer->current_target->camera;
 }
 
-GPU_Camera GPU_SetCamera(GPU_Target* screen, GPU_Camera* cam)
+GPU_Camera GPU_SetCamera(GPU_Camera* cam)
 {
 	if(current_renderer == NULL || current_renderer->SetCamera == NULL)
 		return GPU_GetDefaultCamera();
 	
-	return current_renderer->SetCamera(current_renderer, screen, cam);
+	return current_renderer->SetCamera(current_renderer, cam);
 }
 
 GPU_Image* GPU_CreateImage(Uint16 w, Uint16 h, Uint8 channels)

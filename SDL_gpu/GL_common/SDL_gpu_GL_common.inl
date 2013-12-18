@@ -571,9 +571,14 @@ static void MakeCurrent(GPU_Renderer* renderer, GPU_Target* target, Uint32 windo
     SDL_GLContext c = ((TARGET_DATA*)target->data)->context;
     if(c != 0)
     {
-        target->windowID = windowID;
         renderer->current_target = target;
         SDL_GL_MakeCurrent(SDL_GetWindowFromID(windowID), c);
+        // Reset camera if the window was changed
+        if(target->windowID != windowID)
+        {
+            target->windowID = windowID;
+            renderer->SetCamera(renderer, &target->camera);
+        }
     }
     #endif
 }
@@ -695,8 +700,10 @@ static int ToggleFullscreen(GPU_Renderer* renderer)
 
 
 
-static GPU_Camera SetCamera(GPU_Renderer* renderer, GPU_Target* target, GPU_Camera* cam)
+static GPU_Camera SetCamera(GPU_Renderer* renderer, GPU_Camera* cam)
 {
+    GPU_Target* target = renderer->current_target;
+    
     if(target == NULL)
         return GPU_GetDefaultCamera();
     
