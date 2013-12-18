@@ -78,7 +78,7 @@ int main(int argc, char* argv[])
 		
 		GPU_CircleFilled(screen, 50 + 70, 50 + 70, 20, circleColor2);
 		
-		GPU_Flip();
+		GPU_Flip(screen);
 		
 		frameCount++;
 		if(frameCount%500 == 0)

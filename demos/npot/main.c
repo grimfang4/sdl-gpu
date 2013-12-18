@@ -42,7 +42,7 @@ int main(int argc, char* argv[])
 		GPU_Blit(image, NULL, screen, image->w/2, image->h/2);
 		GPU_BlitTransform(image, NULL, screen, screen->w/2, screen->h/2, 360*sin(SDL_GetTicks()/2000.0f), 2.5*sin(SDL_GetTicks()/1000.0f), 2.5*sin(SDL_GetTicks()/1200.0f));
 		
-		GPU_Flip();
+		GPU_Flip(screen);
 		
 		frameCount++;
 		if(frameCount%500 == 0)

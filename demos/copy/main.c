@@ -104,7 +104,7 @@ int main(int argc, char* argv[])
 		if(image4 != NULL)
             GPU_BlitScale(image4, NULL, screen, 3*screen->w/4, 3*screen->h/4, 0.25f, 0.25f);
 		
-		GPU_Flip();
+		GPU_Flip(screen);
 		
 		frameCount++;
 		if(frameCount%500 == 0)

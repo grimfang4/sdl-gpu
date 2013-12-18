@@ -139,7 +139,7 @@ int main(int argc, char* argv[])
 			GPU_CircleFilled(screen2, 0, 0, 100, red);
 		
 		GPU_Blit(screen2_image, NULL, screen, 400, 300);
-		GPU_Flip();
+		GPU_Flip(screen);
 		
 		frameCount++;
 		if(frameCount%500 == 0)

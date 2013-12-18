@@ -38,7 +38,7 @@ int main(int argc, char* argv[])
 		
 		GPU_BlitRotate(image, NULL, screen, screen->w/2, screen->h/2, SDL_GetTicks()/50.0f);
 		
-		GPU_Flip();
+		GPU_Flip(screen);
 		
 		frameCount++;
 		if(frameCount%500 == 0)

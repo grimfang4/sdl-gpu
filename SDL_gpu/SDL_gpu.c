@@ -131,6 +131,22 @@ Uint8 GPU_IsFeatureEnabled(GPU_FeatureEnum feature)
 	return current_renderer->IsFeatureEnabled(current_renderer, feature);
 }
 
+GPU_Target* GPU_CreateTargetFromWindow(Uint32 windowID)
+{
+	if(current_renderer == NULL || current_renderer->CreateTargetFromWindow == NULL)
+		return NULL;
+	
+	return current_renderer->CreateTargetFromWindow(current_renderer, windowID, NULL);
+}
+
+void GPU_MakeCurrent(GPU_Target* target, Uint32 windowID)
+{
+	if(current_renderer == NULL || current_renderer->MakeCurrent == NULL)
+		return 0;
+	
+	return current_renderer->MakeCurrent(current_renderer, target, windowID);
+}
+
 int GPU_ToggleFullscreen(void)
 {
 	if(current_renderer == NULL || current_renderer->ToggleFullscreen == NULL)
@@ -146,9 +162,9 @@ void GPU_GetDisplayResolution(int* w, int* h)
 		return;
     
 	if(w)
-		*w = current_renderer->window_w;
+		*w = current_renderer->current_target->window_w;
 	if(h)
-		*h = current_renderer->window_h;
+		*h = current_renderer->current_target->window_h;
 }
 
 int GPU_SetDisplayResolution(Uint16 w, Uint16 h)
@@ -210,13 +226,13 @@ const char* GPU_GetErrorString(void)
 
 void GPU_GetVirtualCoords(float* x, float* y, float displayX, float displayY)
 {
-	if(current_renderer == NULL || current_renderer->display == NULL)
+	if(current_renderer == NULL || current_renderer->current_target == NULL || current_renderer->current_target->windowID == 0)
 		return;
 	
 	if(x != NULL)
-		*x = (displayX*current_renderer->display->w)/current_renderer->window_w;
+		*x = (displayX*current_renderer->current_target->w)/current_renderer->current_target->window_w;
 	if(y != NULL)
-		*y = (displayY*current_renderer->display->h)/current_renderer->window_h;
+		*y = (displayY*current_renderer->current_target->h)/current_renderer->current_target->window_h;
 }
 
 GPU_Rect GPU_MakeRect(float x, float y, float w, float h)
@@ -257,14 +273,6 @@ GPU_Camera GPU_SetCamera(GPU_Target* screen, GPU_Camera* cam)
 		return GPU_GetDefaultCamera();
 	
 	return current_renderer->SetCamera(current_renderer, screen, cam);
-}
-
-SDL_Window* GPU_GetWindow(GPU_Target* target)
-{
-	if(current_renderer == NULL || current_renderer->GetWindow == NULL)
-		return NULL;
-	
-	return current_renderer->GetWindow(current_renderer, target);
 }
 
 GPU_Image* GPU_CreateImage(Uint16 w, Uint16 h, Uint8 channels)
@@ -751,12 +759,12 @@ void GPU_FlushBlitBuffer(void)
 	current_renderer->FlushBlitBuffer(current_renderer);
 }
 
-void GPU_Flip(void)
+void GPU_Flip(GPU_Target* target)
 {
 	if(current_renderer == NULL || current_renderer->Flip == NULL)
 		return;
 	
-	current_renderer->Flip(current_renderer);
+	current_renderer->Flip(current_renderer, target);
 }
 
 

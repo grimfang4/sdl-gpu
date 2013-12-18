@@ -27,14 +27,8 @@
 
 typedef struct RendererData_OpenGL_1
 {
-    #ifdef SDL_GPU_USE_SDL2
-    SDL_Window* window;
-    SDL_GLContext context;
-    #endif
 	Uint32 handle;
 	float z;
-	Uint8 blending;
-	float line_thickness;
 	
 	GPU_Image* last_image;
 	GPU_Target* last_target;
@@ -55,6 +49,13 @@ typedef struct TargetData_OpenGL_1
 {
 	Uint32 handle;
 	Uint32 format;
+	
+	Uint8 blending;
+	float line_thickness;
+	
+    #ifdef SDL_GPU_USE_SDL2
+    SDL_GLContext context;
+    #endif
 } TargetData_OpenGL_1;
 
 

@@ -107,7 +107,7 @@ int main(int argc, char* argv[])
 			GPU_Blit(image, NULL, screen, x[i], y[i]);
 		}
 		
-		GPU_Flip();
+		GPU_Flip(screen);
 		
 		frameCount++;
 		if(SDL_GetTicks() - startTime > 5000)

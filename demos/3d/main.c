@@ -187,7 +187,7 @@ int main(int argc, char* argv[])
 		
 		draw_more_3d_stuff(screen);
 		
-		GPU_Flip();
+		GPU_Flip(screen);
 		
 		frameCount++;
 		if(frameCount%500 == 0)

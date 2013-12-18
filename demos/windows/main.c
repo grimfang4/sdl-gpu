@@ -1,16 +1,18 @@
 #include "SDL.h"
+#include "SDL_gpu.h"
+#include "common.h"
+#include "SDL_gpu_OpenGL_1.h"
 
 typedef struct Sprite
 {
-    SDL_Texture* texture;
+    GPU_Image* image;
     float x, y;
     float velx, vely;
 } Sprite;
 
 typedef struct Group
 {
-    Uint32 windowID;
-    SDL_Renderer* renderer;
+    GPU_Target* target;
     Sprite sprite;
 } Group;
 
@@ -20,18 +22,17 @@ typedef struct Group
 #define sprite_w 100
 #define sprite_h 100
 
-Group create_group()
+Group create_first_group()
 {
     Group g;
-    SDL_Window* window = SDL_CreateWindow("", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, screen_w, screen_h, 0);
-    g.windowID = SDL_GetWindowID(window);
-    SDL_Log("New windowID: %u\n", g.windowID);
+    Uint32 windowID = GPU_GetCurrentRenderer()->current_target->windowID;
+    SDL_Log("New windowID: %u\n", windowID);
     
-    g.renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    g.target = GPU_GetCurrentRenderer()->current_target;
     
     SDL_Surface* surface = SDL_LoadBMP("data/test.bmp");
     
-    g.sprite.texture = SDL_CreateTextureFromSurface(g.renderer, surface);
+    g.sprite.image = GPU_CopyImageFromSurface(surface);
     g.sprite.x = rand()%screen_w;
     g.sprite.y = rand()%screen_h;
     g.sprite.velx = 10 + rand()%screen_w/10;
@@ -42,14 +43,52 @@ Group create_group()
     return g;
 }
 
+Group create_group()
+{
+    Group g;
+    SDL_Window* window = SDL_CreateWindow("", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, screen_w, screen_h, SDL_WINDOW_OPENGL);
+    Uint32 windowID = SDL_GetWindowID(window);
+    SDL_Log("New windowID: %u\n", windowID);
+    
+    g.target = GPU_CreateTargetFromWindow(windowID);
+    
+    SDL_Surface* surface = SDL_LoadBMP("data/test.bmp");
+    
+    g.sprite.image = GPU_CopyImageFromSurface(surface);
+    g.sprite.x = rand()%screen_w;
+    g.sprite.y = rand()%screen_h;
+    g.sprite.velx = 10 + rand()%screen_w/10;
+    g.sprite.vely = 10 + rand()%screen_h/10;
+    
+    SDL_FreeSurface(surface);
+    
+    return g;
+}
+
+void destroy_group(Group* groups, int i)
+{
+    GPU_FreeImage(groups[i].sprite.image);
+    SDL_DestroyWindow(SDL_GetWindowFromID(groups[i].target->windowID));
+    GPU_FreeTarget(groups[i].target);
+    groups[i].target = NULL;
+}
+
 int main(int argc, char* argv[])
 {
+	printRenderers();
+	
+    GPU_Target* screen = GPU_Init(screen_w, screen_h, 0);
+    if(screen == NULL)
+        return -1;
+    
+	printCurrentRenderer();
+	
     int max_groups = 30;
     Group groups[max_groups];
     memset(groups, 0, sizeof(Group)*max_groups);
 	
 	int num_groups = 0;
-	groups[num_groups] = create_group();
+	groups[num_groups] = create_first_group();
 	num_groups++;
 	
 	int i = 0;
@@ -73,11 +112,15 @@ int main(int argc, char* argv[])
 					done = 1;
 				else if(event.key.keysym.sym == SDLK_EQUALS || event.key.keysym.sym == SDLK_PLUS)
 				{
-					if(num_groups < max_groups)
+                    for(i = 0; i < max_groups; i++)
                     {
-                        groups[num_groups] = create_group();
-                        num_groups++;
-                        SDL_Log("num_groups: %d\n", num_groups);
+                        if(groups[i].target == NULL)
+                        {
+                            groups[i] = create_group();
+                            num_groups++;
+                            SDL_Log("num_groups: %d\n", num_groups);
+                            break;
+                        }
                     }
 				}
 				else if(event.key.keysym.sym == SDLK_MINUS)
@@ -87,12 +130,10 @@ int main(int argc, char* argv[])
 						
                         for(i = max_groups-1; i >= 0; i--)
                         {
-                            if(groups[i].windowID != 0)
+                            if(groups[i].target != NULL)
                             {
-                                SDL_DestroyTexture(groups[i].sprite.texture);
-                                SDL_DestroyRenderer(groups[i].renderer);
-                                SDL_DestroyWindow(SDL_GetWindowFromID(groups[i].windowID));
-                                groups[i].windowID = 0;
+                                destroy_group(groups, i);
+                                
                                 num_groups--;
                                 SDL_Log("num_groups: %d\n", num_groups);
                                 break;
@@ -111,12 +152,10 @@ int main(int argc, char* argv[])
                     Uint8 closed = 0;
                     for(i = 0; i < max_groups; i++)
                     {
-                        if(groups[i].windowID != 0 && groups[i].windowID == event.window.windowID)
+                        if(groups[i].target != NULL && groups[i].target->windowID == event.window.windowID)
                         {
-                            SDL_DestroyTexture(groups[i].sprite.texture);
-                            SDL_DestroyRenderer(groups[i].renderer);
-                            SDL_DestroyWindow(SDL_GetWindowFromID(groups[i].windowID));
-                            groups[i].windowID = 0;
+                            destroy_group(groups, i);
+                            
                             closed = 1;
                             num_groups--;
                             SDL_Log("num_groups: %d\n", num_groups);
@@ -160,32 +199,33 @@ int main(int argc, char* argv[])
 		
 		for(i = 0; i < max_groups; i++)
 		{
-		    if(groups[i].windowID == 0)
+		    if(groups[i].target == NULL)
                 continue;
+            
+		    GPU_Clear(groups[i].target);
 		    
-		    SDL_RenderClear(groups[i].renderer);
+		    GPU_Blit(groups[i].sprite.image, NULL, groups[i].target, groups[i].sprite.x, groups[i].sprite.y);
 		    
-		    SDL_Rect dstrect = {groups[i].sprite.x, groups[i].sprite.y, sprite_w, sprite_h};
-		    SDL_RenderCopy(groups[i].renderer, groups[i].sprite.texture, NULL, &dstrect);
-		    
-		    SDL_RenderPresent(groups[i].renderer);
+		    GPU_Flip(groups[i].target);
 		}
 		
-		SDL_Delay(10);
+		frameCount++;
+		if(frameCount%500 == 0)
+			printf("Average FPS: %.2f\n", 1000.0f*frameCount/(SDL_GetTicks() - startTime));
 	}
     
+	printf("Average FPS: %.2f\n", 1000.0f*frameCount/(SDL_GetTicks() - startTime));
+	
     for(i = 0; i < max_groups; i++)
     {
-        if(groups[i].windowID == 0)
+        if(groups[i].target == NULL)
             continue;
         
-        SDL_DestroyTexture(groups[i].sprite.texture);
-        SDL_DestroyRenderer(groups[i].renderer);
-        SDL_DestroyWindow(SDL_GetWindowFromID(groups[i].windowID));
+        destroy_group(groups, i);
     }
     
     
-    SDL_Quit();
+    GPU_Quit();
     
     return 0;
 }

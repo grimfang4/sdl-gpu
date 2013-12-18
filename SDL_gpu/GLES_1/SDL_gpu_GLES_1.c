@@ -30,7 +30,7 @@ GPU_Renderer* GPU_CreateRenderer_GLES_1(GPU_RendererID request)
     renderer->id = request;
 	renderer->id.id = GPU_RENDERER_GLES_1;
     
-    renderer->display = NULL;
+    renderer->current_target = NULL;
     renderer->camera = GPU_GetDefaultCamera();
 
     renderer->data = (RENDERER_DATA*)malloc(sizeof(RENDERER_DATA));
@@ -38,6 +38,8 @@ GPU_Renderer* GPU_CreateRenderer_GLES_1(GPU_RendererID request)
 
     renderer->Init = &Init;
     renderer->IsFeatureEnabled = &IsFeatureEnabled;
+    renderer->CreateTargetFromWindow = &CreateTargetFromWindow;
+    renderer->MakeCurrent = &MakeCurrent;
     renderer->SetAsCurrent = &SetAsCurrent;
     renderer->SetDisplayResolution = &SetDisplayResolution;
     renderer->SetVirtualResolution = &SetVirtualResolution;
@@ -45,7 +47,6 @@ GPU_Renderer* GPU_CreateRenderer_GLES_1(GPU_RendererID request)
 
     renderer->ToggleFullscreen = &ToggleFullscreen;
     renderer->SetCamera = &SetCamera;
-    renderer->GetWindow = &GetWindow;
 
     renderer->CreateImage = &CreateImage;
     renderer->LoadImage = &LoadImage;

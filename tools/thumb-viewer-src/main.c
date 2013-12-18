@@ -92,7 +92,7 @@ int main(int argc, char* argv[])
 		}
 		
 		
-		GPU_Flip();
+		GPU_Flip(screen);
 		SDL_Delay(10);
 	}
 	
