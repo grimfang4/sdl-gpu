@@ -655,40 +655,6 @@ void GPU_SetRGBA(Uint8 r, Uint8 g, Uint8 b, Uint8 a)
 
 
 
-
-void GPU_ReplaceColor(GPU_Image* image, SDL_Color from, SDL_Color to)
-{
-	if(current_renderer == NULL || current_renderer->ReplaceRGB == NULL)
-		return;
-	
-	current_renderer->ReplaceRGB(current_renderer, image, from.r, from.g, from.b, to.r, to.g, to.b);
-}
-
-
-void GPU_MakeColorTransparent(GPU_Image* image, SDL_Color color)
-{
-	if(current_renderer == NULL || current_renderer->MakeRGBTransparent == NULL)
-		return;
-	
-	current_renderer->MakeRGBTransparent(current_renderer, image, color.r, color.g, color.b);
-}
-
-void GPU_ShiftHSV(GPU_Image* image, int hue, int saturation, int value)
-{
-	if(current_renderer == NULL || current_renderer->ShiftHSV == NULL)
-		return;
-	
-	current_renderer->ShiftHSV(current_renderer, image, hue, saturation, value);
-}
-
-void GPU_ShiftHSVExcept(GPU_Image* image, int hue, int saturation, int value, int notHue, int notSat, int notVal, int range)
-{
-	if(current_renderer == NULL || current_renderer->ShiftHSVExcept == NULL)
-		return;
-	
-	current_renderer->ShiftHSVExcept(current_renderer, image, hue, saturation, value, notHue, notSat, notVal, range);
-}
-
 SDL_Color GPU_GetPixel(GPU_Target* target, Sint16 x, Sint16 y)
 {
 	if(current_renderer == NULL || current_renderer->GetPixel == NULL)

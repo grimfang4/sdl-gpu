@@ -290,18 +290,6 @@ struct GPU_Renderer
 	
 	/*! \see GPU_SetRGBA() */
 	void (*SetRGBA)(GPU_Renderer* renderer, Uint8 r, Uint8 g, Uint8 b, Uint8 a);
-
-	/*! \see GPU_ReplaceRGB() */
-	void (*ReplaceRGB)(GPU_Renderer* renderer, GPU_Image* image, Uint8 from_r, Uint8 from_g, Uint8 from_b, Uint8 to_r, Uint8 to_g, Uint8 to_b);
-	
-	/*! \see GPU_MakeRGBTransparent() */
-	void (*MakeRGBTransparent)(GPU_Renderer* renderer, GPU_Image* image, Uint8 r, Uint8 g, Uint8 b);
-	
-	/*! \see GPU_ShiftHSV() */
-	void (*ShiftHSV)(GPU_Renderer* renderer, GPU_Image* image, int hue, int saturation, int value);
-	
-	/*! \see GPU_ShiftHSVExcept() */
-	void (*ShiftHSVExcept)(GPU_Renderer* renderer, GPU_Image* image, int hue, int saturation, int value, int notHue, int notSat, int notVal, int range);
 	
 	/*! \see GPU_GetPixel() */
 	SDL_Color (*GetPixel)(GPU_Renderer* renderer, GPU_Target* target, Sint16 x, Sint16 y);
@@ -694,18 +682,6 @@ void GPU_SetRGB(Uint8 r, Uint8 g, Uint8 b);
 
 /*! Sets the modulation color for subsequent drawing, if supported by the renderer. */
 void GPU_SetRGBA(Uint8 r, Uint8 g, Uint8 b, Uint8 a);
-
-/*! Changes all pixels of a given color into another color. */
-void GPU_ReplaceColor(GPU_Image* image, SDL_Color from, SDL_Color to);
-
-/*! Changes the alpha value of all pixels of the given color to fully transparent. */
-void GPU_MakeColorTransparent(GPU_Image* image, SDL_Color color);
-
-/*! Changes the color of each pixel by shifting the colors in HSV space. */
-void GPU_ShiftHSV(GPU_Image* image, int hue, int saturation, int value);
-
-/*! Changes the color of each pixel by shifting the colors in HSV space, skipping pixels in the given HSV color range. */
-void GPU_ShiftHSVExcept(GPU_Image* image, int hue, int saturation, int value, int notHue, int notSat, int notVal, int range);
 
 /*! \return The RGBA color of a pixel. */
 SDL_Color GPU_GetPixel(GPU_Target* target, Sint16 x, Sint16 y);
