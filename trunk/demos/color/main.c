@@ -3,6 +3,197 @@
 #include <math.h>
 #include "common.h"
 
+void makeColorTransparent(GPU_Image* image, SDL_Color color)
+{
+    SDL_Surface* surface = GPU_CopySurfaceFromImage(image);
+    Uint8* pixels = surface->pixels;
+    
+    int x,y,i;
+    for(y = 0; y < surface->h; y++)
+    {
+        for(x = 0; x < surface->w; x++)
+        {
+            i = y*surface->pitch + x*surface->format->BytesPerPixel;
+            if(pixels[i] == color.r && pixels[i+1] == color.g && pixels[i+2] == color.b)
+                pixels[i+3] = 0;
+        }
+    }
+    
+    GPU_UpdateImage(image, NULL, surface);
+    SDL_FreeSurface(surface);
+}
+
+void replaceColor(GPU_Image* image, SDL_Color from, SDL_Color to)
+{
+    SDL_Surface* surface = GPU_CopySurfaceFromImage(image);
+    Uint8* pixels = surface->pixels;
+    
+    int x,y,i;
+    for(y = 0; y < surface->h; y++)
+    {
+        for(x = 0; x < surface->w; x++)
+        {
+            i = y*surface->pitch + x*surface->format->BytesPerPixel;
+            if(pixels[i] == from.r && pixels[i+1] == from.g && pixels[i+2] == from.b)
+            {
+                pixels[i] = to.r;
+                pixels[i+1] = to.g;
+                pixels[i+2] = to.b;
+            }
+        }
+    }
+    
+    GPU_UpdateImage(image, NULL, surface);
+    SDL_FreeSurface(surface);
+}
+
+
+
+
+#define MIN(a,b,c) (a<b && a<c? a : (b<c? b : c))
+#define MAX(a,b,c) (a>b && a>c? a : (b>c? b : c))
+
+// From Wikipedia?
+static void rgb_to_hsv(int red, int green, int blue, int* hue, int* sat, int* val)
+{
+    float r = red/255.0f;
+    float g = green/255.0f;
+    float b = blue/255.0f;
+
+    float h, s, v;
+
+    float min, max, delta;
+    min = MIN( r, g, b );
+    max = MAX( r, g, b );
+
+    v = max;				// v
+    delta = max - min;
+    if( max != 0 && min != max)
+    {
+        s = delta / max;		// s
+
+        if( r == max )
+            h = ( g - b ) / delta;		// between yellow & magenta
+        else if( g == max )
+            h = 2 + ( b - r ) / delta;	// between cyan & yellow
+        else
+            h = 4 + ( r - g ) / delta;	// between magenta & cyan
+        h *= 60;				// degrees
+        if( h < 0 )
+            h += 360;
+    }
+    else {
+        // r = g = b = 0		// s = 0, v is undefined
+        s = 0;
+        h = 0;// really undefined: -1
+    }
+
+    *hue = h * 256.0f/360.0f;
+    *sat = s * 255;
+    *val = v * 255;
+}
+
+// From Wikipedia?
+static void hsv_to_rgb(int hue, int sat, int val, int* r, int* g, int* b)
+{
+    float h = hue/255.0f;
+    float s = sat/255.0f;
+    float v = val/255.0f;
+
+    int H = floor(h*5.999f);
+    float chroma = v*s;
+    float x = chroma * (1 - fabs(fmod(h*5.999f, 2) - 1));
+
+    unsigned char R = 0, G = 0, B = 0;
+    switch(H)
+    {
+    case 0:
+        R = 255*chroma;
+        G = 255*x;
+        break;
+    case 1:
+        R = 255*x;
+        G = 255*chroma;
+        break;
+    case 2:
+        G = 255*chroma;
+        B = 255*x;
+        break;
+    case 3:
+        G = 255*x;
+        B = 255*chroma;
+        break;
+    case 4:
+        R = 255*x;
+        B = 255*chroma;
+        break;
+    case 5:
+        R = 255*chroma;
+        B = 255*x;
+        break;
+    }
+
+    unsigned char m = 255*(v - chroma);
+
+    *r = R+m;
+    *g = G+m;
+    *b = B+m;
+}
+
+static int clamp(int value, int low, int high)
+{
+    if(value <= low)
+        return low;
+    if(value >= high)
+        return high;
+    return value;
+}
+
+void shiftHSV(GPU_Image* image, int hue, int saturation, int value)
+{
+    SDL_Surface* surface = GPU_CopySurfaceFromImage(image);
+    Uint8* pixels = surface->pixels;
+    
+    int x,y,i;
+    for(y = 0; y < surface->h; y++)
+    {
+        for(x = 0; x < surface->w; x++)
+        {
+            i = y*surface->pitch + x*surface->format->BytesPerPixel;
+            
+            if(surface->format->BytesPerPixel == 4 && pixels[i+3] == 0)
+                continue;
+
+            int r = pixels[i];
+            int g = pixels[i+1];
+            int b = pixels[i+2];
+            int h, s, v;
+            rgb_to_hsv(r, g, b, &h, &s, &v);
+            h += hue;
+            s += saturation;
+            v += value;
+            // Wrap hue
+            while(h < 0)
+                h += 256;
+            while(h > 255)
+                h -= 256;
+
+            // Clamp
+            s = clamp(s, 0, 255);
+            v = clamp(v, 0, 255);
+
+            hsv_to_rgb(h, s, v, &r, &g, &b);
+
+            pixels[i] = r;
+            pixels[i+1] = g;
+            pixels[i+2] = b;
+        }
+    }
+    
+    GPU_UpdateImage(image, NULL, surface);
+    SDL_FreeSurface(surface);
+}
+
 int main(int argc, char* argv[])
 {
 	printRenderers();
@@ -20,27 +211,27 @@ int main(int argc, char* argv[])
 	GPU_Image* image1 = GPU_CopyImage(image);
 	
 	SDL_Color yellow = {246, 255, 0};
-	GPU_MakeColorTransparent(image1, yellow);
+	makeColorTransparent(image1, yellow);
 	
 	GPU_Image* image1a = GPU_CopyImage(image);
 	
 	SDL_Color red = {200, 0, 0};
-	GPU_ReplaceColor(image1a, yellow, red);
+	replaceColor(image1a, yellow, red);
 	
 	
 	
 	
 	GPU_Image* image2 = GPU_CopyImage(image);
 	
-	GPU_ShiftHSV(image2, 100, 0, 0);
+	shiftHSV(image2, 100, 0, 0);
 	
 	GPU_Image* image3 = GPU_CopyImage(image);
 	
-	GPU_ShiftHSV(image3, 0, -100, 0);
+	shiftHSV(image3, 0, -100, 0);
 	
 	GPU_Image* image4 = GPU_CopyImage(image);
 	
-	GPU_ShiftHSV(image4, 0, 0, 100);
+	shiftHSV(image4, 0, 0, 100);
 	
 	Uint32 startTime = SDL_GetTicks();
 	long frameCount = 0;

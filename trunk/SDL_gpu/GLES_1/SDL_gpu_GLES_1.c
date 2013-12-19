@@ -79,10 +79,6 @@ GPU_Renderer* GPU_CreateRenderer_GLES_1(GPU_RendererID request)
     renderer->SetBlending = &SetBlending;
     renderer->SetRGBA = &SetRGBA;
 
-    renderer->ReplaceRGB = &ReplaceRGB;
-    renderer->MakeRGBTransparent = &MakeRGBTransparent;
-    renderer->ShiftHSV = &ShiftHSV;
-    renderer->ShiftHSVExcept = &ShiftHSVExcept;
     renderer->GetPixel = &GetPixel;
     renderer->SetImageFilter = &SetImageFilter;
     renderer->SetBlendMode = &SetBlendMode;
