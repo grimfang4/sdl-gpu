@@ -1749,17 +1749,31 @@ static GPU_Target* LoadTarget(GPU_Renderer* renderer, GPU_Image* image)
     result->data = data;
     data->handle = handle;
     data->format = ((IMAGE_DATA*)image->data)->format;
+    data->blending = 0;
+    data->line_thickness = 1.0f;
+    #ifdef SDL_GPU_USE_SDL2
+    data->context = 0;
+    #endif
+    
     result->renderer = renderer;
     result->windowID = 0;
+    result->window_w = 0;
+    result->window_h = 0;
     result->image = image;
     result->w = image->w;
     result->h = image->h;
+    
+    result->camera = GPU_GetDefaultCamera();
 
     result->useClip = 0;
     result->clipRect.x = 0;
     result->clipRect.y = 0;
     result->clipRect.w = image->w;
     result->clipRect.h = image->h;
+    
+    result->default_textured_shader_program = 0;
+    result->default_untextured_shader_program = 0;
+    result->current_shader_program = 0;
 
     image->target = result;
     return result;
