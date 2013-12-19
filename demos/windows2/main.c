@@ -1,17 +1,18 @@
 #include "SDL.h"
 #include "SDL_gpu.h"
 #include "common.h"
+#include "SDL_gpu_OpenGL_1.h"
 
 typedef struct Sprite
 {
+    GPU_Image* image;
     float x, y;
     float velx, vely;
 } Sprite;
 
 typedef struct Group
 {
-    Uint8 on;
-    Uint32 windowID;
+    GPU_Target* target;
     Sprite sprite;
 } Group;
 
@@ -27,14 +28,17 @@ Group create_first_group()
     Uint32 windowID = GPU_GetCurrentRenderer()->current_target->windowID;
     SDL_Log("New windowID: %u\n", windowID);
     
-    g.windowID = windowID;
+    g.target = GPU_GetCurrentRenderer()->current_target;
     
+    SDL_Surface* surface = SDL_LoadBMP("data/test.bmp");
+    
+    g.sprite.image = GPU_CopyImageFromSurface(surface);
     g.sprite.x = rand()%screen_w;
     g.sprite.y = rand()%screen_h;
     g.sprite.velx = 10 + rand()%screen_w/10;
     g.sprite.vely = 10 + rand()%screen_h/10;
     
-    g.on = 1;
+    SDL_FreeSurface(surface);
     
     return g;
 }
@@ -46,22 +50,27 @@ Group create_group()
     Uint32 windowID = SDL_GetWindowID(window);
     SDL_Log("New windowID: %u\n", windowID);
     
-    g.windowID = windowID;
+    g.target = GPU_CreateTargetFromWindow(windowID);
     
+    SDL_Surface* surface = SDL_LoadBMP("data/test.bmp");
+    
+    g.sprite.image = GPU_CopyImageFromSurface(surface);
     g.sprite.x = rand()%screen_w;
     g.sprite.y = rand()%screen_h;
     g.sprite.velx = 10 + rand()%screen_w/10;
     g.sprite.vely = 10 + rand()%screen_h/10;
     
-    g.on = 1;
+    SDL_FreeSurface(surface);
     
     return g;
 }
 
 void destroy_group(Group* groups, int i)
 {
-    SDL_DestroyWindow(SDL_GetWindowFromID(groups[i].windowID));
-    groups[i].on = 0;
+    GPU_FreeImage(groups[i].sprite.image);
+    SDL_DestroyWindow(SDL_GetWindowFromID(groups[i].target->windowID));
+    GPU_FreeTarget(groups[i].target);
+    groups[i].target = NULL;
 }
 
 int main(int argc, char* argv[])
@@ -73,15 +82,6 @@ int main(int argc, char* argv[])
         return -1;
     
 	printCurrentRenderer();
-	
-	GPU_Image* image;
-	{
-        SDL_Surface* surface = SDL_LoadBMP("data/test.bmp");
-        
-        image = GPU_CopyImageFromSurface(surface);
-        
-        SDL_FreeSurface(surface);
-	}
 	
     int max_groups = 30;
     Group groups[max_groups];
@@ -114,7 +114,7 @@ int main(int argc, char* argv[])
 				{
                     for(i = 0; i < max_groups; i++)
                     {
-                        if(!groups[i].on)
+                        if(groups[i].target == NULL)
                         {
                             groups[i] = create_group();
                             num_groups++;
@@ -130,7 +130,7 @@ int main(int argc, char* argv[])
 						
                         for(i = max_groups-1; i >= 0; i--)
                         {
-                            if(groups[i].on)
+                            if(groups[i].target != NULL)
                             {
                                 destroy_group(groups, i);
                                 
@@ -152,7 +152,7 @@ int main(int argc, char* argv[])
                     Uint8 closed = 0;
                     for(i = 0; i < max_groups; i++)
                     {
-                        if(groups[i].on && groups[i].windowID == event.window.windowID)
+                        if(groups[i].target != NULL && groups[i].target->windowID == event.window.windowID)
                         {
                             destroy_group(groups, i);
                             
@@ -172,7 +172,7 @@ int main(int argc, char* argv[])
 		
 		for(i = 0; i < max_groups; i++)
 		{
-		    if(!groups[i].on)
+		    if(groups[i].target == NULL)
                 continue;
             
 			groups[i].sprite.x += groups[i].sprite.velx*dt;
@@ -202,16 +202,14 @@ int main(int argc, char* argv[])
 		
 		for(i = 0; i < max_groups; i++)
 		{
-		    if(!groups[i].on)
+		    if(groups[i].target == NULL)
                 continue;
             
-            GPU_MakeCurrent(screen, groups[i].windowID);
-            
-		    GPU_Clear(screen);
+		    GPU_Clear(groups[i].target);
 		    
-		    GPU_Blit(image, NULL, screen, groups[i].sprite.x, groups[i].sprite.y);
+		    GPU_Blit(groups[i].sprite.image, NULL, groups[i].target, groups[i].sprite.x, groups[i].sprite.y);
 		    
-		    GPU_Flip(screen);
+		    GPU_Flip(groups[i].target);
 		}
 		
 		frameCount++;
@@ -223,7 +221,7 @@ int main(int argc, char* argv[])
 	
     for(i = 0; i < max_groups; i++)
     {
-        if(!groups[i].on)
+        if(groups[i].target == NULL)
             continue;
         
         destroy_group(groups, i);

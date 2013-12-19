@@ -85,3 +85,6 @@ target_link_libraries (3d-demo SDL_gpu)
 
 add_executable(windows-demo windows/main.c common/common.c)
 target_link_libraries (windows-demo SDL_gpu)
+
+add_executable(windows2-demo windows2/main.c common/common.c)
+target_link_libraries (windows2-demo SDL_gpu)
