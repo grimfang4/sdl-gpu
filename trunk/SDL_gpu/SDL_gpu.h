@@ -372,6 +372,9 @@ struct GPU_Renderer
 
     /*! \see GPU_SetUniformfv() */
     void (*SetUniformfv)(GPU_Renderer* renderer, int location, int num_elements_per_value, int num_values, float* values);
+
+    /*! \see GPU_SetUniformMatrixfv() */
+    void (*SetUniformMatrixfv)(GPU_Renderer* renderer, int location, int num_matrices, int num_rows, int num_columns, Uint8 transpose, float* values);
     
     
     // Shapes
@@ -783,6 +786,12 @@ void GPU_SetUniformf(int location, float value);
 
 /*! Sets the value of the floating point uniform shader variable at the given location. */
 void GPU_SetUniformfv(int location, int num_elements_per_value, int num_values, float* values);
+
+/*! Fills "values" with the value of the uniform shader variable at the given location.  The results are identical to calling GPU_GetUniformfv().  Matrices are gotten in column-major order. */
+void GPU_GetUniformMatrixfv(Uint32 program_object, int location, float* values);
+
+/*! Sets the value of the matrix uniform shader variable at the given location.  The size of the matrices sent is specified by num_rows and num_columns.  Rows and columns must be between 2 and 4. */
+void GPU_SetUniformMatrixfv(int location, int num_matrices, int num_rows, int num_columns, Uint8 transpose, float* values);
 
 
 
