@@ -142,9 +142,9 @@ GPU_Target* GPU_CreateTargetFromWindow(Uint32 windowID)
 void GPU_MakeCurrent(GPU_Target* target, Uint32 windowID)
 {
 	if(current_renderer == NULL || current_renderer->MakeCurrent == NULL)
-		return 0;
+		return;
 	
-	return current_renderer->MakeCurrent(current_renderer, target, windowID);
+	current_renderer->MakeCurrent(current_renderer, target, windowID);
 }
 
 int GPU_ToggleFullscreen(void)
