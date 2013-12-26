@@ -1,7 +1,16 @@
 #include "SDL.h"
 #include "SDL_gpu.h"
 #include "common.h"
-#include "SDL_gpu_OpenGL_1.h"
+
+#ifndef SDL_GPU_USE_SDL2
+// This demo doesn't work for SDL 1.2 because of the missing windowing features in that version.
+int main(int argc, char* argv[])
+{
+    GPU_LogError("Sorry, this demo requires SDL 2.\n");
+    return 0;
+}
+
+#else
 
 typedef struct Sprite
 {
@@ -232,3 +241,5 @@ int main(int argc, char* argv[])
     
     return 0;
 }
+
+#endif
