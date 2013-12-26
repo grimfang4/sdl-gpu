@@ -2948,3 +2948,140 @@ static void SetUniformfv(GPU_Renderer* renderer, int location, int num_elements_
     #endif
 }
 
+static void SetUniformMatrixfv(GPU_Renderer* renderer, int location, int num_matrices, int num_rows, int num_columns, Uint8 transpose, float* values)
+{
+    #ifndef SDL_GPU_DISABLE_SHADERS
+    if(num_rows < 2 || num_rows > 4 || num_columns < 2 || num_columns > 4)
+    {
+        GPU_LogError("GPU_SetUniformMatrixfv(): Given invalid dimensions (%dx%d).\n", num_rows, num_columns);
+    }
+    
+    switch(num_rows)
+    {
+    case 2:
+        if(num_columns == 2)
+            glUniformMatrix2fv(location, num_matrices, transpose, values);
+        else if(num_columns == 3)
+            glUniformMatrix2x3fv(location, num_matrices, transpose, values);
+        else if(num_columns == 4)
+            glUniformMatrix2x4fv(location, num_matrices, transpose, values);
+        break;
+    case 3:
+        if(num_columns == 2)
+            glUniformMatrix3x2fv(location, num_matrices, transpose, values);
+        else if(num_columns == 3)
+            glUniformMatrix3fv(location, num_matrices, transpose, values);
+        else if(num_columns == 4)
+            glUniformMatrix3x4fv(location, num_matrices, transpose, values);
+        break;
+    case 4:
+        if(num_columns == 2)
+            glUniformMatrix4x2fv(location, num_matrices, transpose, values);
+        else if(num_columns == 3)
+            glUniformMatrix4x3fv(location, num_matrices, transpose, values);
+        else if(num_columns == 4)
+            glUniformMatrix4fv(location, num_matrices, transpose, values);
+        break;
+    }
+    #endif
+}
+
+
+#define SET_COMMON_FUNCTIONS(renderer) \
+    renderer->Init = &Init; \
+    renderer->IsFeatureEnabled = &IsFeatureEnabled; \
+    renderer->CreateTargetFromWindow = &CreateTargetFromWindow; \
+    renderer->MakeCurrent = &MakeCurrent; \
+    renderer->SetAsCurrent = &SetAsCurrent; \
+    renderer->SetWindowResolution = &SetWindowResolution; \
+    renderer->SetVirtualResolution = &SetVirtualResolution; \
+    renderer->Quit = &Quit; \
+ \
+    renderer->ToggleFullscreen = &ToggleFullscreen; \
+    renderer->SetCamera = &SetCamera; \
+ \
+    renderer->CreateImage = &CreateImage; \
+    renderer->LoadImage = &LoadImage; \
+    renderer->SaveImage = &SaveImage; \
+    renderer->CopyImage = &CopyImage; \
+    renderer->UpdateImage = &UpdateImage; \
+    renderer->CopyImageFromSurface = &CopyImageFromSurface; \
+    renderer->CopyImageFromTarget = &CopyImageFromTarget; \
+    renderer->CopySurfaceFromTarget = &CopySurfaceFromTarget; \
+    renderer->CopySurfaceFromImage = &CopySurfaceFromImage; \
+    renderer->SubSurfaceCopy = &SubSurfaceCopy; \
+    renderer->FreeImage = &FreeImage; \
+ \
+    renderer->LoadTarget = &LoadTarget; \
+    renderer->FreeTarget = &FreeTarget; \
+ \
+    renderer->Blit = &Blit; \
+    renderer->BlitRotate = &BlitRotate; \
+    renderer->BlitScale = &BlitScale; \
+    renderer->BlitTransform = &BlitTransform; \
+    renderer->BlitTransformX = &BlitTransformX; \
+    renderer->BlitTransformMatrix = &BlitTransformMatrix; \
+ \
+    renderer->SetZ = &SetZ; \
+    renderer->GetZ = &GetZ; \
+    renderer->GenerateMipmaps = &GenerateMipmaps; \
+ \
+    renderer->SetClip = &SetClip; \
+    renderer->ClearClip = &ClearClip; \
+    renderer->GetBlending = &GetBlending; \
+    renderer->SetBlending = &SetBlending; \
+    renderer->SetRGBA = &SetRGBA; \
+     \
+    renderer->GetPixel = &GetPixel; \
+    renderer->SetImageFilter = &SetImageFilter; \
+    renderer->SetBlendMode = &SetBlendMode; \
+ \
+    renderer->Clear = &Clear; \
+    renderer->ClearRGBA = &ClearRGBA; \
+    renderer->FlushBlitBuffer = &FlushBlitBuffer; \
+    renderer->Flip = &Flip; \
+     \
+    renderer->CompileShader_RW = &CompileShader_RW; \
+    renderer->CompileShader = &CompileShader; \
+    renderer->LinkShaderProgram = &LinkShaderProgram; \
+    renderer->LinkShaders = &LinkShaders; \
+    renderer->FreeShader = &FreeShader; \
+    renderer->FreeShaderProgram = &FreeShaderProgram; \
+    renderer->AttachShader = &AttachShader; \
+    renderer->DetachShader = &DetachShader; \
+    renderer->ActivateShaderProgram = &ActivateShaderProgram; \
+    renderer->DeactivateShaderProgram = &DeactivateShaderProgram; \
+    renderer->GetShaderMessage = &GetShaderMessage; \
+    renderer->GetUniformLocation = &GetUniformLocation; \
+    renderer->GetUniformiv = &GetUniformiv; \
+    renderer->SetUniformi = &SetUniformi; \
+    renderer->SetUniformiv = &SetUniformiv; \
+    renderer->GetUniformuiv = &GetUniformuiv; \
+    renderer->SetUniformui = &SetUniformui; \
+    renderer->SetUniformuiv = &SetUniformuiv; \
+    renderer->GetUniformfv = &GetUniformfv; \
+    renderer->SetUniformf = &SetUniformf; \
+    renderer->SetUniformfv = &SetUniformfv; \
+    renderer->SetUniformMatrixfv = &SetUniformMatrixfv; \
+	 \
+	/* Shape rendering */ \
+	 \
+    renderer->SetThickness = &SetThickness; \
+    renderer->SetThickness(renderer, 1.0f); \
+    renderer->GetThickness = &GetThickness; \
+    renderer->Pixel = &Pixel; \
+    renderer->Line = &Line; \
+    renderer->Arc = &Arc; \
+    renderer->ArcFilled = &ArcFilled; \
+    renderer->Circle = &Circle; \
+    renderer->CircleFilled = &CircleFilled; \
+    renderer->Tri = &Tri; \
+    renderer->TriFilled = &TriFilled; \
+    renderer->Rectangle = &Rectangle; \
+    renderer->RectangleFilled = &RectangleFilled; \
+    renderer->RectangleRound = &RectangleRound; \
+    renderer->RectangleRoundFilled = &RectangleRoundFilled; \
+    renderer->Polygon = &Polygon; \
+    renderer->PolygonFilled = &PolygonFilled; \
+    renderer->PolygonBlit = &PolygonBlit;
+

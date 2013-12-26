@@ -907,4 +907,21 @@ void GPU_SetUniformfv(int location, int num_elements_per_value, int num_values, 
 	current_renderer->SetUniformfv(current_renderer, location, num_elements_per_value, num_values, values);
 }
 
+// Same as GPU_GetUniformfv()
+void GPU_GetUniformMatrixfv(Uint32 program_object, int location, float* values)
+{
+	if(current_renderer == NULL || current_renderer->GetUniformfv == NULL)
+		return;
+	
+	current_renderer->GetUniformfv(current_renderer, program_object, location, values);
+}
+
+void GPU_SetUniformMatrixfv(int location, int num_matrices, int num_rows, int num_columns, Uint8 transpose, float* values)
+{
+	if(current_renderer == NULL || current_renderer->SetUniformMatrixfv == NULL)
+		return;
+	
+	current_renderer->SetUniformMatrixfv(current_renderer, location, num_matrices, num_rows, num_columns, transpose, values);
+}
+
 
