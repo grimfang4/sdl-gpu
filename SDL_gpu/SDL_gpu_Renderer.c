@@ -102,6 +102,8 @@ GPU_Renderer* GPU_CreateRenderer_OpenGL_2(GPU_RendererID request);
 void GPU_FreeRenderer_OpenGL_2(GPU_Renderer* renderer);
 GPU_Renderer* GPU_CreateRenderer_GLES_1(GPU_RendererID request);
 void GPU_FreeRenderer_GLES_1(GPU_Renderer* renderer);
+GPU_Renderer* GPU_CreateRenderer_GLES_2(GPU_RendererID request);
+void GPU_FreeRenderer_GLES_2(GPU_Renderer* renderer);
 
 void GPU_RegisterRenderers()
 {
@@ -137,6 +139,15 @@ void GPU_RegisterRenderers()
         rendererRegister[i].id = GPU_MakeRendererID(GPU_RENDERER_GLES_1, 1, 1, i);
         rendererRegister[i].createFn = &GPU_CreateRenderer_GLES_1;
         rendererRegister[i].freeFn = &GPU_FreeRenderer_GLES_1;
+        
+        i++;
+        if(i >= MAX_REGISTERED_RENDERERS)
+            return;
+        #endif
+        #ifndef SDL_GPU_DISABLE_GLES_2
+        rendererRegister[i].id = GPU_MakeRendererID(GPU_RENDERER_GLES_2, 2, 0, i);
+        rendererRegister[i].createFn = &GPU_CreateRenderer_GLES_2;
+        rendererRegister[i].freeFn = &GPU_FreeRenderer_GLES_2;
         
         i++;
         if(i >= MAX_REGISTERED_RENDERERS)
