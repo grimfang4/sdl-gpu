@@ -1,13 +1,11 @@
 #include "SDL_gpu.h"
+#include "SDL_platform.h"
 #include <string.h>
 #include <strings.h>
 int strcasecmp(const char*, const char *);
 
 #define MAX_ACTIVE_RENDERERS 20
 #define MAX_REGISTERED_RENDERERS 2
-
-// TODO: Add list of initialized renderers that need to be cleaned up at GPU_Quit().
-// TODO: Add map<const char*, GPU_Renderer*> to hold all registered (potential) renderers.
 
 typedef struct RendererRegistration
 {
@@ -17,7 +15,7 @@ typedef struct RendererRegistration
 } RendererRegistration;
 
 static Uint8 initialized = 0;
-// FIXME: This is a temporary holder in lieu of a map/vector.
+
 static GPU_Renderer* rendererMap[MAX_ACTIVE_RENDERERS];
 static RendererRegistration rendererRegister[MAX_REGISTERED_RENDERERS];
 
@@ -188,7 +186,7 @@ void GPU_InitRendererRegister(void)
 GPU_RendererID GPU_GetDefaultRendererID(void)
 {
     
-    #ifdef ANDROID
+    #if defined(__ANDROID__) || defined(__IPHONEOS__)
         #ifdef SDL_GPU_PREFER_GLES_2
         return GPU_MakeRendererIDRequest(GPU_RENDERER_OPENGLES_2, 2, 0, 0);
         #else

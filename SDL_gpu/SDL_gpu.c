@@ -1,6 +1,7 @@
 #include "SDL_gpu.h"
+#include "SDL_platform.h"
 
-#ifdef ANDROID
+#ifdef __ANDROID__
 #include <android/log.h>
 #endif
 
@@ -37,7 +38,7 @@ void GPU_LogInfo(const char* format, ...)
 #ifdef SDL_GPU_ENABLE_LOG
 	va_list args;
 	va_start(args, format);
-	#ifdef ANDROID
+	#ifdef __ANDROID__
 		__android_log_vprint(ANDROID_LOG_INFO, "APPLICATION", format, args);
 	#else
 		vprintf(format, args);
@@ -51,7 +52,7 @@ void GPU_LogWarning(const char* format, ...)
 #ifdef SDL_GPU_ENABLE_LOG
 	va_list args;
 	va_start(args, format);
-	#ifdef ANDROID
+	#ifdef __ANDROID__
 		__android_log_vprint(ANDROID_LOG_WARN, "APPLICATION", format, args);
 	#else
 		vprintf(format, args);
@@ -64,7 +65,7 @@ void GPU_LogError(const char* format, ...)
 {
 	va_list args;
 	va_start(args, format);
-	#ifdef ANDROID
+	#ifdef __ANDROID__
 		__android_log_vprint(ANDROID_LOG_ERROR, "APPLICATION", format, args);
 	#else
 		vprintf(format, args);
@@ -310,7 +311,7 @@ SDL_Surface* GPU_LoadSurface(const char* filename)
 	if(filename == NULL)
         return NULL;
 	
-	#ifdef ANDROID
+	#ifdef __ANDROID__
 	unsigned char* data;
 	if(strlen(filename) > 0 && filename[0] != '/')
 	{
