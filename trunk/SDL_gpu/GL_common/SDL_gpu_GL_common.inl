@@ -2603,6 +2603,19 @@ static void FlushBlitBuffer(GPU_Renderer* renderer)
         glDisableClientState(GL_TEXTURE_COORD_ARRAY);
         glDisableClientState(GL_VERTEX_ARRAY);
 
+#elif defined(SDL_GPU_USE_GL_TIER3)
+        
+        // FIXME: Replace with vertex attribute arrays.
+        glEnableClientState(GL_VERTEX_ARRAY);
+        glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+        glVertexPointer(3, GL_FLOAT, GPU_BLIT_BUFFER_STRIDE, rdata->blit_buffer + GPU_BLIT_BUFFER_VERTEX_OFFSET);
+        glTexCoordPointer(2, GL_FLOAT, GPU_BLIT_BUFFER_STRIDE, rdata->blit_buffer + GPU_BLIT_BUFFER_TEX_COORD_OFFSET);
+
+        glDrawArrays(GL_TRIANGLES, 0, rdata->blit_buffer_size);
+
+        glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+        glDisableClientState(GL_VERTEX_ARRAY);
+
 #endif
 
         rdata->blit_buffer_size = 0;

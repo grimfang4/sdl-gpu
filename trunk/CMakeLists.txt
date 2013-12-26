@@ -100,6 +100,7 @@ include_directories(SDL_gpu)
 include_directories(SDL_gpu/OpenGL_1)
 include_directories(SDL_gpu/OpenGL_2)
 include_directories(SDL_gpu/GLES_1)
+include_directories(SDL_gpu/GLES_2)
 include_directories(SDL_gpu/externals/glew)
 include_directories(SDL_gpu/externals/stb_image)
 
