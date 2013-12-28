@@ -581,9 +581,12 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
 
 static void MakeCurrent(GPU_Renderer* renderer, GPU_Target* target, Uint32 windowID)
 {
-    if(target == NULL || target->windowID == 0)
+    if(target == NULL)
         return;
     #ifdef SDL_GPU_USE_SDL2
+    if(target->windowID == 0)
+        return;
+    
     SDL_GLContext c = ((TARGET_DATA*)target->data)->context;
     if(c != 0)
     {
@@ -630,8 +633,8 @@ static int SetWindowResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
     if(screen == NULL)
         return 0;
 
-    renderer->window_w = screen->w;
-    renderer->window_h = screen->h;
+    renderer->current_target->window_w = screen->w;
+    renderer->current_target->window_h = screen->h;
 #endif
 
     Uint16 virtualW = renderer->current_target->w;
@@ -1801,8 +1804,11 @@ static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
     if(target->image != NULL)
         target->image->target = NULL;  // Remove reference to this object
     
+    #ifdef SDL_GPU_USE_SDL2
     if(((TARGET_DATA*)target->data)->context != 0)
         SDL_GL_DeleteContext(((TARGET_DATA*)target->data)->context);
+    #endif
+    
     free(target->data);
     free(target);
 }
