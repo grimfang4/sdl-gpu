@@ -2,10 +2,17 @@
 #define _SDL_GPU_GLES_1_H__
 
 #include "SDL_gpu.h"
+#include "SDL_platform.h"
 
 #if !defined(SDL_GPU_DISABLE_GLES) && !defined(SDL_GPU_DISABLE_GLES_1)
+
+#ifdef __IPHONEOS__
+    #include <OpenGLES/ES1/gl.h>
+    #include <OpenGLES/ES1/glext.h>
+#else
     #include "GLES/gl.h"
     #include "GLES/glext.h"
+#endif
 
     #define glFrustum glFrustumf
     #define glOrtho glOrthof

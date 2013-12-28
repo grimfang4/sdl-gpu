@@ -188,9 +188,9 @@ GPU_RendererID GPU_GetDefaultRendererID(void)
     
     #if defined(__ANDROID__) || defined(__IPHONEOS__)
         #ifdef SDL_GPU_PREFER_GLES_2
-        return GPU_MakeRendererIDRequest(GPU_RENDERER_OPENGLES_2, 2, 0, 0);
+        return GPU_MakeRendererIDRequest(GPU_RENDERER_GLES_2, 2, 0, 0);
         #else
-        return GPU_MakeRendererIDRequest(GPU_RENDERER_OPENGLES_1, 1, 1, 0);
+        return GPU_MakeRendererIDRequest(GPU_RENDERER_GLES_1, 1, 1, 0);
         #endif
     #else
     return GPU_MakeRendererIDRequest(GPU_RENDERER_OPENGL_1, 1, 1, 0);
