@@ -363,7 +363,11 @@ static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request,
 #endif
     
     // Create or re-init the current target.  This also creates the GL context.
+    #ifdef SDL_GPU_USE_SDL2
     renderer->CreateTargetFromWindow(renderer, SDL_GetWindowID(window), renderer->current_target);
+    #else
+    renderer->CreateTargetFromWindow(renderer, 0, renderer->current_target);
+    #endif
     
     // Update our renderer info from the current GL context.
     #ifdef GL_MAJOR_VERSION
@@ -371,7 +375,7 @@ static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request,
     glGetIntegerv(GL_MINOR_VERSION, &renderer->id.minor_version);
     #else
     // GLES doesn't have GL_MAJOR_VERSION.  Check via version string instead.
-    const char* version_string = glGetString(GL_VERSION);
+    const char* version_string = (const char*)glGetString(GL_VERSION);
     if(sscanf(version_string, "OpenGL ES-C%*c %d.%d", &renderer->id.major_version, &renderer->id.minor_version) <= 0)
     {
         GPU_LogError("Failed to parse OpenGLES version string.  Defaulting to version 1.1.\n");
