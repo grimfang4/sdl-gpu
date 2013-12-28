@@ -519,6 +519,9 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
 
     glMatrixMode( GL_MODELVIEW );
     glLoadIdentity();
+    
+    // Center the pixels
+    glTranslatef(0.375f, 0.375f, 0.0f);
 
     glEnable( GL_TEXTURE_2D );
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -656,6 +659,9 @@ static int SetWindowResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
 
     glMatrixMode( GL_MODELVIEW );
     glLoadIdentity();
+    
+    // Center the pixels
+    glTranslatef(0.375f, 0.375f, 0.0f);
 
     glEnable( GL_TEXTURE_2D );
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -757,6 +763,7 @@ static GPU_Camera SetCamera(GPU_Renderer* renderer, GPU_Camera* cam)
 
     //glMatrixMode( GL_MODELVIEW );
     //glLoadIdentity();
+    //glTranslatef(0.375f, 0.375f, 0.0f);
 
 
     float offsetX = target->w/2.0f;
