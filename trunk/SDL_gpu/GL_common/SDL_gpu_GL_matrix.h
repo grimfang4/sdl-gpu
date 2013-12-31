@@ -5,6 +5,7 @@
 #define SDL_GPU_USE_INTERNAL_MATRICES
 #endif
 
+const char* GPU_GetMatrixString(float* A);
 
 #ifdef SDL_GPU_USE_INTERNAL_MATRICES
 void _GPU_Dummy(void);
@@ -19,6 +20,8 @@ void _GPU_Translate(float x, float y, float z);
 void _GPU_Scale(float sx, float sy, float sz);
 void _GPU_Rotate(float degrees, float x, float y, float z);
 void _GPU_MultMatrix(float* matrix4x4);
+float* _GPU_GetModelView(void);
+float* _GPU_GetProjection(void);
 void _GPU_GetModelViewProjection(float* result);
 
 #define GPU_MODELVIEW 0

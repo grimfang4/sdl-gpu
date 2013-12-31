@@ -16,6 +16,27 @@ static int _gpu_matrix_mode = GPU_MODELVIEW;
 #define GPU_MATRIX_STACK_MAX 5
 #endif
 
+// Can be used up to two times per line evaluation...
+const char* GPU_GetMatrixString(float* A)
+{
+    static char buffer[512];
+    static char buffer2[512];
+    static char flip = 0;
+    
+    char* b = (flip? buffer : buffer2);
+    flip = !flip;
+    
+    snprintf(b, 512, "%.1f %.1f %.1f %.1f\n"
+                          "%.1f %.1f %.1f %.1f\n"
+                          "%.1f %.1f %.1f %.1f\n"
+                          "%.1f %.1f %.1f %.1f", 
+                          A[0], A[1], A[2], A[3], 
+                          A[4], A[5], A[6], A[7], 
+                          A[8], A[9], A[10], A[11], 
+                          A[12], A[13], A[14], A[15]);
+    return b;
+}
+
 typedef struct GPU_MatrixStack
 {
     unsigned int size;
@@ -156,10 +177,17 @@ void _GPU_Ortho(float left, float right, float bottom, float top, float near, fl
     float* result = _GPU_GetCurrentMatrix();
     if(result == NULL)
         return;
+    #ifdef ROW_MAJOR
     float A[16] = {2/(right - left), 0,  0, -(right + left)/(right - left),
                    0, 2/(top - bottom), 0, -(top + bottom)/(top - bottom),
                    0, 0, -2/(far - near), -(far + near)/(far - near),
                    0, 0, 0, 1};
+    #else
+    float A[16] = {2/(right - left), 0,  0, 0,
+                   0, 2/(top - bottom), 0, 0,
+                   0, 0, -2/(far - near), 0,
+                   -(right + left)/(right - left), -(top + bottom)/(top - bottom), -(far + near)/(far - near), 1};
+    #endif
     
     _GPU_MultiplyAndAssign(result, A);
 }
@@ -169,10 +197,17 @@ void _GPU_Frustum(float right, float left, float bottom, float top, float near, 
     float* result = _GPU_GetCurrentMatrix();
     if(result == NULL)
         return;
+    #ifdef ROW_MAJOR
     float A[16] = {2 * near / (right - left), 0, 0, 0,
                    0, 2 * near / (top - bottom), 0, 0,
                    (right + left) / (right - left), (top + bottom) / (top - bottom), -(far + near) / (far - near), -1,
                    0, 0, -(2 * far * near) / (far - near), 0};
+    #else
+    float A[16] = {2 * near / (right - left), 0, (right + left) / (right - left), 0,
+                   0, 2 * near / (top - bottom), (top + bottom) / (top - bottom), 0,
+                   0, 0, -(far + near) / (far - near), -(2 * far * near) / (far - near),
+                   0, 0, -1, 0};
+    #endif
                    
     _GPU_MultiplyAndAssign(result, A);
 }
@@ -182,10 +217,17 @@ void _GPU_Translate(float x, float y, float z)
     float* result = _GPU_GetCurrentMatrix();
     if(result == NULL)
         return;
+    #ifdef ROW_MAJOR
     float A[16] = {1, 0, 0, x,
                    0, 1, 0, y,
                    0, 0, 1, z,
                    0, 0, 0, 1};
+    #else
+    float A[16] = {1, 0, 0, 0,
+                   0, 1, 0, 0,
+                   0, 0, 1, 0,
+                   x, y, z, 1};
+    #endif
     
     _GPU_MultiplyAndAssign(result, A);
 }
@@ -223,10 +265,17 @@ void _GPU_Rotate(float degrees, float x, float y, float z)
     float* result = _GPU_GetCurrentMatrix();
     if(result == NULL)
         return;
+    #ifdef ROW_MAJOR
     float A[16] = {x*x*c_ + c,  xyc_ - zs,   xzc_ + ys, 0,
                     xyc_ + zs,   y*yc_ + c,   yzc_ - xs, 0,
                     xzc_ - ys,   yzc_ + xs,   z*zc_ + c, 0,
                     0,           0,           0,         1};
+    #else
+    float A[16] = {x*x*c_ + c,  xyc_ + zs,   xzc_ - ys, 0,
+                    xyc_ - zs,   y*yc_ + c,   yzc_ + xs, 0,
+                    xzc_ + ys,   yzc_ - xs,   z*zc_ + c, 0,
+                    0,           0,           0,         1};
+    #endif
                   
     _GPU_MultiplyAndAssign(result, A);
 }
