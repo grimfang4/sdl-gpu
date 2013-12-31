@@ -60,9 +60,9 @@ typedef struct TargetData_OpenGL_3
     // Tier 3 rendering
     unsigned int blit_VAO;
     unsigned int blit_VBO;
-    int position_loc[2], texcoord_loc[2], color_loc[2];
+    GPU_ShaderBlock shader_block[2];
+    GPU_ShaderBlock current_shader_block;
     
-    int modelViewProjection_loc[2];
 } TargetData_OpenGL_3;
 
 

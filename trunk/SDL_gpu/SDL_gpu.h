@@ -91,6 +91,18 @@ typedef struct GPU_Camera
 } GPU_Camera;
 
 
+/*! Container for the built-in shader attribute and uniform locations (indices).
+ * \see GPU_LoadShaderBlock()
+ */
+typedef struct GPU_ShaderBlock
+{
+    int position_loc;
+    int texcoord_loc;
+    int color_loc;
+    int modelViewProjection_loc;
+} GPU_ShaderBlock;
+
+
 /*! Render target object for use as a blitting destination.
  * A GPU_Target can be created from a GPU_Image with GPU_LoadTarget().
  * A GPU_Target can also represent a separate window with GPU_CreateTargetFromWindow().
@@ -343,9 +355,18 @@ struct GPU_Renderer
     /*! \see GPU_GetShaderMessage() */
     const char* (*GetShaderMessage)(GPU_Renderer* renderer);
 
+    /*! \see GPU_GetAttribLocation() */
+    int (*GetAttribLocation)(GPU_Renderer* renderer, Uint32 program_object, const char* attrib_name);
+
     /*! \see GPU_GetUniformLocation() */
     int (*GetUniformLocation)(GPU_Renderer* renderer, Uint32 program_object, const char* uniform_name);
-
+    
+    /*! \see GPU_LoadShaderBlock() */
+    GPU_ShaderBlock (*LoadShaderBlock)(GPU_Renderer* renderer, Uint32 program_object, const char* position_name, const char* texcoord_name, const char* color_name, const char* modelViewMatrix_name);
+    
+    /*! \see GPU_SetShaderBlock() */
+    void (*SetShaderBlock)(GPU_Renderer* renderer, GPU_ShaderBlock block);
+    
     /*! \see GPU_GetUniformiv() */
     void (*GetUniformiv)(GPU_Renderer* renderer, Uint32 program_object, int location, int* values);
 
@@ -754,8 +775,17 @@ void GPU_DeactivateShaderProgram(void);
 /*! Returns the last shader log message. */
 const char* GPU_GetShaderMessage(void);
 
+/*! Returns an integer representing the location of the specified attribute shader variable. */
+int GPU_GetAttributeLocation(Uint32 program_object, const char* attrib_name);
+
 /*! Returns an integer representing the location of the specified uniform shader variable. */
 int GPU_GetUniformLocation(Uint32 program_object, const char* uniform_name);
+
+/*! Loads the given shader program's built-in attribute and uniform locations. */
+GPU_ShaderBlock GPU_LoadShaderBlock(Uint32 program_object, const char* position_name, const char* texcoord_name, const char* color_name, const char* modelViewMatrix_name);
+
+/*! Sets the current shader block to use the given attribute and uniform locations. */
+void GPU_SetShaderBlock(GPU_ShaderBlock block);
 
 /*! Fills "values" with the value of the uniform shader variable at the given location. */
 void GPU_GetUniformiv(Uint32 program_object, int location, int* values);
