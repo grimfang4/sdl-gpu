@@ -5,7 +5,7 @@
 int strcasecmp(const char*, const char *);
 
 #define MAX_ACTIVE_RENDERERS 20
-#define MAX_REGISTERED_RENDERERS 2
+#define MAX_REGISTERED_RENDERERS 10
 
 typedef struct RendererRegistration
 {
@@ -98,6 +98,8 @@ GPU_Renderer* GPU_CreateRenderer_OpenGL_1(GPU_RendererID request);
 void GPU_FreeRenderer_OpenGL_1(GPU_Renderer* renderer);
 GPU_Renderer* GPU_CreateRenderer_OpenGL_2(GPU_RendererID request);
 void GPU_FreeRenderer_OpenGL_2(GPU_Renderer* renderer);
+GPU_Renderer* GPU_CreateRenderer_OpenGL_3(GPU_RendererID request);
+void GPU_FreeRenderer_OpenGL_3(GPU_Renderer* renderer);
 GPU_Renderer* GPU_CreateRenderer_GLES_1(GPU_RendererID request);
 void GPU_FreeRenderer_GLES_1(GPU_Renderer* renderer);
 GPU_Renderer* GPU_CreateRenderer_GLES_2(GPU_RendererID request);
@@ -125,6 +127,16 @@ void GPU_RegisterRenderers()
         rendererRegister[i].id = GPU_MakeRendererID(GPU_RENDERER_OPENGL_2, 2, 0, i);
         rendererRegister[i].createFn = &GPU_CreateRenderer_OpenGL_2;
         rendererRegister[i].freeFn = &GPU_FreeRenderer_OpenGL_2;
+        
+        i++;
+        if(i >= MAX_REGISTERED_RENDERERS)
+            return;
+        #endif
+	
+        #ifndef SDL_GPU_DISABLE_OPENGL_3
+        rendererRegister[i].id = GPU_MakeRendererID(GPU_RENDERER_OPENGL_3, 3, 0, i);
+        rendererRegister[i].createFn = &GPU_CreateRenderer_OpenGL_3;
+        rendererRegister[i].freeFn = &GPU_FreeRenderer_OpenGL_3;
         
         i++;
         if(i >= MAX_REGISTERED_RENDERERS)

@@ -1,0 +1,63 @@
+#ifndef _SDL_GPU_OPENGL_3_H__
+#define _SDL_GPU_OPENGL_3_H__
+
+#include "SDL_gpu.h"
+
+#if !defined(SDL_GPU_DISABLE_OPENGL) && !defined(SDL_GPU_DISABLE_OPENGL_3)
+
+    // Hacks to fix compile errors due to polluted namespace
+    #ifdef _WIN32
+    #define _WINUSER_H
+    #define _WINGDI_H
+    #endif
+    
+    #include "glew.h"
+	
+	#if defined(GL_EXT_bgr) && !defined(GL_BGR)
+		#define GL_BGR GL_BGR_EXT
+	#endif
+	#if defined(GL_EXT_bgra) && !defined(GL_BGRA)
+		#define GL_BGRA GL_BGRA_EXT
+	#endif
+	#if defined(GL_EXT_abgr) && !defined(GL_ABGR)
+		#define GL_ABGR GL_ABGR_EXT
+	#endif
+#endif
+
+
+typedef struct RendererData_OpenGL_3
+{
+	Uint32 handle;
+	float z;
+	
+	GPU_Image* last_image;
+	GPU_Target* last_target;
+	float* blit_buffer;  // Holds sets of 4 vertices, each with interleaved position, tex coords, and colors (e.g. [x0, y0, z0, s0, t0, r0, g0, b0, a0, ...]).
+	int blit_buffer_size;
+	int blit_buffer_max_size;
+} RendererData_OpenGL_3;
+
+typedef struct ImageData_OpenGL_3
+{
+	Uint32 handle;
+	Uint32 format;
+	Uint8 hasMipmaps;
+	Uint32 tex_w, tex_h;  // For power-of-two support
+} ImageData_OpenGL_3;
+
+typedef struct TargetData_OpenGL_3
+{
+	Uint32 handle;
+	Uint32 format;
+	
+	Uint8 blending;
+	float line_thickness;
+	
+    #ifdef SDL_GPU_USE_SDL2
+    SDL_GLContext context;
+    #endif
+} TargetData_OpenGL_3;
+
+
+
+#endif

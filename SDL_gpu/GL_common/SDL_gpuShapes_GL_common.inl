@@ -68,13 +68,13 @@ static void Circle(GPU_Renderer* renderer, GPU_Target* target, float x, float y,
         \
         glViewport( 0, 0, w, h); \
         \
-        glMatrixMode( GL_PROJECTION ); \
-        glPushMatrix(); \
-        glLoadIdentity(); \
+        GPU_MatrixMode( GPU_PROJECTION ); \
+        GPU_PushMatrix(); \
+        GPU_LoadIdentity(); \
         \
-        glOrtho(0.0f, w, 0.0f, h, -1.0f, 1.0f); /* Special inverted orthographic projection because tex coords are inverted already. */ \
+        GPU_Ortho(0.0f, w, 0.0f, h, -1.0f, 1.0f); /* Special inverted orthographic projection because tex coords are inverted already. */ \
         \
-        glMatrixMode( GL_MODELVIEW ); \
+        GPU_MatrixMode( GPU_MODELVIEW ); \
     }
 
 
@@ -114,13 +114,13 @@ static void Circle(GPU_Renderer* renderer, GPU_Target* target, float x, float y,
         \
         glViewport( 0, 0, w, h); \
         \
-        glMatrixMode( GL_PROJECTION ); \
-        glPushMatrix(); \
-        glLoadIdentity(); \
+        GPU_MatrixMode( GPU_PROJECTION ); \
+        GPU_PushMatrix(); \
+        GPU_LoadIdentity(); \
         \
-        glOrtho(0.0f, w, 0.0f, h, -1.0f, 1.0f); /* Special inverted orthographic projection because tex coords are inverted already. */ \
+        GPU_Ortho(0.0f, w, 0.0f, h, -1.0f, 1.0f); /* Special inverted orthographic projection because tex coords are inverted already. */ \
         \
-        glMatrixMode( GL_MODELVIEW ); \
+        GPU_MatrixMode( GPU_MODELVIEW ); \
     }
 
 #define END \
@@ -128,9 +128,9 @@ static void Circle(GPU_Renderer* renderer, GPU_Target* target, float x, float y,
     { \
         glViewport(vp[0], vp[1], vp[2], vp[3]); \
          \
-        glMatrixMode( GL_PROJECTION ); \
-        glPopMatrix(); \
-        glMatrixMode( GL_MODELVIEW ); \
+        GPU_MatrixMode( GPU_PROJECTION ); \
+        GPU_PopMatrix(); \
+        GPU_MatrixMode( GPU_MODELVIEW ); \
     } \
 	if(target->useClip) \
 	{ \
