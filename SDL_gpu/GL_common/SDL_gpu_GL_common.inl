@@ -128,6 +128,29 @@ void main(void)\n\
 static SDL_PixelFormat* AllocFormat(GLenum glFormat);
 static void FreeFormat(SDL_PixelFormat* format);
 
+// To make these public, I need to move them into the renderer.  But should they be?
+static float* GPU_GetModelView(void)
+{
+    #ifdef SDL_GPU_USE_INTERNAL_MATRICES
+    return _GPU_GetModelView();
+    #else
+    static float A[16];
+    glGetFloatv(GL_MODELVIEW_MATRIX, A);
+    return A;
+    #endif
+}
+
+static float* GPU_GetProjection(void)
+{
+    #ifdef SDL_GPU_USE_INTERNAL_MATRICES
+    return _GPU_GetProjection();
+    #else
+    static float A[16];
+    glGetFloatv(GL_PROJECTION_MATRIX, A);
+    return A;
+    #endif
+}
+
 static Uint8 isExtensionSupported(const char* extension_str)
 {
 #ifdef SDL_GPU_USE_OPENGL
