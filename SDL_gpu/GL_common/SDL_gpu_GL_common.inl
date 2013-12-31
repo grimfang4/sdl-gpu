@@ -596,7 +596,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     GPU_LoadIdentity();
     
     // Center the pixels
-    GPU_Translate(0.375f, 0.375f, 0.0f);
+    //GPU_Translate(0.375f, 0.375f, 0.0f);
 
     glEnable( GL_TEXTURE_2D );
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -755,7 +755,7 @@ static int SetWindowResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
     GPU_LoadIdentity();
     
     // Center the pixels
-    GPU_Translate(0.375f, 0.375f, 0.0f);
+    //GPU_Translate(0.375f, 0.375f, 0.0f);
 
     glEnable( GL_TEXTURE_2D );
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
