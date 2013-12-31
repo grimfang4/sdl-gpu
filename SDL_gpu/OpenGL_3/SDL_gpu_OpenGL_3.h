@@ -52,6 +52,7 @@ typedef struct TargetData_OpenGL_3
 	
 	Uint8 blending;
 	float line_thickness;
+	SDL_Color color;
 	
     #ifdef SDL_GPU_USE_SDL2
     SDL_GLContext context;
