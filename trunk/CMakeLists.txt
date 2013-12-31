@@ -97,6 +97,7 @@ endif (SDL_gpu_DISABLE_GLES)
 
 # Make local includes look in the right places
 include_directories(SDL_gpu)
+include_directories(SDL_gpu/GL_common)
 include_directories(SDL_gpu/OpenGL_1)
 include_directories(SDL_gpu/OpenGL_2)
 include_directories(SDL_gpu/GLES_1)
