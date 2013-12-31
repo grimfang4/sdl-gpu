@@ -55,6 +55,7 @@ int strcasecmp(const char*, const char *);
 
 // Default shaders
 #ifndef SDL_GPU_USE_GL_TIER3
+
 #define TEXTURED_VERTEX_SHADER_SOURCE \
 "#version 120\n\
 \
@@ -65,6 +66,17 @@ void main(void)\n\
 {\n\
 	color = gl_Color;\n\
 	texCoord = vec2(gl_MultiTexCoord0);\n\
+	gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\n\
+}"
+
+#define UNTEXTURED_VERTEX_SHADER_SOURCE \
+"#version 120\n\
+\
+varying vec4 color;\n\
+\
+void main(void)\n\
+{\n\
+	color = gl_Color;\n\
 	gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\n\
 }"
 
@@ -87,6 +99,22 @@ void main(void)\n\
 	texCoord = vec2(gpu_TexCoord);\n\
 	gl_Position = modelViewProjection * vec4(gpu_Vertex, 1.0);\n\
 }"
+
+// Tier 3 uses shader attributes to send position, texcoord, and color data for each vertex.
+#define UNTEXTURED_VERTEX_SHADER_SOURCE \
+"#version 130\n\
+\
+attribute vec3 gpu_Vertex;\n\
+attribute vec4 gpu_Color;\n\
+uniform mat4 modelViewProjection;\n\
+\
+varying vec4 color;\n\
+\
+void main(void)\n\
+{\n\
+	color = gpu_Color;\n\
+	gl_Position = modelViewProjection * vec4(gpu_Vertex, 1.0);\n\
+}"
 #endif
 
 #define TEXTURED_FRAGMENT_SHADER_SOURCE \
@@ -100,17 +128,6 @@ uniform sampler2D tex;\n\
 void main(void)\n\
 {\n\
     gl_FragColor = texture2D(tex, texCoord) * color;\n\
-}"
-
-#define UNTEXTURED_VERTEX_SHADER_SOURCE \
-"#version 120\n\
-\
-varying vec4 color;\n\
-\
-void main(void)\n\
-{\n\
-	color = gl_Color;\n\
-	gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\n\
 }"
 
 #define UNTEXTURED_FRAGMENT_SHADER_SOURCE \
@@ -565,7 +582,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     glViewport( 0, 0, target->window_w, target->window_h);
 
     glClear( GL_COLOR_BUFFER_BIT );
-    glColor4ub(255, 255, 255, 255);
+    renderer->SetRGBA(renderer, 255, 255, 255, 255);
     
     GPU_InitMatrix();
     
@@ -643,7 +660,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
         
         #ifdef SDL_GPU_USE_GL_TIER3
         // Get locations of the attributes in the shader
-        data->shader_block[1] = GPU_LoadShaderBlock(p, "gpu_Vertex", "gpu_TexCoord", "gpu_Color", "modelViewProjection");
+        data->shader_block[1] = GPU_LoadShaderBlock(p, "gpu_Vertex", NULL, "gpu_Color", "modelViewProjection");
         GPU_SetShaderBlock(data->shader_block[0]);
         
         // Create vertex array container and buffer
@@ -727,7 +744,7 @@ static int SetWindowResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
     glViewport( 0, 0, w, h);
 
     glClear( GL_COLOR_BUFFER_BIT );
-    glColor4ub(255, 255, 255, 255);
+    renderer->SetRGBA(renderer, 255, 255, 255, 255);
 
     GPU_MatrixMode( GPU_PROJECTION );
     GPU_LoadIdentity();
@@ -1967,9 +1984,12 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_T
         int tex_index = GPU_BLIT_BUFFER_TEX_COORD_OFFSET + rdata->blit_buffer_size*GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
         #ifdef SDL_GPU_USE_GL_TIER3
         int color_index = GPU_BLIT_BUFFER_COLOR_OFFSET + rdata->blit_buffer_size*GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
+        TARGET_DATA* data = (TARGET_DATA*)dest->data;
+        float r =  data->color.r/255.0f;
+        float g =  data->color.g/255.0f;
+        float b =  data->color.b/255.0f;
+        float a =  data->color.a/255.0f;
         #endif
-        
-        // FIXME: The color values should be taken from what is sent by GPU_SetRGBA().  That means I need to replace glColor() calls.
 
         blit_buffer[vert_index] = dx1;
         blit_buffer[vert_index+1] = dy1;
@@ -1977,10 +1997,10 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_T
         blit_buffer[tex_index] = x1;
         blit_buffer[tex_index+1] = y1;
         #ifdef SDL_GPU_USE_GL_TIER3
-        blit_buffer[color_index] = 1.0f;
-        blit_buffer[color_index+1] = 1.0f;
-        blit_buffer[color_index+2] = 1.0f;
-        blit_buffer[color_index+3] = 1.0f;
+        blit_buffer[color_index] = r;
+        blit_buffer[color_index+1] = g;
+        blit_buffer[color_index+2] = b;
+        blit_buffer[color_index+3] = a;
         #endif
 
         vert_index += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
@@ -1992,10 +2012,10 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_T
         blit_buffer[tex_index+1] = y1;
         #ifdef SDL_GPU_USE_GL_TIER3
         color_index += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
-        blit_buffer[color_index] = 1.0f;
-        blit_buffer[color_index+1] = 1.0f;
-        blit_buffer[color_index+2] = 1.0f;
-        blit_buffer[color_index+3] = 1.0f;
+        blit_buffer[color_index] = r;
+        blit_buffer[color_index+1] = g;
+        blit_buffer[color_index+2] = b;
+        blit_buffer[color_index+3] = a;
         #endif
 
         vert_index += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
@@ -2007,10 +2027,10 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_T
         blit_buffer[tex_index+1] = y2;
         #ifdef SDL_GPU_USE_GL_TIER3
         color_index += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
-        blit_buffer[color_index] = 1.0f;
-        blit_buffer[color_index+1] = 1.0f;
-        blit_buffer[color_index+2] = 1.0f;
-        blit_buffer[color_index+3] = 1.0f;
+        blit_buffer[color_index] = r;
+        blit_buffer[color_index+1] = g;
+        blit_buffer[color_index+2] = b;
+        blit_buffer[color_index+3] = a;
         #endif
 
 
@@ -2025,10 +2045,10 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_T
         blit_buffer[tex_index+1] = y1;
         #ifdef SDL_GPU_USE_GL_TIER3
         color_index += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
-        blit_buffer[color_index] = 1.0f;
-        blit_buffer[color_index+1] = 1.0f;
-        blit_buffer[color_index+2] = 1.0f;
-        blit_buffer[color_index+3] = 1.0f;
+        blit_buffer[color_index] = r;
+        blit_buffer[color_index+1] = g;
+        blit_buffer[color_index+2] = b;
+        blit_buffer[color_index+3] = a;
         #endif
 
         vert_index += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
@@ -2040,10 +2060,10 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_T
         blit_buffer[tex_index+1] = y2;
         #ifdef SDL_GPU_USE_GL_TIER3
         color_index += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
-        blit_buffer[color_index] = 1.0f;
-        blit_buffer[color_index+1] = 1.0f;
-        blit_buffer[color_index+2] = 1.0f;
-        blit_buffer[color_index+3] = 1.0f;
+        blit_buffer[color_index] = r;
+        blit_buffer[color_index+1] = g;
+        blit_buffer[color_index+2] = b;
+        blit_buffer[color_index+3] = a;
         #endif
 
         vert_index += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
@@ -2055,10 +2075,10 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_T
         blit_buffer[tex_index+1] = y2;
         #ifdef SDL_GPU_USE_GL_TIER3
         color_index += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
-        blit_buffer[color_index] = 1.0f;
-        blit_buffer[color_index+1] = 1.0f;
-        blit_buffer[color_index+2] = 1.0f;
-        blit_buffer[color_index+3] = 1.0f;
+        blit_buffer[color_index] = r;
+        blit_buffer[color_index+1] = g;
+        blit_buffer[color_index+2] = b;
+        blit_buffer[color_index+3] = a;
         #endif
 
         rdata->blit_buffer_size += 6;
@@ -2217,9 +2237,12 @@ static int BlitTransformX(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcr
         int tex_index = GPU_BLIT_BUFFER_TEX_COORD_OFFSET + rdata->blit_buffer_size*GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
         #ifdef SDL_GPU_USE_GL_TIER3
         int color_index = GPU_BLIT_BUFFER_COLOR_OFFSET + rdata->blit_buffer_size*GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
+        TARGET_DATA* data = (TARGET_DATA*)dest->data;
+        float r =  data->color.r/255.0f;
+        float g =  data->color.g/255.0f;
+        float b =  data->color.b/255.0f;
+        float a =  data->color.a/255.0f;
         #endif
-        
-        // FIXME: The color values should be taken from what is sent by GPU_SetRGBA().  That means I need to replace glColor() calls.
 
         blit_buffer[vert_index] = dx1;
         blit_buffer[vert_index+1] = dy1;
@@ -2227,10 +2250,10 @@ static int BlitTransformX(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcr
         blit_buffer[tex_index] = x1;
         blit_buffer[tex_index+1] = y1;
         #ifdef SDL_GPU_USE_GL_TIER3
-        blit_buffer[color_index] = 1.0f;
-        blit_buffer[color_index+1] = 1.0f;
-        blit_buffer[color_index+2] = 1.0f;
-        blit_buffer[color_index+3] = 1.0f;
+        blit_buffer[color_index] = r;
+        blit_buffer[color_index+1] = g;
+        blit_buffer[color_index+2] = b;
+        blit_buffer[color_index+3] = a;
         #endif
 
         vert_index += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
@@ -2242,10 +2265,10 @@ static int BlitTransformX(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcr
         blit_buffer[tex_index+1] = y1;
         #ifdef SDL_GPU_USE_GL_TIER3
         color_index += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
-        blit_buffer[color_index] = 1.0f;
-        blit_buffer[color_index+1] = 1.0f;
-        blit_buffer[color_index+2] = 1.0f;
-        blit_buffer[color_index+3] = 1.0f;
+        blit_buffer[color_index] = r;
+        blit_buffer[color_index+1] = g;
+        blit_buffer[color_index+2] = b;
+        blit_buffer[color_index+3] = a;
         #endif
 
         vert_index += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
@@ -2257,10 +2280,10 @@ static int BlitTransformX(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcr
         blit_buffer[tex_index+1] = y2;
         #ifdef SDL_GPU_USE_GL_TIER3
         color_index += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
-        blit_buffer[color_index] = 1.0f;
-        blit_buffer[color_index+1] = 1.0f;
-        blit_buffer[color_index+2] = 1.0f;
-        blit_buffer[color_index+3] = 1.0f;
+        blit_buffer[color_index] = r;
+        blit_buffer[color_index+1] = g;
+        blit_buffer[color_index+2] = b;
+        blit_buffer[color_index+3] = a;
         #endif
 
 
@@ -2275,10 +2298,10 @@ static int BlitTransformX(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcr
         blit_buffer[tex_index+1] = y1;
         #ifdef SDL_GPU_USE_GL_TIER3
         color_index += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
-        blit_buffer[color_index] = 1.0f;
-        blit_buffer[color_index+1] = 1.0f;
-        blit_buffer[color_index+2] = 1.0f;
-        blit_buffer[color_index+3] = 1.0f;
+        blit_buffer[color_index] = r;
+        blit_buffer[color_index+1] = g;
+        blit_buffer[color_index+2] = b;
+        blit_buffer[color_index+3] = a;
         #endif
 
         vert_index += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
@@ -2290,10 +2313,10 @@ static int BlitTransformX(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcr
         blit_buffer[tex_index+1] = y2;
         #ifdef SDL_GPU_USE_GL_TIER3
         color_index += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
-        blit_buffer[color_index] = 1.0f;
-        blit_buffer[color_index+1] = 1.0f;
-        blit_buffer[color_index+2] = 1.0f;
-        blit_buffer[color_index+3] = 1.0f;
+        blit_buffer[color_index] = r;
+        blit_buffer[color_index+1] = g;
+        blit_buffer[color_index+2] = b;
+        blit_buffer[color_index+3] = a;
         #endif
 
         vert_index += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
@@ -2305,10 +2328,10 @@ static int BlitTransformX(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcr
         blit_buffer[tex_index+1] = y2;
         #ifdef SDL_GPU_USE_GL_TIER3
         color_index += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
-        blit_buffer[color_index] = 1.0f;
-        blit_buffer[color_index+1] = 1.0f;
-        blit_buffer[color_index+2] = 1.0f;
-        blit_buffer[color_index+3] = 1.0f;
+        blit_buffer[color_index] = r;
+        blit_buffer[color_index+1] = g;
+        blit_buffer[color_index+2] = b;
+        blit_buffer[color_index+3] = a;
         #endif
 
         rdata->blit_buffer_size += 6;
@@ -2455,7 +2478,18 @@ static void SetBlending(GPU_Renderer* renderer, Uint8 enable)
 static void SetRGBA(GPU_Renderer* renderer, Uint8 r, Uint8 g, Uint8 b, Uint8 a)
 {
     renderer->FlushBlitBuffer(renderer);
+    #ifdef SDL_GPU_USE_GL_TIER3
+    GPU_Target* target = renderer->current_target;
+    if(target == NULL)
+        return;
+    TARGET_DATA* data = (TARGET_DATA*)target->data;
+    data->color.r = r;
+    data->color.g = g;
+    data->color.b = b;
+    data->color.a = a;
+    #else
     glColor4f(r/255.01f, g/255.01f, b/255.01f, a/255.01f);
+    #endif
 }
 
 
@@ -3081,10 +3115,26 @@ static int GetUniformLocation(GPU_Renderer* renderer, Uint32 program_object, con
 static GPU_ShaderBlock LoadShaderBlock(GPU_Renderer* renderer, Uint32 program_object, const char* position_name, const char* texcoord_name, const char* color_name, const char* modelViewMatrix_name)
 {
     GPU_ShaderBlock b;
-    b.position_loc = renderer->GetAttribLocation(renderer, program_object, position_name);
-    b.texcoord_loc = renderer->GetAttribLocation(renderer, program_object, texcoord_name);
-    b.color_loc = renderer->GetAttribLocation(renderer, program_object, color_name);
-    b.modelViewProjection_loc = renderer->GetUniformLocation(renderer, program_object, modelViewMatrix_name);
+    
+    if(position_name == NULL)
+        b.position_loc = -1;
+    else
+        b.position_loc = renderer->GetAttribLocation(renderer, program_object, position_name);
+        
+    if(texcoord_name == NULL)
+        b.texcoord_loc = -1;
+    else
+        b.texcoord_loc = renderer->GetAttribLocation(renderer, program_object, texcoord_name);
+        
+    if(color_name == NULL)
+        b.color_loc = -1;
+    else
+        b.color_loc = renderer->GetAttribLocation(renderer, program_object, color_name);
+        
+    if(modelViewMatrix_name == NULL)
+        b.modelViewProjection_loc = -1;
+    else
+        b.modelViewProjection_loc = renderer->GetUniformLocation(renderer, program_object, modelViewMatrix_name);
     
     return b;
 }

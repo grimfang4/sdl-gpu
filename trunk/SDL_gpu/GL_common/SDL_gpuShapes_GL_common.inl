@@ -168,6 +168,40 @@ static inline void draw_vertices(GLfloat* glverts, int num_vertices, GLenum prim
         glEnableClientState(GL_VERTEX_ARRAY);
         glDrawArrays(prim_type, 0, num_vertices);
         glDisableClientState(GL_VERTEX_ARRAY);
+    #elif defined(SDL_GPU_USE_GL_TIER3)
+    
+        GPU_Target* target = GPU_GetCurrentTarget();
+        if(target == NULL)
+            return;
+
+        TARGET_DATA* data = ((TARGET_DATA*)target->data);
+        
+        int floats_per_vertex = 7;  // position (3), color (4)
+        int buffer_stride = floats_per_vertex * sizeof(float);
+        
+        // Upload our modelviewprojection matrix
+        float mvp[16];
+        GPU_GetModelViewProjection(mvp);
+        GPU_SetUniformMatrixfv(data->current_shader_block.modelViewProjection_loc, 1, 4, 4, 0, mvp);
+    
+        // Update the vertex array object's buffers
+        glBindVertexArray(data->blit_VAO);
+        
+        // Upload blit buffer to a single buffer object
+        glBindBuffer(GL_ARRAY_BUFFER, data->blit_VBO);
+        
+        // Copy the whole blit buffer to the GPU
+        glBufferData(GL_ARRAY_BUFFER, buffer_stride * num_vertices, glverts, GL_STREAM_DRAW);  // Creates space on the GPU and fills it with data.
+        
+        // Specify the formatting of the blit buffer
+        glEnableVertexAttribArray(data->current_shader_block.position_loc);  // Tell GL to use client-side attribute data
+        glVertexAttribPointer(data->current_shader_block.position_loc, 3, GL_FLOAT, GL_FALSE, buffer_stride, 0);  // Tell how the data is formatted
+        glEnableVertexAttribArray(data->current_shader_block.color_loc);
+        glVertexAttribPointer(data->current_shader_block.color_loc, 4, GL_FLOAT, GL_FALSE, buffer_stride, (void*)(3 * sizeof(float)));
+        
+        glDrawArrays(prim_type, 0, num_vertices);
+        
+        glBindVertexArray(0);
     #endif
 }
 
@@ -216,17 +250,30 @@ static void Pixel(GPU_Renderer* renderer, GPU_Target* target, float x, float y, 
 {
 	BEGIN;
 	
-		glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, GET_ALPHA(color)/255.5f);
+        
+        #ifdef SDL_GPU_USE_GL_TIER3
+		GLfloat glverts[7];
 
+		glverts[0] = x;
+		glverts[1] = y;
+		glverts[2] = z;
+		glverts[3] = color.r/255.0f;
+		glverts[4] = color.g/255.0f;
+		glverts[5] = color.b/255.0f;
+		glverts[6] = color.a/255.0f;
+        #else
+		renderer->SetRGBA(renderer, color.r, color.g, color.b, GET_ALPHA(color));
+		
 		GLfloat glverts[3];
 
 		glverts[0] = x;
 		glverts[1] = y;
 		glverts[2] = z;
+		#endif
         
         draw_vertices(glverts, 1, GL_POINTS);
         
-        glColor4ub(255, 255, 255, 255);
+        renderer->SetRGBA(renderer, 255, 255, 255, 255);
 
     END;
 }
@@ -235,7 +282,29 @@ static void Line(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1,
 {
     BEGIN;
 
-        glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, GET_ALPHA(color)/255.5f);
+        #ifdef SDL_GPU_USE_GL_TIER3
+		float r = color.r/255.0f;
+		float g = color.g/255.0f;
+		float b = color.b/255.0f;
+		float a = color.a/255.0f;
+		GLfloat glverts[14];
+
+		glverts[0] = x1;
+		glverts[1] = y1;
+		glverts[2] = z;
+		glverts[3] = r;
+		glverts[4] = g;
+		glverts[5] = b;
+		glverts[6] = a;
+		glverts[7] = x2;
+		glverts[8] = y2;
+		glverts[9] = z;
+		glverts[10] = r;
+		glverts[11] = g;
+		glverts[12] = b;
+		glverts[13] = a;
+        #else
+        renderer->SetRGBA(renderer, color.r, color.g, color.b, GET_ALPHA(color));
 
         GLfloat glverts[6];
 
@@ -245,10 +314,11 @@ static void Line(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1,
         glverts[3] = x2;
         glverts[4] = y2;
         glverts[5] = z;
+        #endif
 
         draw_vertices(glverts, 2, GL_LINES);
         
-        glColor4ub(255, 255, 255, 255);
+        renderer->SetRGBA(renderer, 255, 255, 255, 255);
 
     END;
 }
@@ -308,7 +378,7 @@ static void Arc(GPU_Renderer* renderer, GPU_Target* target, float x, float y, fl
 
     BEGIN;
 
-    glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, GET_ALPHA(color)/255.5f);
+    renderer->SetRGBA(renderer, color.r, color.g, color.b, GET_ALPHA(color));
     float t = startAngle;
     float dt = (1 - (endAngle - startAngle)/360) * 5;  // A segment every 5 degrees of a full circle
     float dx, dy;
@@ -349,7 +419,7 @@ static void Arc(GPU_Renderer* renderer, GPU_Target* target, float x, float y, fl
     }
     glEnd();*/
         
-    glColor4ub(255, 255, 255, 255);
+    renderer->SetRGBA(renderer, 255, 255, 255, 255);
 
     END;
 }
@@ -410,7 +480,7 @@ static void ArcFilled(GPU_Renderer* renderer, GPU_Target* target, float x, float
 
     BEGIN;
 
-    glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, GET_ALPHA(color)/255.5f);
+    renderer->SetRGBA(renderer, color.r, color.g, color.b, GET_ALPHA(color));
     float t = startAngle;
     float dt = (1 - (endAngle - startAngle)/360) * 5;  // A segment every 5 degrees of a full circle
     float dx, dy;
@@ -455,7 +525,7 @@ static void ArcFilled(GPU_Renderer* renderer, GPU_Target* target, float x, float
     }
     glEnd();*/
     
-    glColor4ub(255, 255, 255, 255);
+    renderer->SetRGBA(renderer, 255, 255, 255, 255);
 
     END;
 }
@@ -464,7 +534,7 @@ static void Circle(GPU_Renderer* renderer, GPU_Target* target, float x, float y,
 {
     BEGIN;
 
-    glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, GET_ALPHA(color)/255.5f);
+    renderer->SetRGBA(renderer, color.r, color.g, color.b, GET_ALPHA(color));
     float t = 0;
     float dt = 5;  // A segment every 5 degrees of a full circle
     float dx, dy;
@@ -485,7 +555,7 @@ static void Circle(GPU_Renderer* renderer, GPU_Target* target, float x, float y,
 
     draw_vertices(glverts, numSegments, GL_LINE_LOOP);
     
-    glColor4ub(255, 255, 255, 255);
+    renderer->SetRGBA(renderer, 255, 255, 255, 255);
 
     END;
 }
@@ -494,7 +564,7 @@ static void CircleFilled(GPU_Renderer* renderer, GPU_Target* target, float x, fl
 {
     BEGIN;
 
-    glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, GET_ALPHA(color)/255.5f);
+    renderer->SetRGBA(renderer, color.r, color.g, color.b, GET_ALPHA(color));
     float t = 0;
     float dt = 5;  // A segment every 5 degrees of a full circle
     float dx, dy;
@@ -532,7 +602,7 @@ static void CircleFilled(GPU_Renderer* renderer, GPU_Target* target, float x, fl
     }
     glEnd();*/
     
-    glColor4ub(255, 255, 255, 255);
+    renderer->SetRGBA(renderer, 255, 255, 255, 255);
 
     END;
 }
@@ -541,7 +611,7 @@ static void Tri(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, 
 {
     BEGIN;
 
-    glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, GET_ALPHA(color)/255.5f);
+    renderer->SetRGBA(renderer, color.r, color.g, color.b, GET_ALPHA(color));
 
     GLfloat glverts[9];
 
@@ -557,7 +627,7 @@ static void Tri(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, 
 
     draw_vertices(glverts, 3, GL_LINE_LOOP);
     
-    glColor4ub(255, 255, 255, 255);
+    renderer->SetRGBA(renderer, 255, 255, 255, 255);
 
     END;
 }
@@ -566,7 +636,7 @@ static void TriFilled(GPU_Renderer* renderer, GPU_Target* target, float x1, floa
 {
     BEGIN;
 
-    glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, GET_ALPHA(color)/255.5f);
+    renderer->SetRGBA(renderer, color.r, color.g, color.b, GET_ALPHA(color));
 
     GLfloat glverts[9];
 
@@ -582,7 +652,7 @@ static void TriFilled(GPU_Renderer* renderer, GPU_Target* target, float x1, floa
 
     draw_vertices(glverts, 3, GL_TRIANGLE_STRIP);
     
-    glColor4ub(255, 255, 255, 255);
+    renderer->SetRGBA(renderer, 255, 255, 255, 255);
 
     END;
 }
@@ -606,7 +676,7 @@ static void Rectangle(GPU_Renderer* renderer, GPU_Target* target, float x1, floa
     
 	float thickness = renderer->GetThickness(renderer);
 
-    glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, GET_ALPHA(color)/255.5f);
+    renderer->SetRGBA(renderer, color.r, color.g, color.b, GET_ALPHA(color));
 
     GLfloat glverts[30];
     
@@ -654,7 +724,7 @@ static void Rectangle(GPU_Renderer* renderer, GPU_Target* target, float x1, floa
     
     draw_vertices(glverts, 10, GL_TRIANGLE_STRIP);
     
-    glColor4ub(255, 255, 255, 255);
+    renderer->SetRGBA(renderer, 255, 255, 255, 255);
 
     END;
 }
@@ -663,7 +733,7 @@ static void RectangleFilled(GPU_Renderer* renderer, GPU_Target* target, float x1
 {
     BEGIN;
 
-    glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, GET_ALPHA(color)/255.5f);
+    renderer->SetRGBA(renderer, color.r, color.g, color.b, GET_ALPHA(color));
 
     GLfloat glverts[12];
 
@@ -682,7 +752,7 @@ static void RectangleFilled(GPU_Renderer* renderer, GPU_Target* target, float x1
 
     draw_vertices(glverts, 4, GL_TRIANGLE_STRIP);
     
-    glColor4ub(255, 255, 255, 255);
+    renderer->SetRGBA(renderer, 255, 255, 255, 255);
 
     END;
 }
@@ -704,7 +774,7 @@ static void RectangleRound(GPU_Renderer* renderer, GPU_Target* target, float x1,
 
     BEGIN;
 
-    glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, GET_ALPHA(color)/255.5f);
+    renderer->SetRGBA(renderer, color.r, color.g, color.b, GET_ALPHA(color));
     
     //int numVerts = 8 + (int(M_PI*5)+1)*4;  // 8 + (15.7 + 1)*4
     float glverts[120*3];
@@ -722,7 +792,7 @@ static void RectangleRound(GPU_Renderer* renderer, GPU_Target* target, float x1,
 
     draw_vertices(glverts, n, GL_LINE_LOOP);
     
-    glColor4ub(255, 255, 255, 255);
+    renderer->SetRGBA(renderer, 255, 255, 255, 255);
 
     END;
 }
@@ -744,7 +814,7 @@ static void RectangleRoundFilled(GPU_Renderer* renderer, GPU_Target* target, flo
 
     BEGIN;
 
-    glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, GET_ALPHA(color)/255.5f);
+    renderer->SetRGBA(renderer, color.r, color.g, color.b, GET_ALPHA(color));
     
     //int numVerts = 8 + (int(M_PI*5)+1)*4;  // 8 + (15.7 + 1)*4
     float glverts[120*3];
@@ -770,7 +840,7 @@ static void RectangleRoundFilled(GPU_Renderer* renderer, GPU_Target* target, flo
 
     draw_vertices(glverts, n, GL_TRIANGLE_FAN);
     
-    glColor4ub(255, 255, 255, 255);
+    renderer->SetRGBA(renderer, 255, 255, 255, 255);
     
     END;
 }
@@ -779,7 +849,7 @@ static void Polygon(GPU_Renderer* renderer, GPU_Target* target, Uint16 n, float*
 {
     BEGIN;
 
-    glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, GET_ALPHA(color)/255.5f);
+    renderer->SetRGBA(renderer, color.r, color.g, color.b, GET_ALPHA(color));
     
     int numIndices = 2*n;
     float glverts[numIndices*3];
@@ -792,7 +862,7 @@ static void Polygon(GPU_Renderer* renderer, GPU_Target* target, Uint16 n, float*
     
     draw_vertices(glverts, n, GL_LINE_LOOP);
     
-    glColor4ub(255, 255, 255, 255);
+    renderer->SetRGBA(renderer, 255, 255, 255, 255);
 
     END;
 }
@@ -801,7 +871,7 @@ static void PolygonFilled(GPU_Renderer* renderer, GPU_Target* target, Uint16 n, 
 {
     BEGIN;
 
-    glColor4f(color.r/255.5f, color.g/255.5f, color.b/255.5f, GET_ALPHA(color)/255.5f);
+    renderer->SetRGBA(renderer, color.r, color.g, color.b, GET_ALPHA(color));
     
     int numIndices = 2*n;
     float glverts[numIndices*3];
@@ -814,7 +884,7 @@ static void PolygonFilled(GPU_Renderer* renderer, GPU_Target* target, Uint16 n, 
     
     draw_vertices(glverts, n, GL_TRIANGLE_FAN);
     
-    glColor4ub(255, 255, 255, 255);
+    renderer->SetRGBA(renderer, 255, 255, 255, 255);
 
     END;
 }
