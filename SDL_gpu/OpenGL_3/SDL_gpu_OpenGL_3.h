@@ -56,6 +56,13 @@ typedef struct TargetData_OpenGL_3
     #ifdef SDL_GPU_USE_SDL2
     SDL_GLContext context;
     #endif
+    
+    // Tier 3 rendering
+    unsigned int blit_VAO;
+    unsigned int blit_VBO;
+    int position_loc[2], texcoord_loc[2], color_loc[2];
+    
+    int modelViewProjection_loc[2];
 } TargetData_OpenGL_3;
 
 
