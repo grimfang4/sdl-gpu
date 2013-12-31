@@ -824,6 +824,14 @@ const char* GPU_GetShaderMessage(void)
 	return current_renderer->GetShaderMessage(current_renderer);
 }
 
+int GPU_GetAttribLocation(Uint32 program_object, const char* attrib_name)
+{
+	if(current_renderer == NULL || current_renderer->GetAttribLocation == NULL)
+		return 0;
+	
+	return current_renderer->GetAttribLocation(current_renderer, program_object, attrib_name);
+}
+
 int GPU_GetUniformLocation(Uint32 program_object, const char* uniform_name)
 {
 	if(current_renderer == NULL || current_renderer->GetUniformLocation == NULL)
@@ -832,7 +840,28 @@ int GPU_GetUniformLocation(Uint32 program_object, const char* uniform_name)
 	return current_renderer->GetUniformLocation(current_renderer, program_object, uniform_name);
 }
 
+GPU_ShaderBlock GPU_LoadShaderBlock(Uint32 program_object, const char* position_name, const char* texcoord_name, const char* color_name, const char* modelViewMatrix_name)
+{
+	if(current_renderer == NULL || current_renderer->LoadShaderBlock == NULL)
+    {
+        GPU_ShaderBlock b;
+        b.position_loc = -1;
+        b.texcoord_loc = -1;
+        b.color_loc = -1;
+        b.modelViewProjection_loc = -1;
+		return b;
+    }
+	
+	return current_renderer->LoadShaderBlock(current_renderer, program_object, position_name, texcoord_name, color_name, modelViewMatrix_name);
+}
 
+void GPU_SetShaderBlock(GPU_ShaderBlock block)
+{
+	if(current_renderer == NULL || current_renderer->SetShaderBlock == NULL)
+		return;
+	
+	current_renderer->SetShaderBlock(current_renderer, block);
+}
 
 void GPU_GetUniformiv(Uint32 program_object, int location, int* values)
 {

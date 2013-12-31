@@ -618,11 +618,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
         #ifdef SDL_GPU_USE_GL_TIER3
         TARGET_DATA* data = ((TARGET_DATA*)target->data);
         // Get locations of the attributes in the shader
-        data->position_loc[0] = glGetAttribLocation(p, "gpu_Vertex");
-        data->texcoord_loc[0] = glGetAttribLocation(p, "gpu_TexCoord");
-        data->color_loc[0] = glGetAttribLocation(p, "gpu_Color");
-        
-        data->modelViewProjection_loc[0] = GPU_GetUniformLocation(p, "modelViewProjection");
+        data->shader_block[0] = GPU_LoadShaderBlock(p, "gpu_Vertex", "gpu_TexCoord", "gpu_Color", "modelViewProjection");
         #endif
         
         // Untextured shader
@@ -647,11 +643,8 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
         
         #ifdef SDL_GPU_USE_GL_TIER3
         // Get locations of the attributes in the shader
-        data->position_loc[1] = glGetAttribLocation(p, "gpu_Vertex");
-        data->texcoord_loc[1] = glGetAttribLocation(p, "gpu_TexCoord");
-        data->color_loc[1] = glGetAttribLocation(p, "gpu_Color");
-        
-        data->modelViewProjection_loc[1] = GPU_GetUniformLocation(p, "modelViewProjection");
+        data->shader_block[1] = GPU_LoadShaderBlock(p, "gpu_Vertex", "gpu_TexCoord", "gpu_Color", "modelViewProjection");
+        GPU_SetShaderBlock(data->shader_block[0]);
         
         // Create vertex array container and buffer
         glGenVertexArrays(1, &data->blit_VAO);
@@ -2810,39 +2803,29 @@ static void FlushBlitBuffer(GPU_Renderer* renderer)
         
         // Upload our modelviewprojection matrix
         float mvp[16];
-        int shader_index = -1;
-        if(dest->current_shader_program == dest->default_textured_shader_program)
-            shader_index = 0;
-        else if(dest->current_shader_program == dest->default_untextured_shader_program)
-            shader_index = 1;
-        if(shader_index >= 0)
-        {
-            GPU_GetModelViewProjection(mvp);
-            GPU_SetUniformMatrixfv(data->modelViewProjection_loc[shader_index], 1, 4, 4, 0, mvp);
+        GPU_GetModelViewProjection(mvp);
+        GPU_SetUniformMatrixfv(data->current_shader_block.modelViewProjection_loc, 1, 4, 4, 0, mvp);
+    
+        // Update the vertex array object's buffers
+        glBindVertexArray(data->blit_VAO);
         
-            // Update the vertex array object's buffers
-            glBindVertexArray(data->blit_VAO);
-            
-            // Upload blit buffer to a single buffer object
-            glBindBuffer(GL_ARRAY_BUFFER, data->blit_VBO);
-            
-            // Copy the whole blit buffer to the GPU
-            glBufferData(GL_ARRAY_BUFFER, GPU_BLIT_BUFFER_STRIDE * rdata->blit_buffer_size, rdata->blit_buffer, GL_STREAM_DRAW);  // Creates space on the GPU and fills it with data.
-            
-            // Specify the formatting of the blit buffer
-            glEnableVertexAttribArray(data->position_loc[shader_index]);  // Tell GL to use client-side attribute data
-            glVertexAttribPointer(data->position_loc[shader_index], 3, GL_FLOAT, GL_FALSE, GPU_BLIT_BUFFER_STRIDE, 0);  // Tell how the data is formatted
-            glEnableVertexAttribArray(data->texcoord_loc[shader_index]);
-            glVertexAttribPointer(data->texcoord_loc[shader_index], 2, GL_FLOAT, GL_FALSE, GPU_BLIT_BUFFER_STRIDE, (void*)(GPU_BLIT_BUFFER_TEX_COORD_OFFSET * sizeof(float)));
-            glEnableVertexAttribArray(data->color_loc[shader_index]);
-            glVertexAttribPointer(data->color_loc[shader_index], 4, GL_FLOAT, GL_FALSE, GPU_BLIT_BUFFER_STRIDE, (void*)(GPU_BLIT_BUFFER_COLOR_OFFSET * sizeof(float)));
-            
-            // FIXME: This won't work without a block of location values so I can use the VBO...  So no custom shaders.
-            // My options are to add a shader block struct that is initialized via API call or to use static binding locations (shader layout).
-            glDrawArrays(GL_TRIANGLES, 0, rdata->blit_buffer_size);
-              
-            glBindVertexArray(0);
-        }
+        // Upload blit buffer to a single buffer object
+        glBindBuffer(GL_ARRAY_BUFFER, data->blit_VBO);
+        
+        // Copy the whole blit buffer to the GPU
+        glBufferData(GL_ARRAY_BUFFER, GPU_BLIT_BUFFER_STRIDE * rdata->blit_buffer_size, rdata->blit_buffer, GL_STREAM_DRAW);  // Creates space on the GPU and fills it with data.
+        
+        // Specify the formatting of the blit buffer
+        glEnableVertexAttribArray(data->current_shader_block.position_loc);  // Tell GL to use client-side attribute data
+        glVertexAttribPointer(data->current_shader_block.position_loc, 3, GL_FLOAT, GL_FALSE, GPU_BLIT_BUFFER_STRIDE, 0);  // Tell how the data is formatted
+        glEnableVertexAttribArray(data->current_shader_block.texcoord_loc);
+        glVertexAttribPointer(data->current_shader_block.texcoord_loc, 2, GL_FLOAT, GL_FALSE, GPU_BLIT_BUFFER_STRIDE, (void*)(GPU_BLIT_BUFFER_TEX_COORD_OFFSET * sizeof(float)));
+        glEnableVertexAttribArray(data->current_shader_block.color_loc);
+        glVertexAttribPointer(data->current_shader_block.color_loc, 4, GL_FLOAT, GL_FALSE, GPU_BLIT_BUFFER_STRIDE, (void*)(GPU_BLIT_BUFFER_COLOR_OFFSET * sizeof(float)));
+        
+        glDrawArrays(GL_TRIANGLES, 0, rdata->blit_buffer_size);
+        
+        glBindVertexArray(0);
 
 #endif
 
@@ -3044,17 +3027,27 @@ static void DetachShader(GPU_Renderer* renderer, Uint32 program_object, Uint32 s
 
 static void ActivateShaderProgram(GPU_Renderer* renderer, Uint32 program_object)
 {
+    GPU_Target* target = renderer->current_target;
     #ifndef SDL_GPU_DISABLE_SHADERS
-    if(renderer->current_target == NULL || renderer->current_target->current_shader_program == program_object)
+    if(target == NULL || target->current_shader_program == program_object)
         return;
     
     if(program_object == 0) // Implies default shader
-        program_object = renderer->current_target->default_untextured_shader_program;
+        program_object = target->default_untextured_shader_program;
     
     glUseProgram(program_object);
+    
+        #ifdef SDL_GPU_USE_GL_TIER3
+        // Set up our shader attribute and uniform locations
+        TARGET_DATA* data = ((TARGET_DATA*)target->data);
+        if(program_object == target->default_textured_shader_program)
+            data->current_shader_block = data->shader_block[0];
+        else if(program_object == target->default_untextured_shader_program)
+            data->current_shader_block = data->shader_block[1];
+        #endif
     #endif
     
-    renderer->current_target->current_shader_program = program_object;  // TODO: Change to a property of GPU_Target.
+    target->current_shader_program = program_object;
 }
 
 static void DeactivateShaderProgram(GPU_Renderer* renderer)
@@ -3067,6 +3060,15 @@ static const char* GetShaderMessage(GPU_Renderer* renderer)
     return shader_message;
 }
 
+static int GetAttribLocation(GPU_Renderer* renderer, Uint32 program_object, const char* attrib_name)
+{
+    #ifndef SDL_GPU_DISABLE_SHADERS
+    return glGetAttribLocation(program_object, attrib_name);
+    #else
+    return -1;
+    #endif
+}
+
 static int GetUniformLocation(GPU_Renderer* renderer, Uint32 program_object, const char* uniform_name)
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
@@ -3076,6 +3078,27 @@ static int GetUniformLocation(GPU_Renderer* renderer, Uint32 program_object, con
     #endif
 }
 
+static GPU_ShaderBlock LoadShaderBlock(GPU_Renderer* renderer, Uint32 program_object, const char* position_name, const char* texcoord_name, const char* color_name, const char* modelViewMatrix_name)
+{
+    GPU_ShaderBlock b;
+    b.position_loc = renderer->GetAttribLocation(renderer, program_object, position_name);
+    b.texcoord_loc = renderer->GetAttribLocation(renderer, program_object, texcoord_name);
+    b.color_loc = renderer->GetAttribLocation(renderer, program_object, color_name);
+    b.modelViewProjection_loc = renderer->GetUniformLocation(renderer, program_object, modelViewMatrix_name);
+    
+    return b;
+}
+
+static void SetShaderBlock(GPU_Renderer* renderer, GPU_ShaderBlock block)
+{
+    #ifdef SDL_GPU_USE_GL_TIER3
+    GPU_Target* target = renderer->current_target;
+    if(target == NULL)
+        return;
+    TARGET_DATA* data = ((TARGET_DATA*)target->data);
+    data->current_shader_block = block;
+    #endif
+}
 
 
 static void GetUniformiv(GPU_Renderer* renderer, Uint32 program_object, int location, int* values)
@@ -3289,7 +3312,10 @@ static void SetUniformMatrixfv(GPU_Renderer* renderer, int location, int num_mat
     renderer->ActivateShaderProgram = &ActivateShaderProgram; \
     renderer->DeactivateShaderProgram = &DeactivateShaderProgram; \
     renderer->GetShaderMessage = &GetShaderMessage; \
+    renderer->GetAttribLocation = &GetAttribLocation; \
     renderer->GetUniformLocation = &GetUniformLocation; \
+    renderer->LoadShaderBlock = &LoadShaderBlock; \
+    renderer->SetShaderBlock = &SetShaderBlock; \
     renderer->GetUniformiv = &GetUniformiv; \
     renderer->SetUniformi = &SetUniformi; \
     renderer->SetUniformiv = &SetUniformiv; \
