@@ -147,7 +147,6 @@ void _GPU_PushMatrix()
         GPU_LogError("GPU_PushMatrix() failed to push to a full stack!\n");
         return;
     }
-    GPU_LogError("Pushing stack of size %u\n", stack->size);
     _GPU_MatrixCopy(stack->matrix[stack->size], stack->matrix[stack->size-1]);
     stack->size++;
 }
@@ -160,7 +159,6 @@ void _GPU_PopMatrix()
         GPU_LogError("GPU_PopMatrix() failed to pop an empty stack!\n");
         return;
     }
-    GPU_LogError("Popping stack of size %u\n", stack->size);
     stack->size--;
 }
 
