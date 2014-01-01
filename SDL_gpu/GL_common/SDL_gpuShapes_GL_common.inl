@@ -25,12 +25,6 @@ static void Circle(GPU_Renderer* renderer, GPU_Target* target, float x, float y,
 
 
 
-#ifdef SDL_GPU_USE_SDL2
-    #define GET_ALPHA(sdl_color) (sdl_color.a)
-#else
-    #define GET_ALPHA(sdl_color) (sdl_color.unused)
-#endif
-
 
 #define BEGIN \
 	if(target == NULL) \
@@ -260,7 +254,7 @@ static void Pixel(GPU_Renderer* renderer, GPU_Target* target, float x, float y, 
 		glverts[3] = color.r/255.0f;
 		glverts[4] = color.g/255.0f;
 		glverts[5] = color.b/255.0f;
-		glverts[6] = color.a/255.0f;
+		glverts[6] = GET_ALPHA(color)/255.0f;
         #else
 		renderer->SetRGBA(renderer, color.r, color.g, color.b, GET_ALPHA(color));
 		
@@ -286,7 +280,7 @@ static void Line(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1,
 		float r = color.r/255.0f;
 		float g = color.g/255.0f;
 		float b = color.b/255.0f;
-		float a = color.a/255.0f;
+		float a = GET_ALPHA(color)/255.0f;
 		GLfloat glverts[14];
 
 		glverts[0] = x1;

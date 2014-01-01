@@ -45,6 +45,12 @@ int strcasecmp(const char*, const char *);
 #endif
 
 
+#ifdef SDL_GPU_USE_SDL2
+    #define GET_ALPHA(sdl_color) (sdl_color.a)
+#else
+    #define GET_ALPHA(sdl_color) (sdl_color.unused)
+#endif
+
 
 #ifndef GL_VERTEX_SHADER
     #ifndef SDL_GPU_DISABLE_SHADERS
@@ -78,6 +84,30 @@ void main(void)\n\
 {\n\
 	color = gl_Color;\n\
 	gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\n\
+}"
+
+
+#define TEXTURED_FRAGMENT_SHADER_SOURCE \
+"#version 120\n\
+\
+varying vec4 color;\n\
+varying vec2 texCoord;\n\
+\
+uniform sampler2D tex;\n\
+\
+void main(void)\n\
+{\n\
+    gl_FragColor = texture2D(tex, texCoord) * color;\n\
+}"
+
+#define UNTEXTURED_FRAGMENT_SHADER_SOURCE \
+"#version 120\n\
+\
+varying vec4 color;\n\
+\
+void main(void)\n\
+{\n\
+    gl_FragColor = color;\n\
 }"
 
 #else
@@ -115,10 +145,10 @@ void main(void)\n\
 	color = gpu_Color;\n\
 	gl_Position = modelViewProjection * vec4(gpu_Vertex, 1.0);\n\
 }"
-#endif
+
 
 #define TEXTURED_FRAGMENT_SHADER_SOURCE \
-"#version 120\n\
+"#version 130\n\
 \
 varying vec4 color;\n\
 varying vec2 texCoord;\n\
@@ -131,7 +161,7 @@ void main(void)\n\
 }"
 
 #define UNTEXTURED_FRAGMENT_SHADER_SOURCE \
-"#version 120\n\
+"#version 130\n\
 \
 varying vec4 color;\n\
 \
@@ -139,6 +169,9 @@ void main(void)\n\
 {\n\
     gl_FragColor = color;\n\
 }"
+
+#endif
+
 
 
 
@@ -461,8 +494,10 @@ static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request,
     RENDERER_DATA* rdata = (RENDERER_DATA*)renderer->data;
     rdata->blit_buffer_max_size = GPU_BLIT_BUFFER_INIT_MAX_SIZE;
     rdata->blit_buffer_size = 0;
-    int numFloatsPerVertex = 5;  // x, y, z, s, t
-    rdata->blit_buffer = (float*)malloc(sizeof(float)*rdata->blit_buffer_max_size*numFloatsPerVertex);
+    int blit_buffer_storage_size = GPU_BLIT_BUFFER_INIT_MAX_SIZE*GPU_BLIT_BUFFER_STRIDE;
+    rdata->blit_buffer = (float*)malloc(blit_buffer_storage_size);
+    // FIXME: This hides a bug in the usage of the blit buffer.  It should not be needed.
+    //memset(rdata->blit_buffer, 0, blit_buffer_storage_size);
     
     return renderer->current_target;
 }
@@ -1896,17 +1931,18 @@ static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
     if(target == renderer->current_target)
         renderer->current_target = NULL;
 
+    TARGET_DATA* data = ((TARGET_DATA*)target->data);
+    
     if(enabled_features & GPU_FEATURE_RENDER_TARGETS)
     {
         flushAndClearBlitBufferIfCurrentFramebuffer(renderer, target);
-        glDeleteFramebuffers(1, &((TARGET_DATA*)target->data)->handle);
+        glDeleteFramebuffers(1, &data->handle);
     }
 
     if(target->image != NULL)
         target->image->target = NULL;  // Remove reference to this object
     
     // Free specialized data
-    TARGET_DATA* data = ((TARGET_DATA*)target->data);
     
     #ifdef SDL_GPU_USE_SDL2
     if(data->context != 0)
@@ -1919,6 +1955,7 @@ static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
     #endif
     
     free(target->data);
+    target->data = NULL;
     free(target);
 }
 
@@ -1988,7 +2025,7 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_T
         float r =  data->color.r/255.0f;
         float g =  data->color.g/255.0f;
         float b =  data->color.b/255.0f;
-        float a =  data->color.a/255.0f;
+        float a =  GET_ALPHA(data->color)/255.0f;
         #endif
 
         blit_buffer[vert_index] = dx1;
@@ -2241,7 +2278,7 @@ static int BlitTransformX(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcr
         float r =  data->color.r/255.0f;
         float g =  data->color.g/255.0f;
         float b =  data->color.b/255.0f;
-        float a =  data->color.a/255.0f;
+        float a =  GET_ALPHA(data->color)/255.0f;
         #endif
 
         blit_buffer[vert_index] = dx1;
@@ -2486,7 +2523,7 @@ static void SetRGBA(GPU_Renderer* renderer, Uint8 r, Uint8 g, Uint8 b, Uint8 a)
     data->color.r = r;
     data->color.g = g;
     data->color.b = b;
-    data->color.a = a;
+    GET_ALPHA(data->color) = a;
     #else
     glColor4f(r/255.01f, g/255.01f, b/255.01f, a/255.01f);
     #endif
