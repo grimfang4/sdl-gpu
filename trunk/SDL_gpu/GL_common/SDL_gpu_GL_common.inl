@@ -2778,10 +2778,10 @@ static void FlushBlitBuffer(GPU_Renderer* renderer)
     RENDERER_DATA* rdata = (RENDERER_DATA*)renderer->data;
     if(rdata->blit_buffer_size > 0 && rdata->last_target != NULL && rdata->last_image != NULL)
     {
-        Uint8 isRTT = (renderer->current_target->image != NULL);
 
         glEnable(GL_TEXTURE_2D);
         GPU_Target* dest = rdata->last_target;
+        Uint8 isRTT = (dest->image != NULL);
 
         // Modify the viewport and projection matrix if rendering to a texture
         GLint vp[4];

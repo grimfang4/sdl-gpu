@@ -53,7 +53,7 @@ static void Circle(GPU_Renderer* renderer, GPU_Target* target, float x, float y,
         renderer->ActivateShaderProgram(renderer, target->default_untextured_shader_program); \
     \
 	GLint vp[4]; \
-    if(renderer->current_target != target) \
+    if(target->image != NULL) \
     { \
         glGetIntegerv(GL_VIEWPORT, vp); \
         \
@@ -99,7 +99,7 @@ static void Circle(GPU_Renderer* renderer, GPU_Target* target, float x, float y,
         renderer->ActivateShaderProgram(renderer, target->default_textured_shader_program); \
     \
 	GLint vp[4]; \
-    if(renderer->current_target != target) \
+    if(target->image != NULL) \
     { \
         glGetIntegerv(GL_VIEWPORT, vp); \
         \
@@ -118,7 +118,7 @@ static void Circle(GPU_Renderer* renderer, GPU_Target* target, float x, float y,
     }
 
 #define END \
-    if(renderer->current_target != target) \
+    if(target->image != NULL) \
     { \
         glViewport(vp[0], vp[1], vp[2], vp[3]); \
          \
