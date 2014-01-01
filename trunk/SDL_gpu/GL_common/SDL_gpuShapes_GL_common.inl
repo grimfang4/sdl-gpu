@@ -220,6 +220,42 @@ static inline void draw_vertices_textured(GLfloat* glverts, GLfloat* gltexcoords
         glDrawArrays(prim_type, 0, num_vertices);
         glDisableClientState(GL_TEXTURE_COORD_ARRAY);
         glDisableClientState(GL_VERTEX_ARRAY);
+    #elif defined(SDL_GPU_USE_GL_TIER3)
+    
+        GPU_Target* target = GPU_GetCurrentTarget();
+        if(target == NULL)
+            return;
+
+        TARGET_DATA* data = ((TARGET_DATA*)target->data);
+        
+        int floats_per_vertex = 9;  // position (3), texcoord (2), color (4)
+        int buffer_stride = floats_per_vertex * sizeof(float);
+        
+        // Upload our modelviewprojection matrix
+        float mvp[16];
+        GPU_GetModelViewProjection(mvp);
+        GPU_SetUniformMatrixfv(data->current_shader_block.modelViewProjection_loc, 1, 4, 4, 0, mvp);
+    
+        // Update the vertex array object's buffers
+        glBindVertexArray(data->blit_VAO);
+        
+        // Upload blit buffer to a single buffer object
+        glBindBuffer(GL_ARRAY_BUFFER, data->blit_VBO);
+        
+        // Copy the whole blit buffer to the GPU
+        glBufferData(GL_ARRAY_BUFFER, buffer_stride * num_vertices, glverts, GL_STREAM_DRAW);  // Creates space on the GPU and fills it with data.
+        
+        // Specify the formatting of the blit buffer
+        glEnableVertexAttribArray(data->current_shader_block.position_loc);  // Tell GL to use client-side attribute data
+        glVertexAttribPointer(data->current_shader_block.position_loc, 3, GL_FLOAT, GL_FALSE, buffer_stride, 0);  // Tell how the data is formatted
+        glEnableVertexAttribArray(data->current_shader_block.texcoord_loc);
+        glVertexAttribPointer(data->current_shader_block.texcoord_loc, 2, GL_FLOAT, GL_FALSE, buffer_stride, (void*)(3 * sizeof(float)));
+        glEnableVertexAttribArray(data->current_shader_block.color_loc);
+        glVertexAttribPointer(data->current_shader_block.color_loc, 4, GL_FLOAT, GL_FALSE, buffer_stride, (void*)(5 * sizeof(float)));
+        
+        glDrawArrays(prim_type, 0, num_vertices);
+        
+        glBindVertexArray(0);
     #endif
 }
 
@@ -630,6 +666,35 @@ static void TriFilled(GPU_Renderer* renderer, GPU_Target* target, float x1, floa
 {
     BEGIN;
 
+    #ifdef SDL_GPU_USE_GL_TIER3
+    float r = color.r/255.0f;
+    float g = color.g/255.0f;
+    float b = color.b/255.0f;
+    float a = GET_ALPHA(color)/255.0f;
+    GLfloat glverts[21];
+
+    glverts[0] = x1;
+    glverts[1] = y1;
+    glverts[2] = z;
+    glverts[3] = r;
+    glverts[4] = g;
+    glverts[5] = b;
+    glverts[6] = a;
+    glverts[7] = x2;
+    glverts[8] = y2;
+    glverts[9] = z;
+    glverts[10] = r;
+    glverts[11] = g;
+    glverts[12] = b;
+    glverts[13] = a;
+    glverts[14] = x3;
+    glverts[15] = y3;
+    glverts[16] = z;
+    glverts[17] = r;
+    glverts[18] = g;
+    glverts[19] = b;
+    glverts[20] = a;
+    #else
     renderer->SetRGBA(renderer, color.r, color.g, color.b, GET_ALPHA(color));
 
     GLfloat glverts[9];
@@ -643,6 +708,7 @@ static void TriFilled(GPU_Renderer* renderer, GPU_Target* target, float x1, floa
     glverts[6] = x3;
     glverts[7] = y3;
     glverts[8] = z;
+    #endif
 
     draw_vertices(glverts, 3, GL_TRIANGLE_STRIP);
     

@@ -17,8 +17,8 @@ TARGET_DATA  // Appropriate type for the target data (via pointer)
 #include "stb_image_write.h"
 
 
-// Forces a flush when limit is reached (roughly 1000 sprites)
-#define GPU_BLIT_BUFFER_INIT_MAX_SIZE 6000
+// Forces a flush when vertex limit is reached (roughly 1000 sprites)
+#define GPU_BLIT_BUFFER_INIT_MAX_NUM_VERTICES 6000
 
 #ifndef SDL_GPU_USE_GL_TIER3
 // x, y, z, s, t
@@ -492,12 +492,10 @@ static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request,
     
     // Initialize the blit buffer
     RENDERER_DATA* rdata = (RENDERER_DATA*)renderer->data;
-    rdata->blit_buffer_max_size = GPU_BLIT_BUFFER_INIT_MAX_SIZE;
-    rdata->blit_buffer_size = 0;
-    int blit_buffer_storage_size = GPU_BLIT_BUFFER_INIT_MAX_SIZE*GPU_BLIT_BUFFER_STRIDE;
+    rdata->blit_buffer_max_num_vertices = GPU_BLIT_BUFFER_INIT_MAX_NUM_VERTICES;
+    rdata->blit_buffer_num_vertices = 0;
+    int blit_buffer_storage_size = GPU_BLIT_BUFFER_INIT_MAX_NUM_VERTICES*GPU_BLIT_BUFFER_STRIDE;
     rdata->blit_buffer = (float*)malloc(blit_buffer_storage_size);
-    // FIXME: This hides a bug in the usage of the blit buffer.  It should not be needed.
-    //memset(rdata->blit_buffer, 0, blit_buffer_storage_size);
     
     return renderer->current_target;
 }
@@ -2014,13 +2012,13 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_T
         RENDERER_DATA* rdata = (RENDERER_DATA*)renderer->data;
         float* blit_buffer = rdata->blit_buffer;
 
-        if(rdata->blit_buffer_size + 6 >= rdata->blit_buffer_max_size)
+        if(rdata->blit_buffer_num_vertices + 6 >= rdata->blit_buffer_max_num_vertices)
             renderer->FlushBlitBuffer(renderer);
 
-        int vert_index = GPU_BLIT_BUFFER_VERTEX_OFFSET + rdata->blit_buffer_size*GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
-        int tex_index = GPU_BLIT_BUFFER_TEX_COORD_OFFSET + rdata->blit_buffer_size*GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
+        int vert_index = GPU_BLIT_BUFFER_VERTEX_OFFSET + rdata->blit_buffer_num_vertices*GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
+        int tex_index = GPU_BLIT_BUFFER_TEX_COORD_OFFSET + rdata->blit_buffer_num_vertices*GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
         #ifdef SDL_GPU_USE_GL_TIER3
-        int color_index = GPU_BLIT_BUFFER_COLOR_OFFSET + rdata->blit_buffer_size*GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
+        int color_index = GPU_BLIT_BUFFER_COLOR_OFFSET + rdata->blit_buffer_num_vertices*GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
         TARGET_DATA* data = (TARGET_DATA*)dest->data;
         float r =  data->color.r/255.0f;
         float g =  data->color.g/255.0f;
@@ -2118,7 +2116,7 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_T
         blit_buffer[color_index+3] = a;
         #endif
 
-        rdata->blit_buffer_size += 6;
+        rdata->blit_buffer_num_vertices += 6;
     }
 
     return 0;
@@ -2267,13 +2265,13 @@ static int BlitTransformX(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcr
         RENDERER_DATA* rdata = (RENDERER_DATA*)renderer->data;
         float* blit_buffer = rdata->blit_buffer;
 
-        if(rdata->blit_buffer_size + 6 >= rdata->blit_buffer_max_size)
+        if(rdata->blit_buffer_num_vertices + 6 >= rdata->blit_buffer_max_num_vertices)
             renderer->FlushBlitBuffer(renderer);
 
-        int vert_index = GPU_BLIT_BUFFER_VERTEX_OFFSET + rdata->blit_buffer_size*GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
-        int tex_index = GPU_BLIT_BUFFER_TEX_COORD_OFFSET + rdata->blit_buffer_size*GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
+        int vert_index = GPU_BLIT_BUFFER_VERTEX_OFFSET + rdata->blit_buffer_num_vertices*GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
+        int tex_index = GPU_BLIT_BUFFER_TEX_COORD_OFFSET + rdata->blit_buffer_num_vertices*GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
         #ifdef SDL_GPU_USE_GL_TIER3
-        int color_index = GPU_BLIT_BUFFER_COLOR_OFFSET + rdata->blit_buffer_size*GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
+        int color_index = GPU_BLIT_BUFFER_COLOR_OFFSET + rdata->blit_buffer_num_vertices*GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
         TARGET_DATA* data = (TARGET_DATA*)dest->data;
         float r =  data->color.r/255.0f;
         float g =  data->color.g/255.0f;
@@ -2371,7 +2369,7 @@ static int BlitTransformX(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcr
         blit_buffer[color_index+3] = a;
         #endif
 
-        rdata->blit_buffer_size += 6;
+        rdata->blit_buffer_num_vertices += 6;
     }
 
     return 0;
@@ -2776,7 +2774,7 @@ static void ClearRGBA(GPU_Renderer* renderer, GPU_Target* target, Uint8 r, Uint8
 static void FlushBlitBuffer(GPU_Renderer* renderer)
 {
     RENDERER_DATA* rdata = (RENDERER_DATA*)renderer->data;
-    if(rdata->blit_buffer_size > 0 && rdata->last_target != NULL && rdata->last_image != NULL)
+    if(rdata->blit_buffer_num_vertices > 0 && rdata->last_target != NULL && rdata->last_image != NULL)
     {
 
         glEnable(GL_TEXTURE_2D);
@@ -2820,7 +2818,7 @@ static void FlushBlitBuffer(GPU_Renderer* renderer)
         float* vertex_pointer = rdata->blit_buffer + GPU_BLIT_BUFFER_VERTEX_OFFSET;
         float* texcoord_pointer = rdata->blit_buffer + GPU_BLIT_BUFFER_TEX_COORD_OFFSET;
         int i;
-        for(i = 0; i < rdata->blit_buffer_size; i++)
+        for(i = 0; i < rdata->blit_buffer_num_vertices; i += 6)
         {
             glBegin( GL_TRIANGLES );
 
@@ -2863,7 +2861,7 @@ static void FlushBlitBuffer(GPU_Renderer* renderer)
         glVertexPointer(3, GL_FLOAT, GPU_BLIT_BUFFER_STRIDE, rdata->blit_buffer + GPU_BLIT_BUFFER_VERTEX_OFFSET);
         glTexCoordPointer(2, GL_FLOAT, GPU_BLIT_BUFFER_STRIDE, rdata->blit_buffer + GPU_BLIT_BUFFER_TEX_COORD_OFFSET);
 
-        glDrawArrays(GL_TRIANGLES, 0, rdata->blit_buffer_size);
+        glDrawArrays(GL_TRIANGLES, 0, rdata->blit_buffer_num_vertices);
 
         glDisableClientState(GL_TEXTURE_COORD_ARRAY);
         glDisableClientState(GL_VERTEX_ARRAY);
@@ -2884,7 +2882,7 @@ static void FlushBlitBuffer(GPU_Renderer* renderer)
         glBindBuffer(GL_ARRAY_BUFFER, data->blit_VBO);
         
         // Copy the whole blit buffer to the GPU
-        glBufferData(GL_ARRAY_BUFFER, GPU_BLIT_BUFFER_STRIDE * rdata->blit_buffer_size, rdata->blit_buffer, GL_STREAM_DRAW);  // Creates space on the GPU and fills it with data.
+        glBufferData(GL_ARRAY_BUFFER, GPU_BLIT_BUFFER_STRIDE * rdata->blit_buffer_num_vertices, rdata->blit_buffer, GL_STREAM_DRAW);  // Creates space on the GPU and fills it with data.
         
         // Specify the formatting of the blit buffer
         glEnableVertexAttribArray(data->current_shader_block.position_loc);  // Tell GL to use client-side attribute data
@@ -2894,13 +2892,13 @@ static void FlushBlitBuffer(GPU_Renderer* renderer)
         glEnableVertexAttribArray(data->current_shader_block.color_loc);
         glVertexAttribPointer(data->current_shader_block.color_loc, 4, GL_FLOAT, GL_FALSE, GPU_BLIT_BUFFER_STRIDE, (void*)(GPU_BLIT_BUFFER_COLOR_OFFSET * sizeof(float)));
         
-        glDrawArrays(GL_TRIANGLES, 0, rdata->blit_buffer_size);
+        glDrawArrays(GL_TRIANGLES, 0, rdata->blit_buffer_num_vertices);
         
         glBindVertexArray(0);
 
 #endif
 
-        rdata->blit_buffer_size = 0;
+        rdata->blit_buffer_num_vertices = 0;
 
         if(dest->useClip)
         {
