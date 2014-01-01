@@ -131,8 +131,8 @@ int main(int argc, char* argv[])
 	
 	printf("Average FPS: %.2f\n", 1000.0f*frameCount/(SDL_GetTicks() - startTime));
 	
-	GPU_FreeImage(mode2image);
 	GPU_FreeTarget(mode2target);
+	GPU_FreeImage(mode2image);
 	GPU_FreeImage(image);
 	GPU_Quit();
 	
