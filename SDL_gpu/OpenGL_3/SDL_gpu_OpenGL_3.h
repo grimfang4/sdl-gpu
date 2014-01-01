@@ -33,8 +33,8 @@ typedef struct RendererData_OpenGL_3
 	GPU_Image* last_image;
 	GPU_Target* last_target;
 	float* blit_buffer;  // Holds sets of 4 vertices, each with interleaved position, tex coords, and colors (e.g. [x0, y0, z0, s0, t0, r0, g0, b0, a0, ...]).
-	int blit_buffer_size;
-	int blit_buffer_max_size;
+	int blit_buffer_num_vertices;
+	int blit_buffer_max_num_vertices;
 } RendererData_OpenGL_3;
 
 typedef struct ImageData_OpenGL_3

@@ -38,8 +38,8 @@ typedef struct RendererData_GLES_2
 	GPU_Image* last_image;
 	GPU_Target* last_target;
 	float* blit_buffer;  // Holds sets of 4 vertices and 4 tex coords interleaved (e.g. [x0, y0, z0, s0, t0, ...]).
-	int blit_buffer_size;
-	int blit_buffer_max_size;
+	int blit_buffer_num_vertices;
+	int blit_buffer_max_num_vertices;
 } RendererData_GLES_2;
 
 typedef struct ImageData_GLES_2
