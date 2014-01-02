@@ -34,7 +34,7 @@ int main(int argc, char* argv[])
 		return -1;
 	
 	GPU_Image* mode2image = GPU_CreateImage(400, 400, 4);
-	GPU_Target* mode2target = GPU_LoadTarget(mode2image);
+	GPU_LoadTarget(mode2image);
 	
 	SDL_Color circleColor = {255, 0, 0, 128};
 	SDL_Color circleColor2 = {0, 0, 255, 128};
@@ -97,9 +97,14 @@ int main(int argc, char* argv[])
             GPU_BlitScale(image, NULL, screen, image->w*2 + 50, image->h/2 + 50, 0.7f, 0.7f);
             
             GPU_CircleFilled(screen, 50 + 70, 50 + 70, 20, circleColor2);
+            
+            GPU_Blit(image2, NULL, screen, screen->w - image3->w - image2->w/2, screen->h - image2->h/2);
+            GPU_Blit(image3, NULL, screen, screen->w - image3->w/2, screen->h - image3->h/2);
         }
         else if(mode == 1)
         {
+            GPU_Target* mode2target = mode2image->target;
+            
             GPU_ClearRGBA(mode2target, 255, 255, 255, 255);
             
             SDL_Color red = {255, 0, 0, 255};
@@ -131,7 +136,6 @@ int main(int argc, char* argv[])
 	
 	printf("Average FPS: %.2f\n", 1000.0f*frameCount/(SDL_GetTicks() - startTime));
 	
-	GPU_FreeTarget(mode2target);
 	GPU_FreeImage(mode2image);
 	GPU_FreeImage(image);
 	GPU_Quit();
