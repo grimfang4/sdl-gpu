@@ -112,6 +112,7 @@ void main(void)\n\
 
 #else
 // Tier 3 uses shader attributes to send position, texcoord, and color data for each vertex.
+#ifndef SDL_GPU_USE_GLES
 #define TEXTURED_VERTEX_SHADER_SOURCE \
 "#version 130\n\
 \
@@ -169,6 +170,75 @@ void main(void)\n\
 {\n\
     gl_FragColor = color;\n\
 }"
+#else
+// GLES
+#define TEXTURED_VERTEX_SHADER_SOURCE \
+"#version 100\n\
+precision mediump float;\n\
+precision mediump int;\n\
+\
+attribute vec3 gpu_Vertex;\n\
+attribute vec2 gpu_TexCoord;\n\
+attribute vec4 gpu_Color;\n\
+uniform mat4 modelViewProjection;\n\
+\
+varying vec4 color;\n\
+varying vec2 texCoord;\n\
+\
+void main(void)\n\
+{\n\
+	color = gpu_Color;\n\
+	texCoord = vec2(gpu_TexCoord);\n\
+	gl_Position = modelViewProjection * vec4(gpu_Vertex, 1.0);\n\
+}"
+
+// Tier 3 uses shader attributes to send position, texcoord, and color data for each vertex.
+#define UNTEXTURED_VERTEX_SHADER_SOURCE \
+"#version 100\n\
+precision mediump float;\n\
+precision mediump int;\n\
+\
+attribute vec3 gpu_Vertex;\n\
+attribute vec4 gpu_Color;\n\
+uniform mat4 modelViewProjection;\n\
+\
+varying vec4 color;\n\
+\
+void main(void)\n\
+{\n\
+	color = gpu_Color;\n\
+	gl_Position = modelViewProjection * vec4(gpu_Vertex, 1.0);\n\
+}"
+
+
+#define TEXTURED_FRAGMENT_SHADER_SOURCE \
+"#version 100\n\
+precision mediump float;\n\
+precision mediump int;\n\
+\
+varying vec4 color;\n\
+varying vec2 texCoord;\n\
+\
+uniform sampler2D tex;\n\
+\
+void main(void)\n\
+{\n\
+    gl_FragColor = texture2D(tex, texCoord) * color;\n\
+}"
+
+#define UNTEXTURED_FRAGMENT_SHADER_SOURCE \
+"#version 100\n\
+precision mediump float;\n\
+precision mediump int;\n\
+\
+varying vec4 color;\n\
+\
+void main(void)\n\
+{\n\
+    gl_FragColor = color;\n\
+}"
+
+#endif
 
 #endif
 
@@ -705,8 +775,10 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
         GPU_SetShaderBlock(data->shader_block[0]);
         
         // Create vertex array container and buffer
+        #if !defined(SDL_GPU_USE_GLES) || SDL_GPU_GLES_MAJOR_VERSION != 2
         glGenVertexArrays(1, &data->blit_VAO);
         glBindVertexArray(data->blit_VAO);
+        #endif
         
         glGenBuffers(1, &data->blit_VBO);
         #endif
@@ -942,9 +1014,11 @@ static GPU_Image* CreateUninitializedImage(GPU_Renderer* renderer, Uint16 w, Uin
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+    #if defined(SDL_GPU_USE_GLES) && (SDL_GPU_GLES_TIER == 1)
     glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
     glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
+    #endif
 
     GPU_Image* result = (GPU_Image*)malloc(sizeof(GPU_Image));
     IMAGE_DATA* data = (IMAGE_DATA*)malloc(sizeof(IMAGE_DATA));
@@ -1914,7 +1988,7 @@ static GPU_Target* LoadTarget(GPU_Renderer* renderer, GPU_Image* image)
     result->h = image->h;
     
     result->camera = GPU_GetDefaultCamera();
-
+    
     result->useClip = 0;
     result->clipRect.x = 0;
     result->clipRect.y = 0;
@@ -1960,7 +2034,9 @@ static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
     if(target->windowID != 0)
     {
         glDeleteBuffers(1, &data->blit_VBO);
+        #if !defined(SDL_GPU_USE_GLES) || SDL_GPU_GLES_MAJOR_VERSION != 2
         glDeleteVertexArrays(1, &data->blit_VAO);
+        #endif
     }
     #endif
     
@@ -2894,7 +2970,9 @@ static void FlushBlitBuffer(GPU_Renderer* renderer)
         GPU_SetUniformMatrixfv(data->current_shader_block.modelViewProjection_loc, 1, 4, 4, 0, mvp);
     
         // Update the vertex array object's buffers
+        #if !defined(SDL_GPU_USE_GLES) || SDL_GPU_GLES_MAJOR_VERSION != 2
         glBindVertexArray(data->blit_VAO);
+        #endif
         
         // Upload blit buffer to a single buffer object
         glBindBuffer(GL_ARRAY_BUFFER, data->blit_VBO);
@@ -2912,7 +2990,9 @@ static void FlushBlitBuffer(GPU_Renderer* renderer)
         
         glDrawArrays(GL_TRIANGLES, 0, rdata->blit_buffer_num_vertices);
         
+        #if !defined(SDL_GPU_USE_GLES) || SDL_GPU_GLES_MAJOR_VERSION != 2
         glBindVertexArray(0);
+        #endif
 
 #endif
 
@@ -3317,7 +3397,22 @@ static void SetUniformMatrixfv(GPU_Renderer* renderer, int location, int num_mat
     if(num_rows < 2 || num_rows > 4 || num_columns < 2 || num_columns > 4)
     {
         GPU_LogError("GPU_SetUniformMatrixfv(): Given invalid dimensions (%dx%d).\n", num_rows, num_columns);
+        return;
     }
+    #if defined(SDL_GPU_USE_GLES)
+    // Hide these symbols so it compiles, but make sure they never get called because GLES only supports square matrices.
+    #define glUniformMatrix2x3fv glUniformMatrix2fv
+    #define glUniformMatrix2x4fv glUniformMatrix2fv
+    #define glUniformMatrix3x2fv glUniformMatrix2fv
+    #define glUniformMatrix3x4fv glUniformMatrix2fv
+    #define glUniformMatrix4x2fv glUniformMatrix2fv
+    #define glUniformMatrix4x3fv glUniformMatrix2fv
+    if(num_rows != num_columns)
+    {
+        GPU_LogError("GPU_SetUniformMatrixfv(): GLES renderers do not accept non-square matrices (%dx%d).\n", num_rows, num_columns);
+        return;
+    }
+    #endif
     
     switch(num_rows)
     {
