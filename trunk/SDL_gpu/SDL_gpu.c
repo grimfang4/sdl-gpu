@@ -215,13 +215,13 @@ const char* GPU_GetErrorString(void)
 
 void GPU_GetVirtualCoords(float* x, float* y, float displayX, float displayY)
 {
-	if(current_renderer == NULL || current_renderer->current_target == NULL || current_renderer->current_target->windowID == 0)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->current_context_target->windowID == 0)
 		return;
 	
 	if(x != NULL)
-		*x = (displayX*current_renderer->current_target->w)/current_renderer->current_target->window_w;
+		*x = (displayX*current_renderer->current_context_target->w)/current_renderer->current_context_target->window_w;
 	if(y != NULL)
-		*y = (displayY*current_renderer->current_target->h)/current_renderer->current_target->window_h;
+		*y = (displayY*current_renderer->current_context_target->h)/current_renderer->current_context_target->window_h;
 }
 
 GPU_Rect GPU_MakeRect(float x, float y, float w, float h)
@@ -250,17 +250,17 @@ GPU_Camera GPU_GetDefaultCamera(void)
 
 GPU_Camera GPU_GetCamera(void)
 {
-	if(current_renderer == NULL || current_renderer->current_target == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return GPU_GetDefaultCamera();
-	return current_renderer->current_target->camera;
+	return current_renderer->current_context_target->camera;
 }
 
-GPU_Camera GPU_SetCamera(GPU_Camera* cam)
+GPU_Camera GPU_SetCamera(GPU_Target* target, GPU_Camera* cam)
 {
 	if(current_renderer == NULL || current_renderer->SetCamera == NULL)
 		return GPU_GetDefaultCamera();
 	
-	return current_renderer->SetCamera(current_renderer, cam);
+	return current_renderer->SetCamera(current_renderer, target, cam);
 }
 
 GPU_Image* GPU_CreateImage(Uint16 w, Uint16 h, Uint8 channels)
@@ -473,7 +473,7 @@ GPU_Target* GPU_GetCurrentTarget(void)
 	if(current_renderer == NULL)
 		return NULL;
 	
-	return current_renderer->current_target;
+	return current_renderer->current_context_target;
 }
 
 

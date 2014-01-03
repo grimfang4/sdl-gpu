@@ -34,10 +34,10 @@ typedef struct Group
 Group create_first_group()
 {
     Group g;
-    Uint32 windowID = GPU_GetCurrentRenderer()->current_target->windowID;
+    Uint32 windowID = GPU_GetCurrentRenderer()->current_context_target->windowID;
     SDL_Log("New windowID: %u\n", windowID);
     
-    g.target = GPU_GetCurrentRenderer()->current_target;
+    g.target = GPU_GetCurrentRenderer()->current_context_target;
     
     SDL_Surface* surface = SDL_LoadBMP("data/test.bmp");
     

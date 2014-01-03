@@ -395,16 +395,24 @@ static inline void flushAndClearBlitBufferIfCurrentFramebuffer(GPU_Renderer* ren
 }
 
 
-static void makeTargetCurrent(GPU_Renderer* renderer, GPU_Target* target)
+// Only for window targets, which have their own contexts.
+static void makeContextCurrent(GPU_Renderer* renderer, GPU_Target* target)
 {
-    #ifdef SDL_GPU_USE_SDL2
-    if(target == NULL || target->windowID == 0 || renderer->current_target == target)
+    if(target == NULL || target->windowID == 0 || renderer->current_context_target == target)
         return;
-    
+        
     renderer->FlushBlitBuffer(renderer);
+    
+    #ifdef SDL_GPU_USE_SDL2
     SDL_GL_MakeCurrent(SDL_GetWindowFromID(target->windowID), ((TARGET_DATA*)target->data)->context);
-    renderer->current_target = target;
+    renderer->current_context_target = target;
     #endif
+}
+
+static void prepareToRenderToTarget(GPU_Renderer* renderer, GPU_Target* target)
+{
+    // Set up the camera
+    //renderer->SetCamera(renderer, target, &target->camera);
 }
 
 static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request, Uint16 w, Uint16 h, Uint32 flags)
@@ -441,9 +449,9 @@ static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request,
 
     SDL_Window* window = NULL;
     
-    if(renderer->current_target != NULL)
+    if(renderer->current_context_target != NULL)
     {
-        window = SDL_GetWindowFromID(renderer->current_target->windowID);
+        window = SDL_GetWindowFromID(renderer->current_context_target->windowID);
     }
     
     if(window == NULL)
@@ -470,9 +478,9 @@ static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request,
     
     // Create or re-init the current target.  This also creates the GL context.
     #ifdef SDL_GPU_USE_SDL2
-    renderer->CreateTargetFromWindow(renderer, SDL_GetWindowID(window), renderer->current_target);
+    renderer->CreateTargetFromWindow(renderer, SDL_GetWindowID(window), renderer->current_context_target);
     #else
-    renderer->CreateTargetFromWindow(renderer, 0, renderer->current_target);
+    renderer->CreateTargetFromWindow(renderer, 0, renderer->current_context_target);
     #endif
     
     // Update our renderer info from the current GL context.
@@ -497,7 +505,7 @@ static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request,
     int blit_buffer_storage_size = GPU_BLIT_BUFFER_INIT_MAX_NUM_VERTICES*GPU_BLIT_BUFFER_STRIDE;
     rdata->blit_buffer = (float*)malloc(blit_buffer_storage_size);
     
-    return renderer->current_target;
+    return renderer->current_context_target;
 }
 
 
@@ -538,7 +546,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     if(created || ((TARGET_DATA*)target->data)->context == 0)
     {
         ((TARGET_DATA*)target->data)->context = SDL_GL_CreateContext(window);
-        renderer->current_target = target;
+        renderer->current_context_target = target;
     }
     else
         renderer->MakeCurrent(renderer, target, target->windowID);
@@ -720,37 +728,37 @@ static void MakeCurrent(GPU_Renderer* renderer, GPU_Target* target, Uint32 windo
     SDL_GLContext c = ((TARGET_DATA*)target->data)->context;
     if(c != 0)
     {
-        renderer->current_target = target;
+        renderer->current_context_target = target;
         SDL_GL_MakeCurrent(SDL_GetWindowFromID(windowID), c);
         // Reset camera if the window was changed
         if(target->windowID != windowID)
         {
             target->windowID = windowID;
-            renderer->SetCamera(renderer, &target->camera);
+            renderer->SetCamera(renderer, target, &target->camera);
         }
     }
     #else
-    renderer->current_target = target;
+    renderer->current_context_target = target;
     #endif
 }
 
 
 static void SetAsCurrent(GPU_Renderer* renderer)
 {
-    if(renderer->current_target == NULL || renderer->current_target->windowID == 0)
+    if(renderer->current_context_target == NULL || renderer->current_context_target->windowID == 0)
         return;
     
-    renderer->MakeCurrent(renderer, renderer->current_target, renderer->current_target->windowID);
+    renderer->MakeCurrent(renderer, renderer->current_context_target, renderer->current_context_target->windowID);
 }
 
 static int SetWindowResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
 {
-    if(renderer->current_target == NULL)
+    if(renderer->current_context_target == NULL)
         return 0;
 
 #ifdef SDL_GPU_USE_SDL2
-    SDL_SetWindowSize(SDL_GetWindowFromID(renderer->current_target->windowID), w, h);
-    SDL_GetWindowSize(SDL_GetWindowFromID(renderer->current_target->windowID), &renderer->current_target->window_w, &renderer->current_target->window_h);
+    SDL_SetWindowSize(SDL_GetWindowFromID(renderer->current_context_target->windowID), w, h);
+    SDL_GetWindowSize(SDL_GetWindowFromID(renderer->current_context_target->windowID), &renderer->current_context_target->window_w, &renderer->current_context_target->window_h);
 #else
     SDL_Surface* surf = SDL_GetVideoSurface();
     Uint32 flags = surf->flags;
@@ -763,12 +771,12 @@ static int SetWindowResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
     if(screen == NULL)
         return 0;
 
-    renderer->current_target->window_w = screen->w;
-    renderer->current_target->window_h = screen->h;
+    renderer->current_context_target->window_w = screen->w;
+    renderer->current_context_target->window_h = screen->h;
 #endif
 
-    Uint16 virtualW = renderer->current_target->w;
-    Uint16 virtualH = renderer->current_target->h;
+    Uint16 virtualW = renderer->current_context_target->w;
+    Uint16 virtualH = renderer->current_context_target->h;
     
     // TODO: This might interfere with cameras or be ruined by them.
     glEnable( GL_TEXTURE_2D );
@@ -796,18 +804,18 @@ static int SetWindowResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
     glEnable(GL_BLEND);
 
     // Update display
-    GPU_ClearClip(renderer->current_target);
+    GPU_ClearClip(renderer->current_context_target);
 
     return 1;
 }
 
 static void SetVirtualResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
 {
-    if(renderer->current_target == NULL)
+    if(renderer->current_context_target == NULL)
         return;
 
-    renderer->current_target->w = w;
-    renderer->current_target->h = h;
+    renderer->current_context_target->w = w;
+    renderer->current_context_target->h = h;
 
     renderer->FlushBlitBuffer(renderer);
 
@@ -821,8 +829,8 @@ static void SetVirtualResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
 
 static void Quit(GPU_Renderer* renderer)
 {
-    renderer->FreeTarget(renderer, renderer->current_target);
-    renderer->current_target = NULL;
+    renderer->FreeTarget(renderer, renderer->current_context_target);
+    renderer->current_context_target = NULL;
 }
 
 
@@ -830,12 +838,12 @@ static void Quit(GPU_Renderer* renderer)
 static int ToggleFullscreen(GPU_Renderer* renderer)
 {
 #ifdef SDL_GPU_USE_SDL2
-    if(renderer->current_target == NULL)
+    if(renderer->current_context_target == NULL)
         return 0;
     
-    Uint8 enable = !(SDL_GetWindowFlags(SDL_GetWindowFromID(renderer->current_target->windowID)) & SDL_WINDOW_FULLSCREEN);
+    Uint8 enable = !(SDL_GetWindowFlags(SDL_GetWindowFromID(renderer->current_context_target->windowID)) & SDL_WINDOW_FULLSCREEN);
 
-    if(SDL_SetWindowFullscreen(SDL_GetWindowFromID(renderer->current_target->windowID), enable) < 0)
+    if(SDL_SetWindowFullscreen(SDL_GetWindowFromID(renderer->current_context_target->windowID), enable) < 0)
         return 0;
 
     return 1;
@@ -854,10 +862,8 @@ static int ToggleFullscreen(GPU_Renderer* renderer)
 
 
 
-static GPU_Camera SetCamera(GPU_Renderer* renderer, GPU_Camera* cam)
+static GPU_Camera SetCamera(GPU_Renderer* renderer, GPU_Target* target, GPU_Camera* cam)
 {
-    GPU_Target* target = renderer->current_target;
-    
     if(target == NULL)
         return GPU_GetDefaultCamera();
     
@@ -888,8 +894,8 @@ static GPU_Camera SetCamera(GPU_Renderer* renderer, GPU_Camera* cam)
 
     GPU_Frustum(0.0f + target->camera.x, target->w + target->camera.x, target->h + target->camera.y, 0.0f + target->camera.y, 0.01f, 1.01f);
 
-    //GPU_MatrixMode( GPU_MODELVIEW );
-    //GPU_LoadIdentity();
+    GPU_MatrixMode( GPU_MODELVIEW );
+    GPU_LoadIdentity();
     //GPU_Translate(0.375f, 0.375f, 0.0f);
 
 
@@ -1926,8 +1932,8 @@ static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
 {
     if(target == NULL)
         return;
-    if(target == renderer->current_target)
-        renderer->current_target = NULL;
+    if(target == renderer->current_context_target)
+        renderer->current_context_target = NULL;
 
     TARGET_DATA* data = ((TARGET_DATA*)target->data);
     
@@ -1966,7 +1972,9 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_T
     if(renderer != src->renderer || renderer != dest->renderer)
         return -2;
     
-    makeTargetCurrent(renderer, dest);
+    makeContextCurrent(renderer, dest);
+    if(renderer->current_context_target == NULL)
+        return -3;
 
     // Bind the texture to which subsequent calls refer
     bindTexture(renderer, src);
@@ -1974,8 +1982,9 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_T
     // Bind the FBO
     if(bindFramebuffer(renderer, dest))
     {
-        if(dest->current_shader_program == dest->default_untextured_shader_program)
-            renderer->ActivateShaderProgram(renderer, dest->default_textured_shader_program);
+        prepareToRenderToTarget(renderer, dest);
+        if(renderer->current_context_target->windowID != 0 && renderer->current_context_target->current_shader_program == renderer->current_context_target->default_untextured_shader_program)
+            renderer->ActivateShaderProgram(renderer, renderer->current_context_target->default_textured_shader_program);
         
         Uint16 tex_w = ((IMAGE_DATA*)src->data)->tex_w;
         Uint16 tex_h = ((IMAGE_DATA*)src->data)->tex_h;
@@ -2155,7 +2164,9 @@ static int BlitTransformX(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcr
         return -2;
 
 
-    makeTargetCurrent(renderer, dest);
+    makeContextCurrent(renderer, dest);
+    if(renderer->current_context_target == NULL)
+        return -3;
     
     // Bind the texture to which subsequent calls refer
     bindTexture(renderer, src);
@@ -2163,8 +2174,9 @@ static int BlitTransformX(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcr
     // Bind the FBO
     if(bindFramebuffer(renderer, dest))
     {
-        if(dest->current_shader_program == dest->default_untextured_shader_program)
-            renderer->ActivateShaderProgram(renderer, dest->default_textured_shader_program);
+        prepareToRenderToTarget(renderer, dest);
+        if(renderer->current_context_target->windowID != 0 && renderer->current_context_target->current_shader_program == renderer->current_context_target->default_untextured_shader_program)
+            renderer->ActivateShaderProgram(renderer, renderer->current_context_target->default_textured_shader_program);
         
         Uint16 tex_w = ((IMAGE_DATA*)src->data)->tex_w;
         Uint16 tex_h = ((IMAGE_DATA*)src->data)->tex_h;
@@ -2471,7 +2483,7 @@ static void ClearClip(GPU_Renderer* renderer, GPU_Target* target)
     if(target == NULL)
         return;
 
-    makeTargetCurrent(renderer, target);
+    makeContextCurrent(renderer, target);
     
     flushBlitBufferIfCurrentFramebuffer(renderer, target);
     target->useClip = 0;
@@ -2486,17 +2498,17 @@ static void ClearClip(GPU_Renderer* renderer, GPU_Target* target)
 
 static Uint8 GetBlending(GPU_Renderer* renderer)
 {
-    if(renderer->current_target == NULL)
+    if(renderer->current_context_target == NULL)
         return 0;
     
-    return ((TARGET_DATA*)renderer->current_target->data)->blending;
+    return ((TARGET_DATA*)renderer->current_context_target->data)->blending;
 }
 
 
 
 static void SetBlending(GPU_Renderer* renderer, Uint8 enable)
 {
-    if(renderer->current_target == NULL)
+    if(renderer->current_context_target == NULL)
         return;
     
     renderer->FlushBlitBuffer(renderer);
@@ -2506,7 +2518,7 @@ static void SetBlending(GPU_Renderer* renderer, Uint8 enable)
     else
         glDisable(GL_BLEND);
 
-    ((TARGET_DATA*)renderer->current_target->data)->blending = enable;
+    ((TARGET_DATA*)renderer->current_context_target->data)->blending = enable;
 }
 
 
@@ -2514,7 +2526,7 @@ static void SetRGBA(GPU_Renderer* renderer, Uint8 r, Uint8 g, Uint8 b, Uint8 a)
 {
     renderer->FlushBlitBuffer(renderer);
     #ifdef SDL_GPU_USE_GL_TIER3
-    GPU_Target* target = renderer->current_target;
+    GPU_Target* target = renderer->current_context_target;
     if(target == NULL)
         return;
     TARGET_DATA* data = (TARGET_DATA*)target->data;
@@ -2702,7 +2714,7 @@ static void Clear(GPU_Renderer* renderer, GPU_Target* target)
     if(renderer != target->renderer)
         return;
 
-    makeTargetCurrent(renderer, target);
+    makeContextCurrent(renderer, target);
     
     flushBlitBufferIfCurrentFramebuffer(renderer, target);
     if(bindFramebuffer(renderer, target))
@@ -2713,9 +2725,9 @@ static void Clear(GPU_Renderer* renderer, GPU_Target* target)
         if(target->useClip)
         {
             glEnable(GL_SCISSOR_TEST);
-            int y = (renderer->current_target == target? renderer->current_target->h - (target->clipRect.y + target->clipRect.h) : target->clipRect.y);
-            float xFactor = ((float)renderer->current_target->window_w)/renderer->current_target->w;
-            float yFactor = ((float)renderer->current_target->window_h)/renderer->current_target->h;
+            int y = (renderer->current_context_target == target? renderer->current_context_target->h - (target->clipRect.y + target->clipRect.h) : target->clipRect.y);
+            float xFactor = ((float)renderer->current_context_target->window_w)/renderer->current_context_target->w;
+            float yFactor = ((float)renderer->current_context_target->window_h)/renderer->current_context_target->h;
             glScissor(target->clipRect.x * xFactor, y * yFactor, target->clipRect.w * xFactor, target->clipRect.h * yFactor);
         }
 
@@ -2742,7 +2754,7 @@ static void ClearRGBA(GPU_Renderer* renderer, GPU_Target* target, Uint8 r, Uint8
     if(renderer != target->renderer)
         return;
 
-    makeTargetCurrent(renderer, target);
+    makeContextCurrent(renderer, target);
     
     flushBlitBufferIfCurrentFramebuffer(renderer, target);
     if(bindFramebuffer(renderer, target))
@@ -2753,9 +2765,9 @@ static void ClearRGBA(GPU_Renderer* renderer, GPU_Target* target, Uint8 r, Uint8
         if(target->useClip)
         {
             glEnable(GL_SCISSOR_TEST);
-            int y = (renderer->current_target == target? renderer->current_target->h - (target->clipRect.y + target->clipRect.h) : target->clipRect.y);
-            float xFactor = ((float)renderer->current_target->window_w)/renderer->current_target->w;
-            float yFactor = ((float)renderer->current_target->window_h)/renderer->current_target->h;
+            int y = (renderer->current_context_target == target? renderer->current_context_target->h - (target->clipRect.y + target->clipRect.h) : target->clipRect.y);
+            float xFactor = ((float)renderer->current_context_target->window_w)/renderer->current_context_target->w;
+            float yFactor = ((float)renderer->current_context_target->window_h)/renderer->current_context_target->h;
             glScissor(target->clipRect.x * xFactor, y * yFactor, target->clipRect.w * xFactor, target->clipRect.h * yFactor);
         }
 
@@ -2805,9 +2817,9 @@ static void FlushBlitBuffer(GPU_Renderer* renderer)
         if(dest->useClip)
         {
             glEnable(GL_SCISSOR_TEST);
-            int y = (renderer->current_target == dest? renderer->current_target->h - (dest->clipRect.y + dest->clipRect.h) : dest->clipRect.y);
-            float xFactor = ((float)renderer->current_target->window_w)/renderer->current_target->w;
-            float yFactor = ((float)renderer->current_target->window_h)/renderer->current_target->h;
+            int y = (renderer->current_context_target == dest? renderer->current_context_target->h - (dest->clipRect.y + dest->clipRect.h) : dest->clipRect.y);
+            float xFactor = ((float)renderer->current_context_target->window_w)/renderer->current_context_target->w;
+            float yFactor = ((float)renderer->current_context_target->window_h)/renderer->current_context_target->h;
             glScissor(dest->clipRect.x * xFactor, y * yFactor, dest->clipRect.w * xFactor, dest->clipRect.h * yFactor);
         }
 
@@ -2922,12 +2934,12 @@ static void Flip(GPU_Renderer* renderer, GPU_Target* target)
 {
     renderer->FlushBlitBuffer(renderer);
     
-    makeTargetCurrent(renderer, target);
+    makeContextCurrent(renderer, target);
 
 #ifdef SDL_GPU_USE_SDL2
-    if(renderer->current_target == NULL)
+    if(renderer->current_context_target == NULL)
         return;
-    SDL_GL_SwapWindow(SDL_GetWindowFromID(renderer->current_target->windowID));
+    SDL_GL_SwapWindow(SDL_GetWindowFromID(renderer->current_context_target->windowID));
 #else
     SDL_GL_SwapBuffers();
 #endif
@@ -3096,7 +3108,7 @@ static void DetachShader(GPU_Renderer* renderer, Uint32 program_object, Uint32 s
 
 static void ActivateShaderProgram(GPU_Renderer* renderer, Uint32 program_object)
 {
-    GPU_Target* target = renderer->current_target;
+    GPU_Target* target = renderer->current_context_target;
     #ifndef SDL_GPU_DISABLE_SHADERS
     if(target == NULL || target->current_shader_program == program_object)
         return;
@@ -3177,7 +3189,7 @@ static GPU_ShaderBlock LoadShaderBlock(GPU_Renderer* renderer, Uint32 program_ob
 static void SetShaderBlock(GPU_Renderer* renderer, GPU_ShaderBlock block)
 {
     #ifdef SDL_GPU_USE_GL_TIER3
-    GPU_Target* target = renderer->current_target;
+    GPU_Target* target = renderer->current_context_target;
     if(target == NULL)
         return;
     TARGET_DATA* data = ((TARGET_DATA*)target->data);

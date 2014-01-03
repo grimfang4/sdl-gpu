@@ -34,42 +34,45 @@ static void Circle(GPU_Renderer* renderer, GPU_Target* target, float x, float y,
         float z = ((RENDERER_DATA*)renderer->data)->z;  \
          \
         renderer->FlushBlitBuffer(renderer); \
-        makeTargetCurrent(renderer, target); \
+        makeContextCurrent(renderer, target); \
+        if(renderer->current_context_target == NULL) \
+            return -3; \
         if(bindFramebuffer(renderer, target)) \
         { \
-        /*glPushAttrib(GL_COLOR_BUFFER_BIT);*/ \
-        if(target->useClip) \
-        { \
-                glEnable(GL_SCISSOR_TEST); \
-		int y = (renderer->current_target == target? renderer->current_target->h - (target->clipRect.y + target->clipRect.h) : target->clipRect.y); \
-		float xFactor = ((float)renderer->current_target->window_w)/renderer->current_target->w; \
-		float yFactor = ((float)renderer->current_target->window_h)/renderer->current_target->h; \
-		glScissor(target->clipRect.x * xFactor, y * yFactor, target->clipRect.w * xFactor, target->clipRect.h * yFactor); \
-	} \
+            prepareToRenderToTarget(renderer, target); \
+            /*glPushAttrib(GL_COLOR_BUFFER_BIT);*/ \
+            if(target->useClip) \
+            { \
+                    glEnable(GL_SCISSOR_TEST); \
+            int y = (renderer->current_context_target == target? renderer->current_context_target->h - (target->clipRect.y + target->clipRect.h) : target->clipRect.y); \
+            float xFactor = ((float)renderer->current_context_target->window_w)/renderer->current_context_target->w; \
+            float yFactor = ((float)renderer->current_context_target->window_h)/renderer->current_context_target->h; \
+            glScissor(target->clipRect.x * xFactor, y * yFactor, target->clipRect.w * xFactor, target->clipRect.h * yFactor); \
+            } \
 	 \
-	glDisable( GL_TEXTURE_2D ); \
-	\
-    if(target->current_shader_program == target->default_textured_shader_program) \
-        renderer->ActivateShaderProgram(renderer, target->default_untextured_shader_program); \
-    \
-	GLint vp[4]; \
-    if(target->image != NULL) \
-    { \
-        glGetIntegerv(GL_VIEWPORT, vp); \
-        \
-        unsigned int w = target->w; \
-        unsigned int h = target->h; \
-        \
-        glViewport( 0, 0, w, h); \
-        \
-        GPU_MatrixMode( GPU_PROJECTION ); \
-        GPU_PushMatrix(); \
-        GPU_LoadIdentity(); \
-        \
-        GPU_Ortho(0.0f, w, 0.0f, h, -1.0f, 1.0f); /* Special inverted orthographic projection because tex coords are inverted already. */ \
-        \
-        GPU_MatrixMode( GPU_MODELVIEW ); \
-    }
+            glDisable( GL_TEXTURE_2D ); \
+            \
+            if(renderer->current_context_target->windowID != 0 && renderer->current_context_target->current_shader_program == renderer->current_context_target->default_textured_shader_program) \
+                renderer->ActivateShaderProgram(renderer, renderer->current_context_target->default_untextured_shader_program); \
+            \
+            GLint vp[4]; \
+            if(target->image != NULL) \
+            { \
+                glGetIntegerv(GL_VIEWPORT, vp); \
+                \
+                unsigned int w = target->w; \
+                unsigned int h = target->h; \
+                \
+                glViewport( 0, 0, w, h); \
+                \
+                GPU_MatrixMode( GPU_PROJECTION ); \
+                GPU_PushMatrix(); \
+                GPU_LoadIdentity(); \
+                \
+                GPU_Ortho(0.0f, w, 0.0f, h, -1.0f, 1.0f); /* Special inverted orthographic projection because tex coords are inverted already. */ \
+                \
+                GPU_MatrixMode( GPU_MODELVIEW ); \
+            }
 
 
 #define BEGIN_TEXTURED \
@@ -80,42 +83,45 @@ static void Circle(GPU_Renderer* renderer, GPU_Target* target, float x, float y,
         float z = ((RENDERER_DATA*)renderer->data)->z;  \
          \
         renderer->FlushBlitBuffer(renderer); \
-        makeTargetCurrent(renderer, target); \
+        makeContextCurrent(renderer, target); \
+        if(renderer->current_context_target == NULL) \
+            return -3; \
         if(bindFramebuffer(renderer, target)) \
         { \
-        /*glPushAttrib(GL_COLOR_BUFFER_BIT);*/ \
-        if(target->useClip) \
-        { \
+            prepareToRenderToTarget(renderer, target); \
+            /*glPushAttrib(GL_COLOR_BUFFER_BIT);*/ \
+            if(target->useClip) \
+            { \
                 glEnable(GL_SCISSOR_TEST); \
-		int y = (renderer->current_target == target? renderer->current_target->h - (target->clipRect.y + target->clipRect.h) : target->clipRect.y); \
-		float xFactor = ((float)renderer->current_target->window_w)/renderer->current_target->w; \
-		float yFactor = ((float)renderer->current_target->window_h)/renderer->current_target->h; \
-		glScissor(target->clipRect.x * xFactor, y * yFactor, target->clipRect.w * xFactor, target->clipRect.h * yFactor); \
-	} \
-	 \
-	glEnable( GL_TEXTURE_2D ); \
-	\
-    if(target->current_shader_program == target->default_untextured_shader_program) \
-        renderer->ActivateShaderProgram(renderer, target->default_textured_shader_program); \
-    \
-	GLint vp[4]; \
-    if(target->image != NULL) \
-    { \
-        glGetIntegerv(GL_VIEWPORT, vp); \
-        \
-        unsigned int w = target->w; \
-        unsigned int h = target->h; \
-        \
-        glViewport( 0, 0, w, h); \
-        \
-        GPU_MatrixMode( GPU_PROJECTION ); \
-        GPU_PushMatrix(); \
-        GPU_LoadIdentity(); \
-        \
-        GPU_Ortho(0.0f, w, 0.0f, h, -1.0f, 1.0f); /* Special inverted orthographic projection because tex coords are inverted already. */ \
-        \
-        GPU_MatrixMode( GPU_MODELVIEW ); \
-    }
+                int y = (renderer->current_context_target == target? renderer->current_context_target->h - (target->clipRect.y + target->clipRect.h) : target->clipRect.y); \
+                float xFactor = ((float)renderer->current_context_target->window_w)/renderer->current_context_target->w; \
+                float yFactor = ((float)renderer->current_context_target->window_h)/renderer->current_context_target->h; \
+                glScissor(target->clipRect.x * xFactor, y * yFactor, target->clipRect.w * xFactor, target->clipRect.h * yFactor); \
+            } \
+             \
+            glEnable( GL_TEXTURE_2D ); \
+            \
+            if(renderer->current_context_target->windowID != 0 && renderer->current_context_target->current_shader_program == renderer->current_context_target->default_untextured_shader_program) \
+                renderer->ActivateShaderProgram(renderer, renderer->current_context_target->default_textured_shader_program); \
+            \
+            GLint vp[4]; \
+            if(target->image != NULL) \
+            { \
+                glGetIntegerv(GL_VIEWPORT, vp); \
+                \
+                unsigned int w = target->w; \
+                unsigned int h = target->h; \
+                \
+                glViewport( 0, 0, w, h); \
+                \
+                GPU_MatrixMode( GPU_PROJECTION ); \
+                GPU_PushMatrix(); \
+                GPU_LoadIdentity(); \
+                \
+                GPU_Ortho(0.0f, w, 0.0f, h, -1.0f, 1.0f); /* Special inverted orthographic projection because tex coords are inverted already. */ \
+                \
+                GPU_MatrixMode( GPU_MODELVIEW ); \
+            }
 
 #define END \
     if(target->image != NULL) \
@@ -262,18 +268,18 @@ static inline void draw_vertices_textured(GLfloat* glverts, GLfloat* gltexcoords
 
 static float SetThickness(GPU_Renderer* renderer, float thickness)
 {
-    if(renderer->current_target == NULL)
+    if(renderer->current_context_target == NULL)
         return 1.0f;
     
-	float old = ((TARGET_DATA*)renderer->current_target->data)->line_thickness;
-	((TARGET_DATA*)renderer->current_target->data)->line_thickness = thickness;
+	float old = ((TARGET_DATA*)renderer->current_context_target->data)->line_thickness;
+	((TARGET_DATA*)renderer->current_context_target->data)->line_thickness = thickness;
 	glLineWidth(thickness);
 	return old;
 }
 
 static float GetThickness(GPU_Renderer* renderer)
 {
-    return ((TARGET_DATA*)renderer->current_target->data)->line_thickness;
+    return ((TARGET_DATA*)renderer->current_context_target->data)->line_thickness;
 }
 
 static void Pixel(GPU_Renderer* renderer, GPU_Target* target, float x, float y, SDL_Color color)

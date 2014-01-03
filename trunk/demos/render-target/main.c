@@ -91,12 +91,12 @@ int main(int argc, char* argv[])
             
             GPU_BlitTransform(image2, NULL, target, x, y, 360*sin(SDL_GetTicks()/1000.0f), 0.7f*sin(SDL_GetTicks()/2000.0f), 0.7f*sin(SDL_GetTicks()/2000.0f));
             
-            GPU_CircleFilled(target, 70, 70, 20, circleColor);
+            //GPU_CircleFilled(target, 70, 70, 20, circleColor);
         
             GPU_Blit(image, NULL, screen, image->w/2 + 50, image->h/2 + 50);
             GPU_BlitScale(image, NULL, screen, image->w*2 + 50, image->h/2 + 50, 0.7f, 0.7f);
             
-            GPU_CircleFilled(screen, 50 + 70, 50 + 70, 20, circleColor2);
+            //GPU_CircleFilled(screen, 50 + 70, 50 + 70, 20, circleColor2);
             
             GPU_Blit(image2, NULL, screen, screen->w - image3->w - image2->w/2, screen->h - image2->h/2);
             GPU_Blit(image3, NULL, screen, screen->w - image3->w/2, screen->h - image3->h/2);
