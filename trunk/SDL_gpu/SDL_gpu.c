@@ -178,7 +178,7 @@ void GPU_CloseCurrentRenderer(void)
 	if(current_renderer == NULL)
 		return;
 	
-	if(current_renderer->Quit == NULL)
+	if(current_renderer->Quit != NULL)
 		current_renderer->Quit(current_renderer);
 	GPU_RemoveRenderer(current_renderer->id);
 	current_renderer = NULL;
@@ -193,7 +193,7 @@ void GPU_Quit(void)
 	if(current_renderer == NULL)
 		return;
 	
-	if(current_renderer->Quit == NULL)
+	if(current_renderer->Quit != NULL)
 		current_renderer->Quit(current_renderer);
 	GPU_RemoveRenderer(current_renderer->id);
 	
