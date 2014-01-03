@@ -40,6 +40,7 @@ void _GPU_GetModelViewProjection(float* result);
 #define GPU_GetModelViewProjection _GPU_GetModelViewProjection
 #else
 void _GPU_Dummy(void);
+void _GPU_MultiplyAndAssign(float* result, float* A);
 
 #define GPU_MODELVIEW GL_MODELVIEW
 #define GPU_PROJECTION GL_PROJECTION
@@ -54,6 +55,7 @@ void _GPU_Dummy(void);
 #define GPU_Scale glScalef
 #define GPU_Rotate glRotatef
 #define GPU_MultMatrix glMultMatrixf
+#define GPU_GetModelViewProjection(result) do{float _m[16]; glGetFloatv(GL_PROJECTION_MATRIX, result); glGetFloatv(GL_MODELVIEW_MATRIX, _m); _GPU_MultiplyAndAssign(result, _m);} while(0)
 #endif
 
 #endif

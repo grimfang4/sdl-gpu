@@ -1901,6 +1901,9 @@ static GPU_Target* LoadTarget(GPU_Renderer* renderer, GPU_Image* image)
     #ifdef SDL_GPU_USE_SDL2
     data->context = 0;
     #endif
+    #ifdef SDL_GPU_USE_GL_TIER3
+    data->color.r = data->color.g = data->color.b = data->color.a = 255;
+    #endif
     
     result->renderer = renderer;
     result->windowID = 0;
@@ -1954,8 +1957,11 @@ static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
     #endif
     
     #ifdef SDL_GPU_USE_GL_TIER3
-    glDeleteBuffers(1, &data->blit_VBO);
-    glDeleteVertexArrays(1, &data->blit_VAO);
+    if(target->windowID != 0)
+    {
+        glDeleteBuffers(1, &data->blit_VBO);
+        glDeleteVertexArrays(1, &data->blit_VAO);
+    }
     #endif
     
     free(target->data);
@@ -2880,7 +2886,7 @@ static void FlushBlitBuffer(GPU_Renderer* renderer)
 
 #elif defined(SDL_GPU_USE_GL_TIER3)
 
-        TARGET_DATA* data = ((TARGET_DATA*)dest->data);
+        TARGET_DATA* data = ((TARGET_DATA*)renderer->current_context_target->data);
         
         // Upload our modelviewprojection matrix
         float mvp[16];
