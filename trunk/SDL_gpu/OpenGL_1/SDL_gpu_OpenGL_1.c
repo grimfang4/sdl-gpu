@@ -13,6 +13,8 @@ void GPU_FreeRenderer_OpenGL_1(GPU_Renderer* renderer) {}
 #define SDL_GPU_USE_OPENGL
 //#define SDL_GPU_DISABLE_SHADERS
 #define SDL_GPU_USE_GL_TIER1
+#define SDL_GPU_GL_TIER 1
+#define SDL_GPU_GL_MAJOR_VERSION 1
 #define RENDERER_DATA RendererData_OpenGL_1
 #define IMAGE_DATA ImageData_OpenGL_1
 #define TARGET_DATA TargetData_OpenGL_1

@@ -1,5 +1,6 @@
 #include "SDL_gpu_GLES_2.h"
 
+
 #if defined(SDL_GPU_DISABLE_GLES) || defined(SDL_GPU_DISABLE_GLES_2)
 
 // Dummy implementations
@@ -12,6 +13,8 @@ void GPU_FreeRenderer_GLES_2(GPU_Renderer* renderer) {}
 // Most of the code pulled in from here...
 #define SDL_GPU_USE_GLES
 #define SDL_GPU_USE_GL_TIER3
+#define SDL_GPU_GL_TIER 3
+#define SDL_GPU_GLES_MAJOR_VERSION 2
 #define RENDERER_DATA RendererData_GLES_2
 #define IMAGE_DATA ImageData_GLES_2
 #define TARGET_DATA TargetData_GLES_2
@@ -48,5 +51,6 @@ void GPU_FreeRenderer_GLES_2(GPU_Renderer* renderer)
     free(renderer->data);
     free(renderer);
 }
+
 
 #endif

@@ -22,7 +22,6 @@
     #define glFramebufferTexture2D glFramebufferTexture2DOES
     #define glCheckFramebufferStatus glCheckFramebufferStatusOES
     #define glBindFramebuffer glBindFramebufferOES
-    #define glBindFramebufferEXT glBindFramebufferOES
     #define GL_FRAMEBUFFER GL_FRAMEBUFFER_OES
     #define GL_COLOR_ATTACHMENT0 GL_COLOR_ATTACHMENT0_OES
     #define GL_FRAMEBUFFER_COMPLETE GL_FRAMEBUFFER_COMPLETE_OES

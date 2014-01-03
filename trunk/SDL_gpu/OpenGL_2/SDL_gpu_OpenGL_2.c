@@ -12,6 +12,8 @@ void GPU_FreeRenderer_OpenGL_2(GPU_Renderer* renderer) {}
 // Most of the code pulled in from here...
 #define SDL_GPU_USE_OPENGL
 #define SDL_GPU_USE_GL_TIER2
+#define SDL_GPU_GL_TIER 2
+#define SDL_GPU_GL_MAJOR_VERSION 2
 #define RENDERER_DATA RendererData_OpenGL_2
 #define IMAGE_DATA ImageData_OpenGL_2
 #define TARGET_DATA TargetData_OpenGL_2

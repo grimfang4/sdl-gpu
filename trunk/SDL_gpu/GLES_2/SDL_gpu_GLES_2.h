@@ -17,15 +17,16 @@
     #define glFrustum glFrustumf
     #define glOrtho glOrthof
     #define glGenerateMipmap glGenerateMipmapOES
-    #define glDeleteFramebuffers glDeleteFramebuffersOES
-    #define glGenFramebuffers glGenFramebuffersOES
-    #define glFramebufferTexture2D glFramebufferTexture2DOES
-    #define glCheckFramebufferStatus glCheckFramebufferStatusOES
-    #define glBindFramebuffer glBindFramebufferOES
-    #define glBindFramebufferEXT glBindFramebufferOES
 
     #define glBlendEquation glBlendEquationOES
     #define glBlendFuncSeparate glBlendFuncSeparateOES
+    
+    #define glGetUniformuiv glGetUniformiv
+    #define glUniform1ui glUniform1i
+    #define glUniform1uiv glUniform1iv
+    #define glUniform2uiv glUniform2iv
+    #define glUniform3uiv glUniform3iv
+    #define glUniform4uiv glUniform4iv
 
 #endif
 
@@ -37,7 +38,7 @@ typedef struct RendererData_GLES_2
 	
 	GPU_Image* last_image;
 	GPU_Target* last_target;
-	float* blit_buffer;  // Holds sets of 4 vertices and 4 tex coords interleaved (e.g. [x0, y0, z0, s0, t0, ...]).
+	float* blit_buffer;  // Holds sets of 4 vertices, each with interleaved position, tex coords, and colors (e.g. [x0, y0, z0, s0, t0, r0, g0, b0, a0, ...]).
 	int blit_buffer_num_vertices;
 	int blit_buffer_max_num_vertices;
 } RendererData_GLES_2;
@@ -57,10 +58,17 @@ typedef struct TargetData_GLES_2
 	
 	Uint8 blending;
 	float line_thickness;
+	SDL_Color color;
 	
     #ifdef SDL_GPU_USE_SDL2
     SDL_GLContext context;
     #endif
+    
+    // Tier 3 rendering
+    unsigned int blit_VBO;
+    GPU_ShaderBlock shader_block[2];
+    GPU_ShaderBlock current_shader_block;
+    
 } TargetData_GLES_2;
 
 
