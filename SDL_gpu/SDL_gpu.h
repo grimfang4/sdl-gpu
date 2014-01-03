@@ -189,7 +189,7 @@ struct GPU_Renderer
 	GPU_RendererID id;
 	
 	/*! Current display target.  Virtual dimensions can be gotten from this. */
-	GPU_Target* current_target;
+	GPU_Target* current_context_target;
 	
 	/*! \see GPU_Init() */
 	GPU_Target* (*Init)(GPU_Renderer* renderer, GPU_RendererID renderer_request, Uint16 w, Uint16 h, Uint32 flags);
@@ -220,7 +220,7 @@ struct GPU_Renderer
 	int (*ToggleFullscreen)(GPU_Renderer* renderer);
 
 	/*! \see GPU_SetCamera() */
-	GPU_Camera (*SetCamera)(GPU_Renderer* renderer, GPU_Camera* cam);
+	GPU_Camera (*SetCamera)(GPU_Renderer* renderer, GPU_Target* target, GPU_Camera* cam);
 	
     /*! \see GPU_CreateImage() */
 	GPU_Image* (*CreateImage)(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint8 channels);
@@ -565,9 +565,10 @@ GPU_Camera GPU_GetCamera(void);
 
 
 /*! Sets the current render target's current camera.
+ * \param target A pointer to the target that will copy this camera.
  * \param cam A pointer to the camera data to use or NULL to use the default camera.
  * \return The old camera. */
-GPU_Camera GPU_SetCamera(GPU_Camera* cam);
+GPU_Camera GPU_SetCamera(GPU_Target* target, GPU_Camera* cam);
 
 /*! Create a new, blank image with a format determined by the number of channels requested.  Don't forget to GPU_FreeImage() it. 
 	 * \param w Image width in pixels
