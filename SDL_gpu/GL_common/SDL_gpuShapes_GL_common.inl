@@ -52,7 +52,7 @@ static void Circle(GPU_Renderer* renderer, GPU_Target* target, float x, float y,
 	 \
             glDisable( GL_TEXTURE_2D ); \
             \
-            if(renderer->current_context_target->windowID != 0 && renderer->current_context_target->current_shader_program == renderer->current_context_target->default_textured_shader_program) \
+            if(renderer->current_context_target->image == NULL && renderer->current_context_target->current_shader_program == renderer->current_context_target->default_textured_shader_program) \
                 renderer->ActivateShaderProgram(renderer, renderer->current_context_target->default_untextured_shader_program); \
             \
             GLint vp[4]; \
@@ -101,7 +101,7 @@ static void Circle(GPU_Renderer* renderer, GPU_Target* target, float x, float y,
              \
             glEnable( GL_TEXTURE_2D ); \
             \
-            if(renderer->current_context_target->windowID != 0 && renderer->current_context_target->current_shader_program == renderer->current_context_target->default_untextured_shader_program) \
+            if(renderer->current_context_target->image == NULL && renderer->current_context_target->current_shader_program == renderer->current_context_target->default_untextured_shader_program) \
                 renderer->ActivateShaderProgram(renderer, renderer->current_context_target->default_textured_shader_program); \
             \
             GLint vp[4]; \
