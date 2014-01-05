@@ -468,7 +468,7 @@ static inline void flushAndClearBlitBufferIfCurrentFramebuffer(GPU_Renderer* ren
 // Only for window targets, which have their own contexts.
 static void makeContextCurrent(GPU_Renderer* renderer, GPU_Target* target)
 {
-    if(target == NULL || target->windowID == 0 || renderer->current_context_target == target)
+    if(target == NULL || target->image != NULL || renderer->current_context_target == target)
         return;
         
     renderer->FlushBlitBuffer(renderer);
@@ -603,6 +603,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
         created = 1;
         target = (GPU_Target*)malloc(sizeof(GPU_Target));
         target->data = (TARGET_DATA*)malloc(sizeof(TARGET_DATA));
+        target->image = NULL;
     }
     
     #ifdef SDL_GPU_USE_SDL2
@@ -679,8 +680,6 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     ((TARGET_DATA*)target->data)->format = GL_RGBA;
     ((TARGET_DATA*)target->data)->blending = 0;
     ((TARGET_DATA*)target->data)->line_thickness = 1.0f;
-
-    target->image = NULL;
 
     target->renderer = renderer;
     target->w = target->window_w;
@@ -804,7 +803,7 @@ static void MakeCurrent(GPU_Renderer* renderer, GPU_Target* target, Uint32 windo
     if(target == NULL)
         return;
     #ifdef SDL_GPU_USE_SDL2
-    if(target->windowID == 0)
+    if(target->image != NULL)
         return;
     
     SDL_GLContext c = ((TARGET_DATA*)target->data)->context;
@@ -827,7 +826,7 @@ static void MakeCurrent(GPU_Renderer* renderer, GPU_Target* target, Uint32 windo
 
 static void SetAsCurrent(GPU_Renderer* renderer)
 {
-    if(renderer->current_context_target == NULL || renderer->current_context_target->windowID == 0)
+    if(renderer->current_context_target == NULL || renderer->current_context_target->image != NULL)
         return;
     
     renderer->MakeCurrent(renderer, renderer->current_context_target, renderer->current_context_target->windowID);
@@ -2041,7 +2040,7 @@ static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
     #endif
     
     #ifdef SDL_GPU_USE_GL_TIER3
-    if(target->windowID != 0)
+    if(target->image == NULL)
     {
         glDeleteBuffers(1, &data->blit_VBO);
         #if !defined(SDL_GPU_USE_GLES) || SDL_GPU_GLES_MAJOR_VERSION != 2
@@ -2075,7 +2074,7 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_T
     if(bindFramebuffer(renderer, dest))
     {
         prepareToRenderToTarget(renderer, dest);
-        if(renderer->current_context_target->windowID != 0 && renderer->current_context_target->current_shader_program == renderer->current_context_target->default_untextured_shader_program)
+        if(renderer->current_context_target->image == NULL && renderer->current_context_target->current_shader_program == renderer->current_context_target->default_untextured_shader_program)
             renderer->ActivateShaderProgram(renderer, renderer->current_context_target->default_textured_shader_program);
         
         Uint16 tex_w = ((IMAGE_DATA*)src->data)->tex_w;
@@ -2267,7 +2266,7 @@ static int BlitTransformX(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcr
     if(bindFramebuffer(renderer, dest))
     {
         prepareToRenderToTarget(renderer, dest);
-        if(renderer->current_context_target->windowID != 0 && renderer->current_context_target->current_shader_program == renderer->current_context_target->default_untextured_shader_program)
+        if(renderer->current_context_target->image == NULL && renderer->current_context_target->current_shader_program == renderer->current_context_target->default_untextured_shader_program)
             renderer->ActivateShaderProgram(renderer, renderer->current_context_target->default_textured_shader_program);
         
         Uint16 tex_w = ((IMAGE_DATA*)src->data)->tex_w;
