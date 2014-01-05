@@ -560,11 +560,21 @@ static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request,
     #else
     // GLES doesn't have GL_MAJOR_VERSION.  Check via version string instead.
     const char* version_string = (const char*)glGetString(GL_VERSION);
-    if(sscanf(version_string, "OpenGL ES-C%*c %d.%d", &renderer->id.major_version, &renderer->id.minor_version) <= 0)
+    // OpenGL ES 2.0?
+    if(sscanf(version_string, "OpenGL ES %d.%d", &renderer->id.major_version, &renderer->id.minor_version) <= 0)
     {
-        GPU_LogError("Failed to parse OpenGLES version string.  Defaulting to version 1.1.\n");
-        renderer->id.major_version = 1;
-        renderer->id.minor_version = 1;
+        // OpenGL ES-CM 1.1?  OpenGL ES-CL 1.1?
+        if(sscanf(version_string, "OpenGL ES-C%*c %d.%d", &renderer->id.major_version, &renderer->id.minor_version) <= 0)
+        {
+            renderer->id.major_version = SDL_GPU_GLES_MAJOR_VERSION;
+            #if SDL_GPU_GLES_MAJOR_VERSION == 1
+                renderer->id.minor_version = 1;
+            #else
+                renderer->id.minor_version = 0;
+            #endif
+            
+            GPU_LogError("Failed to parse OpenGLES version string: %s\n  Defaulting to version %d.%d.\n", version_string, renderer->id.major_version, renderer->id.minor_version);
+        }
     }
     #endif
     
