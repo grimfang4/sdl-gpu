@@ -1986,7 +1986,7 @@ static GPU_Target* LoadTarget(GPU_Renderer* renderer, GPU_Image* image)
     data->context = 0;
     #endif
     #ifdef SDL_GPU_USE_GL_TIER3
-    data->color.r = data->color.g = data->color.b = data->color.a = 255;
+    data->color.r = data->color.g = data->color.b = GET_ALPHA(data->color) = 255;
     #endif
     
     result->renderer = renderer;

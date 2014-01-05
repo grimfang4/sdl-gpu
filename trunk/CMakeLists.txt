@@ -26,7 +26,7 @@ option(SDL_gpu_DISABLE_GLES_3 "Disable OpenGLES 3.X renderer" OFF)
 
 set(SDL_gpu_VERSION 0.1.0)
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/CMakeTests)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/CMakeTests ${CMAKE_SOURCE_DIR}/CMake_scripts)
 
 # Find the package for SDL or SDL2
 if ( NOT SDL_gpu_USE_SDL2 )
@@ -100,6 +100,7 @@ include_directories(SDL_gpu)
 include_directories(SDL_gpu/GL_common)
 include_directories(SDL_gpu/OpenGL_1)
 include_directories(SDL_gpu/OpenGL_2)
+include_directories(SDL_gpu/OpenGL_3)
 include_directories(SDL_gpu/GLES_1)
 include_directories(SDL_gpu/GLES_2)
 include_directories(SDL_gpu/externals/glew)
