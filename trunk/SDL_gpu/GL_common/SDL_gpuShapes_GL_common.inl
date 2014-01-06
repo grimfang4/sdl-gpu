@@ -24,6 +24,88 @@ static void Circle(GPU_Renderer* renderer, GPU_Target* target, float x, float y,
 
 
 
+#ifdef SDL_GPU_USE_GL_TIER3
+
+#define SDL_GPU_SHAPE_FLOATS_PER_VERTEX 7
+
+#define SET_VERTEX(_x, _y) \
+do { \
+    glverts[_vertex_array_index++] = (_x); \
+    glverts[_vertex_array_index++] = (_y); \
+    glverts[_vertex_array_index++] = z; \
+    glverts[_vertex_array_index++] = r; \
+    glverts[_vertex_array_index++] = g; \
+    glverts[_vertex_array_index++] = b; \
+    glverts[_vertex_array_index++] = a; \
+} while(0);
+
+#define SET_VERTEX_TEXTURED(_x, _y, _s, _t) \
+do { \
+    glverts[_vertex_array_index++] = (_x); \
+    glverts[_vertex_array_index++] = (_y); \
+    glverts[_vertex_array_index++] = z; \
+    glverts[_vertex_array_index++] = r; \
+    glverts[_vertex_array_index++] = g; \
+    glverts[_vertex_array_index++] = b; \
+    glverts[_vertex_array_index++] = a; \
+    glverts[_vertex_array_index++] = (_s); \
+    glverts[_vertex_array_index++] = (_t); \
+} while(0);
+
+#define DECLARE_COLOR_RGBA \
+float r = color.r/255.0f; \
+float g = color.g/255.0f; \
+float b = color.b/255.0f; \
+float a = GET_ALPHA(color)/255.0f;
+
+        
+#define RESET_COLOR
+
+#else
+
+#define SDL_GPU_SHAPE_FLOATS_PER_VERTEX 3
+
+#define SET_VERTEX(_x, _y) \
+do { \
+    glverts[_vertex_array_index++] = (_x); \
+    glverts[_vertex_array_index++] = (_y); \
+    glverts[_vertex_array_index++] = z; \
+} while(0);
+
+#define SET_VERTEX_TEXTURED(_x, _y, _s, _t) \
+do { \
+    glverts[_vertex_array_index++] = (_x); \
+    glverts[_vertex_array_index++] = (_y); \
+    glverts[_vertex_array_index++] = z; \
+    glverts[_vertex_array_index++] = (_s); \
+    glverts[_vertex_array_index++] = (_t); \
+} while(0);
+
+#define DECLARE_COLOR_RGBA \
+renderer->SetRGBA(renderer, color.r, color.g, color.b, GET_ALPHA(color));
+
+#define RESET_COLOR \
+glColor4ub(255, 255, 255, 255);
+
+#endif
+
+
+#define DECLARE_VERTEX_ARRAY(num_vertices) \
+const int _num_vertices = (num_vertices); \
+const int _vertex_array_size = _num_vertices*SDL_GPU_SHAPE_FLOATS_PER_VERTEX; \
+GLfloat glverts[_vertex_array_size]; \
+int _vertex_array_index = 0;
+
+#define DECLARE_TEXTURED_VERTEX_ARRAY(num_vertices) \
+const int _num_vertices = (num_vertices); \
+const int _vertex_array_size = _num_vertices*(SDL_GPU_SHAPE_FLOATS_PER_VERTEX + 2); \
+GLfloat glverts[_vertex_array_size]; \
+int _vertex_array_index = 0;
+
+#define DRAW_VERTICES(_prim_type) draw_vertices(glverts, _num_vertices, _prim_type);
+#define DRAW_COUNTED_VERTICES(_prim_type) draw_vertices(glverts, _vertex_array_index/SDL_GPU_SHAPE_FLOATS_PER_VERTEX, _prim_type);
+#define DRAW_VERTICES_TEXTURED(_prim_type) draw_vertices_textured(glverts, _num_vertices, _prim_type);
+
 
 
 #define BEGIN \
@@ -124,6 +206,7 @@ static void Circle(GPU_Renderer* renderer, GPU_Target* target, float x, float y,
             }
 
 #define END \
+    RESET_COLOR; \
     if(target->image != NULL) \
     { \
         glViewport(vp[0], vp[1], vp[2], vp[3]); \
@@ -142,14 +225,6 @@ static void Circle(GPU_Renderer* renderer, GPU_Target* target, float x, float y,
 
 
 
-	
-	
-static inline void set_vertex(float* verts, int index, float x, float y, float z)
-{
-    verts[index*3] = x;
-    verts[index*3 + 1] = y;
-    verts[index*3 + 2] = z;
-}
 
 
 static inline void draw_vertices(GLfloat* glverts, int num_vertices, GLenum prim_type)
@@ -210,21 +285,21 @@ static inline void draw_vertices(GLfloat* glverts, int num_vertices, GLenum prim
 }
 
 
-static inline void draw_vertices_textured(GLfloat* glverts, GLfloat* gltexcoords, int num_vertices, GLenum prim_type)
+static inline void draw_vertices_textured(GLfloat* glverts, int num_vertices, GLenum prim_type)
 {
     #ifdef SDL_GPU_USE_GL_TIER1
         glBegin(prim_type);
-        int size = 3*num_vertices;
-        int i, j;
-        for(i = 0, j = 0; i < size; i += 3, j+=2)
+        int size = 5*num_vertices;
+        int i;
+        for(i = 0; i < size; i += 5)
         {
-            glTexCoord2f(gltexcoords[j], gltexcoords[j+1]);
+            glTexCoord2f(glverts[i+3], glverts[i+4]);
             glVertex3f(glverts[i], glverts[i+1], glverts[i+2]);
         }
         glEnd();
     #elif defined(SDL_GPU_USE_GL_TIER2)
-        glVertexPointer(3, GL_FLOAT, 0, glverts);
-        glTexCoordPointer(2, GL_FLOAT, 0, gltexcoords);
+        glVertexPointer(3, GL_FLOAT, 5*sizeof(float), glverts);
+        glTexCoordPointer(2, GL_FLOAT, 5*sizeof(float), (glverts + 3));
         glEnableClientState(GL_VERTEX_ARRAY);
         glEnableClientState(GL_TEXTURE_COORD_ARRAY);
         glDrawArrays(prim_type, 0, num_vertices);
@@ -238,7 +313,7 @@ static inline void draw_vertices_textured(GLfloat* glverts, GLfloat* gltexcoords
 
         TARGET_DATA* data = ((TARGET_DATA*)target->data);
         
-        int floats_per_vertex = 9;  // position (3), texcoord (2), color (4)
+        int floats_per_vertex = 9;  // position (3), color (4), texcoord (2)
         int buffer_stride = floats_per_vertex * sizeof(float);
         
         // Upload our modelviewprojection matrix
@@ -260,10 +335,10 @@ static inline void draw_vertices_textured(GLfloat* glverts, GLfloat* gltexcoords
         // Specify the formatting of the blit buffer
         glEnableVertexAttribArray(data->current_shader_block.position_loc);  // Tell GL to use client-side attribute data
         glVertexAttribPointer(data->current_shader_block.position_loc, 3, GL_FLOAT, GL_FALSE, buffer_stride, 0);  // Tell how the data is formatted
-        glEnableVertexAttribArray(data->current_shader_block.texcoord_loc);
-        glVertexAttribPointer(data->current_shader_block.texcoord_loc, 2, GL_FLOAT, GL_FALSE, buffer_stride, (void*)(3 * sizeof(float)));
         glEnableVertexAttribArray(data->current_shader_block.color_loc);
-        glVertexAttribPointer(data->current_shader_block.color_loc, 4, GL_FLOAT, GL_FALSE, buffer_stride, (void*)(5 * sizeof(float)));
+        glVertexAttribPointer(data->current_shader_block.color_loc, 4, GL_FLOAT, GL_FALSE, buffer_stride, (void*)(3 * sizeof(float)));
+        glEnableVertexAttribArray(data->current_shader_block.texcoord_loc);
+        glVertexAttribPointer(data->current_shader_block.texcoord_loc, 2, GL_FLOAT, GL_FALSE, buffer_stride, (void*)(5 * sizeof(float)));
         
         glDrawArrays(prim_type, 0, num_vertices);
         
@@ -293,31 +368,13 @@ static float GetThickness(GPU_Renderer* renderer)
 static void Pixel(GPU_Renderer* renderer, GPU_Target* target, float x, float y, SDL_Color color)
 {
 	BEGIN;
-	
         
-        #ifdef SDL_GPU_USE_GL_TIER3
-		GLfloat glverts[7];
-
-		glverts[0] = x;
-		glverts[1] = y;
-		glverts[2] = z;
-		glverts[3] = color.r/255.0f;
-		glverts[4] = color.g/255.0f;
-		glverts[5] = color.b/255.0f;
-		glverts[6] = GET_ALPHA(color)/255.0f;
-        #else
-		renderer->SetRGBA(renderer, color.r, color.g, color.b, GET_ALPHA(color));
+        DECLARE_VERTEX_ARRAY(1);
+		DECLARE_COLOR_RGBA;
 		
-		GLfloat glverts[3];
-
-		glverts[0] = x;
-		glverts[1] = y;
-		glverts[2] = z;
-		#endif
+		SET_VERTEX(x, y);
         
-        draw_vertices(glverts, 1, GL_POINTS);
-        
-        renderer->SetRGBA(renderer, 255, 255, 255, 255);
+        DRAW_VERTICES(GL_POINTS);
 
     END;
 }
@@ -326,43 +383,13 @@ static void Line(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1,
 {
     BEGIN;
 
-        #ifdef SDL_GPU_USE_GL_TIER3
-		float r = color.r/255.0f;
-		float g = color.g/255.0f;
-		float b = color.b/255.0f;
-		float a = GET_ALPHA(color)/255.0f;
-		GLfloat glverts[14];
+        DECLARE_VERTEX_ARRAY(2);
+		DECLARE_COLOR_RGBA;
 
-		glverts[0] = x1;
-		glverts[1] = y1;
-		glverts[2] = z;
-		glverts[3] = r;
-		glverts[4] = g;
-		glverts[5] = b;
-		glverts[6] = a;
-		glverts[7] = x2;
-		glverts[8] = y2;
-		glverts[9] = z;
-		glverts[10] = r;
-		glverts[11] = g;
-		glverts[12] = b;
-		glverts[13] = a;
-        #else
-        renderer->SetRGBA(renderer, color.r, color.g, color.b, GET_ALPHA(color));
+		SET_VERTEX(x1, y1);
+		SET_VERTEX(x2, y2);
 
-        GLfloat glverts[6];
-
-        glverts[0] = x1;
-        glverts[1] = y1;
-        glverts[2] = z;
-        glverts[3] = x2;
-        glverts[4] = y2;
-        glverts[5] = z;
-        #endif
-
-        draw_vertices(glverts, 2, GL_LINES);
-        
-        renderer->SetRGBA(renderer, 255, 255, 255, 255);
+        DRAW_VERTICES(GL_LINES);
 
     END;
 }
@@ -422,51 +449,29 @@ static void Arc(GPU_Renderer* renderer, GPU_Target* target, float x, float y, fl
 
     BEGIN;
 
-        #ifdef SDL_GPU_USE_GL_TIER3
-        #else
-    renderer->SetRGBA(renderer, color.r, color.g, color.b, GET_ALPHA(color));
     float t = startAngle;
     float dt = (1 - (endAngle - startAngle)/360) * 5;  // A segment every 5 degrees of a full circle
     float dx, dy;
 
     int numSegments = fabs(endAngle - startAngle)/dt;
 
-    GLfloat glverts[(numSegments+2)*3];  // Extra vertex for endpoint
+    DECLARE_VERTEX_ARRAY(numSegments+2); // Extra vertex for endpoint
+    DECLARE_COLOR_RGBA;
 
     int i;
     for(i = 0; i < numSegments+1; i++)
     {
         dx = radius*cos(t*RADPERDEG);
         dy = radius*sin(t*RADPERDEG);
-        glverts[i*3] = x+dx;
-        glverts[i*3+1] = y+dy;
-        glverts[i*3+2] = z;
+        SET_VERTEX(x+dx, y+dy);
         t += dt;
     }
     
     dx = radius*cos(endAngle*RADPERDEG);
     dy = radius*sin(endAngle*RADPERDEG);
-    glverts[i*3] = x+dx;
-    glverts[i*3+1] = y+dy;
-    glverts[i*3+2] = z;
+    SET_VERTEX(x+dx, y+dy);
 
-    draw_vertices(glverts, numSegments+2, GL_LINE_STRIP);
-
-    /*glBegin(GL_LINE_STRIP);
-    dx = radius*cos(t*RADPERDEG);
-    dy = radius*sin(t*RADPERDEG);
-    glVertex3f(x+dx, y+dy, z);
-    while(t < endAngle)
-    {
-    	t += dt;
-    	dx = radius*cos(t*RADPERDEG);
-        dy = radius*sin(t*RADPERDEG);
-        glVertex3f(x+dx, y+dy, z);
-    }
-    glEnd();*/
-    #endif
-        
-    renderer->SetRGBA(renderer, 255, 255, 255, 255);
+    DRAW_VERTICES(GL_LINE_STRIP);
 
     END;
 }
@@ -527,56 +532,31 @@ static void ArcFilled(GPU_Renderer* renderer, GPU_Target* target, float x, float
 
     BEGIN;
 
-        #ifdef SDL_GPU_USE_GL_TIER3
-        #else
-    renderer->SetRGBA(renderer, color.r, color.g, color.b, GET_ALPHA(color));
     float t = startAngle;
     float dt = (1 - (endAngle - startAngle)/360) * 5;  // A segment every 5 degrees of a full circle
     float dx, dy;
 
     int numSegments = fabs(endAngle - startAngle)/dt;
 
-    GLfloat glverts[(numSegments+3)*3];  // Extra vertex for the center and endpoint
+    DECLARE_VERTEX_ARRAY(numSegments+3);  // Extra vertex for the center and endpoint
+    DECLARE_COLOR_RGBA;
 
-    glverts[0] = x;
-    glverts[1] = y;
-    glverts[2] = z;
+    SET_VERTEX(x, y);
     int i;
     for(i = 1; i < numSegments+2; i++)
     {
         dx = radius*cos(t*RADPERDEG);
         dy = radius*sin(t*RADPERDEG);
-        glverts[i*3] = x+dx;
-        glverts[i*3+1] = y+dy;
-        glverts[i*3+2] = z;
+        SET_VERTEX(x+dx, y+dy);
         t += dt;
     }
 
     dx = radius*cos(endAngle*RADPERDEG);
     dy = radius*sin(endAngle*RADPERDEG);
-    glverts[i*3] = x+dx;
-    glverts[i*3+1] = y+dy;
-    glverts[i*3+2] = z;
+    SET_VERTEX(x+dx, y+dy);
     
-    draw_vertices(glverts, numSegments+3, GL_TRIANGLE_FAN);
-
-    /*glBegin(GL_TRIANGLE_FAN);
-    glVertex3f(x, y, z);
-    dx = radius*cos(t*RADPERDEG);
-    dy = radius*sin(t*RADPERDEG);
-    while(t < endAngle)
-    {
-    	glVertex3f(x+dx, y+dy, z);
-    	t += dt;
-    	dx = radius*cos(t*RADPERDEG);
-        dy = radius*sin(t*RADPERDEG);
-        glVertex3f(x+dx, y+dy, z);
-    }
-    glEnd();*/
-    #endif
+    DRAW_VERTICES(GL_TRIANGLE_FAN);
     
-    renderer->SetRGBA(renderer, 255, 255, 255, 255);
-
     END;
 }
 
@@ -584,31 +564,24 @@ static void Circle(GPU_Renderer* renderer, GPU_Target* target, float x, float y,
 {
     BEGIN;
 
-        #ifdef SDL_GPU_USE_GL_TIER3
-        #else
-    renderer->SetRGBA(renderer, color.r, color.g, color.b, GET_ALPHA(color));
     float t = 0;
     float dt = 5;  // A segment every 5 degrees of a full circle
     float dx, dy;
     int numSegments = 360/dt+1;
 
-    GLfloat glverts[numSegments*3];
+    DECLARE_VERTEX_ARRAY(numSegments);
+    DECLARE_COLOR_RGBA;
 
     int i;
     for(i = 0; i < numSegments; i++)
     {
         dx = radius*cos(t*RADPERDEG);
         dy = radius*sin(t*RADPERDEG);
-        glverts[i*3] = x+dx;
-        glverts[i*3+1] = y+dy;
-        glverts[i*3+2] = z;
+        SET_VERTEX(x+dx, y+dy);
         t += dt;
     }
 
-    draw_vertices(glverts, numSegments, GL_LINE_LOOP);
-    #endif
-    
-    renderer->SetRGBA(renderer, 255, 255, 255, 255);
+    DRAW_VERTICES(GL_LINE_LOOP);
 
     END;
 }
@@ -617,49 +590,28 @@ static void CircleFilled(GPU_Renderer* renderer, GPU_Target* target, float x, fl
 {
     BEGIN;
 
-        #ifdef SDL_GPU_USE_GL_TIER3
-        #else
-    renderer->SetRGBA(renderer, color.r, color.g, color.b, GET_ALPHA(color));
     float t = 0;
     float dt = 5;  // A segment every 5 degrees of a full circle
     float dx, dy;
 
     int numSegments = 360/dt+1;
 
-    GLfloat glverts[(1+numSegments)*3];
+    DECLARE_VERTEX_ARRAY(numSegments+1);
+    DECLARE_COLOR_RGBA;
 
-    glverts[0] = x;
-    glverts[1] = y;
-    glverts[2] = z;
+    SET_VERTEX(x, y);
+    
     int i;
-    for(i = 1; i < 1+numSegments; i++)
+    for(i = 1; i < numSegments+1; i++)
     {
         dx = radius*cos(t*RADPERDEG);
         dy = radius*sin(t*RADPERDEG);
-        glverts[i*3] = x+dx;
-        glverts[i*3+1] = y+dy;
-        glverts[i*3+2] = z;
+        SET_VERTEX(x+dx, y+dy);
         t += dt;
     }
 
-    draw_vertices(glverts, 1+numSegments, GL_TRIANGLE_FAN);
-
-    /*glBegin(GL_TRIANGLE_FAN);
-    dx = radius*cos(t*RADPERDEG);
-    dy = radius*sin(t*RADPERDEG);
-    glVertex3f(x+dx, y+dy, z);
-    while(t < 360)
-    {
-    	t += dt;
-    	dx = radius*cos(t*RADPERDEG);
-        dy = radius*sin(t*RADPERDEG);
-        glVertex3f(x+dx, y+dy, z);
-    }
-    glEnd();*/
-    #endif
+    DRAW_VERTICES(GL_TRIANGLE_FAN);
     
-    renderer->SetRGBA(renderer, 255, 255, 255, 255);
-
     END;
 }
 
@@ -667,26 +619,14 @@ static void Tri(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, 
 {
     BEGIN;
 
-        #ifdef SDL_GPU_USE_GL_TIER3
-        #else
-    renderer->SetRGBA(renderer, color.r, color.g, color.b, GET_ALPHA(color));
+    DECLARE_VERTEX_ARRAY(3);
+    DECLARE_COLOR_RGBA;
 
-    GLfloat glverts[9];
+    SET_VERTEX(x1, y1);
+    SET_VERTEX(x2, y2);
+    SET_VERTEX(x3, y3);
 
-    glverts[0] = x1;
-    glverts[1] = y1;
-    glverts[2] = z;
-    glverts[3] = x2;
-    glverts[4] = y2;
-    glverts[5] = z;
-    glverts[6] = x3;
-    glverts[7] = y3;
-    glverts[8] = z;
-
-    draw_vertices(glverts, 3, GL_LINE_LOOP);
-    #endif
-    
-    renderer->SetRGBA(renderer, 255, 255, 255, 255);
+    DRAW_VERTICES(GL_LINE_LOOP);
 
     END;
 }
@@ -694,54 +634,15 @@ static void Tri(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, 
 static void TriFilled(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, float x3, float y3, SDL_Color color)
 {
     BEGIN;
-
-    #ifdef SDL_GPU_USE_GL_TIER3
-    float r = color.r/255.0f;
-    float g = color.g/255.0f;
-    float b = color.b/255.0f;
-    float a = GET_ALPHA(color)/255.0f;
-    GLfloat glverts[21];
-
-    glverts[0] = x1;
-    glverts[1] = y1;
-    glverts[2] = z;
-    glverts[3] = r;
-    glverts[4] = g;
-    glverts[5] = b;
-    glverts[6] = a;
-    glverts[7] = x2;
-    glverts[8] = y2;
-    glverts[9] = z;
-    glverts[10] = r;
-    glverts[11] = g;
-    glverts[12] = b;
-    glverts[13] = a;
-    glverts[14] = x3;
-    glverts[15] = y3;
-    glverts[16] = z;
-    glverts[17] = r;
-    glverts[18] = g;
-    glverts[19] = b;
-    glverts[20] = a;
-    #else
-    renderer->SetRGBA(renderer, color.r, color.g, color.b, GET_ALPHA(color));
-
-    GLfloat glverts[9];
-
-    glverts[0] = x1;
-    glverts[1] = y1;
-    glverts[2] = z;
-    glverts[3] = x2;
-    glverts[4] = y2;
-    glverts[5] = z;
-    glverts[6] = x3;
-    glverts[7] = y3;
-    glverts[8] = z;
-    #endif
-
-    draw_vertices(glverts, 3, GL_TRIANGLE_STRIP);
     
-    renderer->SetRGBA(renderer, 255, 255, 255, 255);
+    DECLARE_VERTEX_ARRAY(3);
+    DECLARE_COLOR_RGBA;
+
+    SET_VERTEX(x1, y1);
+    SET_VERTEX(x2, y2);
+    SET_VERTEX(x3, y3);
+
+    DRAW_VERTICES(GL_TRIANGLE_STRIP);
 
     END;
 }
@@ -765,58 +666,24 @@ static void Rectangle(GPU_Renderer* renderer, GPU_Target* target, float x1, floa
     
 	float thickness = renderer->GetThickness(renderer);
 
-        #ifdef SDL_GPU_USE_GL_TIER3
-        #else
-    renderer->SetRGBA(renderer, color.r, color.g, color.b, GET_ALPHA(color));
-
-    GLfloat glverts[30];
-    
     float t = thickness/2;
     
-    glverts[0] = x1 - t;
-    glverts[1] = y1 - t;
-    glverts[2] = z;
+    // Thick lines via filled triangles
+    DECLARE_VERTEX_ARRAY(10);
+    DECLARE_COLOR_RGBA;
     
-    glverts[3] = x1 + t;
-    glverts[4] = y1 + t;
-    glverts[5] = z;
+    SET_VERTEX(x1 - t, y1 - t);
+    SET_VERTEX(x1 + t, y1 + t);
+    SET_VERTEX(x2 + t, y1 - t);
+    SET_VERTEX(x2 - t, y1 + t);
+    SET_VERTEX(x2 + t, y2 + t);
+    SET_VERTEX(x2 - t, y2 - t);
+    SET_VERTEX(x1 - t, y2 + t);
+    SET_VERTEX(x1 + t, y2 - t);
+    SET_VERTEX(x1 - t, y1 - t);
+    SET_VERTEX(x1 + t, y1 + t);
     
-    glverts[6] = x2 + t;
-    glverts[7] = y1 - t;
-    glverts[8] = z;
-    
-    glverts[9] = x2 - t;
-    glverts[10] = y1 + t;
-    glverts[11] = z;
-    
-    glverts[12] = x2 + t;
-    glverts[13] = y2 + t;
-    glverts[14] = z;
-    
-    glverts[15] = x2 - t;
-    glverts[16] = y2 - t;
-    glverts[17] = z;
-    
-    glverts[18] = x1 - t;
-    glverts[19] = y2 + t;
-    glverts[20] = z;
-    
-    glverts[21] = x1 + t;
-    glverts[22] = y2 - t;
-    glverts[23] = z;
-    
-    glverts[24] = x1 - t;
-    glverts[25] = y1 - t;
-    glverts[26] = z;
-    
-    glverts[27] = x1 + t;
-    glverts[28] = y1 + t;
-    glverts[29] = z;
-    
-    draw_vertices(glverts, 10, GL_TRIANGLE_STRIP);
-    #endif
-    
-    renderer->SetRGBA(renderer, 255, 255, 255, 255);
+    DRAW_VERTICES(GL_TRIANGLE_STRIP);
 
     END;
 }
@@ -824,30 +691,16 @@ static void Rectangle(GPU_Renderer* renderer, GPU_Target* target, float x1, floa
 static void RectangleFilled(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color)
 {
     BEGIN;
-
-        #ifdef SDL_GPU_USE_GL_TIER3
-        #else
-    renderer->SetRGBA(renderer, color.r, color.g, color.b, GET_ALPHA(color));
-
-    GLfloat glverts[12];
-
-    glverts[0] = x1;
-    glverts[1] = y1;
-    glverts[2] = z;
-    glverts[3] = x1;
-    glverts[4] = y2;
-    glverts[5] = z;
-    glverts[6] = x2;
-    glverts[7] = y1;
-    glverts[8] = z;
-    glverts[9] = x2;
-    glverts[10] = y2;
-    glverts[11] = z;
-
-    draw_vertices(glverts, 4, GL_TRIANGLE_STRIP);
-    #endif
     
-    renderer->SetRGBA(renderer, 255, 255, 255, 255);
+    DECLARE_VERTEX_ARRAY(4);
+    DECLARE_COLOR_RGBA;
+
+    SET_VERTEX(x1, y1);
+    SET_VERTEX(x1, y2);
+    SET_VERTEX(x2, y1);
+    SET_VERTEX(x2, y2);
+
+    DRAW_VERTICES(GL_TRIANGLE_STRIP);
 
     END;
 }
@@ -868,29 +721,22 @@ static void RectangleRound(GPU_Renderer* renderer, GPU_Target* target, float x1,
     }
 
     BEGIN;
-
-        #ifdef SDL_GPU_USE_GL_TIER3
-        #else
-    renderer->SetRGBA(renderer, color.r, color.g, color.b, GET_ALPHA(color));
     
     //int numVerts = 8 + (int(M_PI*5)+1)*4;  // 8 + (15.7 + 1)*4
-    float glverts[120*3];
+    DECLARE_VERTEX_ARRAY(120);
+    DECLARE_COLOR_RGBA;
     
     float i;
-    int n = 0;
     for(i=(float)M_PI*1.5f;i<M_PI*2;i+=0.1f)
-        set_vertex(glverts, n++, x2-radius+cos(i)*radius,y1+radius+sin(i)*radius, z);
+        SET_VERTEX(x2-radius+cos(i)*radius, y1+radius+sin(i)*radius);
     for(i=0;i<(float)M_PI*0.5f;i+=0.1f)
-        set_vertex(glverts, n++, x2-radius+cos(i)*radius,y2-radius+sin(i)*radius, z);
+        SET_VERTEX(x2-radius+cos(i)*radius, y2-radius+sin(i)*radius);
     for(i=(float)M_PI*0.5f;i<M_PI;i+=0.1f)
-        set_vertex(glverts, n++, x1+radius+cos(i)*radius,y2-radius+sin(i)*radius, z);
+        SET_VERTEX(x1+radius+cos(i)*radius, y2-radius+sin(i)*radius);
     for(i=(float)M_PI;i<M_PI*1.5f;i+=0.1f)
-        set_vertex(glverts, n++, x1+radius+cos(i)*radius,y1+radius+sin(i)*radius, z);
+        SET_VERTEX(x1+radius+cos(i)*radius, y1+radius+sin(i)*radius);
 
-    draw_vertices(glverts, n, GL_LINE_LOOP);
-    #endif
-    
-    renderer->SetRGBA(renderer, 255, 255, 255, 255);
+    DRAW_COUNTED_VERTICES(GL_LINE_LOOP);
 
     END;
 }
@@ -911,37 +757,30 @@ static void RectangleRoundFilled(GPU_Renderer* renderer, GPU_Target* target, flo
     }
 
     BEGIN;
-
-        #ifdef SDL_GPU_USE_GL_TIER3
-        #else
-    renderer->SetRGBA(renderer, color.r, color.g, color.b, GET_ALPHA(color));
     
     //int numVerts = 8 + (int(M_PI*5)+1)*4;  // 8 + (15.7 + 1)*4
-    float glverts[120*3];
+    DECLARE_VERTEX_ARRAY(120);
+    DECLARE_COLOR_RGBA;
     
     float i;
-    int n = 0;
-    set_vertex(glverts, n++, x1+radius,y1, z);
-    set_vertex(glverts, n++, x2-radius,y1, z);
+    SET_VERTEX(x1+radius,y1);
+    SET_VERTEX(x2-radius,y1);
     for(i=(float)M_PI*1.5f;i<M_PI*2;i+=0.1f)
-        set_vertex(glverts, n++, x2-radius+cos(i)*radius,y1+radius+sin(i)*radius, z);
-    set_vertex(glverts, n++, x2,y1+radius, z);
-    set_vertex(glverts, n++, x2,y2-radius, z);
+        SET_VERTEX(x2-radius+cos(i)*radius,y1+radius+sin(i)*radius);
+    SET_VERTEX(x2,y1+radius);
+    SET_VERTEX(x2,y2-radius);
     for(i=0;i<(float)M_PI*0.5f;i+=0.1f)
-        set_vertex(glverts, n++, x2-radius+cos(i)*radius,y2-radius+sin(i)*radius, z);
-    set_vertex(glverts, n++, x2-radius,y2, z);
-    set_vertex(glverts, n++, x1+radius,y2, z);
+        SET_VERTEX(x2-radius+cos(i)*radius,y2-radius+sin(i)*radius);
+    SET_VERTEX(x2-radius,y2);
+    SET_VERTEX(x1+radius,y2);
     for(i=(float)M_PI*0.5f;i<M_PI;i+=0.1f)
-        set_vertex(glverts, n++, x1+radius+cos(i)*radius,y2-radius+sin(i)*radius, z);
-    set_vertex(glverts, n++, x1,y2-radius, z);
-    set_vertex(glverts, n++, x1,y1+radius, z);
+        SET_VERTEX(x1+radius+cos(i)*radius,y2-radius+sin(i)*radius);
+    SET_VERTEX(x1,y2-radius);
+    SET_VERTEX(x1,y1+radius);
     for(i=(float)M_PI;i<M_PI*1.5f;i+=0.1f)
-        set_vertex(glverts, n++, x1+radius+cos(i)*radius,y1+radius+sin(i)*radius, z);
+        SET_VERTEX(x1+radius+cos(i)*radius,y1+radius+sin(i)*radius);
 
-    draw_vertices(glverts, n, GL_TRIANGLE_FAN);
-    #endif
-    
-    renderer->SetRGBA(renderer, 255, 255, 255, 255);
+    DRAW_COUNTED_VERTICES(GL_TRIANGLE_FAN);
     
     END;
 }
@@ -949,24 +788,15 @@ static void RectangleRoundFilled(GPU_Renderer* renderer, GPU_Target* target, flo
 static void Polygon(GPU_Renderer* renderer, GPU_Target* target, Uint16 n, float* vertices, SDL_Color color)
 {
     BEGIN;
-
-        #ifdef SDL_GPU_USE_GL_TIER3
-        #else
-    renderer->SetRGBA(renderer, color.r, color.g, color.b, GET_ALPHA(color));
     
     int numIndices = 2*n;
-    float glverts[numIndices*3];
+    DECLARE_VERTEX_ARRAY(n);
+    DECLARE_COLOR_RGBA;
     
-    int i, j;
-    for(i = 0, j = 0; i < numIndices; i+=2, j++)
-    {
-        set_vertex(glverts, j, vertices[i], vertices[i+1], z);
-    }
+    for(int i = 0; i < numIndices; i+=2)
+        SET_VERTEX(vertices[i], vertices[i+1]);
     
-    draw_vertices(glverts, n, GL_LINE_LOOP);
-    #endif
-    
-    renderer->SetRGBA(renderer, 255, 255, 255, 255);
+    DRAW_VERTICES(GL_LINE_LOOP);
 
     END;
 }
@@ -974,24 +804,15 @@ static void Polygon(GPU_Renderer* renderer, GPU_Target* target, Uint16 n, float*
 static void PolygonFilled(GPU_Renderer* renderer, GPU_Target* target, Uint16 n, float* vertices, SDL_Color color)
 {
     BEGIN;
-
-        #ifdef SDL_GPU_USE_GL_TIER3
-        #else
-    renderer->SetRGBA(renderer, color.r, color.g, color.b, GET_ALPHA(color));
     
     int numIndices = 2*n;
-    float glverts[numIndices*3];
+    DECLARE_VERTEX_ARRAY(n);
+    DECLARE_COLOR_RGBA;
     
-    int i, j;
-    for(i = 0, j = 0; i < numIndices; i+=2, j++)
-    {
-        set_vertex(glverts, j, vertices[i], vertices[i+1], z);
-    }
+    for(int i = 0; i < numIndices; i+=2)
+        SET_VERTEX(vertices[i], vertices[i+1]);
     
-    draw_vertices(glverts, n, GL_TRIANGLE_FAN);
-    #endif
-    
-    renderer->SetRGBA(renderer, 255, 255, 255, 255);
+    DRAW_VERTICES(GL_TRIANGLE_FAN);
 
     END;
 }
@@ -1014,26 +835,22 @@ static void PolygonBlit(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrec
     // TODO: Add rotation of texture using 'angle'
     // TODO: Use 'srcrect'
     
-        #ifdef SDL_GPU_USE_GL_TIER3
-        #else
     int numIndices = 2*n;
-    float glverts[numIndices*3];
-    float gltexcoords[numIndices*2];
+    DECLARE_TEXTURED_VERTEX_ARRAY(n);
+    // TODO: Maybe add a parameter for color?
+    SDL_Color color = {255, 255, 255, 255};
+    DECLARE_COLOR_RGBA;
     
-    int i, j;
-    for(i = 0, j = 0; i < numIndices; i+=2, j++)
+    for(int i = 0; i < numIndices; i+=2)
     {
         float x = vertices[i];
     	float y = vertices[i+1];
-
-    	gltexcoords[i] = (x - textureX)*scaleX/src->w;
-    	gltexcoords[i+1] = (y - textureY)*scaleY/src->h;
     	
-        set_vertex(glverts, j, vertices[i], vertices[i+1], z);
+        SET_VERTEX_TEXTURED(x, y, (x - textureX)*scaleX/src->w, (y - textureY)*scaleY/src->h);
     }
     
-    draw_vertices_textured(glverts, gltexcoords, n, GL_TRIANGLE_FAN);
-#endif
+    DRAW_VERTICES_TEXTURED(GL_TRIANGLE_FAN);
+    
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
     
