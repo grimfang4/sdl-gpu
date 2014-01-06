@@ -338,7 +338,7 @@ static inline void draw_vertices_textured(GLfloat* glverts, int num_vertices, GL
         glEnableVertexAttribArray(data->current_shader_block.color_loc);
         glVertexAttribPointer(data->current_shader_block.color_loc, 4, GL_FLOAT, GL_FALSE, buffer_stride, (void*)(3 * sizeof(float)));
         glEnableVertexAttribArray(data->current_shader_block.texcoord_loc);
-        glVertexAttribPointer(data->current_shader_block.texcoord_loc, 2, GL_FLOAT, GL_FALSE, buffer_stride, (void*)(5 * sizeof(float)));
+        glVertexAttribPointer(data->current_shader_block.texcoord_loc, 2, GL_FLOAT, GL_FALSE, buffer_stride, (void*)(7 * sizeof(float)));
         
         glDrawArrays(prim_type, 0, num_vertices);
         
