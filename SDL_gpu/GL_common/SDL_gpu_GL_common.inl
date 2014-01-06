@@ -781,7 +781,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
         #ifdef SDL_GPU_USE_GL_TIER3
         // Get locations of the attributes in the shader
         data->shader_block[1] = GPU_LoadShaderBlock(p, "gpu_Vertex", NULL, "gpu_Color", "modelViewProjection");
-        GPU_SetShaderBlock(data->shader_block[0]);
+        GPU_SetShaderBlock(data->shader_block[1]);
         
         // Create vertex array container and buffer
         #if !defined(SDL_GPU_USE_GLES) || SDL_GPU_GLES_MAJOR_VERSION != 2
