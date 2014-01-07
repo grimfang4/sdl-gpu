@@ -58,6 +58,32 @@ typedef struct GPU_RendererID
     int index;
 } GPU_RendererID;
 
+
+/*! Texture filtering options.  These affect the quality/interpolation of colors when images are scaled. 
+ * \see GPU_SetImageFilter()
+ */
+typedef unsigned int GPU_FilterEnum;
+static const GPU_FilterEnum GPU_NEAREST = 0;
+static const GPU_FilterEnum GPU_LINEAR = 1;
+static const GPU_FilterEnum GPU_LINEAR_MIPMAP = 2;
+
+/*! Blending options 
+ * \see GPU_SetBlendMode()
+ */
+typedef unsigned int GPU_BlendEnum;
+static const GPU_BlendEnum GPU_BLEND_NORMAL = 0;
+static const GPU_BlendEnum GPU_BLEND_MULTIPLY = 1;
+static const GPU_BlendEnum GPU_BLEND_ADD = 2;
+static const GPU_BlendEnum GPU_BLEND_SUBTRACT = 3;
+static const GPU_BlendEnum GPU_BLEND_ADD_COLOR = 4;
+static const GPU_BlendEnum GPU_BLEND_SUBTRACT_COLOR = 5;
+static const GPU_BlendEnum GPU_BLEND_DARKEN = 6;
+static const GPU_BlendEnum GPU_BLEND_LIGHTEN = 7;
+static const GPU_BlendEnum GPU_BLEND_DIFFERENCE = 8;
+static const GPU_BlendEnum GPU_BLEND_PUNCHOUT = 9;
+static const GPU_BlendEnum GPU_BLEND_CUTOUT = 10;
+
+
 /*! Image object for containing pixel/texture data.
  * A GPU_Image can be created with GPU_CreateImage(), GPU_LoadImage(), GPU_CopyImage(), or GPU_CopyImageFromSurface().
  * Free the memory with GPU_FreeImage() when you're done.
@@ -74,6 +100,9 @@ typedef struct GPU_Image
 	Uint16 w, h;
 	int channels;
 	SDL_Color color;
+	Uint8 use_blending;
+	GPU_BlendEnum blend_mode;
+	GPU_FilterEnum filter_mode;
 	
 	void* data;
 	int refcount;
@@ -137,7 +166,12 @@ struct GPU_Target
 	Uint32 default_untextured_shader_program;
 	Uint32 current_shader_program;
 	
+	Uint8 shapes_use_blending;
+	GPU_BlendEnum shapes_blend_mode;
+	
 	SDL_Color last_color;
+	Uint8 last_use_blending;
+	GPU_BlendEnum last_blend_mode;
 };
 
 /*! Important GPU features which may not be supported depending on a device's extension support.  Can be OR'd together.
@@ -161,30 +195,6 @@ static const GPU_FeatureEnum GPU_FEATURE_GEOMETRY_SHADER = 0x400;
 #define GPU_FEATURE_ALL_BLEND_MODES (GPU_FEATURE_BLEND_EQUATIONS | GPU_FEATURE_BLEND_FUNC_SEPARATE)
 #define GPU_FEATURE_ALL_GL_FORMATS (GPU_FEATURE_GL_BGR | GPU_FEATURE_GL_BGRA | GPU_FEATURE_GL_ABGR)
 #define GPU_FEATURE_ALL_SHADERS (GPU_FEATURE_FRAGMENT_SHADER | GPU_FEATURE_PIXEL_SHADER | GPU_FEATURE_GEOMETRY_SHADER)
-
-/*! Texture filtering options.  These affect the quality/interpolation of colors when images are scaled. 
- * \see GPU_SetImageFilter()
- */
-typedef unsigned int GPU_FilterEnum;
-static const GPU_FilterEnum GPU_NEAREST = 0;
-static const GPU_FilterEnum GPU_LINEAR = 1;
-static const GPU_FilterEnum GPU_LINEAR_MIPMAP = 2;
-
-/*! Blending options 
- * \see GPU_SetBlendMode()
- */
-typedef unsigned int GPU_BlendEnum;
-static const GPU_BlendEnum GPU_BLEND_NORMAL = 0;
-static const GPU_BlendEnum GPU_BLEND_MULTIPLY = 1;
-static const GPU_BlendEnum GPU_BLEND_ADD = 2;
-static const GPU_BlendEnum GPU_BLEND_SUBTRACT = 3;
-static const GPU_BlendEnum GPU_BLEND_ADD_COLOR = 4;
-static const GPU_BlendEnum GPU_BLEND_SUBTRACT_COLOR = 5;
-static const GPU_BlendEnum GPU_BLEND_DARKEN = 6;
-static const GPU_BlendEnum GPU_BLEND_LIGHTEN = 7;
-static const GPU_BlendEnum GPU_BLEND_DIFFERENCE = 8;
-static const GPU_BlendEnum GPU_BLEND_PUNCHOUT = 9;
-static const GPU_BlendEnum GPU_BLEND_CUTOUT = 10;
 
 
 /*! Renderer object which specializes the API to a particular backend. */
@@ -298,21 +308,12 @@ struct GPU_Renderer
 
 	/*! \see GPU_ClearClip() */
 	void (*ClearClip)(GPU_Renderer* renderer, GPU_Target* target);
-
-	/*! \see GPU_GetBlending() */
-	Uint8 (*GetBlending)(GPU_Renderer* renderer);
-
-	/*! \see GPU_SetBlending() */
-	void (*SetBlending)(GPU_Renderer* renderer, Uint8 enable);
 	
 	/*! \see GPU_GetPixel() */
 	SDL_Color (*GetPixel)(GPU_Renderer* renderer, GPU_Target* target, Sint16 x, Sint16 y);
 	
 	/*! \see GPU_SetImageFilter() */
 	void (*SetImageFilter)(GPU_Renderer* renderer, GPU_Image* image, GPU_FilterEnum filter);
-	
-	/*! \see GPU_SetBlendMode() */
-	void (*SetBlendMode)(GPU_Renderer* renderer, GPU_BlendEnum mode);
 
 	/*! \see GPU_Clear() */
 	void (*Clear)(GPU_Renderer* renderer, GPU_Target* target);
@@ -695,12 +696,6 @@ GPU_Rect GPU_SetClip(GPU_Target* target, Sint16 x, Sint16 y, Uint16 w, Uint16 h)
 /*! Clears (resets) the clipping rect for the given render target. */
 void GPU_ClearClip(GPU_Target* target);
 
-/*! Gets the current alpha blending setting. */
-Uint8 GPU_GetBlending(void);
-
-/*! Enables/disables alpha blending. */
-void GPU_SetBlending(Uint8 enable);
-
 /*! Sets the modulation color for subsequent drawing. */
 void GPU_SetColor(GPU_Image* image, SDL_Color* color);
 
@@ -710,14 +705,26 @@ void GPU_SetRGB(GPU_Image* image, Uint8 r, Uint8 g, Uint8 b);
 /*! Sets the modulation color for subsequent drawing. */
 void GPU_SetRGBA(GPU_Image* image, Uint8 r, Uint8 g, Uint8 b, Uint8 a);
 
-/*! \return The RGBA color of a pixel. */
-SDL_Color GPU_GetPixel(GPU_Target* target, Sint16 x, Sint16 y);
+/*! Gets the current alpha blending setting. */
+Uint8 GPU_GetBlending(GPU_Image* image);
+
+/*! Enables/disables alpha blending for the given image. */
+void GPU_SetBlending(GPU_Image* image, Uint8 enable);
+
+/*! Enables/disables alpha blending for shape rendering. */
+void GPU_SetShapeBlending(Uint8 enable);
+	
+/*! Sets the blending mode, if supported by the renderer. */
+void GPU_SetBlendMode(GPU_Image* image, GPU_BlendEnum mode);
+	
+/*! Sets the blending mode for shape rendering, if supported by the renderer. */
+void GPU_SetShapeBlendMode(GPU_BlendEnum mode);
 
 /*! Sets the image filtering mode, if supported by the renderer. */
 void GPU_SetImageFilter(GPU_Image* image, GPU_FilterEnum filter);
-	
-/*! Sets the blending mode, if supported by the renderer. */
-void GPU_SetBlendMode(GPU_BlendEnum mode);
+
+/*! \return The RGBA color of a pixel. */
+SDL_Color GPU_GetPixel(GPU_Target* target, Sint16 x, Sint16 y);
 
 /*! Clears the contents of the given render target. */
 void GPU_Clear(GPU_Target* target);
