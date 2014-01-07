@@ -38,7 +38,6 @@ TARGET_DATA  // Appropriate type for the target data (via pointer)
 #include <math.h>
 #include <string.h>
 #include <strings.h>
-int strcasecmp(const char*, const char *);
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -1224,13 +1223,13 @@ static Uint8 SaveImage(GPU_Renderer* renderer, GPU_Image* image, const char* fil
         return 0;
     }
 
-    if(strcasecmp(extension, "png") == 0)
+    if(SDL_strcasecmp(extension, "png") == 0)
         result = stbi_write_png(filename, image->w, image->h, image->channels, (const unsigned char *const)data, 0);
-    else if(strcasecmp(extension, "bmp") == 0)
+    else if(SDL_strcasecmp(extension, "bmp") == 0)
         result = stbi_write_bmp(filename, image->w, image->h, image->channels, (void*)data);
-    else if(strcasecmp(extension, "tga") == 0)
+    else if(SDL_strcasecmp(extension, "tga") == 0)
         result = stbi_write_tga(filename, image->w, image->h, image->channels, (void*)data);
-    //else if(strcasecmp(extension, "dds") == 0)
+    //else if(SDL_strcasecmp(extension, "dds") == 0)
     //    result = stbi_write_dds(filename, image->w, image->h, image->channels, (const unsigned char *const)data);
     else
     {

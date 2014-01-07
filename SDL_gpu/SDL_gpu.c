@@ -402,13 +402,13 @@ Uint8 GPU_SaveSurface(SDL_Surface* surface, const char* filename)
 
     data = surface->pixels;
 
-    if(strcasecmp(extension, "png") == 0)
+    if(SDL_strcasecmp(extension, "png") == 0)
         result = stbi_write_png(filename, surface->w, surface->h, surface->format->BytesPerPixel, (const unsigned char *const)data, 0);
-    else if(strcasecmp(extension, "bmp") == 0)
+    else if(SDL_strcasecmp(extension, "bmp") == 0)
         result = stbi_write_bmp(filename, surface->w, surface->h, surface->format->BytesPerPixel, (void*)data);
-    else if(strcasecmp(extension, "tga") == 0)
+    else if(SDL_strcasecmp(extension, "tga") == 0)
         result = stbi_write_tga(filename, surface->w, surface->h, surface->format->BytesPerPixel, (void*)data);
-    //else if(strcasecmp(extension, "dds") == 0)
+    //else if(SDL_strcasecmp(extension, "dds") == 0)
     //    result = stbi_write_dds(filename, surface->w, surface->h, surface->format->BytesPerPixel, (const unsigned char *const)data);
     else
     {
