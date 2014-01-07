@@ -484,6 +484,33 @@ static void prepareToRenderToTarget(GPU_Renderer* renderer, GPU_Target* target)
     //renderer->SetCamera(renderer, target, &target->camera);
 }
 
+
+
+static void changeColor(GPU_Renderer* renderer, SDL_Color color)
+{
+    #ifdef SDL_GPU_USE_GL_TIER3
+    return;
+    #else
+    GPU_Target* target = renderer->current_context_target;
+    if(target == NULL)
+        return;
+    if(target->last_color.r != color.r
+        || target->last_color.g != color.g
+        || target->last_color.b != color.b
+        || GET_ALPHA(target->last_color) != GET_ALPHA(color))
+    {
+        renderer->FlushBlitBuffer(renderer);
+        target->last_color = color;
+        glColor4f(color.r/255.01f, color.g/255.01f, color.b/255.01f, color.a/255.01f);
+    }
+    #endif
+}
+
+static void prepareToRenderImage(GPU_Renderer* renderer, GPU_Image* image)
+{
+    changeColor(renderer, image->color);
+}
+
 static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request, Uint16 w, Uint16 h, Uint32 flags)
 {
     // Tell SDL what we want.
@@ -691,6 +718,8 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     target->clipRect.h = target->h;
     
     target->camera = GPU_GetDefaultCamera();
+    SDL_Color white = {255, 255, 255, 255};
+    target->last_color = white;
     
     // Set up GL state
     
@@ -701,7 +730,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     glViewport( 0, 0, target->window_w, target->window_h);
 
     glClear( GL_COLOR_BUFFER_BIT );
-    renderer->SetRGBA(renderer, 255, 255, 255, 255);
+    glColor4ub(255, 255, 255, 255);
     
     GPU_InitMatrix();
     
@@ -865,7 +894,6 @@ static int SetWindowResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
     glViewport( 0, 0, w, h);
 
     glClear( GL_COLOR_BUFFER_BIT );
-    renderer->SetRGBA(renderer, 255, 255, 255, 255);
 
     GPU_MatrixMode( GPU_PROJECTION );
     GPU_LoadIdentity();
@@ -1031,9 +1059,12 @@ static GPU_Image* CreateUninitializedImage(GPU_Renderer* renderer, Uint16 w, Uin
     GPU_Image* result = (GPU_Image*)malloc(sizeof(GPU_Image));
     IMAGE_DATA* data = (IMAGE_DATA*)malloc(sizeof(IMAGE_DATA));
     result->target = NULL;
-    result->data = data;
     result->renderer = renderer;
     result->channels = channels;
+    SDL_Color white = {255, 255, 255, 255};
+    result->color = white;
+    
+    result->data = data;
     result->refcount = 1;
     data->handle = handle;
     data->format = format;
@@ -1983,9 +2014,6 @@ static GPU_Target* LoadTarget(GPU_Renderer* renderer, GPU_Image* image)
     #ifdef SDL_GPU_USE_SDL2
     data->context = 0;
     #endif
-    #ifdef SDL_GPU_USE_GL_TIER3
-    data->color.r = data->color.g = data->color.b = GET_ALPHA(data->color) = 255;
-    #endif
     
     result->renderer = renderer;
     result->windowID = 0;
@@ -2073,6 +2101,7 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_T
     if(bindFramebuffer(renderer, dest))
     {
         prepareToRenderToTarget(renderer, dest);
+        prepareToRenderImage(renderer, src);
         if(renderer->current_context_target->image == NULL && renderer->current_context_target->current_shader_program == renderer->current_context_target->default_untextured_shader_program)
             renderer->ActivateShaderProgram(renderer, renderer->current_context_target->default_textured_shader_program);
         
@@ -2118,11 +2147,10 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_T
         int tex_index = GPU_BLIT_BUFFER_TEX_COORD_OFFSET + rdata->blit_buffer_num_vertices*GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
         #ifdef SDL_GPU_USE_GL_TIER3
         int color_index = GPU_BLIT_BUFFER_COLOR_OFFSET + rdata->blit_buffer_num_vertices*GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
-        TARGET_DATA* data = (TARGET_DATA*)dest->data;
-        float r =  data->color.r/255.0f;
-        float g =  data->color.g/255.0f;
-        float b =  data->color.b/255.0f;
-        float a =  GET_ALPHA(data->color)/255.0f;
+        float r =  src->color.r/255.0f;
+        float g =  src->color.g/255.0f;
+        float b =  src->color.b/255.0f;
+        float a =  GET_ALPHA(src->color)/255.0f;
         #endif
 
         blit_buffer[vert_index] = dx1;
@@ -2265,6 +2293,7 @@ static int BlitTransformX(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcr
     if(bindFramebuffer(renderer, dest))
     {
         prepareToRenderToTarget(renderer, dest);
+        prepareToRenderImage(renderer, src);
         if(renderer->current_context_target->image == NULL && renderer->current_context_target->current_shader_program == renderer->current_context_target->default_untextured_shader_program)
             renderer->ActivateShaderProgram(renderer, renderer->current_context_target->default_textured_shader_program);
         
@@ -2374,11 +2403,10 @@ static int BlitTransformX(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcr
         int tex_index = GPU_BLIT_BUFFER_TEX_COORD_OFFSET + rdata->blit_buffer_num_vertices*GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
         #ifdef SDL_GPU_USE_GL_TIER3
         int color_index = GPU_BLIT_BUFFER_COLOR_OFFSET + rdata->blit_buffer_num_vertices*GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
-        TARGET_DATA* data = (TARGET_DATA*)dest->data;
-        float r =  data->color.r/255.0f;
-        float g =  data->color.g/255.0f;
-        float b =  data->color.b/255.0f;
-        float a =  GET_ALPHA(data->color)/255.0f;
+        float r =  src->color.r/255.0f;
+        float g =  src->color.g/255.0f;
+        float b =  src->color.b/255.0f;
+        float a =  GET_ALPHA(src->color)/255.0f;
         #endif
 
         blit_buffer[vert_index] = dx1;
@@ -2609,24 +2637,6 @@ static void SetBlending(GPU_Renderer* renderer, Uint8 enable)
         glDisable(GL_BLEND);
 
     ((TARGET_DATA*)renderer->current_context_target->data)->blending = enable;
-}
-
-
-static void SetRGBA(GPU_Renderer* renderer, Uint8 r, Uint8 g, Uint8 b, Uint8 a)
-{
-    renderer->FlushBlitBuffer(renderer);
-    #ifdef SDL_GPU_USE_GL_TIER3
-    GPU_Target* target = renderer->current_context_target;
-    if(target == NULL)
-        return;
-    TARGET_DATA* data = (TARGET_DATA*)target->data;
-    data->color.r = r;
-    data->color.g = g;
-    data->color.b = b;
-    GET_ALPHA(data->color) = a;
-    #else
-    glColor4f(r/255.01f, g/255.01f, b/255.01f, a/255.01f);
-    #endif
 }
 
 
@@ -3496,7 +3506,6 @@ static void SetUniformMatrixfv(GPU_Renderer* renderer, int location, int num_mat
     renderer->ClearClip = &ClearClip; \
     renderer->GetBlending = &GetBlending; \
     renderer->SetBlending = &SetBlending; \
-    renderer->SetRGBA = &SetRGBA; \
      \
     renderer->GetPixel = &GetPixel; \
     renderer->SetImageFilter = &SetImageFilter; \

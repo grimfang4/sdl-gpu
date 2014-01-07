@@ -623,35 +623,36 @@ void GPU_SetBlending(Uint8 enable)
 }
 
 
-void GPU_SetColor(SDL_Color* color)
+void GPU_SetColor(GPU_Image* image, SDL_Color* color)
 {
-	if(current_renderer == NULL || current_renderer->SetRGBA == NULL)
+	if(image == NULL)
 		return;
 	
 	if(color == NULL)
-		current_renderer->SetRGBA(current_renderer, 255, 255, 255, 255);
-	else
-    #ifdef SDL_GPU_USE_SDL2
-		current_renderer->SetRGBA(current_renderer, color->r, color->g, color->b, color->a);
-    #else
-		current_renderer->SetRGBA(current_renderer, color->r, color->g, color->b, color->unused);
-    #endif
+    {
+        SDL_Color c = {255, 255, 255, 255};
+        image->color = c;
+    }
+    else
+        image->color = *color;
 }
 
-void GPU_SetRGB(Uint8 r, Uint8 g, Uint8 b)
+void GPU_SetRGB(GPU_Image* image, Uint8 r, Uint8 g, Uint8 b)
 {
-	if(current_renderer == NULL || current_renderer->SetRGBA == NULL)
+	if(image == NULL)
 		return;
 	
-	current_renderer->SetRGBA(current_renderer, r, g, b, 255);
+	SDL_Color c = {r, g, b, 255};
+	image->color = c;
 }
 
-void GPU_SetRGBA(Uint8 r, Uint8 g, Uint8 b, Uint8 a)
+void GPU_SetRGBA(GPU_Image* image, Uint8 r, Uint8 g, Uint8 b, Uint8 a)
 {
-	if(current_renderer == NULL || current_renderer->SetRGBA == NULL)
+	if(image == NULL)
 		return;
 	
-	current_renderer->SetRGBA(current_renderer, r, g, b, a);
+	SDL_Color c = {r, g, b, a};
+	image->color = c;
 }
 
 
