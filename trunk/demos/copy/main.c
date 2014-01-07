@@ -94,7 +94,7 @@ int main(int argc, char* argv[])
 		
 		GPU_ClearRGBA(screen, 100, 100, 100, 255);
 		
-		GPU_SetCamera(&camera);
+		GPU_SetCamera(screen, &camera);
 		
 		GPU_Blit(image, NULL, screen, 128, 128);
 		GPU_Blit(image1, NULL, screen, 128 + 256, 128);

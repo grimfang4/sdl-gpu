@@ -61,7 +61,6 @@ typedef struct TargetData_GLES_1
 	Uint32 handle;
 	Uint32 format;
 	
-	Uint8 blending;
 	float line_thickness;
 	
     #ifdef SDL_GPU_USE_SDL2

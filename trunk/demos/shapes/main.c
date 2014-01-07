@@ -138,7 +138,7 @@ int main(int argc, char* argv[])
 	Uint8 blend = 0;
 	float thickness = 1.0f;
 	
-	GPU_SetBlending(blend);
+	GPU_SetShapeBlending(blend);
 	
 	Uint8 done = 0;
 	SDL_Event event;
@@ -161,7 +161,7 @@ int main(int argc, char* argv[])
 				else if(event.key.keysym.sym == SDLK_b)
 				{
 					blend = !blend;
-					GPU_SetBlending(blend);
+					GPU_SetShapeBlending(blend);
 				}
 				else if(event.key.keysym.sym == SDLK_UP)
 				{

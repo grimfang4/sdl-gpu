@@ -605,22 +605,6 @@ void GPU_ClearClip(GPU_Target* target)
 }
 
 
-Uint8 GPU_GetBlending(void)
-{
-	if(current_renderer == NULL || current_renderer->GetBlending == NULL)
-		return 0;
-	
-	return current_renderer->GetBlending(current_renderer);
-}
-
-
-void GPU_SetBlending(Uint8 enable)
-{
-	if(current_renderer == NULL || current_renderer->SetBlending == NULL)
-		return;
-	
-	current_renderer->SetBlending(current_renderer, enable);
-}
 
 
 void GPU_SetColor(GPU_Image* image, SDL_Color* color)
@@ -655,6 +639,54 @@ void GPU_SetRGBA(GPU_Image* image, Uint8 r, Uint8 g, Uint8 b, Uint8 a)
 	image->color = c;
 }
 
+Uint8 GPU_GetBlending(GPU_Image* image)
+{
+	if(image == NULL)
+		return 0;
+	
+	return image->use_blending;
+}
+
+
+void GPU_SetBlending(GPU_Image* image, Uint8 enable)
+{
+	if(image == NULL)
+		return;
+	
+	image->use_blending = enable;
+}
+
+void GPU_SetShapeBlending(Uint8 enable)
+{
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
+		return;
+	
+	current_renderer->current_context_target->shapes_use_blending = enable;
+}
+
+void GPU_SetBlendMode(GPU_Image* image, GPU_BlendEnum mode)
+{
+	if(image == NULL)
+		return;
+	
+	image->blend_mode = mode;
+}
+
+void GPU_SetShapeBlendMode(GPU_BlendEnum mode)
+{
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
+		return;
+	
+	current_renderer->current_context_target->shapes_blend_mode = mode;
+}
+
+void GPU_SetImageFilter(GPU_Image* image, GPU_FilterEnum filter)
+{
+	if(image == NULL)
+		return;
+	
+	image->filter_mode = filter;
+}
 
 
 SDL_Color GPU_GetPixel(GPU_Target* target, Sint16 x, Sint16 y)
@@ -666,22 +698,6 @@ SDL_Color GPU_GetPixel(GPU_Target* target, Sint16 x, Sint16 y)
 	}
 	
 	return current_renderer->GetPixel(current_renderer, target, x, y);
-}
-
-void GPU_SetImageFilter(GPU_Image* image, GPU_FilterEnum filter)
-{
-	if(current_renderer == NULL || current_renderer->SetImageFilter == NULL)
-		return;
-	
-	current_renderer->SetImageFilter(current_renderer, image, filter);
-}
-
-void GPU_SetBlendMode(GPU_BlendEnum mode)
-{
-	if(current_renderer == NULL || current_renderer->SetBlendMode == NULL)
-		return;
-	
-	current_renderer->SetBlendMode(current_renderer, mode);
 }
 
 

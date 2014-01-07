@@ -15,15 +15,15 @@ void draw_stuff(GPU_Image* bg_base, GPU_Target* bg_target, GPU_Image* image, flo
 			float xx = x + 50;
 			float yy = y + 50;
 			
-			GPU_SetBlendMode(GPU_BLEND_NORMAL);
+			GPU_SetBlendMode(image, GPU_BLEND_NORMAL);
 			GPU_BlitScale(image, NULL, bg_target, xx, yy, 0.5f, 0.5f);
 			
 			xx += 200;
-			GPU_SetBlendMode(GPU_BLEND_MULTIPLY);
+			GPU_SetBlendMode(image, GPU_BLEND_MULTIPLY);
 			GPU_BlitScale(image, NULL, bg_target, xx, yy, 0.5f, 0.5f);
 			
 			xx += 200;
-			GPU_SetBlendMode(GPU_BLEND_DIFFERENCE);
+			GPU_SetBlendMode(image, GPU_BLEND_DIFFERENCE);
 			GPU_BlitScale(image, NULL, bg_target, xx, yy, 0.5f, 0.5f);
 		}
 		
@@ -32,19 +32,19 @@ void draw_stuff(GPU_Image* bg_base, GPU_Target* bg_target, GPU_Image* image, flo
 			float xx = x + 50;
 			float yy = y + 250;
 			
-			GPU_SetBlendMode(GPU_BLEND_ADD);
+			GPU_SetBlendMode(image, GPU_BLEND_ADD);
 			GPU_BlitScale(image, NULL, bg_target, xx, yy, 0.5f, 0.5f);
 			
 			xx += 200;
-			GPU_SetBlendMode(GPU_BLEND_SUBTRACT);
+			GPU_SetBlendMode(image, GPU_BLEND_SUBTRACT);
 			GPU_BlitScale(image, NULL, bg_target, xx, yy, 0.5f, 0.5f);
 			
 			xx += 200;
-			GPU_SetBlendMode(GPU_BLEND_ADD_COLOR);
+			GPU_SetBlendMode(image, GPU_BLEND_ADD_COLOR);
 			GPU_BlitScale(image, NULL, bg_target, xx, yy, 0.5f, 0.5f);
 			
 			xx += 200;
-			GPU_SetBlendMode(GPU_BLEND_SUBTRACT_COLOR);
+			GPU_SetBlendMode(image, GPU_BLEND_SUBTRACT_COLOR);
 			GPU_BlitScale(image, NULL, bg_target, xx, yy, 0.5f, 0.5f);
 		}
 		
@@ -53,23 +53,23 @@ void draw_stuff(GPU_Image* bg_base, GPU_Target* bg_target, GPU_Image* image, flo
 			float xx = x + 50;
 			float yy = y + 450;
 			
-			GPU_SetBlendMode(GPU_BLEND_DARKEN);
+			GPU_SetBlendMode(image, GPU_BLEND_DARKEN);
 			GPU_BlitScale(image, NULL, bg_target, xx, yy, 0.5f, 0.5f);
 			
 			xx += 200;
-			GPU_SetBlendMode(GPU_BLEND_LIGHTEN);
+			GPU_SetBlendMode(image, GPU_BLEND_LIGHTEN);
 			GPU_BlitScale(image, NULL, bg_target, xx, yy, 0.5f, 0.5f);
 			
 			xx += 200;
-			GPU_SetBlendMode(GPU_BLEND_PUNCHOUT);
+			GPU_SetBlendMode(image, GPU_BLEND_PUNCHOUT);
 			GPU_BlitScale(image, NULL, bg_target, xx, yy, 0.5f, 0.5f);
 			
 			xx += 200;
-			GPU_SetBlendMode(GPU_BLEND_CUTOUT);
+			GPU_SetBlendMode(image, GPU_BLEND_CUTOUT);
 			GPU_BlitScale(image, NULL, bg_target, xx, yy, 0.5f, 0.5f);
 		}
 		
-		GPU_SetBlendMode(GPU_BLEND_NORMAL);
+		GPU_SetBlendMode(image, GPU_BLEND_NORMAL);
 	}
 	else
 	{
@@ -94,21 +94,21 @@ void draw_stuff(GPU_Image* bg_base, GPU_Target* bg_target, GPU_Image* image, flo
 			float xx = x + 50;
 			float yy = y + 50;
 			
-			GPU_SetBlendMode(GPU_BLEND_NORMAL);
+			GPU_SetBlendMode(image, GPU_BLEND_NORMAL);
 			GPU_CircleFilled(bg_target, xx+30, yy+30, 30, color1);
-			GPU_SetBlendMode(GPU_BLEND_NORMAL);
+			GPU_SetBlendMode(image, GPU_BLEND_NORMAL);
 			GPU_CircleFilled(bg_target, xx, yy, 30, color2);
 			
 			xx += 200;
-			GPU_SetBlendMode(GPU_BLEND_NORMAL);
+			GPU_SetBlendMode(image, GPU_BLEND_NORMAL);
 			GPU_CircleFilled(bg_target, xx+30, yy+30, 30, color1);
-			GPU_SetBlendMode(GPU_BLEND_MULTIPLY);
+			GPU_SetBlendMode(image, GPU_BLEND_MULTIPLY);
 			GPU_CircleFilled(bg_target, xx, yy, 30, color2);
 			
 			xx += 200;
-			GPU_SetBlendMode(GPU_BLEND_NORMAL);
+			GPU_SetBlendMode(image, GPU_BLEND_NORMAL);
 			GPU_CircleFilled(bg_target, xx+30, yy+30, 30, color1);
-			GPU_SetBlendMode(GPU_BLEND_DIFFERENCE);
+			GPU_SetBlendMode(image, GPU_BLEND_DIFFERENCE);
 			GPU_CircleFilled(bg_target, xx, yy, 30, color2);
 		}
 		
@@ -117,27 +117,27 @@ void draw_stuff(GPU_Image* bg_base, GPU_Target* bg_target, GPU_Image* image, flo
 			float xx = x + 50;
 			float yy = y + 250;
 			
-			GPU_SetBlendMode(GPU_BLEND_NORMAL);
+			GPU_SetBlendMode(image, GPU_BLEND_NORMAL);
 			GPU_CircleFilled(bg_target, xx+30, yy+30, 30, color1);
-			GPU_SetBlendMode(GPU_BLEND_ADD);
+			GPU_SetBlendMode(image, GPU_BLEND_ADD);
 			GPU_CircleFilled(bg_target, xx, yy, 30, color2);
 			
 			xx += 200;
-			GPU_SetBlendMode(GPU_BLEND_NORMAL);
+			GPU_SetBlendMode(image, GPU_BLEND_NORMAL);
 			GPU_CircleFilled(bg_target, xx+30, yy+30, 30, color1);
-			GPU_SetBlendMode(GPU_BLEND_SUBTRACT);
+			GPU_SetBlendMode(image, GPU_BLEND_SUBTRACT);
 			GPU_CircleFilled(bg_target, xx, yy, 30, color2);
 			
 			xx += 200;
-			GPU_SetBlendMode(GPU_BLEND_NORMAL);
+			GPU_SetBlendMode(image, GPU_BLEND_NORMAL);
 			GPU_CircleFilled(bg_target, xx+30, yy+30, 30, color1);
-			GPU_SetBlendMode(GPU_BLEND_ADD_COLOR);
+			GPU_SetBlendMode(image, GPU_BLEND_ADD_COLOR);
 			GPU_CircleFilled(bg_target, xx, yy, 30, color2);
 			
 			xx += 200;
-			GPU_SetBlendMode(GPU_BLEND_NORMAL);
+			GPU_SetBlendMode(image, GPU_BLEND_NORMAL);
 			GPU_CircleFilled(bg_target, xx+30, yy+30, 30, color1);
-			GPU_SetBlendMode(GPU_BLEND_SUBTRACT_COLOR);
+			GPU_SetBlendMode(image, GPU_BLEND_SUBTRACT_COLOR);
 			GPU_CircleFilled(bg_target, xx, yy, 30, color2);
 		}
 		
@@ -146,31 +146,31 @@ void draw_stuff(GPU_Image* bg_base, GPU_Target* bg_target, GPU_Image* image, flo
 			float xx = x + 50;
 			float yy = y + 450;
 			
-			GPU_SetBlendMode(GPU_BLEND_NORMAL);
+			GPU_SetBlendMode(image, GPU_BLEND_NORMAL);
 			GPU_CircleFilled(bg_target, xx+30, yy+30, 30, color1);
-			GPU_SetBlendMode(GPU_BLEND_DARKEN);
+			GPU_SetBlendMode(image, GPU_BLEND_DARKEN);
 			GPU_CircleFilled(bg_target, xx, yy, 30, color2);
 			
 			xx += 200;
-			GPU_SetBlendMode(GPU_BLEND_NORMAL);
+			GPU_SetBlendMode(image, GPU_BLEND_NORMAL);
 			GPU_CircleFilled(bg_target, xx+30, yy+30, 30, color1);
-			GPU_SetBlendMode(GPU_BLEND_LIGHTEN);
+			GPU_SetBlendMode(image, GPU_BLEND_LIGHTEN);
 			GPU_CircleFilled(bg_target, xx, yy, 30, color2);
 			
 			xx += 200;
-			GPU_SetBlendMode(GPU_BLEND_NORMAL);
+			GPU_SetBlendMode(image, GPU_BLEND_NORMAL);
 			GPU_CircleFilled(bg_target, xx+30, yy+30, 30, color1);
-			GPU_SetBlendMode(GPU_BLEND_PUNCHOUT);
+			GPU_SetBlendMode(image, GPU_BLEND_PUNCHOUT);
 			GPU_CircleFilled(bg_target, xx, yy, 30, color2);
 			
 			xx += 200;
-			GPU_SetBlendMode(GPU_BLEND_NORMAL);
+			GPU_SetBlendMode(image, GPU_BLEND_NORMAL);
 			GPU_CircleFilled(bg_target, xx+30, yy+30, 30, color1);
-			GPU_SetBlendMode(GPU_BLEND_CUTOUT);
+			GPU_SetBlendMode(image, GPU_BLEND_CUTOUT);
 			GPU_CircleFilled(bg_target, xx, yy, 30, color2);
 		}
 		
-		GPU_SetBlendMode(GPU_BLEND_NORMAL);
+		GPU_SetBlendMode(image, GPU_BLEND_NORMAL);
 	}
 }
 

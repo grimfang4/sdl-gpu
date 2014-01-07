@@ -122,6 +122,7 @@ int _vertex_array_index = 0;
         if(bindFramebuffer(renderer, target)) \
         { \
             prepareToRenderToTarget(renderer, target); \
+            prepareToRenderImage(renderer, NULL); \
             /*glPushAttrib(GL_COLOR_BUFFER_BIT);*/ \
             if(target->useClip) \
             { \

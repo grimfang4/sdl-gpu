@@ -152,7 +152,7 @@ int main(int argc, char* argv[])
 		
 		GPU_ClearRGBA(screen, 255, 255, 255, 255);
 		
-		GPU_SetCamera(&camera);
+		GPU_SetCamera(screen, &camera);
 		
 		float x = 0;
 		float y = 0;
