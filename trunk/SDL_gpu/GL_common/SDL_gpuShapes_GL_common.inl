@@ -136,7 +136,7 @@ int _vertex_array_index = 0;
             glDisable( GL_TEXTURE_2D ); \
             \
             if(renderer->current_context_target->image == NULL && renderer->current_context_target->current_shader_program == renderer->current_context_target->default_textured_shader_program) \
-                renderer->ActivateShaderProgram(renderer, renderer->current_context_target->default_untextured_shader_program); \
+                renderer->ActivateShaderProgram(renderer, renderer->current_context_target->default_untextured_shader_program, NULL); \
             \
             GLint vp[4]; \
             if(target->image != NULL) \
@@ -186,7 +186,7 @@ int _vertex_array_index = 0;
             glEnable( GL_TEXTURE_2D ); \
             \
             if(renderer->current_context_target->image == NULL && renderer->current_context_target->current_shader_program == renderer->current_context_target->default_untextured_shader_program) \
-                renderer->ActivateShaderProgram(renderer, renderer->current_context_target->default_textured_shader_program); \
+                renderer->ActivateShaderProgram(renderer, renderer->current_context_target->default_textured_shader_program, NULL); \
             \
             GLint vp[4]; \
             if(target->image != NULL) \
@@ -257,9 +257,12 @@ static inline void draw_vertices(GLfloat* glverts, int num_vertices, GLenum prim
         int buffer_stride = floats_per_vertex * sizeof(float);
         
         // Upload our modelviewprojection matrix
-        float mvp[16];
-        GPU_GetModelViewProjection(mvp);
-        GPU_SetUniformMatrixfv(data->current_shader_block.modelViewProjection_loc, 1, 4, 4, 0, mvp);
+        if(data->current_shader_block.modelViewProjection_loc >= 0)
+        {
+            float mvp[16];
+            GPU_GetModelViewProjection(mvp);
+            GPU_SetUniformMatrixfv(data->current_shader_block.modelViewProjection_loc, 1, 4, 4, 0, mvp);
+        }
     
         // Update the vertex array object's buffers
         #if !defined(SDL_GPU_USE_GLES) || SDL_GPU_GLES_MAJOR_VERSION != 2
@@ -273,10 +276,16 @@ static inline void draw_vertices(GLfloat* glverts, int num_vertices, GLenum prim
         glBufferData(GL_ARRAY_BUFFER, buffer_stride * num_vertices, glverts, GL_STREAM_DRAW);  // Creates space on the GPU and fills it with data.
         
         // Specify the formatting of the blit buffer
-        glEnableVertexAttribArray(data->current_shader_block.position_loc);  // Tell GL to use client-side attribute data
-        glVertexAttribPointer(data->current_shader_block.position_loc, 3, GL_FLOAT, GL_FALSE, buffer_stride, 0);  // Tell how the data is formatted
-        glEnableVertexAttribArray(data->current_shader_block.color_loc);
-        glVertexAttribPointer(data->current_shader_block.color_loc, 4, GL_FLOAT, GL_FALSE, buffer_stride, (void*)(3 * sizeof(float)));
+        if(data->current_shader_block.position_loc >= 0)
+        {
+            glEnableVertexAttribArray(data->current_shader_block.position_loc);  // Tell GL to use client-side attribute data
+            glVertexAttribPointer(data->current_shader_block.position_loc, 3, GL_FLOAT, GL_FALSE, buffer_stride, 0);  // Tell how the data is formatted
+        }
+        if(data->current_shader_block.color_loc >= 0)
+        {
+            glEnableVertexAttribArray(data->current_shader_block.color_loc);
+            glVertexAttribPointer(data->current_shader_block.color_loc, 4, GL_FLOAT, GL_FALSE, buffer_stride, (void*)(3 * sizeof(float)));
+        }
         
         glDrawArrays(prim_type, 0, num_vertices);
         
@@ -319,9 +328,12 @@ static inline void draw_vertices_textured(GLfloat* glverts, int num_vertices, GL
         int buffer_stride = floats_per_vertex * sizeof(float);
         
         // Upload our modelviewprojection matrix
-        float mvp[16];
-        GPU_GetModelViewProjection(mvp);
-        GPU_SetUniformMatrixfv(data->current_shader_block.modelViewProjection_loc, 1, 4, 4, 0, mvp);
+        if(data->current_shader_block.modelViewProjection_loc >= 0)
+        {
+            float mvp[16];
+            GPU_GetModelViewProjection(mvp);
+            GPU_SetUniformMatrixfv(data->current_shader_block.modelViewProjection_loc, 1, 4, 4, 0, mvp);
+        }
     
         // Update the vertex array object's buffers
         #if !defined(SDL_GPU_USE_GLES) || SDL_GPU_GLES_MAJOR_VERSION != 2
@@ -335,12 +347,21 @@ static inline void draw_vertices_textured(GLfloat* glverts, int num_vertices, GL
         glBufferData(GL_ARRAY_BUFFER, buffer_stride * num_vertices, glverts, GL_STREAM_DRAW);  // Creates space on the GPU and fills it with data.
         
         // Specify the formatting of the blit buffer
-        glEnableVertexAttribArray(data->current_shader_block.position_loc);  // Tell GL to use client-side attribute data
-        glVertexAttribPointer(data->current_shader_block.position_loc, 3, GL_FLOAT, GL_FALSE, buffer_stride, 0);  // Tell how the data is formatted
-        glEnableVertexAttribArray(data->current_shader_block.color_loc);
-        glVertexAttribPointer(data->current_shader_block.color_loc, 4, GL_FLOAT, GL_FALSE, buffer_stride, (void*)(3 * sizeof(float)));
-        glEnableVertexAttribArray(data->current_shader_block.texcoord_loc);
-        glVertexAttribPointer(data->current_shader_block.texcoord_loc, 2, GL_FLOAT, GL_FALSE, buffer_stride, (void*)(7 * sizeof(float)));
+        if(data->current_shader_block.position_loc >= 0)
+        {
+            glEnableVertexAttribArray(data->current_shader_block.position_loc);  // Tell GL to use client-side attribute data
+            glVertexAttribPointer(data->current_shader_block.position_loc, 3, GL_FLOAT, GL_FALSE, buffer_stride, 0);  // Tell how the data is formatted
+        }
+        if(data->current_shader_block.color_loc >= 0)
+        {
+            glEnableVertexAttribArray(data->current_shader_block.color_loc);
+            glVertexAttribPointer(data->current_shader_block.color_loc, 4, GL_FLOAT, GL_FALSE, buffer_stride, (void*)(3 * sizeof(float)));
+        }
+        if(data->current_shader_block.texcoord_loc >= 0)
+        {
+            glEnableVertexAttribArray(data->current_shader_block.texcoord_loc);
+            glVertexAttribPointer(data->current_shader_block.texcoord_loc, 2, GL_FLOAT, GL_FALSE, buffer_stride, (void*)(7 * sizeof(float)));
+        }
         
         glDrawArrays(prim_type, 0, num_vertices);
         

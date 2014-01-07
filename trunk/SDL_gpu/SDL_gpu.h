@@ -124,12 +124,15 @@ typedef struct GPU_Camera
 
 /*! Container for the built-in shader attribute and uniform locations (indices).
  * \see GPU_LoadShaderBlock()
+ * \see GPU_SetShaderBlock()
  */
 typedef struct GPU_ShaderBlock
 {
+    // Attributes
     int position_loc;
     int texcoord_loc;
     int color_loc;
+    // Uniforms
     int modelViewProjection_loc;
 } GPU_ShaderBlock;
 
@@ -202,6 +205,8 @@ struct GPU_Renderer
 {
 	/*! Struct identifier of the renderer. */
 	GPU_RendererID id;
+	
+	int tier;
 	
 	/*! Current display target.  Virtual dimensions can be gotten from this. */
 	GPU_Target* current_context_target;
@@ -350,7 +355,7 @@ struct GPU_Renderer
     void (*DetachShader)(GPU_Renderer* renderer, Uint32 program_object, Uint32 shader_object);
 
     /*! \see GPU_ActivateShaderProgram() */
-    void (*ActivateShaderProgram)(GPU_Renderer* renderer, Uint32 program_object);
+    void (*ActivateShaderProgram)(GPU_Renderer* renderer, Uint32 program_object, GPU_ShaderBlock* block);
 
     /*! \see GPU_DeactivateShaderProgram() */
     void (*DeactivateShaderProgram)(GPU_Renderer* renderer);
@@ -776,8 +781,8 @@ void GPU_AttachShader(Uint32 program_object, Uint32 shader_object);
 /*! Detaches a shader object from a shader program. */
 void GPU_DetachShader(Uint32 program_object, Uint32 shader_object);
 
-/*! Activates the given shader program. */
-void GPU_ActivateShaderProgram(Uint32 program_object);
+/*! Activates the given shader program.  Passing NULL for 'block' will disable the built-in shader variables for custom shaders until a GPU_ShaderBlock is set again. */
+void GPU_ActivateShaderProgram(Uint32 program_object, GPU_ShaderBlock* block);
 
 /*! Deactivates the current shader program (activates program 0). */
 void GPU_DeactivateShaderProgram(void);

@@ -2223,7 +2223,7 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_T
         prepareToRenderToTarget(renderer, dest);
         prepareToRenderImage(renderer, src);
         if(renderer->current_context_target->image == NULL && renderer->current_context_target->current_shader_program == renderer->current_context_target->default_untextured_shader_program)
-            renderer->ActivateShaderProgram(renderer, renderer->current_context_target->default_textured_shader_program);
+            renderer->ActivateShaderProgram(renderer, renderer->current_context_target->default_textured_shader_program, NULL);
         
         Uint16 tex_w = ((IMAGE_DATA*)src->data)->tex_w;
         Uint16 tex_h = ((IMAGE_DATA*)src->data)->tex_h;
@@ -2415,7 +2415,7 @@ static int BlitTransformX(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcr
         prepareToRenderToTarget(renderer, dest);
         prepareToRenderImage(renderer, src);
         if(renderer->current_context_target->image == NULL && renderer->current_context_target->current_shader_program == renderer->current_context_target->default_untextured_shader_program)
-            renderer->ActivateShaderProgram(renderer, renderer->current_context_target->default_textured_shader_program);
+            renderer->ActivateShaderProgram(renderer, renderer->current_context_target->default_textured_shader_program, NULL);
         
         Uint16 tex_w = ((IMAGE_DATA*)src->data)->tex_w;
         Uint16 tex_h = ((IMAGE_DATA*)src->data)->tex_h;
@@ -3000,9 +3000,12 @@ static void FlushBlitBuffer(GPU_Renderer* renderer)
         TARGET_DATA* data = ((TARGET_DATA*)renderer->current_context_target->data);
         
         // Upload our modelviewprojection matrix
-        float mvp[16];
-        GPU_GetModelViewProjection(mvp);
-        GPU_SetUniformMatrixfv(data->current_shader_block.modelViewProjection_loc, 1, 4, 4, 0, mvp);
+        if(data->current_shader_block.modelViewProjection_loc >= 0)
+        {
+            float mvp[16];
+            GPU_GetModelViewProjection(mvp);
+            GPU_SetUniformMatrixfv(data->current_shader_block.modelViewProjection_loc, 1, 4, 4, 0, mvp);
+        }
     
         // Update the vertex array object's buffers
         #if !defined(SDL_GPU_USE_GLES) || SDL_GPU_GLES_MAJOR_VERSION != 2
@@ -3016,12 +3019,21 @@ static void FlushBlitBuffer(GPU_Renderer* renderer)
         glBufferData(GL_ARRAY_BUFFER, GPU_BLIT_BUFFER_STRIDE * rdata->blit_buffer_num_vertices, rdata->blit_buffer, GL_STREAM_DRAW);  // Creates space on the GPU and fills it with data.
         
         // Specify the formatting of the blit buffer
-        glEnableVertexAttribArray(data->current_shader_block.position_loc);  // Tell GL to use client-side attribute data
-        glVertexAttribPointer(data->current_shader_block.position_loc, 3, GL_FLOAT, GL_FALSE, GPU_BLIT_BUFFER_STRIDE, 0);  // Tell how the data is formatted
-        glEnableVertexAttribArray(data->current_shader_block.texcoord_loc);
-        glVertexAttribPointer(data->current_shader_block.texcoord_loc, 2, GL_FLOAT, GL_FALSE, GPU_BLIT_BUFFER_STRIDE, (void*)(GPU_BLIT_BUFFER_TEX_COORD_OFFSET * sizeof(float)));
-        glEnableVertexAttribArray(data->current_shader_block.color_loc);
-        glVertexAttribPointer(data->current_shader_block.color_loc, 4, GL_FLOAT, GL_FALSE, GPU_BLIT_BUFFER_STRIDE, (void*)(GPU_BLIT_BUFFER_COLOR_OFFSET * sizeof(float)));
+        if(data->current_shader_block.position_loc >= 0)
+        {
+            glEnableVertexAttribArray(data->current_shader_block.position_loc);  // Tell GL to use client-side attribute data
+            glVertexAttribPointer(data->current_shader_block.position_loc, 3, GL_FLOAT, GL_FALSE, GPU_BLIT_BUFFER_STRIDE, 0);  // Tell how the data is formatted
+        }
+        if(data->current_shader_block.texcoord_loc >= 0)
+        {
+            glEnableVertexAttribArray(data->current_shader_block.texcoord_loc);
+            glVertexAttribPointer(data->current_shader_block.texcoord_loc, 2, GL_FLOAT, GL_FALSE, GPU_BLIT_BUFFER_STRIDE, (void*)(GPU_BLIT_BUFFER_TEX_COORD_OFFSET * sizeof(float)));
+        }
+        if(data->current_shader_block.color_loc >= 0)
+        {
+            glEnableVertexAttribArray(data->current_shader_block.color_loc);
+            glVertexAttribPointer(data->current_shader_block.color_loc, 4, GL_FLOAT, GL_FALSE, GPU_BLIT_BUFFER_STRIDE, (void*)(GPU_BLIT_BUFFER_COLOR_OFFSET * sizeof(float)));
+        }
         
         glDrawArrays(GL_TRIANGLES, 0, rdata->blit_buffer_num_vertices);
         
@@ -3227,7 +3239,7 @@ static void DetachShader(GPU_Renderer* renderer, Uint32 program_object, Uint32 s
     #endif
 }
 
-static void ActivateShaderProgram(GPU_Renderer* renderer, Uint32 program_object)
+static void ActivateShaderProgram(GPU_Renderer* renderer, Uint32 program_object, GPU_ShaderBlock* block)
 {
     GPU_Target* target = renderer->current_context_target;
     #ifndef SDL_GPU_DISABLE_SHADERS
@@ -3246,8 +3258,20 @@ static void ActivateShaderProgram(GPU_Renderer* renderer, Uint32 program_object)
             data->current_shader_block = data->shader_block[0];
         else if(program_object == target->default_untextured_shader_program)
             data->current_shader_block = data->shader_block[1];
-        else // FIXME:  Only set the shader block if there's not already one set: if(!using_custom_shader_block)
-            data->current_shader_block = data->shader_block[0];
+        else
+        {
+            if(block == NULL)
+            {
+                GPU_ShaderBlock b;
+                b.position_loc = -1;
+                b.texcoord_loc = -1;
+                b.color_loc = -1;
+                b.modelViewProjection_loc = -1;
+                data->current_shader_block = b;
+            }
+            else
+                data->current_shader_block = *block;
+        }
         #endif
     #endif
     
@@ -3256,7 +3280,7 @@ static void ActivateShaderProgram(GPU_Renderer* renderer, Uint32 program_object)
 
 static void DeactivateShaderProgram(GPU_Renderer* renderer)
 {
-    renderer->ActivateShaderProgram(renderer, 0);
+    renderer->ActivateShaderProgram(renderer, 0, NULL);
 }
 
 static const char* GetShaderMessage(GPU_Renderer* renderer)
@@ -3331,6 +3355,7 @@ static void GetUniformiv(GPU_Renderer* renderer, Uint32 program_object, int loca
 static void SetUniformi(GPU_Renderer* renderer, int location, int value)
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
+    renderer->FlushBlitBuffer(renderer);
     glUniform1i(location, value);
     #endif
 }
@@ -3338,6 +3363,7 @@ static void SetUniformi(GPU_Renderer* renderer, int location, int value)
 static void SetUniformiv(GPU_Renderer* renderer, int location, int num_elements_per_value, int num_values, int* values)
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
+    renderer->FlushBlitBuffer(renderer);
     switch(num_elements_per_value)
     {
         case 1:
@@ -3367,6 +3393,7 @@ static void GetUniformuiv(GPU_Renderer* renderer, Uint32 program_object, int loc
 static void SetUniformui(GPU_Renderer* renderer, int location, unsigned int value)
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
+    renderer->FlushBlitBuffer(renderer);
     glUniform1ui(location, value);
     #endif
 }
@@ -3374,6 +3401,7 @@ static void SetUniformui(GPU_Renderer* renderer, int location, unsigned int valu
 static void SetUniformuiv(GPU_Renderer* renderer, int location, int num_elements_per_value, int num_values, unsigned int* values)
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
+    renderer->FlushBlitBuffer(renderer);
     switch(num_elements_per_value)
     {
         case 1:
@@ -3403,6 +3431,7 @@ static void GetUniformfv(GPU_Renderer* renderer, Uint32 program_object, int loca
 static void SetUniformf(GPU_Renderer* renderer, int location, float value)
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
+    renderer->FlushBlitBuffer(renderer);
     glUniform1f(location, value);
     #endif
 }
@@ -3410,6 +3439,7 @@ static void SetUniformf(GPU_Renderer* renderer, int location, float value)
 static void SetUniformfv(GPU_Renderer* renderer, int location, int num_elements_per_value, int num_values, float* values)
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
+    renderer->FlushBlitBuffer(renderer);
     switch(num_elements_per_value)
     {
         case 1:
@@ -3431,6 +3461,7 @@ static void SetUniformfv(GPU_Renderer* renderer, int location, int num_elements_
 static void SetUniformMatrixfv(GPU_Renderer* renderer, int location, int num_matrices, int num_rows, int num_columns, Uint8 transpose, float* values)
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
+    renderer->FlushBlitBuffer(renderer);
     if(num_rows < 2 || num_rows > 4 || num_columns < 2 || num_columns > 4)
     {
         GPU_LogError("GPU_SetUniformMatrixfv(): Given invalid dimensions (%dx%d).\n", num_rows, num_columns);

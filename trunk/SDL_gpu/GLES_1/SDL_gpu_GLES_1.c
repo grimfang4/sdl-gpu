@@ -31,6 +31,7 @@ GPU_Renderer* GPU_CreateRenderer_GLES_1(GPU_RendererID request)
 
     renderer->id = request;
 	renderer->id.id = GPU_RENDERER_GLES_1;
+	renderer->tier = SDL_GPU_GL_TIER;
     
     renderer->current_context_target = NULL;
 
