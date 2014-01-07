@@ -2,7 +2,6 @@
 #include "SDL_platform.h"
 #include <string.h>
 #include <strings.h>
-int strcasecmp(const char*, const char *);
 
 #define MAX_ACTIVE_RENDERERS 20
 #define MAX_REGISTERED_RENDERERS 10
