@@ -793,7 +793,8 @@ static void Polygon(GPU_Renderer* renderer, GPU_Target* target, Uint16 n, float*
     DECLARE_VERTEX_ARRAY(n);
     DECLARE_COLOR_RGBA;
     
-    for(int i = 0; i < numIndices; i+=2)
+    int i;
+    for(i = 0; i < numIndices; i+=2)
         SET_VERTEX(vertices[i], vertices[i+1]);
     
     DRAW_VERTICES(GL_LINE_LOOP);
@@ -809,7 +810,8 @@ static void PolygonFilled(GPU_Renderer* renderer, GPU_Target* target, Uint16 n, 
     DECLARE_VERTEX_ARRAY(n);
     DECLARE_COLOR_RGBA;
     
-    for(int i = 0; i < numIndices; i+=2)
+    int i;
+    for(i = 0; i < numIndices; i+=2)
         SET_VERTEX(vertices[i], vertices[i+1]);
     
     DRAW_VERTICES(GL_TRIANGLE_FAN);
@@ -841,7 +843,8 @@ static void PolygonBlit(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrec
     SDL_Color color = {255, 255, 255, 255};
     DECLARE_COLOR_RGBA;
     
-    for(int i = 0; i < numIndices; i+=2)
+    int i;
+    for(i = 0; i < numIndices; i+=2)
     {
         float x = vertices[i];
     	float y = vertices[i+1];
