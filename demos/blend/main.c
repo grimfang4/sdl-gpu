@@ -73,9 +73,10 @@ int main(int argc, char* argv[])
 		
 		GPU_SetBlending(1);
 		
-		GPU_SetRGBA(255, 255, 255, 127.5f + 127.5f*sin(SDL_GetTicks()/1000.0f));
+		GPU_SetRGBA(image, 255, 100, 255, 127.5f + 127.5f*sin(SDL_GetTicks()/1000.0f));
 		GPU_Blit(image, NULL, screen, x, y);
 		GPU_SetBlending(0);
+		GPU_SetRGBA(image, 255, 255, 255, 255);
 		
 		GPU_Flip(screen);
 		

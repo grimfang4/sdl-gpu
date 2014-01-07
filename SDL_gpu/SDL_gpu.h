@@ -71,9 +71,11 @@ typedef struct GPU_Image
 {
 	struct GPU_Renderer* renderer;
 	GPU_Target* target;
-	void* data;
 	Uint16 w, h;
 	int channels;
+	SDL_Color color;
+	
+	void* data;
 	int refcount;
 } GPU_Image;
 
@@ -121,18 +123,21 @@ struct GPU_Target
 	Uint8 useClip;
 	GPU_Rect clipRect;
 	
+	/*! Perspective and object viewing transforms. */
+	GPU_Camera camera;
+	
+	// Context variables
 	Uint32 windowID;
 	
 	/*! Actual window dimensions */
 	int window_w;
 	int window_h;
 	
-	/*! Transforms for the global view. */
-	GPU_Camera camera;
-	
 	Uint32 default_textured_shader_program;
 	Uint32 default_untextured_shader_program;
 	Uint32 current_shader_program;
+	
+	SDL_Color last_color;
 };
 
 /*! Important GPU features which may not be supported depending on a device's extension support.  Can be OR'd together.
@@ -299,9 +304,6 @@ struct GPU_Renderer
 
 	/*! \see GPU_SetBlending() */
 	void (*SetBlending)(GPU_Renderer* renderer, Uint8 enable);
-	
-	/*! \see GPU_SetRGBA() */
-	void (*SetRGBA)(GPU_Renderer* renderer, Uint8 r, Uint8 g, Uint8 b, Uint8 a);
 	
 	/*! \see GPU_GetPixel() */
 	SDL_Color (*GetPixel)(GPU_Renderer* renderer, GPU_Target* target, Sint16 x, Sint16 y);
@@ -699,14 +701,14 @@ Uint8 GPU_GetBlending(void);
 /*! Enables/disables alpha blending. */
 void GPU_SetBlending(Uint8 enable);
 
-/*! Sets the modulation color for subsequent drawing, if supported by the renderer. */
-void GPU_SetColor(SDL_Color* color);
+/*! Sets the modulation color for subsequent drawing. */
+void GPU_SetColor(GPU_Image* image, SDL_Color* color);
 
-/*! Sets the modulation color for subsequent drawing, if supported by the renderer. */
-void GPU_SetRGB(Uint8 r, Uint8 g, Uint8 b);
+/*! Sets the modulation color for subsequent drawing. */
+void GPU_SetRGB(GPU_Image* image, Uint8 r, Uint8 g, Uint8 b);
 
-/*! Sets the modulation color for subsequent drawing, if supported by the renderer. */
-void GPU_SetRGBA(Uint8 r, Uint8 g, Uint8 b, Uint8 a);
+/*! Sets the modulation color for subsequent drawing. */
+void GPU_SetRGBA(GPU_Image* image, Uint8 r, Uint8 g, Uint8 b, Uint8 a);
 
 /*! \return The RGBA color of a pixel. */
 SDL_Color GPU_GetPixel(GPU_Target* target, Sint16 x, Sint16 y);

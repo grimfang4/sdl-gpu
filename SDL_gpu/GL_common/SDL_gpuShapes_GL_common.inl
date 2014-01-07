@@ -82,7 +82,7 @@ do { \
 } while(0);
 
 #define DECLARE_COLOR_RGBA \
-renderer->SetRGBA(renderer, color.r, color.g, color.b, GET_ALPHA(color));
+glColor4ub(color.r, color.g, color.b, GET_ALPHA(color));
 
 #define RESET_COLOR \
 glColor4ub(255, 255, 255, 255);
@@ -171,6 +171,7 @@ int _vertex_array_index = 0;
         if(bindFramebuffer(renderer, target)) \
         { \
             prepareToRenderToTarget(renderer, target); \
+            prepareToRenderImage(renderer, src); \
             /*glPushAttrib(GL_COLOR_BUFFER_BIT);*/ \
             if(target->useClip) \
             { \
@@ -839,8 +840,8 @@ static void PolygonBlit(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrec
     
     int numIndices = 2*n;
     DECLARE_TEXTURED_VERTEX_ARRAY(n);
-    // TODO: Maybe add a parameter for color?
-    SDL_Color color = {255, 255, 255, 255};
+    
+    SDL_Color color = src->color;
     DECLARE_COLOR_RGBA;
     
     int i;
