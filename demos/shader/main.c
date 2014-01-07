@@ -3,14 +3,28 @@
 #include "common.h"
 
 
-void load_shaders(Uint32* v, Uint32* f, Uint32* p)
+GPU_ShaderBlock load_shaders(Uint32* v, Uint32* f, Uint32* p)
 {
-    *v = GPU_LoadShader(GPU_VERTEX_SHADER, "shader/test.vert");
+    GPU_Renderer* renderer = GPU_GetCurrentRenderer();
+    const char* vertex_shader_file;
+    const char* fragment_shader_file;
+    if(renderer->tier < 3)
+    {
+        vertex_shader_file = "shader/test.vert";
+        fragment_shader_file = "shader/test.frag";
+    }
+    else
+    {
+        vertex_shader_file = "shader/test3.vert";
+        fragment_shader_file = "shader/test3.frag";
+    }
+    
+    *v = GPU_LoadShader(GPU_VERTEX_SHADER, vertex_shader_file);
     
     if(!*v)
         GPU_LogError("Failed to load vertex shader: %s\n", GPU_GetShaderMessage());
     
-    *f = GPU_LoadShader(GPU_FRAGMENT_SHADER, "shader/test.frag");
+    *f = GPU_LoadShader(GPU_FRAGMENT_SHADER, fragment_shader_file);
     
     if(!*f)
         GPU_LogError("Failed to load fragment shader: %s\n", GPU_GetShaderMessage());
@@ -23,7 +37,10 @@ void load_shaders(Uint32* v, Uint32* f, Uint32* p)
         return;
     }
     
-    GPU_ActivateShaderProgram(*p);
+    GPU_ShaderBlock block = GPU_LoadShaderBlock(*p, "gpu_Vertex", "gpu_TexCoord", "gpu_Color", "modelViewProjection");
+    GPU_ActivateShaderProgram(*p, &block);
+    
+    return block;
 }
 
 void free_shaders(Uint32 v, Uint32 f, Uint32 p)
@@ -48,7 +65,7 @@ int main(int argc, char* argv[])
 		return -1;
 	
 	Uint32 v, f, p;
-	load_shaders(&v, &f, &p);
+	GPU_ShaderBlock block = load_shaders(&v, &f, &p);
 	int uloc = GPU_GetUniformLocation(p, "tex");
 	GPU_SetUniformi(uloc, 0);
 	int timeloc = GPU_GetUniformLocation(p, "time");
@@ -101,9 +118,9 @@ int main(int argc, char* argv[])
 				{
 				    if(screen->current_shader_program == screen->default_textured_shader_program
 				       || screen->current_shader_program == screen->default_untextured_shader_program)
-                        GPU_ActivateShaderProgram(p);
+                        GPU_ActivateShaderProgram(p, &block);
                     else
-                        GPU_ActivateShaderProgram(0);
+                        GPU_ActivateShaderProgram(0, NULL);
                     
                     
                     uloc = GPU_GetUniformLocation(p, "tex");

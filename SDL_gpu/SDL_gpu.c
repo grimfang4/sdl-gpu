@@ -817,12 +817,12 @@ void GPU_DetachShader(Uint32 program_object, Uint32 shader_object)
 	current_renderer->DetachShader(current_renderer, program_object, shader_object);
 }
 
-void GPU_ActivateShaderProgram(Uint32 program_object)
+void GPU_ActivateShaderProgram(Uint32 program_object, GPU_ShaderBlock* block)
 {
 	if(current_renderer == NULL || current_renderer->ActivateShaderProgram == NULL)
 		return;
 	
-	current_renderer->ActivateShaderProgram(current_renderer, program_object);
+	current_renderer->ActivateShaderProgram(current_renderer, program_object, block);
 }
 
 void GPU_DeactivateShaderProgram(void)
