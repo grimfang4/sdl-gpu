@@ -25,14 +25,14 @@ DEPENDENCIES
 
 SDL 1.2 or SDL 2.0 (www.libsdl.org)
 A rendering backend
-	Currently implemented: OpenGL 1.1, OpenGL 2.0, OpenGLESv1
-
+	Currently implemented: OpenGL 1.1, OpenGL 2.0, OpenGL 3.0, OpenGLES 1.1
 
 ===================
 SELECTING RENDERERS
 ===================
 
-Currently, multiple renderers are not supported.  The renderer can be selected by defining SDL_GPU_USE_OPENGL, SDL_GPU_USE_OPENGLES, and SDL_GPU_USE_OPENGLv1 according to your needs.
+The renderer selection system is due for a refactoring, so hold tight.  For now, the renderer can be selected by using GPU_InitRenderer(), e.g.:
+GPU_Target* screen = GPU_InitRenderer(GPU_MakeRendererIDRequest(GPU_RENDERER_OPENGL_3, 3, 0, 0), 800, 600, 0);
 
 
 ========
@@ -41,13 +41,15 @@ BUILDING
 
 SDL_gpu uses CMake (www.cmake.org) to coordinate the library compile process.  CMake is available as a GUI program or on the command line.
 
-For Linux systems, run CMake in the base directory:
+For Linux/UNIX systems, run CMake in the base directory:
 cmake -G "Unix Makefiles"
 make
 sudo make install
 
-For Linux systems, changing the default installation directory can be done like so:
+For Linux/UNIX systems, changing the default installation directory can be done like so:
 cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX=/usr
+
+For Windows systems, you can use cmake-gui and select options in there.
 
 
 =========
