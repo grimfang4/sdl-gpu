@@ -2313,10 +2313,10 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_T
         // Vertex 2
         vert_index += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
         tex_index += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
-        blit_buffer[vert_index] = dx1;
+        blit_buffer[vert_index] = dx2;
         blit_buffer[vert_index+1] = dy2;
         blit_buffer[vert_index+2] = 0.0f;
-        blit_buffer[tex_index] = x1;
+        blit_buffer[tex_index] = x2;
         blit_buffer[tex_index+1] = y2;
         #ifdef SDL_GPU_USE_GL_TIER3
         color_index += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
@@ -2329,10 +2329,10 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_T
         // Vertex 3
         vert_index += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
         tex_index += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
-        blit_buffer[vert_index] = dx2;
+        blit_buffer[vert_index] = dx1;
         blit_buffer[vert_index+1] = dy2;
         blit_buffer[vert_index+2] = 0.0f;
-        blit_buffer[tex_index] = x2;
+        blit_buffer[tex_index] = x1;
         blit_buffer[tex_index+1] = y2;
         #ifdef SDL_GPU_USE_GL_TIER3
         color_index += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
@@ -2347,12 +2347,12 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_T
         // First tri
         index_buffer[rdata->index_buffer_num_vertices++] = rdata->blit_buffer_num_vertices;  // 0
         index_buffer[rdata->index_buffer_num_vertices++] = rdata->blit_buffer_num_vertices+1;  // 1
-        index_buffer[rdata->index_buffer_num_vertices++] = rdata->blit_buffer_num_vertices+3;  // 3
+        index_buffer[rdata->index_buffer_num_vertices++] = rdata->blit_buffer_num_vertices+2;  // 2
 
         // Second tri
         index_buffer[rdata->index_buffer_num_vertices++] = rdata->blit_buffer_num_vertices; // 0
-        index_buffer[rdata->index_buffer_num_vertices++] = rdata->blit_buffer_num_vertices+3;  // 3
         index_buffer[rdata->index_buffer_num_vertices++] = rdata->blit_buffer_num_vertices+2;  // 2
+        index_buffer[rdata->index_buffer_num_vertices++] = rdata->blit_buffer_num_vertices+3;  // 3
 
         rdata->blit_buffer_num_vertices += GPU_BLIT_BUFFER_VERTICES_PER_SPRITE;
     }
@@ -2555,10 +2555,10 @@ static int BlitTransformX(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcr
         // Vertex 2
         vert_index += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
         tex_index += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
-        blit_buffer[vert_index] = dx4;
-        blit_buffer[vert_index+1] = dy4;
+        blit_buffer[vert_index] = dx2;
+        blit_buffer[vert_index+1] = dy2;
         blit_buffer[vert_index+2] = 0.0f;
-        blit_buffer[tex_index] = x1;
+        blit_buffer[tex_index] = x2;
         blit_buffer[tex_index+1] = y2;
         #ifdef SDL_GPU_USE_GL_TIER3
         color_index += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
@@ -2571,10 +2571,10 @@ static int BlitTransformX(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcr
         // Vertex 3
         vert_index += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
         tex_index += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
-        blit_buffer[vert_index] = dx2;
-        blit_buffer[vert_index+1] = dy2;
+        blit_buffer[vert_index] = dx4;
+        blit_buffer[vert_index+1] = dy4;
         blit_buffer[vert_index+2] = 0.0f;
-        blit_buffer[tex_index] = x2;
+        blit_buffer[tex_index] = x1;
         blit_buffer[tex_index+1] = y2;
         #ifdef SDL_GPU_USE_GL_TIER3
         color_index += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
@@ -2590,12 +2590,12 @@ static int BlitTransformX(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcr
         // First tri
         index_buffer[rdata->index_buffer_num_vertices++] = rdata->blit_buffer_num_vertices;  // 0
         index_buffer[rdata->index_buffer_num_vertices++] = rdata->blit_buffer_num_vertices+1;  // 1
-        index_buffer[rdata->index_buffer_num_vertices++] = rdata->blit_buffer_num_vertices+3;  // 3
+        index_buffer[rdata->index_buffer_num_vertices++] = rdata->blit_buffer_num_vertices+2;  // 2
 
         // Second tri
         index_buffer[rdata->index_buffer_num_vertices++] = rdata->blit_buffer_num_vertices; // 0
-        index_buffer[rdata->index_buffer_num_vertices++] = rdata->blit_buffer_num_vertices+3;  // 3
         index_buffer[rdata->index_buffer_num_vertices++] = rdata->blit_buffer_num_vertices+2;  // 2
+        index_buffer[rdata->index_buffer_num_vertices++] = rdata->blit_buffer_num_vertices+3;  // 3
 
         rdata->blit_buffer_num_vertices += GPU_BLIT_BUFFER_VERTICES_PER_SPRITE;
     }
@@ -2925,11 +2925,10 @@ static void FlushBlitBuffer(GPU_Renderer* renderer)
         float* vertex_pointer = rdata->blit_buffer + GPU_BLIT_BUFFER_VERTEX_OFFSET;
         float* texcoord_pointer = rdata->blit_buffer + GPU_BLIT_BUFFER_TEX_COORD_OFFSET;
         
-        glBegin(GL_TRIANGLE_STRIP);
+        glBegin(GL_QUADS);
         int i;
         for(i = 0; i < rdata->blit_buffer_num_vertices; i += GPU_BLIT_BUFFER_VERTICES_PER_SPRITE)
         {
-
             glTexCoord2f( *texcoord_pointer, *(texcoord_pointer+1) );
             glVertex3f( *vertex_pointer, *(vertex_pointer+1), *(vertex_pointer+2) );
             texcoord_pointer += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
