@@ -41,6 +41,9 @@ typedef struct RendererData_GLES_2
 	float* blit_buffer;  // Holds sets of 4 vertices, each with interleaved position, tex coords, and colors (e.g. [x0, y0, z0, s0, t0, r0, g0, b0, a0, ...]).
 	int blit_buffer_num_vertices;
 	int blit_buffer_max_num_vertices;
+	unsigned short* index_buffer;  // Indexes into the blit buffer so we can use 4 vertices for every 2 triangles (1 quad)
+	int index_buffer_num_vertices;
+	int index_buffer_max_num_vertices;
 } RendererData_GLES_2;
 
 typedef struct ImageData_GLES_2
