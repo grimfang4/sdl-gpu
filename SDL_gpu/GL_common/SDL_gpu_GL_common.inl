@@ -688,6 +688,18 @@ static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request,
         return NULL;
 #endif
     
+    
+    // Initialize the blit buffer
+    RENDERER_DATA* rdata = (RENDERER_DATA*)renderer->data;
+    rdata->blit_buffer_max_num_vertices = GPU_BLIT_BUFFER_INIT_MAX_NUM_VERTICES;
+    rdata->blit_buffer_num_vertices = 0;
+    int blit_buffer_storage_size = GPU_BLIT_BUFFER_INIT_MAX_NUM_VERTICES*GPU_BLIT_BUFFER_STRIDE;
+    rdata->blit_buffer = (float*)malloc(blit_buffer_storage_size);
+    rdata->index_buffer_max_num_vertices = GPU_BLIT_BUFFER_INIT_MAX_NUM_VERTICES;
+    rdata->index_buffer_num_vertices = 0;
+    int index_buffer_storage_size = GPU_BLIT_BUFFER_INIT_MAX_NUM_VERTICES*GPU_BLIT_BUFFER_STRIDE;
+    rdata->index_buffer = (unsigned short*)malloc(index_buffer_storage_size);
+    
     // Create or re-init the current target.  This also creates the GL context.
     #ifdef SDL_GPU_USE_SDL2
     renderer->CreateTargetFromWindow(renderer, SDL_GetWindowID(window), renderer->current_context_target);
@@ -719,17 +731,6 @@ static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request,
         }
     }
     #endif
-    
-    // Initialize the blit buffer
-    RENDERER_DATA* rdata = (RENDERER_DATA*)renderer->data;
-    rdata->blit_buffer_max_num_vertices = GPU_BLIT_BUFFER_INIT_MAX_NUM_VERTICES;
-    rdata->blit_buffer_num_vertices = 0;
-    int blit_buffer_storage_size = GPU_BLIT_BUFFER_INIT_MAX_NUM_VERTICES*GPU_BLIT_BUFFER_STRIDE;
-    rdata->blit_buffer = (float*)malloc(blit_buffer_storage_size);
-    rdata->index_buffer_max_num_vertices = GPU_BLIT_BUFFER_INIT_MAX_NUM_VERTICES;
-    rdata->index_buffer_num_vertices = 0;
-    int index_buffer_storage_size = GPU_BLIT_BUFFER_INIT_MAX_NUM_VERTICES*GPU_BLIT_BUFFER_STRIDE;
-    rdata->index_buffer = (unsigned short*)malloc(index_buffer_storage_size);
     
     return renderer->current_context_target;
 }
@@ -943,6 +944,10 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
         #endif
         
         glGenBuffers(1, &data->blit_VBO);
+        glBindBuffer(GL_ARRAY_BUFFER, data->blit_VBO);
+        // Create space on the GPU
+        // TODO: Move blit buffer to the target data.
+        glBufferData(GL_ARRAY_BUFFER, GPU_BLIT_BUFFER_STRIDE * ((RENDERER_DATA*)renderer->data)->blit_buffer_max_num_vertices, NULL, GL_STREAM_DRAW);
         #endif
     }
     #endif
@@ -2184,6 +2189,13 @@ static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
     if(target->image != NULL)
         target->image->target = NULL;  // Remove reference to this object
     
+    if(target->image == NULL)
+    {
+        // TODO: Free the blit buffer
+        //free(data->blit_buffer);
+        //free(data->index_buffer);
+    }
+    
     // Free specialized data
     
     #ifdef SDL_GPU_USE_SDL2
@@ -2983,7 +2995,7 @@ static void FlushBlitBuffer(GPU_Renderer* renderer)
         glBindBuffer(GL_ARRAY_BUFFER, data->blit_VBO);
         
         // Copy the whole blit buffer to the GPU
-        glBufferData(GL_ARRAY_BUFFER, GPU_BLIT_BUFFER_STRIDE * rdata->blit_buffer_num_vertices, rdata->blit_buffer, GL_STREAM_DRAW);  // Creates space on the GPU and fills it with data.
+        glBufferSubData(GL_ARRAY_BUFFER, 0, GPU_BLIT_BUFFER_STRIDE * rdata->blit_buffer_num_vertices, rdata->blit_buffer);  // Fills GPU buffer with data.
         
         // Specify the formatting of the blit buffer
         if(data->current_shader_block.position_loc >= 0)
