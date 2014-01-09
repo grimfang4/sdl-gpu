@@ -933,21 +933,24 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
         target->default_untextured_shader_program = target->current_shader_program = p;
         
         #ifdef SDL_GPU_USE_GL_TIER3
-        // Get locations of the attributes in the shader
-        data->shader_block[1] = GPU_LoadShaderBlock(p, "gpu_Vertex", NULL, "gpu_Color", "modelViewProjection");
-        GPU_SetShaderBlock(data->shader_block[1]);
-        
-        // Create vertex array container and buffer
-        #if !defined(SDL_GPU_USE_GLES) || SDL_GPU_GLES_MAJOR_VERSION != 2
-        glGenVertexArrays(1, &data->blit_VAO);
-        glBindVertexArray(data->blit_VAO);
-        #endif
-        
-        glGenBuffers(1, &data->blit_VBO);
-        glBindBuffer(GL_ARRAY_BUFFER, data->blit_VBO);
-        // Create space on the GPU
-        // TODO: Move blit buffer to the target data.
-        glBufferData(GL_ARRAY_BUFFER, GPU_BLIT_BUFFER_STRIDE * ((RENDERER_DATA*)renderer->data)->blit_buffer_max_num_vertices, NULL, GL_STREAM_DRAW);
+            // Get locations of the attributes in the shader
+            data->shader_block[1] = GPU_LoadShaderBlock(p, "gpu_Vertex", NULL, "gpu_Color", "modelViewProjection");
+            GPU_SetShaderBlock(data->shader_block[1]);
+            
+            // Create vertex array container and buffer
+            #if !defined(SDL_GPU_USE_GLES) || SDL_GPU_GLES_MAJOR_VERSION != 2
+            glGenVertexArrays(1, &data->blit_VAO);
+            glBindVertexArray(data->blit_VAO);
+            #endif
+            
+            glGenBuffers(2, data->blit_VBO);
+            // Create space on the GPU
+            // TODO: Move blit buffer to the target data.
+            glBindBuffer(GL_ARRAY_BUFFER, data->blit_VBO[0]);
+            glBufferData(GL_ARRAY_BUFFER, GPU_BLIT_BUFFER_STRIDE * ((RENDERER_DATA*)renderer->data)->blit_buffer_max_num_vertices, NULL, GL_STREAM_DRAW);
+            glBindBuffer(GL_ARRAY_BUFFER, data->blit_VBO[1]);
+            glBufferData(GL_ARRAY_BUFFER, GPU_BLIT_BUFFER_STRIDE * ((RENDERER_DATA*)renderer->data)->blit_buffer_max_num_vertices, NULL, GL_STREAM_DRAW);
+            data->blit_VBO_flop = 0;
         #endif
     }
     #endif
@@ -2206,7 +2209,7 @@ static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
     #ifdef SDL_GPU_USE_GL_TIER3
     if(target->image == NULL)
     {
-        glDeleteBuffers(1, &data->blit_VBO);
+        glDeleteBuffers(2, data->blit_VBO);
         #if !defined(SDL_GPU_USE_GLES) || SDL_GPU_GLES_MAJOR_VERSION != 2
         glDeleteVertexArrays(1, &data->blit_VAO);
         #endif
@@ -2992,7 +2995,8 @@ static void FlushBlitBuffer(GPU_Renderer* renderer)
         #endif
         
         // Upload blit buffer to a single buffer object
-        glBindBuffer(GL_ARRAY_BUFFER, data->blit_VBO);
+        glBindBuffer(GL_ARRAY_BUFFER, data->blit_VBO[data->blit_VBO_flop]);
+        data->blit_VBO_flop = !data->blit_VBO_flop;
         
         // Copy the whole blit buffer to the GPU
         glBufferSubData(GL_ARRAY_BUFFER, 0, GPU_BLIT_BUFFER_STRIDE * rdata->blit_buffer_num_vertices, rdata->blit_buffer);  // Fills GPU buffer with data.
