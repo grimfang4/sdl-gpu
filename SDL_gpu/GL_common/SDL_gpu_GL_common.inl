@@ -2946,10 +2946,11 @@ static void FlushBlitBuffer(GPU_Renderer* renderer)
 
         float* vertex_pointer = rdata->blit_buffer + GPU_BLIT_BUFFER_VERTEX_OFFSET;
         float* texcoord_pointer = rdata->blit_buffer + GPU_BLIT_BUFFER_TEX_COORD_OFFSET;
+        
+        glBegin(GL_TRIANGLES);
         int i;
         for(i = 0; i < rdata->blit_buffer_num_vertices; i += 6)
         {
-            glBegin( GL_TRIANGLES );
 
             glTexCoord2f( *texcoord_pointer, *(texcoord_pointer+1) );
             glVertex3f( *vertex_pointer, *(vertex_pointer+1), *(vertex_pointer+2) );
@@ -2980,9 +2981,8 @@ static void FlushBlitBuffer(GPU_Renderer* renderer)
             glVertex3f( *vertex_pointer, *(vertex_pointer+1), *(vertex_pointer+2) );
             texcoord_pointer += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
             vertex_pointer += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
-
-            glEnd();
         }
+        glEnd();
 #elif defined(SDL_GPU_USE_GL_TIER2)
 
         glEnableClientState(GL_VERTEX_ARRAY);
