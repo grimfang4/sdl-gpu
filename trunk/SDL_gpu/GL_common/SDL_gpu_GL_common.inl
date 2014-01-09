@@ -510,7 +510,7 @@ static void changeColor(GPU_Renderer* renderer, SDL_Color color)
 static void changeBlending(GPU_Renderer* renderer, Uint8 enable)
 {
     GPU_Target* target = renderer->current_context_target;
-    if(target == NULL)
+    if(target == NULL || target->last_use_blending == enable)
         return;
     
     renderer->FlushBlitBuffer(renderer);
@@ -526,7 +526,7 @@ static void changeBlending(GPU_Renderer* renderer, Uint8 enable)
 static void changeBlendMode(GPU_Renderer* renderer, GPU_BlendEnum mode)
 {
     GPU_Target* target = renderer->current_context_target;
-    if(target == NULL)
+    if(target == NULL || target->last_blend_mode == mode)
         return;
     
     renderer->FlushBlitBuffer(renderer);
