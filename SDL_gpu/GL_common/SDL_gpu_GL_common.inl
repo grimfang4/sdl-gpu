@@ -3217,12 +3217,22 @@ static void ActivateShaderProgram(GPU_Renderer* renderer, Uint32 program_object,
 {
     GPU_Target* target = renderer->current_context_target;
     #ifndef SDL_GPU_DISABLE_SHADERS
-    if(target == NULL || target->current_shader_program == program_object)
+    if(target == NULL)
         return;
     
     if(program_object == 0) // Implies default shader
+    {
+        // Already using a default shader?
+        if(target->current_shader_program == target->default_textured_shader_program || target->current_shader_program == target->default_untextured_shader_program)
+            return;
+        
         program_object = target->default_untextured_shader_program;
+    }
     
+    if(target == NULL || target->current_shader_program == program_object)
+        return;
+    
+    renderer->FlushBlitBuffer(renderer);
     glUseProgram(program_object);
     
         #ifdef SDL_GPU_USE_GL_TIER3
