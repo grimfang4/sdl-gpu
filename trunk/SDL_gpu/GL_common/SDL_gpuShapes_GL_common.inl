@@ -5,7 +5,6 @@ SDL_GPU_USE_GLES // "Embedded" OpenGL
 SDL_GPU_USE_GL_TIER1 // Fixed-function, glBegin, etc.
 SDL_GPU_USE_GL_TIER2 // Fixed-function, glDrawArrays, etc.
 SDL_GPU_USE_GL_TIER3 // Shader pipeline, manual transforms
-RENDERER_DATA  // Appropriate type for the renderer data (via pointer)
 CONTEXT_DATA  // Appropriate type for the context data (via pointer)
 IMAGE_DATA  // Appropriate type for the image data (via pointer)
 TARGET_DATA  // Appropriate type for the target data (via pointer)
@@ -114,7 +113,7 @@ int _vertex_array_index = 0;
                 return; \
         if(renderer != target->renderer) \
                 return; \
-        float z = ((RENDERER_DATA*)renderer->data)->z;  \
+        float z = ((CONTEXT_DATA*)renderer->current_context_target->context->data)->z;  \
          \
         renderer->FlushBlitBuffer(renderer); \
         makeContextCurrent(renderer, target); \
@@ -151,7 +150,7 @@ int _vertex_array_index = 0;
                 return; \
         if(renderer != target->renderer) \
                 return; \
-        float z = ((RENDERER_DATA*)renderer->data)->z;  \
+        float z = ((CONTEXT_DATA*)renderer->current_context_target->context->data)->z;  \
          \
         renderer->FlushBlitBuffer(renderer); \
         makeContextCurrent(renderer, target); \
@@ -825,7 +824,7 @@ static void PolygonBlit(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrec
     renderer->FlushBlitBuffer(renderer);
     
     glBindTexture( GL_TEXTURE_2D, handle );
-    ((RENDERER_DATA*)renderer->data)->last_image = src;
+    ((CONTEXT_DATA*)renderer->current_context_target->context->data)->last_image = src;
     
     // Set repeat mode
     // FIXME: Save old mode and reset it later

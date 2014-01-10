@@ -34,11 +34,7 @@ typedef struct ContextData_OpenGL_1
 	Uint8 last_use_blending;
 	GPU_BlendEnum last_blend_mode;
 	GPU_Camera last_camera;
-} ContextData_OpenGL_1;
-
-typedef struct RendererData_OpenGL_1
-{
-	Uint32 handle;
+	
 	float z;
 	
 	GPU_Image* last_image;
@@ -49,6 +45,11 @@ typedef struct RendererData_OpenGL_1
 	unsigned short* index_buffer;  // Indexes into the blit buffer so we can use 4 vertices for every 2 triangles (1 quad)
 	int index_buffer_num_vertices;
 	int index_buffer_max_num_vertices;
+} ContextData_OpenGL_1;
+
+typedef struct RendererData_OpenGL_1
+{
+	Uint32 handle;
 } RendererData_OpenGL_1;
 
 typedef struct ImageData_OpenGL_1
@@ -65,10 +66,6 @@ typedef struct TargetData_OpenGL_1
 	Uint32 format;
 	
 	float line_thickness;
-	
-    #ifdef SDL_GPU_USE_SDL2
-    SDL_GLContext context;
-    #endif
 } TargetData_OpenGL_1;
 
 
