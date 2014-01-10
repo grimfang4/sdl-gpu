@@ -468,7 +468,7 @@ void GPU_SubSurfaceCopy(SDL_Surface* src, GPU_Rect* srcrect, GPU_Target* dest, S
 	current_renderer->SubSurfaceCopy(current_renderer, src, srcrect, dest, x, y);
 }
 
-GPU_Target* GPU_GetCurrentTarget(void)
+GPU_Target* GPU_GetContextTarget(void)
 {
 	if(current_renderer == NULL)
 		return NULL;

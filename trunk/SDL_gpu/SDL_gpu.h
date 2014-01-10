@@ -621,8 +621,8 @@ void GPU_FreeImage(GPU_Image* image);
 /*! Copies software surface data to a hardware texture.  Draws data with the upper left corner being (x,y).  */
 void GPU_SubSurfaceCopy(SDL_Surface* src, GPU_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y);
 
-/*! \return The renderer's main display surface/framebuffer. */
-GPU_Target* GPU_GetCurrentTarget(void);
+/*! \return The renderer's current output surface/framebuffer. */
+GPU_Target* GPU_GetContextTarget(void);
 
 /*! Creates a new render target from the given image.  It can then be accessed from image->target. */
 GPU_Target* GPU_LoadTarget(GPU_Image* image);
