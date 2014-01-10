@@ -247,7 +247,7 @@ static inline void draw_vertices(GLfloat* glverts, int num_vertices, GLenum prim
         glDisableClientState(GL_VERTEX_ARRAY);
     #elif defined(SDL_GPU_USE_GL_TIER3)
     
-        GPU_Target* target = GPU_GetCurrentTarget();
+        GPU_Target* target = GPU_GetContextTarget();
         if(target == NULL)
             return;
 
@@ -318,7 +318,7 @@ static inline void draw_vertices_textured(GLfloat* glverts, int num_vertices, GL
         glDisableClientState(GL_VERTEX_ARRAY);
     #elif defined(SDL_GPU_USE_GL_TIER3)
     
-        GPU_Target* target = GPU_GetCurrentTarget();
+        GPU_Target* target = GPU_GetContextTarget();
         if(target == NULL)
             return;
 
