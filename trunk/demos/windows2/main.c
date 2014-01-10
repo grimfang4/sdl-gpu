@@ -34,7 +34,7 @@ typedef struct Group
 Group create_first_group()
 {
     Group g;
-    Uint32 windowID = GPU_GetCurrentRenderer()->current_context_target->windowID;
+    Uint32 windowID = GPU_GetCurrentRenderer()->current_context_target->context->windowID;
     SDL_Log("New windowID: %u\n", windowID);
     
     g.target = GPU_GetCurrentRenderer()->current_context_target;
@@ -77,7 +77,7 @@ Group create_group()
 void destroy_group(Group* groups, int i)
 {
     GPU_FreeImage(groups[i].sprite.image);
-    SDL_DestroyWindow(SDL_GetWindowFromID(groups[i].target->windowID));
+    SDL_DestroyWindow(SDL_GetWindowFromID(groups[i].target->context->windowID));
     GPU_FreeTarget(groups[i].target);
     groups[i].target = NULL;
 }
@@ -161,7 +161,7 @@ int main(int argc, char* argv[])
                     Uint8 closed = 0;
                     for(i = 0; i < max_groups; i++)
                     {
-                        if(groups[i].target != NULL && groups[i].target->windowID == event.window.windowID)
+                        if(groups[i].target != NULL && groups[i].target->context->windowID == event.window.windowID)
                         {
                             destroy_group(groups, i);
                             

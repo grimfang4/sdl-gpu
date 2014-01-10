@@ -6,6 +6,7 @@ SDL_GPU_USE_GL_TIER1 // Fixed-function, glBegin, etc.
 SDL_GPU_USE_GL_TIER2 // Fixed-function, glDrawArrays, etc.
 SDL_GPU_USE_GL_TIER3 // Shader pipeline, manual transforms
 RENDERER_DATA  // Appropriate type for the renderer data (via pointer)
+CONTEXT_DATA  // Appropriate type for the context data (via pointer)
 IMAGE_DATA  // Appropriate type for the image data (via pointer)
 TARGET_DATA  // Appropriate type for the target data (via pointer)
 */
@@ -465,21 +466,42 @@ static inline void flushAndClearBlitBufferIfCurrentFramebuffer(GPU_Renderer* ren
 // Only for window targets, which have their own contexts.
 static void makeContextCurrent(GPU_Renderer* renderer, GPU_Target* target)
 {
-    if(target == NULL || target->image != NULL || renderer->current_context_target == target)
+    if(target == NULL || target->context == NULL || renderer->current_context_target == target)
         return;
-        
+    
     renderer->FlushBlitBuffer(renderer);
     
     #ifdef SDL_GPU_USE_SDL2
-    SDL_GL_MakeCurrent(SDL_GetWindowFromID(target->windowID), ((TARGET_DATA*)target->data)->context);
+    SDL_GL_MakeCurrent(SDL_GetWindowFromID(target->context->windowID), target->context->context);
     renderer->current_context_target = target;
     #endif
+}
+
+static void setClipRect(GPU_Renderer* renderer, GPU_Target* target)
+{
+    if(target->useClip)
+    {
+        glEnable(GL_SCISSOR_TEST);
+        GPU_Target* context_target = renderer->current_context_target;
+        int y = (target->context != NULL? context_target->h - (target->clipRect.y + target->clipRect.h) : target->clipRect.y);
+        float xFactor = ((float)context_target->context->window_w)/context_target->w;
+        float yFactor = ((float)context_target->context->window_h)/context_target->h;
+        glScissor(target->clipRect.x * xFactor, y * yFactor, target->clipRect.w * xFactor, target->clipRect.h * yFactor);
+    }
+}
+
+static void unsetClipRect(GPU_Renderer* renderer, GPU_Target* target)
+{
+    if(target->useClip)
+        glDisable(GL_SCISSOR_TEST);
 }
 
 static void prepareToRenderToTarget(GPU_Renderer* renderer, GPU_Target* target)
 {
     // Set up the camera
     renderer->SetCamera(renderer, target, &target->camera);
+    
+    setClipRect(renderer, target);
 }
 
 
@@ -489,16 +511,14 @@ static void changeColor(GPU_Renderer* renderer, SDL_Color color)
     #ifdef SDL_GPU_USE_GL_TIER3
     return;
     #else
-    GPU_Target* target = renderer->current_context_target;
-    if(target == NULL)
-        return;
-    if(target->last_color.r != color.r
-        || target->last_color.g != color.g
-        || target->last_color.b != color.b
-        || GET_ALPHA(target->last_color) != GET_ALPHA(color))
+    CONTEXT_DATA* cdata = (CONTEXT_DATA*)renderer->current_context_target->context->data;
+    if(cdata->last_color.r != color.r
+        || cdata->last_color.g != color.g
+        || cdata->last_color.b != color.b
+        || GET_ALPHA(cdata->last_color) != GET_ALPHA(color))
     {
         renderer->FlushBlitBuffer(renderer);
-        target->last_color = color;
+        cdata->last_color = color;
         glColor4f(color.r/255.01f, color.g/255.01f, color.b/255.01f, color.a/255.01f);
     }
     #endif
@@ -506,8 +526,8 @@ static void changeColor(GPU_Renderer* renderer, SDL_Color color)
 
 static void changeBlending(GPU_Renderer* renderer, Uint8 enable)
 {
-    GPU_Target* target = renderer->current_context_target;
-    if(target == NULL || target->last_use_blending == enable)
+    CONTEXT_DATA* cdata = (CONTEXT_DATA*)renderer->current_context_target->context->data;
+    if(cdata->last_use_blending == enable)
         return;
     
     renderer->FlushBlitBuffer(renderer);
@@ -517,18 +537,18 @@ static void changeBlending(GPU_Renderer* renderer, Uint8 enable)
     else
         glDisable(GL_BLEND);
 
-    target->last_use_blending = enable;
+    cdata->last_use_blending = enable;
 }
 
 static void changeBlendMode(GPU_Renderer* renderer, GPU_BlendEnum mode)
 {
-    GPU_Target* target = renderer->current_context_target;
-    if(target == NULL || target->last_blend_mode == mode)
+    CONTEXT_DATA* cdata = (CONTEXT_DATA*)renderer->current_context_target->context->data;
+    if(cdata->last_blend_mode == mode)
         return;
     
     renderer->FlushBlitBuffer(renderer);
 
-    target->last_blend_mode = mode;
+    cdata->last_blend_mode = mode;
     
     if(mode == GPU_BLEND_NORMAL)
     {
@@ -605,30 +625,45 @@ static void changeBlendMode(GPU_Renderer* renderer, GPU_BlendEnum mode)
 
 static void prepareToRenderImage(GPU_Renderer* renderer, GPU_Image* image)
 {
-    if(image == NULL)
-    {
-        GPU_Target* target = renderer->current_context_target;
-        if(target == NULL)
-            return;
-        // Shape rendering
-        // Color is set elsewhere for shapes
-        changeBlending(renderer, target->shapes_use_blending);
-        changeBlendMode(renderer, target->shapes_blend_mode);
-    }
-    else
-    {
-        // Blitting
-        changeColor(renderer, image->color);
-        changeBlending(renderer, image->use_blending);
-        changeBlendMode(renderer, image->blend_mode);
-    }
+    GPU_Context* context = renderer->current_context_target->context;
+    CONTEXT_DATA* cdata = (CONTEXT_DATA*)context->data;
+    
+    // TODO: Store this state and only call it from FlushBlitBuffer()
+    glEnable(GL_TEXTURE_2D);
+    
+    // Blitting
+    changeColor(renderer, image->color);
+    changeBlending(renderer, image->use_blending);
+    changeBlendMode(renderer, image->blend_mode);
+    
+    // If we're using the untextured shader, switch it.
+    if(context->current_shader_program == cdata->default_untextured_shader_program)
+        renderer->ActivateShaderProgram(renderer, cdata->default_textured_shader_program, NULL);
+}
+
+static void prepareToRenderShapes(GPU_Renderer* renderer)
+{
+    GPU_Context* context = renderer->current_context_target->context;
+    CONTEXT_DATA* cdata = (CONTEXT_DATA*)context->data;
+    
+    // TODO: Store this state and only call it from FlushBlitBuffer()
+    glDisable(GL_TEXTURE_2D);
+    
+    // Shape rendering
+    // Color is set elsewhere for shapes
+    changeBlending(renderer, context->shapes_use_blending);
+    changeBlendMode(renderer, context->shapes_blend_mode);
+    
+    // If we're using the textured shader, switch it.
+    if(context->current_shader_program == cdata->default_textured_shader_program)
+        renderer->ActivateShaderProgram(renderer, cdata->default_untextured_shader_program, NULL);
 }
 
 
 
 static void applyTargetCamera(GPU_Target* target)
 {
-    GPU_GetContextTarget()->last_camera = target->camera;
+    ((CONTEXT_DATA*)(GPU_GetContextTarget()->context->data))->last_camera = target->camera;
     
     GPU_MatrixMode( GPU_PROJECTION );
     GPU_LoadIdentity();
@@ -689,7 +724,7 @@ static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request,
     
     if(renderer->current_context_target != NULL)
     {
-        window = SDL_GetWindowFromID(renderer->current_context_target->windowID);
+        window = SDL_GetWindowFromID(renderer->current_context_target->context->windowID);
     }
     
     if(window == NULL)
@@ -771,13 +806,19 @@ static Uint8 IsFeatureEnabled(GPU_Renderer* renderer, GPU_FeatureEnum feature)
 static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowID, GPU_Target* target)
 {
     Uint8 created = 0;  // Make a new one or repurpose an existing target?
+    CONTEXT_DATA* cdata;
     if(target == NULL)
     {
         created = 1;
         target = (GPU_Target*)malloc(sizeof(GPU_Target));
         target->data = (TARGET_DATA*)malloc(sizeof(TARGET_DATA));
         target->image = NULL;
+        cdata = (CONTEXT_DATA*)malloc(sizeof(CONTEXT_DATA));
+        target->context = (GPU_Context*)malloc(sizeof(GPU_Context));
+        target->context->data = cdata;
     }
+    else
+        cdata = (CONTEXT_DATA*)target->context->data;
     
     #ifdef SDL_GPU_USE_SDL2
     
@@ -786,6 +827,8 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     {
         if(created)
         {
+            free(target->context->data);
+            free(target->context);
             free(target->data);
             free(target);
         }
@@ -793,17 +836,17 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     }
     
     // Store the window info
-    SDL_GetWindowSize(window, &target->window_w, &target->window_h);
-    target->windowID = SDL_GetWindowID(window);
+    SDL_GetWindowSize(window, &target->context->window_w, &target->context->window_h);
+    target->context->windowID = SDL_GetWindowID(window);
     
     // Make a new context if needed and make it current
     if(created || ((TARGET_DATA*)target->data)->context == 0)
     {
-        ((TARGET_DATA*)target->data)->context = SDL_GL_CreateContext(window);
+        target->context->context = SDL_GL_CreateContext(window);
         renderer->current_context_target = target;
     }
     else
-        renderer->MakeCurrent(renderer, target, target->windowID);
+        renderer->MakeCurrent(renderer, target, target->context->windowID);
     
     #else
     
@@ -854,8 +897,8 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     ((TARGET_DATA*)target->data)->line_thickness = 1.0f;
 
     target->renderer = renderer;
-    target->w = target->window_w;
-    target->h = target->window_h;
+    target->w = target->context->window_w;
+    target->h = target->context->window_h;
 
     target->useClip = 0;
     target->clipRect.x = 0;
@@ -865,14 +908,14 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     
     target->camera = GPU_GetDefaultCamera();
     
-    target->shapes_use_blending = 1;
-    target->shapes_blend_mode = GPU_BLEND_NORMAL;
+    target->context->shapes_use_blending = 1;
+    target->context->shapes_blend_mode = GPU_BLEND_NORMAL;
     
     SDL_Color white = {255, 255, 255, 255};
-    target->last_color = white;
-    target->last_use_blending = 0;
-    target->last_blend_mode = GPU_BLEND_NORMAL;
-    target->last_camera = target->camera;  // Redundant due to applyTargetCamera()
+    cdata->last_color = white;
+    cdata->last_use_blending = 0;
+    cdata->last_blend_mode = GPU_BLEND_NORMAL;
+    cdata->last_camera = target->camera;  // Redundant due to applyTargetCamera()
     
     // Set up GL state
     
@@ -886,7 +929,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     glClearColor( 0.0f, 0.0f, 0.0f, 0.0f );
 
     // Viewport and Framebuffer
-    glViewport( 0, 0, target->window_w, target->window_h);
+    glViewport( 0, 0, target->context->window_w, target->context->window_h);
 
     glClear( GL_COLOR_BUFFER_BIT );
     glColor4ub(255, 255, 255, 255);
@@ -897,9 +940,9 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     renderer->SetThickness(renderer, 1.0f);
     
     
-    target->default_textured_shader_program = 0;
-    target->default_untextured_shader_program = 0;
-    target->current_shader_program = 0;
+    cdata->default_textured_shader_program = 0;
+    cdata->default_untextured_shader_program = 0;
+    target->context->current_shader_program = 0;
     
     
     #ifndef SDL_GPU_DISABLE_SHADERS
@@ -922,7 +965,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
         if(!p)
             GPU_LogError("Failed to link default textured shader program: %s\n", renderer->GetShaderMessage(renderer));
         
-        target->default_textured_shader_program = p;
+        cdata->default_textured_shader_program = p;
         
         #ifdef SDL_GPU_USE_GL_TIER3
         TARGET_DATA* data = ((TARGET_DATA*)target->data);
@@ -948,7 +991,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
         
         glUseProgram(p);
         
-        target->default_untextured_shader_program = target->current_shader_program = p;
+        cdata->default_untextured_shader_program = target->context->current_shader_program = p;
         
         #ifdef SDL_GPU_USE_GL_TIER3
             // Get locations of the attributes in the shader
@@ -991,10 +1034,10 @@ static void MakeCurrent(GPU_Renderer* renderer, GPU_Target* target, Uint32 windo
         renderer->current_context_target = target;
         SDL_GL_MakeCurrent(SDL_GetWindowFromID(windowID), c);
         // Reset camera if the target's window was changed
-        if(target->windowID != windowID)
+        if(target->context->windowID != windowID)
         {
             renderer->FlushBlitBuffer(renderer);
-            target->windowID = windowID;
+            target->context->windowID = windowID;
             applyTargetCamera(((RENDERER_DATA*)renderer->data)->last_target);
         }
     }
@@ -1006,10 +1049,10 @@ static void MakeCurrent(GPU_Renderer* renderer, GPU_Target* target, Uint32 windo
 
 static void SetAsCurrent(GPU_Renderer* renderer)
 {
-    if(renderer->current_context_target == NULL || renderer->current_context_target->image != NULL)
+    if(renderer->current_context_target == NULL)
         return;
     
-    renderer->MakeCurrent(renderer, renderer->current_context_target, renderer->current_context_target->windowID);
+    renderer->MakeCurrent(renderer, renderer->current_context_target, renderer->current_context_target->context->windowID);
 }
 
 static int SetWindowResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
@@ -1018,8 +1061,8 @@ static int SetWindowResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
         return 0;
 
 #ifdef SDL_GPU_USE_SDL2
-    SDL_SetWindowSize(SDL_GetWindowFromID(renderer->current_context_target->windowID), w, h);
-    SDL_GetWindowSize(SDL_GetWindowFromID(renderer->current_context_target->windowID), &renderer->current_context_target->window_w, &renderer->current_context_target->window_h);
+    SDL_SetWindowSize(SDL_GetWindowFromID(renderer->current_context_target->context->windowID), w, h);
+    SDL_GetWindowSize(SDL_GetWindowFromID(renderer->current_context_target->context->windowID), &renderer->current_context_target->context->window_w, &renderer->current_context_target->context->window_h);
 #else
     SDL_Surface* surf = SDL_GetVideoSurface();
     Uint32 flags = surf->flags;
@@ -1099,9 +1142,9 @@ static int ToggleFullscreen(GPU_Renderer* renderer)
     if(renderer->current_context_target == NULL)
         return 0;
     
-    Uint8 enable = !(SDL_GetWindowFlags(SDL_GetWindowFromID(renderer->current_context_target->windowID)) & SDL_WINDOW_FULLSCREEN);
+    Uint8 enable = !(SDL_GetWindowFlags(SDL_GetWindowFromID(renderer->current_context_target->context->windowID)) & SDL_WINDOW_FULLSCREEN);
 
-    if(SDL_SetWindowFullscreen(SDL_GetWindowFromID(renderer->current_context_target->windowID), enable) < 0)
+    if(SDL_SetWindowFullscreen(SDL_GetWindowFromID(renderer->current_context_target->context->windowID), enable) < 0)
         return 0;
 
     return 1;
@@ -1137,9 +1180,9 @@ static GPU_Camera SetCamera(GPU_Renderer* renderer, GPU_Target* target, GPU_Came
         // Change the active camera
         
         // Skip change if the camera is already the same.
-        GPU_Target* context_target = renderer->current_context_target;
-        if(result.x == context_target->last_camera.x && result.y == context_target->last_camera.y && result.z == context_target->last_camera.z
-           && result.angle == context_target->last_camera.angle && result.zoom == context_target->last_camera.zoom)
+        CONTEXT_DATA* cdata = (CONTEXT_DATA*)renderer->current_context_target->context->data;
+        if(result.x == cdata->last_camera.x && result.y == cdata->last_camera.y && result.z == cdata->last_camera.z
+           && result.angle == cdata->last_camera.angle && result.zoom == cdata->last_camera.zoom)
             return result;
 
         renderer->FlushBlitBuffer(renderer);
@@ -2148,9 +2191,7 @@ static GPU_Target* LoadTarget(GPU_Renderer* renderer, GPU_Image* image)
     #endif
     
     result->renderer = renderer;
-    result->windowID = 0;
-    result->window_w = 0;
-    result->window_h = 0;
+    result->context = NULL;
     result->image = image;
     result->w = image->w;
     result->h = image->h;
@@ -2162,10 +2203,6 @@ static GPU_Target* LoadTarget(GPU_Renderer* renderer, GPU_Image* image)
     result->clipRect.y = 0;
     result->clipRect.w = image->w;
     result->clipRect.h = image->h;
-    
-    result->default_textured_shader_program = 0;
-    result->default_untextured_shader_program = 0;
-    result->current_shader_program = 0;
 
     image->target = result;
     return result;
@@ -2191,29 +2228,31 @@ static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
     if(target->image != NULL)
         target->image->target = NULL;  // Remove reference to this object
     
-    if(target->image == NULL)
+    if(target->context != NULL)
     {
+        CONTEXT_DATA* cdata = (CONTEXT_DATA*)target->context->data;
         // TODO: Free the blit buffer
         //free(data->blit_buffer);
         //free(data->index_buffer);
+    
+        #ifdef SDL_GPU_USE_SDL2
+        if(target->context->context != 0)
+            SDL_GL_DeleteContext(target->context->context);
+        #endif
+    
+        #ifdef SDL_GPU_USE_GL_TIER3
+        glDeleteBuffers(2, data->blit_VBO);
+            #if !defined(SDL_GPU_USE_GLES) || SDL_GPU_GLES_MAJOR_VERSION != 2
+            glDeleteVertexArrays(1, &data->blit_VAO);
+            #endif
+        #endif
+        
+        free(target->context->data);
+        free(target->context);
+        target->context = NULL;
     }
     
     // Free specialized data
-    
-    #ifdef SDL_GPU_USE_SDL2
-    if(data->context != 0)
-        SDL_GL_DeleteContext(data->context);
-    #endif
-    
-    #ifdef SDL_GPU_USE_GL_TIER3
-    if(target->image == NULL)
-    {
-        glDeleteBuffers(2, data->blit_VBO);
-        #if !defined(SDL_GPU_USE_GLES) || SDL_GPU_GLES_MAJOR_VERSION != 2
-        glDeleteVertexArrays(1, &data->blit_VAO);
-        #endif
-    }
-    #endif
     
     free(target->data);
     target->data = NULL;
@@ -2241,8 +2280,6 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_T
     {
         prepareToRenderToTarget(renderer, dest);
         prepareToRenderImage(renderer, src);
-        if(renderer->current_context_target->image == NULL && renderer->current_context_target->current_shader_program == renderer->current_context_target->default_untextured_shader_program)
-            renderer->ActivateShaderProgram(renderer, renderer->current_context_target->default_textured_shader_program, NULL);
         
         Uint16 tex_w = ((IMAGE_DATA*)src->data)->tex_w;
         Uint16 tex_h = ((IMAGE_DATA*)src->data)->tex_h;
@@ -2419,8 +2456,6 @@ static int BlitTransformX(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcr
     {
         prepareToRenderToTarget(renderer, dest);
         prepareToRenderImage(renderer, src);
-        if(renderer->current_context_target->image == NULL && renderer->current_context_target->current_shader_program == renderer->current_context_target->default_untextured_shader_program)
-            renderer->ActivateShaderProgram(renderer, renderer->current_context_target->default_textured_shader_program, NULL);
         
         Uint16 tex_w = ((IMAGE_DATA*)src->data)->tex_w;
         Uint16 tex_h = ((IMAGE_DATA*)src->data)->tex_h;
@@ -2835,14 +2870,7 @@ static void Clear(GPU_Renderer* renderer, GPU_Target* target)
         GPU_Rect viewport = getViewport();
         glViewport(0,0,target->w, target->h);
 
-        if(target->useClip)
-        {
-            glEnable(GL_SCISSOR_TEST);
-            int y = (renderer->current_context_target == target? renderer->current_context_target->h - (target->clipRect.y + target->clipRect.h) : target->clipRect.y);
-            float xFactor = ((float)renderer->current_context_target->window_w)/renderer->current_context_target->w;
-            float yFactor = ((float)renderer->current_context_target->window_h)/renderer->current_context_target->h;
-            glScissor(target->clipRect.x * xFactor, y * yFactor, target->clipRect.w * xFactor, target->clipRect.h * yFactor);
-        }
+        setClipRect(renderer, target);
 
         //glPushAttrib(GL_COLOR_BUFFER_BIT);
 
@@ -2850,10 +2878,7 @@ static void Clear(GPU_Renderer* renderer, GPU_Target* target)
         glClear(GL_COLOR_BUFFER_BIT);
         //glPopAttrib();
 
-        if(target->useClip)
-        {
-            glDisable(GL_SCISSOR_TEST);
-        }
+        unsetClipRect(renderer, target);
 
         setViewport(viewport);
     }
@@ -2875,23 +2900,12 @@ static void ClearRGBA(GPU_Renderer* renderer, GPU_Target* target, Uint8 r, Uint8
     {
         GPU_Rect viewport = getViewport();
         glViewport(0,0,target->w, target->h);
-
-        if(target->useClip)
-        {
-            glEnable(GL_SCISSOR_TEST);
-            int y = (renderer->current_context_target == target? renderer->current_context_target->h - (target->clipRect.y + target->clipRect.h) : target->clipRect.y);
-            float xFactor = ((float)renderer->current_context_target->window_w)/renderer->current_context_target->w;
-            float yFactor = ((float)renderer->current_context_target->window_h)/renderer->current_context_target->h;
-            glScissor(target->clipRect.x * xFactor, y * yFactor, target->clipRect.w * xFactor, target->clipRect.h * yFactor);
-        }
+        setClipRect(renderer, target);
 
         glClearColor(r/255.0f, g/255.0f, b/255.0f, a/255.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        if(target->useClip)
-        {
-            glDisable(GL_SCISSOR_TEST);
-        }
+        unsetClipRect(renderer, target);
 
         setViewport(viewport);
     }
@@ -2927,15 +2941,7 @@ static void FlushBlitBuffer(GPU_Renderer* renderer)
             GPU_MatrixMode( GPU_MODELVIEW );
         }
 
-
-        if(dest->useClip)
-        {
-            glEnable(GL_SCISSOR_TEST);
-            int y = (renderer->current_context_target == dest? renderer->current_context_target->h - (dest->clipRect.y + dest->clipRect.h) : dest->clipRect.y);
-            float xFactor = ((float)renderer->current_context_target->window_w)/renderer->current_context_target->w;
-            float yFactor = ((float)renderer->current_context_target->window_h)/renderer->current_context_target->h;
-            glScissor(dest->clipRect.x * xFactor, y * yFactor, dest->clipRect.w * xFactor, dest->clipRect.h * yFactor);
-        }
+        setClipRect(renderer, dest);
 
 
 
@@ -3033,10 +3039,7 @@ static void FlushBlitBuffer(GPU_Renderer* renderer)
         rdata->blit_buffer_num_vertices = 0;
         rdata->index_buffer_num_vertices = 0;
 
-        if(dest->useClip)
-        {
-            glDisable(GL_SCISSOR_TEST);
-        }
+        unsetClipRect(renderer, dest);
 
         // restore viewport and projection
         if(isRTT)
@@ -3060,7 +3063,7 @@ static void Flip(GPU_Renderer* renderer, GPU_Target* target)
 #ifdef SDL_GPU_USE_SDL2
     if(renderer->current_context_target == NULL)
         return;
-    SDL_GL_SwapWindow(SDL_GetWindowFromID(renderer->current_context_target->windowID));
+    SDL_GL_SwapWindow(SDL_GetWindowFromID(renderer->current_context_target->context->windowID));
 #else
     SDL_GL_SwapBuffers();
 #endif
@@ -3227,6 +3230,12 @@ static void DetachShader(GPU_Renderer* renderer, Uint32 program_object, Uint32 s
     #endif
 }
 
+static Uint8 IsDefaultShaderProgram(GPU_Renderer* renderer, Uint32 program_object)
+{
+    CONTEXT_DATA* cdata = (CONTEXT_DATA*)renderer->current_context_target->context->data;
+    return (program_object == cdata->default_textured_shader_program || program_object == cdata->default_untextured_shader_program);
+}
+
 static void ActivateShaderProgram(GPU_Renderer* renderer, Uint32 program_object, GPU_ShaderBlock* block)
 {
     GPU_Target* target = renderer->current_context_target;
@@ -3234,16 +3243,18 @@ static void ActivateShaderProgram(GPU_Renderer* renderer, Uint32 program_object,
     if(target == NULL)
         return;
     
+    CONTEXT_DATA* cdata = (CONTEXT_DATA*)target->context->data;
     if(program_object == 0) // Implies default shader
     {
         // Already using a default shader?
-        if(target->current_shader_program == target->default_textured_shader_program || target->current_shader_program == target->default_untextured_shader_program)
+        if(target->context->current_shader_program == cdata->default_textured_shader_program
+            || target->context->current_shader_program == cdata->default_untextured_shader_program)
             return;
         
-        program_object = target->default_untextured_shader_program;
+        program_object = cdata->default_untextured_shader_program;
     }
     
-    if(target == NULL || target->current_shader_program == program_object)
+    if(target == NULL || target->context->current_shader_program == program_object)
         return;
     
     renderer->FlushBlitBuffer(renderer);
@@ -3252,9 +3263,9 @@ static void ActivateShaderProgram(GPU_Renderer* renderer, Uint32 program_object,
         #ifdef SDL_GPU_USE_GL_TIER3
         // Set up our shader attribute and uniform locations
         TARGET_DATA* data = ((TARGET_DATA*)target->data);
-        if(program_object == target->default_textured_shader_program)
+        if(program_object == cdata->default_textured_shader_program)
             data->current_shader_block = data->shader_block[0];
-        else if(program_object == target->default_untextured_shader_program)
+        else if(program_object == cdata->default_untextured_shader_program)
             data->current_shader_block = data->shader_block[1];
         else
         {
@@ -3273,7 +3284,7 @@ static void ActivateShaderProgram(GPU_Renderer* renderer, Uint32 program_object,
         #endif
     #endif
     
-    target->current_shader_program = program_object;
+    target->context->current_shader_program = program_object;
 }
 
 static void DeactivateShaderProgram(GPU_Renderer* renderer)
@@ -3569,6 +3580,7 @@ static void SetUniformMatrixfv(GPU_Renderer* renderer, int location, int num_mat
     renderer->FreeShaderProgram = &FreeShaderProgram; \
     renderer->AttachShader = &AttachShader; \
     renderer->DetachShader = &DetachShader; \
+    renderer->IsDefaultShaderProgram = &IsDefaultShaderProgram; \
     renderer->ActivateShaderProgram = &ActivateShaderProgram; \
     renderer->DeactivateShaderProgram = &DeactivateShaderProgram; \
     renderer->GetShaderMessage = &GetShaderMessage; \

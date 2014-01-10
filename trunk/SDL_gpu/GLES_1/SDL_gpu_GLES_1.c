@@ -14,6 +14,7 @@ void GPU_FreeRenderer_GLES_1(GPU_Renderer* renderer) {}
 #define SDL_GPU_USE_GL_TIER2
 #define SDL_GPU_GL_TIER 2
 #define SDL_GPU_GLES_MAJOR_VERSION 1
+#define CONTEXT_DATA ContextData_GLES_1
 #define RENDERER_DATA RendererData_GLES_1
 #define IMAGE_DATA ImageData_GLES_1
 #define TARGET_DATA TargetData_GLES_1
