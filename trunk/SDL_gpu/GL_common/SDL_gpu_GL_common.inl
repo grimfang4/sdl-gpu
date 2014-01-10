@@ -445,13 +445,10 @@ static inline void flushAndClearBlitBufferIfCurrentTexture(GPU_Renderer* rendere
     }
 }
 
-static inline void flushBlitBufferIfCurrentFramebuffer(GPU_Renderer* renderer, GPU_Target* target)
+static inline Uint8 isCurrentTarget(GPU_Renderer* renderer, GPU_Target* target)
 {
-    if(target == ((RENDERER_DATA*)renderer->data)->last_target
-            || ((RENDERER_DATA*)renderer->data)->last_target == NULL)
-    {
-        renderer->FlushBlitBuffer(renderer);
-    }
+    return (target == ((RENDERER_DATA*)renderer->data)->last_target
+            || ((RENDERER_DATA*)renderer->data)->last_target == NULL);
 }
 
 static inline void flushAndClearBlitBufferIfCurrentFramebuffer(GPU_Renderer* renderer, GPU_Target* target)
@@ -625,6 +622,35 @@ static void prepareToRenderImage(GPU_Renderer* renderer, GPU_Image* image)
         changeBlending(renderer, image->use_blending);
         changeBlendMode(renderer, image->blend_mode);
     }
+}
+
+
+
+static void applyTargetCamera(GPU_Target* target)
+{
+    GPU_GetContextTarget()->last_camera = target->camera;
+    
+    GPU_MatrixMode( GPU_PROJECTION );
+    GPU_LoadIdentity();
+
+    // The default z for objects is 0
+    
+    GPU_Ortho(target->camera.x, target->w + target->camera.x, target->h + target->camera.y, target->camera.y, -1.0f, 1.0f);
+
+    GPU_MatrixMode( GPU_MODELVIEW );
+    GPU_LoadIdentity();
+    //GPU_Translate(0.375f, 0.375f, 0.0f);
+
+
+    float offsetX = target->w/2.0f;
+    float offsetY = target->h/2.0f;
+    GPU_Translate(offsetX, offsetY, -0.01);
+    GPU_Rotate(target->camera.angle, 0, 0, 1);
+    GPU_Translate(-offsetX, -offsetY, 0);
+
+    GPU_Translate(target->camera.x + offsetX, target->camera.y + offsetY, 0);
+    GPU_Scale(target->camera.zoom, target->camera.zoom, 1.0f);
+    GPU_Translate(-target->camera.x - offsetX, -target->camera.y - offsetY, 0);
 }
 
 static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request, Uint16 w, Uint16 h, Uint32 flags)
@@ -846,36 +872,28 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     target->last_color = white;
     target->last_use_blending = 0;
     target->last_blend_mode = GPU_BLEND_NORMAL;
+    target->last_camera = target->camera;  // Redundant due to applyTargetCamera()
     
     // Set up GL state
     
-    // Set up camera projection
+    GPU_InitMatrix();
+    
+    // Modes
     glEnable( GL_TEXTURE_2D );
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    glDisable(GL_BLEND);
     glClearColor( 0.0f, 0.0f, 0.0f, 0.0f );
 
+    // Viewport and Framebuffer
     glViewport( 0, 0, target->window_w, target->window_h);
 
     glClear( GL_COLOR_BUFFER_BIT );
     glColor4ub(255, 255, 255, 255);
     
-    GPU_InitMatrix();
+    // Set up camera
+    applyTargetCamera(target);
     
-    // TODO: Reconcile this with the default camera used in SetCamera().
-    GPU_MatrixMode( GPU_PROJECTION );
-    GPU_LoadIdentity();
-
-    GPU_Ortho(0.0f, target->window_w, target->window_h, 0.0f, -1.0f, 1.0f);
-
-    GPU_MatrixMode( GPU_MODELVIEW );
-    GPU_LoadIdentity();
-    
-    // Center the pixels
-    //GPU_Translate(0.375f, 0.375f, 0.0f);
-
-    glEnable( GL_TEXTURE_2D );
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    glDisable(GL_BLEND);
     renderer->SetThickness(renderer, 1.0f);
     
     
@@ -972,11 +990,12 @@ static void MakeCurrent(GPU_Renderer* renderer, GPU_Target* target, Uint32 windo
     {
         renderer->current_context_target = target;
         SDL_GL_MakeCurrent(SDL_GetWindowFromID(windowID), c);
-        // Reset camera if the window was changed
+        // Reset camera if the target's window was changed
         if(target->windowID != windowID)
         {
+            renderer->FlushBlitBuffer(renderer);
             target->windowID = windowID;
-            renderer->SetCamera(renderer, target, &target->camera);
+            applyTargetCamera(((RENDERER_DATA*)renderer->data)->last_target);
         }
     }
     #else
@@ -1052,20 +1071,18 @@ static int SetWindowResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
 
 static void SetVirtualResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
 {
-    if(renderer->current_context_target == NULL)
+    GPU_Target* target = renderer->current_context_target;
+    if(target == NULL)
         return;
 
-    renderer->current_context_target->w = w;
-    renderer->current_context_target->h = h;
-
-    renderer->FlushBlitBuffer(renderer);
-
-    GPU_MatrixMode( GPU_PROJECTION );
-    GPU_LoadIdentity();
-
-    GPU_Ortho(0.0f, w, h, 0.0f, -1.0f, 1.0f);
-
-    GPU_MatrixMode( GPU_MODELVIEW );
+    target->w = w;
+    target->h = h;
+    
+    if(isCurrentTarget(renderer, target))
+    {
+        renderer->FlushBlitBuffer(renderer);
+        applyTargetCamera(target);
+    }
 }
 
 static void Quit(GPU_Renderer* renderer)
@@ -1102,32 +1119,6 @@ static int ToggleFullscreen(GPU_Renderer* renderer)
 }
 
 
-static void applyTargetCamera(GPU_Target* target)
-{
-    GPU_MatrixMode( GPU_PROJECTION );
-    GPU_LoadIdentity();
-
-    // The default z for objects is 0
-    
-    GPU_Ortho(target->camera.x, target->w + target->camera.x, target->h + target->camera.y, target->camera.y, -1.0f, 1.0f);
-
-    GPU_MatrixMode( GPU_MODELVIEW );
-    GPU_LoadIdentity();
-    //GPU_Translate(0.375f, 0.375f, 0.0f);
-
-
-    float offsetX = target->w/2.0f;
-    float offsetY = target->h/2.0f;
-    GPU_Translate(offsetX, offsetY, -0.01);
-    GPU_Rotate(target->camera.angle, 0, 0, 1);
-    GPU_Translate(-offsetX, -offsetY, 0);
-
-    GPU_Translate(target->camera.x + offsetX, target->camera.y + offsetY, 0);
-    GPU_Scale(target->camera.zoom, target->camera.zoom, 1.0f);
-    GPU_Translate(-target->camera.x - offsetX, -target->camera.y - offsetY, 0);
-}
-
-
 static GPU_Camera SetCamera(GPU_Renderer* renderer, GPU_Target* target, GPU_Camera* cam)
 {
     if(target == NULL || renderer->current_context_target == NULL)
@@ -1141,15 +1132,19 @@ static GPU_Camera SetCamera(GPU_Renderer* renderer, GPU_Target* target, GPU_Came
     else
         target->camera = *cam;
     
-    // Check for redundant state change
-    GPU_Target* context_target = renderer->current_context_target;
-    if(result.x == target->camera.x && result.y == target->camera.y && result.z == target->camera.z
-       && result.angle == target->camera.angle && result.zoom == target->camera.zoom)
-        return result;
+    if(isCurrentTarget(renderer, target))
+    {
+        // Change the active camera
+        
+        // Skip change if the camera is already the same.
+        GPU_Target* context_target = renderer->current_context_target;
+        if(result.x == context_target->last_camera.x && result.y == context_target->last_camera.y && result.z == context_target->last_camera.z
+           && result.angle == context_target->last_camera.angle && result.zoom == context_target->last_camera.zoom)
+            return result;
 
-    renderer->FlushBlitBuffer(renderer);
-    
-    applyTargetCamera(target);
+        renderer->FlushBlitBuffer(renderer);
+        applyTargetCamera(target);
+    }
 
     return result;
 }
@@ -1277,7 +1272,10 @@ static Uint8 readTargetPixels(GPU_Renderer* renderer, GPU_Target* source, GLint 
 {
     if(source == NULL)
         return 0;
-    flushBlitBufferIfCurrentFramebuffer(renderer, source);
+    
+    if(isCurrentTarget(renderer, source))
+        renderer->FlushBlitBuffer(renderer);
+    
     if(bindFramebuffer(renderer, source))
     {
         glReadPixels(0, 0, source->w, source->h, format, GL_UNSIGNED_BYTE, pixels);
@@ -1889,8 +1887,8 @@ static void UpdateImage(GPU_Renderer* renderer, GPU_Image* image, const GPU_Rect
 
 
     glEnable(GL_TEXTURE_2D);
-    if(image->target != NULL)
-        flushBlitBufferIfCurrentFramebuffer(renderer, image->target);
+    if(image->target != NULL && isCurrentTarget(renderer, image->target))
+        renderer->FlushBlitBuffer(renderer);
     bindTexture(renderer, image);
     int alignment = 1;
     if(newSurface->format->BytesPerPixel == 4)
@@ -2674,8 +2672,8 @@ static void GenerateMipmaps(GPU_Renderer* renderer, GPU_Image* image)
     if(image == NULL)
         return;
 
-    if(image->target != NULL)
-        flushBlitBufferIfCurrentFramebuffer(renderer, image->target);
+    if(image->target != NULL && isCurrentTarget(renderer, image->target))
+        renderer->FlushBlitBuffer(renderer);
     bindTexture(renderer, image);
     glGenerateMipmap(GL_TEXTURE_2D);
     ((IMAGE_DATA*)image->data)->hasMipmaps = 1;
@@ -2697,7 +2695,8 @@ static GPU_Rect SetClip(GPU_Renderer* renderer, GPU_Target* target, Sint16 x, Si
         return r;
     }
 
-    flushBlitBufferIfCurrentFramebuffer(renderer, target);
+    if(isCurrentTarget(renderer, target))
+        renderer->FlushBlitBuffer(renderer);
     target->useClip = 1;
 
     GPU_Rect r = target->clipRect;
@@ -2717,7 +2716,8 @@ static void ClearClip(GPU_Renderer* renderer, GPU_Target* target)
 
     makeContextCurrent(renderer, target);
     
-    flushBlitBufferIfCurrentFramebuffer(renderer, target);
+    if(isCurrentTarget(renderer, target))
+        renderer->FlushBlitBuffer(renderer);
     target->useClip = 0;
     target->clipRect.x = 0;
     target->clipRect.y = 0;
@@ -2740,7 +2740,8 @@ static SDL_Color GetPixel(GPU_Renderer* renderer, GPU_Target* target, Sint16 x, 
     if(x < 0 || y < 0 || x >= target->w || y >= target->h)
         return result;
 
-    flushBlitBufferIfCurrentFramebuffer(renderer, target);
+    if(isCurrentTarget(renderer, target))
+        renderer->FlushBlitBuffer(renderer);
     if(bindFramebuffer(renderer, target))
     {
         unsigned char pixels[4];
@@ -2827,7 +2828,8 @@ static void Clear(GPU_Renderer* renderer, GPU_Target* target)
 
     makeContextCurrent(renderer, target);
     
-    flushBlitBufferIfCurrentFramebuffer(renderer, target);
+    if(isCurrentTarget(renderer, target))
+        renderer->FlushBlitBuffer(renderer);
     if(bindFramebuffer(renderer, target))
     {
         GPU_Rect viewport = getViewport();
@@ -2867,7 +2869,8 @@ static void ClearRGBA(GPU_Renderer* renderer, GPU_Target* target, Uint8 r, Uint8
 
     makeContextCurrent(renderer, target);
     
-    flushBlitBufferIfCurrentFramebuffer(renderer, target);
+    if(isCurrentTarget(renderer, target))
+        renderer->FlushBlitBuffer(renderer);
     if(bindFramebuffer(renderer, target))
     {
         GPU_Rect viewport = getViewport();

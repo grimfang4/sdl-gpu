@@ -175,6 +175,7 @@ struct GPU_Target
 	SDL_Color last_color;
 	Uint8 last_use_blending;
 	GPU_BlendEnum last_blend_mode;
+	GPU_Camera last_camera;
 };
 
 /*! Important GPU features which may not be supported depending on a device's extension support.  Can be OR'd together.
