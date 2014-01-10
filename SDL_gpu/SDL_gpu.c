@@ -215,13 +215,13 @@ const char* GPU_GetErrorString(void)
 
 void GPU_GetVirtualCoords(float* x, float* y, float displayX, float displayY)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->current_context_target->windowID == 0)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return;
 	
 	if(x != NULL)
-		*x = (displayX*current_renderer->current_context_target->w)/current_renderer->current_context_target->window_w;
+		*x = (displayX*current_renderer->current_context_target->w)/current_renderer->current_context_target->context->window_w;
 	if(y != NULL)
-		*y = (displayY*current_renderer->current_context_target->h)/current_renderer->current_context_target->window_h;
+		*y = (displayY*current_renderer->current_context_target->h)/current_renderer->current_context_target->context->window_h;
 }
 
 GPU_Rect GPU_MakeRect(float x, float y, float w, float h)
@@ -661,7 +661,7 @@ void GPU_SetShapeBlending(Uint8 enable)
 	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return;
 	
-	current_renderer->current_context_target->shapes_use_blending = enable;
+	current_renderer->current_context_target->context->shapes_use_blending = enable;
 }
 
 void GPU_SetBlendMode(GPU_Image* image, GPU_BlendEnum mode)
@@ -677,7 +677,7 @@ void GPU_SetShapeBlendMode(GPU_BlendEnum mode)
 	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return;
 	
-	current_renderer->current_context_target->shapes_blend_mode = mode;
+	current_renderer->current_context_target->context->shapes_blend_mode = mode;
 }
 
 void GPU_SetImageFilter(GPU_Image* image, GPU_FilterEnum filter)
@@ -815,6 +815,14 @@ void GPU_DetachShader(Uint32 program_object, Uint32 shader_object)
 		return;
 	
 	current_renderer->DetachShader(current_renderer, program_object, shader_object);
+}
+
+Uint8 GPU_IsDefaultShaderProgram(Uint32 program_object)
+{
+	if(current_renderer == NULL || current_renderer->IsDefaultShaderProgram == NULL)
+		return 0;
+		
+	return current_renderer->IsDefaultShaderProgram(current_renderer, program_object);
 }
 
 void GPU_ActivateShaderProgram(Uint32 program_object, GPU_ShaderBlock* block)

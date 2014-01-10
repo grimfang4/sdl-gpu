@@ -34,7 +34,7 @@ typedef struct Group
 Group create_first_group()
 {
     Group g;
-    Uint32 windowID = GPU_GetCurrentRenderer()->current_context_target->windowID;
+    Uint32 windowID = GPU_GetCurrentRenderer()->current_context_target->context->windowID;
     SDL_Log("New windowID: %u\n", windowID);
     
     g.windowID = windowID;

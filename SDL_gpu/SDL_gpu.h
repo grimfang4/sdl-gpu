@@ -137,9 +137,32 @@ typedef struct GPU_ShaderBlock
 } GPU_ShaderBlock;
 
 
+/*! Rendering context data.  Only GPU_Targets which represent windows will store this. */
+typedef struct GPU_Context
+{
+    /*! SDL_GLContext */
+    void* context;
+    
+    /*! SDL window ID */
+	Uint32 windowID;
+	
+	/*! Actual window dimensions */
+	int window_w;
+	int window_h;
+	
+	/*! Internal state */
+	Uint32 current_shader_program;
+	
+	Uint8 shapes_use_blending;
+	GPU_BlendEnum shapes_blend_mode;
+	
+	void* data;
+} GPU_Context;
+
+
 /*! Render target object for use as a blitting destination.
  * A GPU_Target can be created from a GPU_Image with GPU_LoadTarget().
- * A GPU_Target can also represent a separate window with GPU_CreateTargetFromWindow().
+ * A GPU_Target can also represent a separate window with GPU_CreateTargetFromWindow().  In that case, 'context' is allocated and filled in.
  * Note: You must have passed the SDL_WINDOW_OPENGL flag to SDL_CreateWindow() for OpenGL renderers to work with new windows.
  * Free the memory with GPU_FreeTarget() when you're done.
  * \see GPU_LoadTarget()
@@ -158,24 +181,8 @@ struct GPU_Target
 	/*! Perspective and object viewing transforms. */
 	GPU_Camera camera;
 	
-	// Context variables
-	Uint32 windowID;
-	
-	/*! Actual window dimensions */
-	int window_w;
-	int window_h;
-	
-	Uint32 default_textured_shader_program;
-	Uint32 default_untextured_shader_program;
-	Uint32 current_shader_program;
-	
-	Uint8 shapes_use_blending;
-	GPU_BlendEnum shapes_blend_mode;
-	
-	SDL_Color last_color;
-	Uint8 last_use_blending;
-	GPU_BlendEnum last_blend_mode;
-	GPU_Camera last_camera;
+	/*! Renderer context data.  NULL if the target does not represent a window or rendering context. */
+	GPU_Context* context;
 };
 
 /*! Important GPU features which may not be supported depending on a device's extension support.  Can be OR'd together.
@@ -354,6 +361,9 @@ struct GPU_Renderer
 
     /*! \see GPU_DetachShader() */
     void (*DetachShader)(GPU_Renderer* renderer, Uint32 program_object, Uint32 shader_object);
+    
+    /*! \see GPU_IsDefaultShaderProgram() */
+    Uint8 (*IsDefaultShaderProgram)(GPU_Renderer* renderer, Uint32 program_object);
 
     /*! \see GPU_ActivateShaderProgram() */
     void (*ActivateShaderProgram)(GPU_Renderer* renderer, Uint32 program_object, GPU_ShaderBlock* block);
@@ -781,6 +791,9 @@ void GPU_AttachShader(Uint32 program_object, Uint32 shader_object);
 
 /*! Detaches a shader object from a shader program. */
 void GPU_DetachShader(Uint32 program_object, Uint32 shader_object);
+
+/*! Returns 1 if the given shader program is a default shader for the current context, 0 otherwise. */
+Uint8 GPU_IsDefaultShaderProgram(Uint32 program_object);
 
 /*! Activates the given shader program.  Passing NULL for 'block' will disable the built-in shader variables for custom shaders until a GPU_ShaderBlock is set again. */
 void GPU_ActivateShaderProgram(Uint32 program_object, GPU_ShaderBlock* block);

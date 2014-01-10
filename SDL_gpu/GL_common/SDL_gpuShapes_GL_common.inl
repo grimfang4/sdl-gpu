@@ -6,6 +6,7 @@ SDL_GPU_USE_GL_TIER1 // Fixed-function, glBegin, etc.
 SDL_GPU_USE_GL_TIER2 // Fixed-function, glDrawArrays, etc.
 SDL_GPU_USE_GL_TIER3 // Shader pipeline, manual transforms
 RENDERER_DATA  // Appropriate type for the renderer data (via pointer)
+CONTEXT_DATA  // Appropriate type for the context data (via pointer)
 IMAGE_DATA  // Appropriate type for the image data (via pointer)
 TARGET_DATA  // Appropriate type for the target data (via pointer)
 */
@@ -122,21 +123,8 @@ int _vertex_array_index = 0;
         if(bindFramebuffer(renderer, target)) \
         { \
             prepareToRenderToTarget(renderer, target); \
-            prepareToRenderImage(renderer, NULL); \
+            prepareToRenderShapes(renderer); \
             /*glPushAttrib(GL_COLOR_BUFFER_BIT);*/ \
-            if(target->useClip) \
-            { \
-                    glEnable(GL_SCISSOR_TEST); \
-            int y = (renderer->current_context_target == target? renderer->current_context_target->h - (target->clipRect.y + target->clipRect.h) : target->clipRect.y); \
-            float xFactor = ((float)renderer->current_context_target->window_w)/renderer->current_context_target->w; \
-            float yFactor = ((float)renderer->current_context_target->window_h)/renderer->current_context_target->h; \
-            glScissor(target->clipRect.x * xFactor, y * yFactor, target->clipRect.w * xFactor, target->clipRect.h * yFactor); \
-            } \
-	 \
-            glDisable( GL_TEXTURE_2D ); \
-            \
-            if(renderer->current_context_target->image == NULL && renderer->current_context_target->current_shader_program == renderer->current_context_target->default_textured_shader_program) \
-                renderer->ActivateShaderProgram(renderer, renderer->current_context_target->default_untextured_shader_program, NULL); \
             \
             GLint vp[4]; \
             if(target->image != NULL) \
@@ -174,19 +162,6 @@ int _vertex_array_index = 0;
             prepareToRenderToTarget(renderer, target); \
             prepareToRenderImage(renderer, src); \
             /*glPushAttrib(GL_COLOR_BUFFER_BIT);*/ \
-            if(target->useClip) \
-            { \
-                glEnable(GL_SCISSOR_TEST); \
-                int y = (renderer->current_context_target == target? renderer->current_context_target->h - (target->clipRect.y + target->clipRect.h) : target->clipRect.y); \
-                float xFactor = ((float)renderer->current_context_target->window_w)/renderer->current_context_target->w; \
-                float yFactor = ((float)renderer->current_context_target->window_h)/renderer->current_context_target->h; \
-                glScissor(target->clipRect.x * xFactor, y * yFactor, target->clipRect.w * xFactor, target->clipRect.h * yFactor); \
-            } \
-             \
-            glEnable( GL_TEXTURE_2D ); \
-            \
-            if(renderer->current_context_target->image == NULL && renderer->current_context_target->current_shader_program == renderer->current_context_target->default_untextured_shader_program) \
-                renderer->ActivateShaderProgram(renderer, renderer->current_context_target->default_textured_shader_program, NULL); \
             \
             GLint vp[4]; \
             if(target->image != NULL) \
