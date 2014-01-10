@@ -482,7 +482,7 @@ static void makeContextCurrent(GPU_Renderer* renderer, GPU_Target* target)
 static void prepareToRenderToTarget(GPU_Renderer* renderer, GPU_Target* target)
 {
     // Set up the camera
-    //renderer->SetCamera(renderer, target, &target->camera);
+    renderer->SetCamera(renderer, target, &target->camera);
 }
 
 
@@ -1102,22 +1102,8 @@ static int ToggleFullscreen(GPU_Renderer* renderer)
 }
 
 
-
-static GPU_Camera SetCamera(GPU_Renderer* renderer, GPU_Target* target, GPU_Camera* cam)
+static void applyTargetCamera(GPU_Target* target)
 {
-    if(target == NULL)
-        return GPU_GetDefaultCamera();
-    
-    
-    GPU_Camera result = target->camera;
-
-    if(cam == NULL)
-        target->camera = GPU_GetDefaultCamera();
-    else
-        target->camera = *cam;
-
-    renderer->FlushBlitBuffer(renderer);
-
     GPU_MatrixMode( GPU_PROJECTION );
     GPU_LoadIdentity();
 
@@ -1139,6 +1125,31 @@ static GPU_Camera SetCamera(GPU_Renderer* renderer, GPU_Target* target, GPU_Came
     GPU_Translate(target->camera.x + offsetX, target->camera.y + offsetY, 0);
     GPU_Scale(target->camera.zoom, target->camera.zoom, 1.0f);
     GPU_Translate(-target->camera.x - offsetX, -target->camera.y - offsetY, 0);
+}
+
+
+static GPU_Camera SetCamera(GPU_Renderer* renderer, GPU_Target* target, GPU_Camera* cam)
+{
+    if(target == NULL || renderer->current_context_target == NULL)
+        return GPU_GetDefaultCamera();
+    
+    
+    GPU_Camera result = target->camera;
+
+    if(cam == NULL)
+        target->camera = GPU_GetDefaultCamera();
+    else
+        target->camera = *cam;
+    
+    // Check for redundant state change
+    GPU_Target* context_target = renderer->current_context_target;
+    if(result.x == target->camera.x && result.y == target->camera.y && result.z == target->camera.z
+       && result.angle == target->camera.angle && result.zoom == target->camera.zoom)
+        return result;
+
+    renderer->FlushBlitBuffer(renderer);
+    
+    applyTargetCamera(target);
 
     return result;
 }
