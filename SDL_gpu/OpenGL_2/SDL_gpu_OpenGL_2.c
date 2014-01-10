@@ -36,9 +36,6 @@ GPU_Renderer* GPU_CreateRenderer_OpenGL_2(GPU_RendererID request)
     
     renderer->current_context_target = NULL;
 
-    renderer->data = (RENDERER_DATA*)malloc(sizeof(RENDERER_DATA));
-    memset(renderer->data, 0, sizeof(RENDERER_DATA));
-
     SET_COMMON_FUNCTIONS(renderer);
 
     return renderer;
@@ -49,7 +46,6 @@ void GPU_FreeRenderer_OpenGL_2(GPU_Renderer* renderer)
     if(renderer == NULL)
         return;
 
-    free(renderer->data);
     free(renderer);
 }
 

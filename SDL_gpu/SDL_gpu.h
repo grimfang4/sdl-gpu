@@ -452,10 +452,6 @@ struct GPU_Renderer
 
 	void (*PolygonBlit)(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_Target* target, Uint16 n, float* vertices, float textureX, float textureY, float angle, float scaleX, float scaleY);
 	
-	
-	/*! Renderer-specific data. */
-	void* data;
-	
 };
 
 
