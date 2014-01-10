@@ -1121,19 +1121,9 @@ static GPU_Camera SetCamera(GPU_Renderer* renderer, GPU_Target* target, GPU_Came
     GPU_MatrixMode( GPU_PROJECTION );
     GPU_LoadIdentity();
 
-    // I want to use x, y, and z
     // The default z for objects is 0
-    // The default z for the camera is -10. (should be neg)
-
-    /*float fieldOfView = 60.0f;
-    float fW = screen->w/2;
-    float fH = screen->h/2;
-    float aspect = fW/fH;
-    float zNear = atan(fH)/((float)(fieldOfView / 360.0f * 3.14159f));
-    float zFar = 255.0f;
-    GPU_Frustum( 0.0f + renderer->camera.x, 2*fW + renderer->camera.x, 2*fH + renderer->camera.y, 0.0f + renderer->camera.y, zNear, zFar );*/
-
-    GPU_Frustum(0.0f + target->camera.x, target->w + target->camera.x, target->h + target->camera.y, 0.0f + target->camera.y, 0.01f, 1.01f);
+    
+    GPU_Ortho(target->camera.x, target->w + target->camera.x, target->h + target->camera.y, target->camera.y, -1.0f, 1.0f);
 
     GPU_MatrixMode( GPU_MODELVIEW );
     GPU_LoadIdentity();
