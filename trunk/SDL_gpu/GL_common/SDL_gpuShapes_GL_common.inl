@@ -244,7 +244,8 @@ static inline void draw_vertices(GLfloat* glverts, int num_vertices, GLenum prim
         #endif
         
         // Upload blit buffer to a single buffer object
-        glBindBuffer(GL_ARRAY_BUFFER, data->blit_VBO);
+        glBindBuffer(GL_ARRAY_BUFFER, data->blit_VBO[data->blit_VBO_flop]);
+        data->blit_VBO_flop = !data->blit_VBO_flop;
         
         // Copy the whole blit buffer to the GPU
         glBufferData(GL_ARRAY_BUFFER, buffer_stride * num_vertices, glverts, GL_STREAM_DRAW);  // Creates space on the GPU and fills it with data.
@@ -315,7 +316,8 @@ static inline void draw_vertices_textured(GLfloat* glverts, int num_vertices, GL
         #endif
         
         // Upload blit buffer to a single buffer object
-        glBindBuffer(GL_ARRAY_BUFFER, data->blit_VBO);
+        glBindBuffer(GL_ARRAY_BUFFER, data->blit_VBO[data->blit_VBO_flop]);
+        data->blit_VBO_flop = !data->blit_VBO_flop;
         
         // Copy the whole blit buffer to the GPU
         glBufferData(GL_ARRAY_BUFFER, buffer_stride * num_vertices, glverts, GL_STREAM_DRAW);  // Creates space on the GPU and fills it with data.
