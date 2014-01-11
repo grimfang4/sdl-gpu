@@ -119,7 +119,7 @@ int main(int argc, char* argv[])
 					int mx, my;
 					SDL_GetMouseState(&mx, &my);
 					float x, y;
-					GPU_GetVirtualCoords(&x, &y, mx, my);
+					GPU_GetVirtualCoords(screen, &x, &y, mx, my);
 					
 					printf("Angle: %.1f\n", camera.angle);
 					printScreenToWorld(x, y);

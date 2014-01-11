@@ -216,7 +216,7 @@ struct GPU_Renderer
 	
 	int tier;
 	
-	/*! Current display target.  Virtual dimensions can be gotten from this. */
+	/*! Current display target */
 	GPU_Target* current_context_target;
 	
 	/*! \see GPU_Init() */
@@ -239,7 +239,7 @@ struct GPU_Renderer
 	int (*SetWindowResolution)(GPU_Renderer* renderer, Uint16 w, Uint16 h);
 	
 	/*! \see GPU_SetVirtualResolution() */
-	void (*SetVirtualResolution)(GPU_Renderer* renderer, Uint16 w, Uint16 h);
+	void (*SetVirtualResolution)(GPU_Renderer* renderer, GPU_Target* target, Uint16 w, Uint16 h);
 	
 	/*! Clean up the renderer state. */
 	void (*Quit)(GPU_Renderer* renderer);
@@ -493,11 +493,11 @@ GPU_Target* GPU_CreateTargetFromWindow(Uint32 windowID);
  */
 void GPU_MakeCurrent(GPU_Target* target, Uint32 windowID);
 
-/*! Change the actual size of the window. */
+/*! Change the actual size of the current window. */
 int GPU_SetWindowResolution(Uint16 w, Uint16 h);
 
-/*! Change the logical size of the window which the drawing commands use. */
-void GPU_SetVirtualResolution(Uint16 w, Uint16 h);
+/*! Change the logical size of the given target.  Rendering to this target will be scaled as if the dimensions were actually the ones given. */
+void GPU_SetVirtualResolution(GPU_Target* target, Uint16 w, Uint16 h);
 
 /*! Clean up the renderer state. */
 void GPU_CloseCurrentRenderer(void);
@@ -511,11 +511,11 @@ void GPU_SetError(const char* fmt, ...);
 /*! Gets the current error string. */
 const char* GPU_GetErrorString(void);
 
-/*! Converts screen space coordinates to logical drawing coordinates. */
-void GPU_GetVirtualCoords(float* x, float* y, float displayX, float displayY);
+/*! Converts screen space coordinates (such as from mouse input) to logical drawing coordinates. */
+void GPU_GetVirtualCoords(GPU_Target* target, float* x, float* y, float displayX, float displayY);
 
-/*! Enable/disable fullscreen mode.
- * On some platforms, this will destroy the renderer context and require that textures be reloaded. */
+/*! Enable/disable fullscreen mode for the current window.
+ * On some platforms, this may destroy the renderer context and require that textures be reloaded. */
 int GPU_ToggleFullscreen(void);
 
 
@@ -532,9 +532,6 @@ GPU_RendererID GPU_MakeRendererIDRequest(GPU_RendererEnum id, int major_version,
 
 /*! Returns an initialized GPU_RendererID. */
 GPU_RendererID GPU_MakeRendererID(GPU_RendererEnum id, int major_version, int minor_version, int index);
-
-/*! Gets the current renderer identifier. */
-GPU_RendererID GPU_GetCurrentRendererID(void);
 
 /*! Gets the renderer identifier for the given registration index. */
 GPU_RendererID GPU_GetRendererID(unsigned int index);
@@ -723,13 +720,13 @@ Uint8 GPU_GetBlending(GPU_Image* image);
 /*! Enables/disables alpha blending for the given image. */
 void GPU_SetBlending(GPU_Image* image, Uint8 enable);
 
-/*! Enables/disables alpha blending for shape rendering. */
+/*! Enables/disables alpha blending for shape rendering on the current window. */
 void GPU_SetShapeBlending(Uint8 enable);
 	
 /*! Sets the blending mode, if supported by the renderer. */
 void GPU_SetBlendMode(GPU_Image* image, GPU_BlendEnum mode);
 	
-/*! Sets the blending mode for shape rendering, if supported by the renderer. */
+/*! Sets the blending mode for shape rendering on the current window, if supported by the renderer. */
 void GPU_SetShapeBlendMode(GPU_BlendEnum mode);
 
 /*! Sets the image filtering mode, if supported by the renderer. */
@@ -744,7 +741,7 @@ void GPU_Clear(GPU_Target* target);
 /*! Fills the given render target with a color. */
 void GPU_ClearRGBA(GPU_Target* target, Uint8 r, Uint8 g, Uint8 b, Uint8 a);
 
-/*! Send all buffered blitting data to the last target. */
+/*! Send all buffered blitting data to the current context target. */
 void GPU_FlushBlitBuffer(void);
 
 /*! Updates the given target's associated window. */

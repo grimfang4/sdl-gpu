@@ -1119,9 +1119,8 @@ static int SetWindowResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
     return 1;
 }
 
-static void SetVirtualResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
+static void SetVirtualResolution(GPU_Renderer* renderer, GPU_Target* target, Uint16 w, Uint16 h)
 {
-    GPU_Target* target = renderer->current_context_target;
     if(target == NULL)
         return;
 

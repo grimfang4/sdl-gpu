@@ -15,7 +15,7 @@ void printRenderers(void)
 
 void printCurrentRenderer(void)
 {
-    GPU_RendererID id = GPU_GetCurrentRendererID();
+    GPU_RendererID id = GPU_GetCurrentRenderer()->id;
     const char* renderer_string = GPU_GetRendererEnumString(id.id);
     
 	printf("Using renderer: %s (%d.%d)\n", renderer_string, id.major_version, id.minor_version);
