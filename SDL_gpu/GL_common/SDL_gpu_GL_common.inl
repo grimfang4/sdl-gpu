@@ -1517,7 +1517,7 @@ static SDL_Surface* CopySurfaceFromImage(GPU_Renderer* renderer, GPU_Image* imag
 // The surfaceFormatResult is used to specify what direct conversion format the surface pixels are in (source format).
 #ifdef SDL_GPU_USE_GLES
 // OpenGLES does not do direct conversion.  Internal format (glFormat) and original format (surfaceFormatResult) must be the same.
-static int compareFormats(GLenum glFormat, SDL_Surface* surface, GLenum* surfaceFormatResult)
+static int compareFormats(GPU_Renderer* renderer, GLenum glFormat, SDL_Surface* surface, GLenum* surfaceFormatResult)
 {
     SDL_PixelFormat* format = surface->format;
     switch(glFormat)
@@ -1537,7 +1537,7 @@ static int compareFormats(GLenum glFormat, SDL_Surface* surface, GLenum* surface
         if(format->Rmask == 0xFF0000 && format->Gmask == 0x00FF00 && format->Bmask == 0x0000FF)
         {
 
-            if(enabled_features & GPU_FEATURE_GL_BGR)
+            if(renderer->enabled_features & GPU_FEATURE_GL_BGR)
             {
                 if(surfaceFormatResult != NULL)
                     *surfaceFormatResult = GL_BGR;
@@ -1787,8 +1787,68 @@ static SDL_Surface* copySurfaceIfNeeded(GPU_Renderer* renderer, GLenum glFormat,
     // There's a problem
     if(format_compare < 0)
         return NULL;
-
-    // Copy it
+    
+    #ifdef SDL_GPU_USE_GLES
+    // GLES needs a tightly-packed pixel array
+    // Based on SDL_UpdateTexture()
+    SDL_Surface* newSurface = NULL;
+    Uint8 *blob = NULL;
+    SDL_Rect rect = {0, 0, surface->w, surface->h};
+    int srcPitch = rect.w * surface->format->BytesPerPixel;
+    int pitch = surface->pitch;
+    if(srcPitch != pitch)
+    {
+        Uint8 *src;
+        Uint8 *pixels = (Uint8*)surface->pixels;
+        int y;
+        
+        /* Bail out if we're supposed to update an empty rectangle */
+        if(rect.w <= 0 || rect.h <= 0)
+            return NULL;
+        
+        /* Reformat the texture data into a tightly packed array */
+        src = pixels;
+        if(pitch != srcPitch)
+        {
+            blob = (Uint8*)malloc(srcPitch * rect.h);
+            if(blob == NULL)
+            {
+                // Out of memory
+                return NULL;
+            }
+            src = blob;
+            for(y = 0; y < rect.h; ++y)
+            {
+                memcpy(src, pixels, srcPitch);
+                src += srcPitch;
+                pixels += pitch;
+            }
+            src = blob;
+        }
+        
+        newSurface = SDL_CreateRGBSurfaceFrom(src, rect.w, rect.h, surface->format->BytesPerPixel, srcPitch, surface->format->Rmask, surface->format->Gmask, surface->format->Bmask, surface->format->Amask);
+    }
+    
+    // Copy it to a different format
+    if(format_compare > 0)
+    {
+        // Convert to the right format
+        SDL_PixelFormat* dst_fmt = AllocFormat(glFormat);
+        if(newSurface != NULL)
+        {
+            surface = SDL_ConvertSurface(newSurface, dst_fmt, 0);
+            SDL_FreeSurface(newSurface);
+            free(blob);
+        }
+        else
+            surface = SDL_ConvertSurface(surface, dst_fmt, 0);
+        FreeFormat(dst_fmt);
+        if(surfaceFormatResult != NULL && surface != NULL)
+            *surfaceFormatResult = glFormat;
+    }
+    
+    #else
+    // Copy it to a different format
     if(format_compare > 0)
     {
         // Convert to the right format
@@ -1798,6 +1858,7 @@ static SDL_Surface* copySurfaceIfNeeded(GPU_Renderer* renderer, GLenum glFormat,
         if(surfaceFormatResult != NULL && surface != NULL)
             *surfaceFormatResult = glFormat;
     }
+    #endif
 
     // No copy needed
     return surface;
