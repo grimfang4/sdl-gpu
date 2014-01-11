@@ -53,9 +53,15 @@ int main(int argc, char* argv[])
 				    usingVirtual = !usingVirtual;
 				    
 				    if(usingVirtual)
-                        GPU_SetVirtualResolution(640, 480);
+                    {
+                        GPU_SetVirtualResolution(screen, 640, 480);
+                        GPU_SetVirtualResolution(screen2, 640, 480);
+                    }
                     else
-                        GPU_SetVirtualResolution(800, 600);
+                    {
+                        GPU_SetVirtualResolution(screen, 800, 600);
+                        GPU_SetVirtualResolution(screen2, 800, 600);
+                    }
                     
 				}
 			}

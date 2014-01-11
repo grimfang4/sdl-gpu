@@ -36,7 +36,8 @@ int main(int argc, char* argv[])
 	int y = 0;
 	
 	Uint8 switched = 1;
-	GPU_SetVirtualResolution(640, 480);
+	GPU_SetVirtualResolution(screen, 640, 480);
+	GPU_SetVirtualResolution(target, 640, 480);
 	
 	Uint8 done = 0;
 	SDL_Event event;
@@ -53,9 +54,15 @@ int main(int argc, char* argv[])
 				if(event.key.keysym.sym == SDLK_SPACE)
 				{
 					if(switched)
-						GPU_SetVirtualResolution(800, 600);
+                    {
+						GPU_SetVirtualResolution(screen, 800, 600);
+						GPU_SetVirtualResolution(target, 800, 600);
+                    }
 					else
-						GPU_SetVirtualResolution(640, 480);
+                    {
+						GPU_SetVirtualResolution(screen, 640, 480);
+						GPU_SetVirtualResolution(target, 640, 480);
+                    }
 					switched = !switched;
 				}
 			}

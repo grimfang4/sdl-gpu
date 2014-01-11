@@ -119,7 +119,7 @@ int main(int argc, char* argv[])
 			else if(event.type == SDL_MOUSEBUTTONDOWN)
 			{
 				float x, y;
-				GPU_GetVirtualCoords(&x, &y, event.button.x, event.button.y);
+				GPU_GetVirtualCoords(screen, &x, &y, event.button.x, event.button.y);
 				
 				printScreenToWorld(x, y);
 			}

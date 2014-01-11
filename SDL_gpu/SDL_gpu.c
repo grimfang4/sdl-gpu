@@ -11,13 +11,6 @@ void GPU_InitRendererRegister(void);
 
 static GPU_Renderer* current_renderer = NULL;
 
-GPU_RendererID GPU_GetCurrentRendererID(void)
-{
-	if(current_renderer == NULL)
-		return GPU_MakeRendererID(GPU_RENDERER_UNKNOWN, 0, 0, -1);
-	return current_renderer->id;
-}
-
 void GPU_SetCurrentRenderer(GPU_RendererID id)
 {
 	current_renderer = GPU_GetRendererByID(id);
@@ -165,12 +158,12 @@ int GPU_SetWindowResolution(Uint16 w, Uint16 h)
 }
 
 
-void GPU_SetVirtualResolution(Uint16 w, Uint16 h)
+void GPU_SetVirtualResolution(GPU_Target* target, Uint16 w, Uint16 h)
 {
 	if(current_renderer == NULL || current_renderer->SetVirtualResolution == NULL || w == 0 || h == 0)
 		return;
 	
-	current_renderer->SetVirtualResolution(current_renderer, w, h);
+	current_renderer->SetVirtualResolution(current_renderer, target, w, h);
 }
 
 void GPU_CloseCurrentRenderer(void)
@@ -213,15 +206,33 @@ const char* GPU_GetErrorString(void)
 }
 
 
-void GPU_GetVirtualCoords(float* x, float* y, float displayX, float displayY)
+void GPU_GetVirtualCoords(GPU_Target* target, float* x, float* y, float displayX, float displayY)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
+	if(target == NULL)
 		return;
 	
-	if(x != NULL)
-		*x = (displayX*current_renderer->current_context_target->w)/current_renderer->current_context_target->context->window_w;
-	if(y != NULL)
-		*y = (displayY*current_renderer->current_context_target->h)/current_renderer->current_context_target->context->window_h;
+	float real_w, real_h;
+	if(target->context != NULL)
+    {
+        if(x != NULL)
+            *x = (displayX*target->w)/target->context->window_w;
+        if(y != NULL)
+            *y = (displayY*target->h)/target->context->window_h;
+    }
+	else if(target->image != NULL)
+    {
+        if(x != NULL)
+            *x = (displayX*target->w)/target->image->w;
+        if(y != NULL)
+            *y = (displayY*target->h)/target->image->h;
+    }
+    else
+    {
+        if(x != NULL)
+            *x = displayX;
+        if(y != NULL)
+            *y = displayY;
+    }
 }
 
 GPU_Rect GPU_MakeRect(float x, float y, float w, float h)
