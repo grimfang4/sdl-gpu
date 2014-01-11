@@ -37,6 +37,10 @@ int main(int argc, char* argv[])
 		y[i] = rand()%screen->h;
 		velx[i] = 10 + rand()%screen->w/10;
 		vely[i] = 10 + rand()%screen->h/10;
+		if(rand()%2)
+            velx[i] = -velx[i];
+		if(rand()%2)
+            vely[i] = -vely[i];
 	}
 	
 	
