@@ -290,70 +290,68 @@ static Uint8 checkExtension(const char* str)
     return 1;
 }
 
-static GPU_FeatureEnum enabled_features = 0xFFFFFFFF;  // Pretend to support them all if using incompatible headers
-
-static void init_features(void)
+static void init_features(GPU_Renderer* renderer)
 {
     // NPOT textures
 #ifdef SDL_GPU_USE_OPENGL
     if(isExtensionSupported("GL_ARB_texture_non_power_of_two"))
-        enabled_features |= GPU_FEATURE_NON_POWER_OF_TWO;
+        renderer->enabled_features |= GPU_FEATURE_NON_POWER_OF_TWO;
     else
-        enabled_features &= ~GPU_FEATURE_NON_POWER_OF_TWO;
+        renderer->enabled_features &= ~GPU_FEATURE_NON_POWER_OF_TWO;
 #elif defined(SDL_GPU_USE_GLES)
     if(isExtensionSupported("GL_OES_texture_npot"))
-        enabled_features |= GPU_FEATURE_NON_POWER_OF_TWO;
+        renderer->enabled_features |= GPU_FEATURE_NON_POWER_OF_TWO;
     else
-        enabled_features &= ~GPU_FEATURE_NON_POWER_OF_TWO;
+        renderer->enabled_features &= ~GPU_FEATURE_NON_POWER_OF_TWO;
 #endif
 
     // FBO
 #ifdef SDL_GPU_USE_OPENGL
     if(isExtensionSupported("GL_EXT_framebuffer_object"))
-        enabled_features |= GPU_FEATURE_RENDER_TARGETS;
+        renderer->enabled_features |= GPU_FEATURE_RENDER_TARGETS;
     else
-        enabled_features &= ~GPU_FEATURE_RENDER_TARGETS;
+        renderer->enabled_features &= ~GPU_FEATURE_RENDER_TARGETS;
 #elif defined(SDL_GPU_USE_GLES)
     if(isExtensionSupported("GL_OES_framebuffer_object"))
-        enabled_features |= GPU_FEATURE_RENDER_TARGETS;
+        renderer->enabled_features |= GPU_FEATURE_RENDER_TARGETS;
     else
-        enabled_features &= ~GPU_FEATURE_RENDER_TARGETS;
+        renderer->enabled_features &= ~GPU_FEATURE_RENDER_TARGETS;
 #endif
 
     // Blending
 #ifdef SDL_GPU_USE_OPENGL
-    enabled_features |= GPU_FEATURE_BLEND_EQUATIONS;
-    enabled_features |= GPU_FEATURE_BLEND_FUNC_SEPARATE;
+    renderer->enabled_features |= GPU_FEATURE_BLEND_EQUATIONS;
+    renderer->enabled_features |= GPU_FEATURE_BLEND_FUNC_SEPARATE;
 #elif defined(SDL_GPU_USE_GLES)
     if(isExtensionSupported("GL_OES_blend_subtract"))
-        enabled_features |= GPU_FEATURE_BLEND_EQUATIONS;
+        renderer->enabled_features |= GPU_FEATURE_BLEND_EQUATIONS;
     else
-        enabled_features &= ~GPU_FEATURE_BLEND_EQUATIONS;
+        renderer->enabled_features &= ~GPU_FEATURE_BLEND_EQUATIONS;
     if(isExtensionSupported("GL_OES_blend_func_separate"))
-        enabled_features |= GPU_FEATURE_BLEND_FUNC_SEPARATE;
+        renderer->enabled_features |= GPU_FEATURE_BLEND_FUNC_SEPARATE;
     else
-        enabled_features &= ~GPU_FEATURE_BLEND_FUNC_SEPARATE;
+        renderer->enabled_features &= ~GPU_FEATURE_BLEND_FUNC_SEPARATE;
 #endif
 
     // GL texture formats
     if(isExtensionSupported("GL_EXT_bgr"))
-        enabled_features |= GPU_FEATURE_GL_BGR;
+        renderer->enabled_features |= GPU_FEATURE_GL_BGR;
     if(isExtensionSupported("GL_EXT_bgra"))
-        enabled_features |= GPU_FEATURE_GL_BGRA;
+        renderer->enabled_features |= GPU_FEATURE_GL_BGRA;
     if(isExtensionSupported("GL_EXT_abgr"))
-        enabled_features |= GPU_FEATURE_GL_ABGR;
+        renderer->enabled_features |= GPU_FEATURE_GL_ABGR;
 
     if(isExtensionSupported("GL_ARB_fragment_shader"))
-        enabled_features |= GPU_FEATURE_FRAGMENT_SHADER;
+        renderer->enabled_features |= GPU_FEATURE_FRAGMENT_SHADER;
     if(isExtensionSupported("GL_ARB_vertex_shader"))
-        enabled_features |= GPU_FEATURE_VERTEX_SHADER;
+        renderer->enabled_features |= GPU_FEATURE_VERTEX_SHADER;
     if(isExtensionSupported("GL_ARB_geometry_shader4"))
-        enabled_features |= GPU_FEATURE_GEOMETRY_SHADER;
+        renderer->enabled_features |= GPU_FEATURE_GEOMETRY_SHADER;
 }
 
-static void extBindFramebuffer(GLuint handle)
+static void extBindFramebuffer(GPU_Renderer* renderer, GLuint handle)
 {
-    if(enabled_features & GPU_FEATURE_RENDER_TARGETS)
+    if(renderer->enabled_features & GPU_FEATURE_RENDER_TARGETS)
         glBindFramebuffer(GL_FRAMEBUFFER, handle);
 }
 
@@ -398,7 +396,7 @@ static inline void flushAndBindTexture(GPU_Renderer* renderer, GLuint handle)
 // Returns false if it can't be bound
 static Uint8 bindFramebuffer(GPU_Renderer* renderer, GPU_Target* target)
 {
-    if(enabled_features & GPU_FEATURE_RENDER_TARGETS)
+    if(renderer->enabled_features & GPU_FEATURE_RENDER_TARGETS)
     {
         // Bind the FBO
         if(target != ((CONTEXT_DATA*)renderer->current_context_target->context->data)->last_target)
@@ -408,7 +406,7 @@ static Uint8 bindFramebuffer(GPU_Renderer* renderer, GPU_Target* target)
                 handle = ((TARGET_DATA*)target->data)->handle;
             renderer->FlushBlitBuffer(renderer);
 
-            extBindFramebuffer(handle);
+            extBindFramebuffer(renderer, handle);
             ((CONTEXT_DATA*)renderer->current_context_target->context->data)->last_target = target;
         }
         return 1;
@@ -424,7 +422,7 @@ static inline void flushAndBindFramebuffer(GPU_Renderer* renderer, GLuint handle
     // Bind the FBO
     renderer->FlushBlitBuffer(renderer);
 
-    extBindFramebuffer(handle);
+    extBindFramebuffer(renderer, handle);
     ((CONTEXT_DATA*)renderer->current_context_target->context->data)->last_target = NULL;
 }
 
@@ -552,70 +550,70 @@ static void changeBlendMode(GPU_Renderer* renderer, GPU_BlendEnum mode)
     if(mode == GPU_BLEND_NORMAL)
     {
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        if(!(enabled_features & GPU_FEATURE_BLEND_EQUATIONS))
+        if(!(renderer->enabled_features & GPU_FEATURE_BLEND_EQUATIONS))
             return;  // TODO: Return false so we can avoid depending on it if it fails
         glBlendEquation(GL_FUNC_ADD);
     }
     else if(mode == GPU_BLEND_MULTIPLY)
     {
-        if(!(enabled_features & GPU_FEATURE_BLEND_FUNC_SEPARATE))
+        if(!(renderer->enabled_features & GPU_FEATURE_BLEND_FUNC_SEPARATE))
             return;
         glBlendFuncSeparate(GL_DST_COLOR, GL_ZERO, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        if(!(enabled_features & GPU_FEATURE_BLEND_EQUATIONS))
+        if(!(renderer->enabled_features & GPU_FEATURE_BLEND_EQUATIONS))
             return;
         glBlendEquation(GL_FUNC_ADD);
     }
     else if(mode == GPU_BLEND_ADD)
     {
         glBlendFunc(GL_ONE, GL_ONE);
-        if(!(enabled_features & GPU_FEATURE_BLEND_EQUATIONS))
+        if(!(renderer->enabled_features & GPU_FEATURE_BLEND_EQUATIONS))
             return;
         glBlendEquation(GL_FUNC_ADD);
     }
     else if(mode == GPU_BLEND_SUBTRACT)
     {
-        if(!(enabled_features & GPU_FEATURE_BLEND_EQUATIONS))
+        if(!(renderer->enabled_features & GPU_FEATURE_BLEND_EQUATIONS))
             return;
         glBlendFunc(GL_ONE, GL_ONE);
         glBlendEquation(GL_FUNC_SUBTRACT);
     }
     else if(mode == GPU_BLEND_ADD_COLOR)
     {
-        if(!(enabled_features & GPU_FEATURE_BLEND_FUNC_SEPARATE))
+        if(!(renderer->enabled_features & GPU_FEATURE_BLEND_FUNC_SEPARATE))
             return;
         glBlendFuncSeparate(GL_ONE, GL_ONE, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        if(!(enabled_features & GPU_FEATURE_BLEND_EQUATIONS))
+        if(!(renderer->enabled_features & GPU_FEATURE_BLEND_EQUATIONS))
             return;
         glBlendEquation(GL_FUNC_ADD);
     }
     else if(mode == GPU_BLEND_SUBTRACT_COLOR)
     {
-        if(!(enabled_features & GPU_FEATURE_BLEND_FUNC_SEPARATE))
+        if(!(renderer->enabled_features & GPU_FEATURE_BLEND_FUNC_SEPARATE))
             return;
-        if(!(enabled_features & GPU_FEATURE_BLEND_EQUATIONS))
+        if(!(renderer->enabled_features & GPU_FEATURE_BLEND_EQUATIONS))
             return;
         glBlendFuncSeparate(GL_ONE, GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA);
         glBlendEquation(GL_FUNC_SUBTRACT);
     }
     else if(mode == GPU_BLEND_DIFFERENCE)
     {
-        if(!(enabled_features & GPU_FEATURE_BLEND_FUNC_SEPARATE))
+        if(!(renderer->enabled_features & GPU_FEATURE_BLEND_FUNC_SEPARATE))
             return;
-        if(!(enabled_features & GPU_FEATURE_BLEND_EQUATIONS))
+        if(!(renderer->enabled_features & GPU_FEATURE_BLEND_EQUATIONS))
             return;
         glBlendFuncSeparate(GL_ONE, GL_ONE, GL_ONE, GL_ZERO);
         glBlendEquation(GL_FUNC_SUBTRACT);
     }
     else if(mode == GPU_BLEND_PUNCHOUT)
     {
-        if(!(enabled_features & GPU_FEATURE_BLEND_EQUATIONS))
+        if(!(renderer->enabled_features & GPU_FEATURE_BLEND_EQUATIONS))
             return;
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
     }
     else if(mode == GPU_BLEND_CUTOUT)
     {
-        if(!(enabled_features & GPU_FEATURE_BLEND_EQUATIONS))
+        if(!(renderer->enabled_features & GPU_FEATURE_BLEND_EQUATIONS))
             return;
         glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA);
         glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
@@ -748,8 +746,10 @@ static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request,
         return NULL;
 #endif
     
+    renderer->enabled_features = 0xFFFFFFFF;  // Pretend to support them all if using incompatible headers
     
-    // Create or re-init the current target.  This also creates the GL context.
+    
+    // Create or re-init the current target.  This also creates the GL context and initializes enabled_features.
     #ifdef SDL_GPU_USE_SDL2
     renderer->CreateTargetFromWindow(renderer, SDL_GetWindowID(window), renderer->current_context_target);
     #else
@@ -787,7 +787,7 @@ static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request,
 
 static Uint8 IsFeatureEnabled(GPU_Renderer* renderer, GPU_FeatureEnum feature)
 {
-    return ((enabled_features & feature) == feature);
+    return ((renderer->enabled_features & feature) == feature);
 }
 
 
@@ -897,7 +897,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
 
     #endif
 
-    init_features();
+    init_features(renderer);
     
     ((TARGET_DATA*)target->data)->handle = 0;
     ((TARGET_DATA*)target->data)->format = GL_RGBA;
@@ -1036,7 +1036,7 @@ static void MakeCurrent(GPU_Renderer* renderer, GPU_Target* target, Uint32 windo
         return;
     
     SDL_GLContext c = target->context->context;
-    if(c != 0)
+    if(c != NULL)
     {
         renderer->current_context_target = target;
         SDL_GL_MakeCurrent(SDL_GetWindowFromID(windowID), c);
@@ -1089,7 +1089,7 @@ static int SetWindowResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
     Uint16 virtualW = renderer->current_context_target->w;
     Uint16 virtualH = renderer->current_context_target->h;
     
-    // TODO: This might interfere with cameras or be ruined by them.
+    // FIXME: This might interfere with cameras or be ruined by them.
     glEnable( GL_TEXTURE_2D );
     glClearColor( 0.0f, 0.0f, 0.0f, 0.0f );
 
@@ -1107,11 +1107,6 @@ static int SetWindowResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
     
     // Center the pixels
     //GPU_Translate(0.375f, 0.375f, 0.0f);
-
-    glEnable( GL_TEXTURE_2D );
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    glEnable(GL_BLEND);
 
     // Update display
     GPU_ClearClip(renderer->current_context_target);
@@ -1283,7 +1278,7 @@ static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint8 
     GLenum internal_format = ((IMAGE_DATA*)(result->data))->format;
     w = result->w;
     h = result->h;
-    if(!(enabled_features & GPU_FEATURE_NON_POWER_OF_TWO))
+    if(!(renderer->enabled_features & GPU_FEATURE_NON_POWER_OF_TWO))
     {
         if(!isPowerOfTwo(w))
             w = getNearestPowerOf2(w);
@@ -1588,7 +1583,7 @@ static int compareFormats(GLenum glFormat, SDL_Surface* surface, GLenum* surface
 }
 #else
 //GL_RGB/GL_RGBA and Surface format
-static int compareFormats(GLenum glFormat, SDL_Surface* surface, GLenum* surfaceFormatResult)
+static int compareFormats(GPU_Renderer* renderer, GLenum glFormat, SDL_Surface* surface, GLenum* surfaceFormatResult)
 {
     SDL_PixelFormat* format = surface->format;
     switch(glFormat)
@@ -1609,7 +1604,7 @@ static int compareFormats(GLenum glFormat, SDL_Surface* surface, GLenum* surface
         if(format->Rmask == 0xFF0000 && format->Gmask == 0x00FF00 && format->Bmask == 0x0000FF)
         {
 #ifdef GL_BGR
-            if(enabled_features & GPU_FEATURE_GL_BGR)
+            if(renderer->enabled_features & GPU_FEATURE_GL_BGR)
             {
                 if(surfaceFormatResult != NULL)
                     *surfaceFormatResult = GL_BGR;
@@ -1636,7 +1631,7 @@ static int compareFormats(GLenum glFormat, SDL_Surface* surface, GLenum* surface
         if(format->Rmask == 0xFF000000 && format->Gmask == 0x00FF0000 && format->Bmask == 0x0000FF00)
         {
 #ifdef GL_ABGR
-            if(enabled_features & GPU_FEATURE_GL_ABGR)
+            if(renderer->enabled_features & GPU_FEATURE_GL_ABGR)
             {
                 if(surfaceFormatResult != NULL)
                     *surfaceFormatResult = GL_ABGR;
@@ -1648,7 +1643,7 @@ static int compareFormats(GLenum glFormat, SDL_Surface* surface, GLenum* surface
         else if(format->Rmask == 0x00FF0000 && format->Gmask == 0x0000FF00 && format->Bmask == 0x000000FF)
         {
 #ifdef GL_BGRA
-            if(enabled_features & GPU_FEATURE_GL_BGRA)
+            if(renderer->enabled_features & GPU_FEATURE_GL_BGRA)
             {
                 //ARGB, for OpenGL BGRA
                 if(surfaceFormatResult != NULL)
@@ -1784,10 +1779,10 @@ static void FreeFormat(SDL_PixelFormat* format)
 }
 
 // Returns NULL on failure.  Returns the original surface if no copy is needed.  Returns a new surface converted to the right format otherwise.
-static SDL_Surface* copySurfaceIfNeeded(GLenum glFormat, SDL_Surface* surface, GLenum* surfaceFormatResult)
+static SDL_Surface* copySurfaceIfNeeded(GPU_Renderer* renderer, GLenum glFormat, SDL_Surface* surface, GLenum* surfaceFormatResult)
 {
     // If format doesn't match, we need to do a copy
-    int format_compare = compareFormats(glFormat, surface, surfaceFormatResult);
+    int format_compare = compareFormats(renderer, glFormat, surface, surfaceFormatResult);
 
     // There's a problem
     if(format_compare < 0)
@@ -1819,7 +1814,7 @@ static int InitImageWithSurface(GPU_Renderer* renderer, GPU_Image* image, SDL_Su
     GLenum internal_format = data->format;
     GLenum original_format = internal_format;
 
-    SDL_Surface* newSurface = copySurfaceIfNeeded(internal_format, surface, &original_format);
+    SDL_Surface* newSurface = copySurfaceIfNeeded(renderer, internal_format, surface, &original_format);
     if(newSurface == NULL)
     {
         GPU_LogError("GPU_InitImageWithSurface() failed to convert surface to proper pixel format.\n");
@@ -1829,7 +1824,7 @@ static int InitImageWithSurface(GPU_Renderer* renderer, GPU_Image* image, SDL_Su
     Uint8 need_power_of_two_upload = 0;
     unsigned int w = newSurface->w;
     unsigned int h = newSurface->h;
-    if(!(enabled_features & GPU_FEATURE_NON_POWER_OF_TWO))
+    if(!(renderer->enabled_features & GPU_FEATURE_NON_POWER_OF_TWO))
     {
         if(!isPowerOfTwo(w))
         {
@@ -1910,7 +1905,7 @@ static void UpdateImage(GPU_Renderer* renderer, GPU_Image* image, const GPU_Rect
     IMAGE_DATA* data = (IMAGE_DATA*)image->data;
     GLenum original_format = data->format;
 
-    SDL_Surface* newSurface = copySurfaceIfNeeded(data->format, surface, &original_format);
+    SDL_Surface* newSurface = copySurfaceIfNeeded(renderer, data->format, surface, &original_format);
     if(newSurface == NULL)
     {
         GPU_LogError("GPU_UpdateImage() failed to convert surface to proper pixel format.\n");
@@ -2171,7 +2166,7 @@ static GPU_Target* LoadTarget(GPU_Renderer* renderer, GPU_Image* image)
     if(image->target != NULL)
         return image->target;
 
-    if(!(enabled_features & GPU_FEATURE_RENDER_TARGETS))
+    if(!(renderer->enabled_features & GPU_FEATURE_RENDER_TARGETS))
         return NULL;
 
     GLuint handle;
@@ -2225,7 +2220,7 @@ static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
 
     TARGET_DATA* data = ((TARGET_DATA*)target->data);
     
-    if(enabled_features & GPU_FEATURE_RENDER_TARGETS)
+    if(renderer->enabled_features & GPU_FEATURE_RENDER_TARGETS)
     {
         flushAndClearBlitBufferIfCurrentFramebuffer(renderer, target);
         glDeleteFramebuffers(1, &data->handle);
@@ -2670,7 +2665,8 @@ static int BlitTransformMatrix(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect*
     
     GPU_PushMatrix();
 
-    // column-major 3x3 to column-major 4x4 (and scooting the translations to the homogeneous column)
+    // column-major 3x3 to column-major 4x4 (and scooting the 2D translations to the homogeneous column)
+    // TODO: Should index 8 replace the homogeneous 1?  This looks like it adjusts the z-value...
     float matrix[16] = {matrix3x3[0], matrix3x3[1], matrix3x3[2], 0,
                         matrix3x3[3], matrix3x3[4], matrix3x3[5], 0,
                         0,            0,            matrix3x3[8], 0,
@@ -3108,7 +3104,7 @@ static Uint32 CompileShader_RW(GPU_Renderer* renderer, int shader_type, SDL_RWop
 {
     // Read in the shader source code
     // TODO: It'd be nice to check the file size first...
-    char* source_string = (char*)malloc(1000);
+    char* source_string = (char*)malloc(2000);
     int result = read_string_rw(shader_source, source_string);
     if(!result)
     {
