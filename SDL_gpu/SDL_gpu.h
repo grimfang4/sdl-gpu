@@ -215,9 +215,11 @@ struct GPU_Renderer
 	GPU_RendererID id;
 	
 	int tier;
+    GPU_FeatureEnum enabled_features;
 	
 	/*! Current display target */
 	GPU_Target* current_context_target;
+	
 	
 	/*! \see GPU_Init() */
 	GPU_Target* (*Init)(GPU_Renderer* renderer, GPU_RendererID renderer_request, Uint16 w, Uint16 h, Uint32 flags);
