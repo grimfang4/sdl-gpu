@@ -299,7 +299,7 @@ static void init_features(GPU_Renderer* renderer)
     else
         renderer->enabled_features &= ~GPU_FEATURE_NON_POWER_OF_TWO;
 #elif defined(SDL_GPU_USE_GLES)
-    if(isExtensionSupported("GL_OES_texture_npot"))
+    if(isExtensionSupported("GL_OES_texture_npot") || isExtensionSupported("GL_IMG_texture_npot") || isExtensionSupported("GL_ARB_texture_non_power_of_two"))
         renderer->enabled_features |= GPU_FEATURE_NON_POWER_OF_TWO;
     else
         renderer->enabled_features &= ~GPU_FEATURE_NON_POWER_OF_TWO;
@@ -312,10 +312,14 @@ static void init_features(GPU_Renderer* renderer)
     else
         renderer->enabled_features &= ~GPU_FEATURE_RENDER_TARGETS;
 #elif defined(SDL_GPU_USE_GLES)
-    if(isExtensionSupported("GL_OES_framebuffer_object"))
-        renderer->enabled_features |= GPU_FEATURE_RENDER_TARGETS;
-    else
-        renderer->enabled_features &= ~GPU_FEATURE_RENDER_TARGETS;
+    #if SDL_GPU_GL_TIER < 3
+        if(isExtensionSupported("GL_OES_framebuffer_object"))
+            renderer->enabled_features |= GPU_FEATURE_RENDER_TARGETS;
+        else
+            renderer->enabled_features &= ~GPU_FEATURE_RENDER_TARGETS;
+    #else
+            renderer->enabled_features |= GPU_FEATURE_RENDER_TARGETS;
+    #endif
 #endif
 
     // Blending
@@ -884,20 +888,16 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
         /* Problem: glewInit failed, something is seriously wrong. */
         GPU_LogError("Failed to initialize: %s\n", glewGetErrorString(err));
     }
-
-    checkExtension("GL_EXT_framebuffer_object");
-    checkExtension("GL_ARB_framebuffer_object"); // glGenerateMipmap
-    checkExtension("GL_EXT_framebuffer_blit");
-
-    #elif defined(SDL_GPU_USE_GLES)
-
-    checkExtension("GL_OES_framebuffer_object");
-    checkExtension("GL_OES_blend_func_separate");
-    checkExtension("GL_OES_blend_subtract");  // for glBlendEquationOES
-
     #endif
 
     init_features(renderer);
+    
+    if(!renderer->IsFeatureEnabled(renderer, GPU_FEATURE_RENDER_TARGETS))
+        GPU_LogError("RENDER TARGETS not supported.\n");
+    if(!renderer->IsFeatureEnabled(renderer, GPU_FEATURE_NON_POWER_OF_TWO))
+        GPU_LogError("NPOT TEXTURES not supported.\n");
+    if(!renderer->IsFeatureEnabled(renderer, GPU_FEATURE_BLEND_FUNC_SEPARATE))
+        GPU_LogError("BLEND FUNC SEPARATE not supported.\n");
     
     ((TARGET_DATA*)target->data)->handle = 0;
     ((TARGET_DATA*)target->data)->format = GL_RGBA;
@@ -940,7 +940,9 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     glViewport( 0, 0, target->context->window_w, target->context->window_h);
 
     glClear( GL_COLOR_BUFFER_BIT );
-    glColor4ub(255, 255, 255, 255);
+    #if SDL_GPU_GL_TIER < 3
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+    #endif
     
     // Set up camera
     applyTargetCamera(target);
@@ -951,7 +953,6 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     cdata->default_textured_shader_program = 0;
     cdata->default_untextured_shader_program = 0;
     target->context->current_shader_program = 0;
-    
     
     #ifndef SDL_GPU_DISABLE_SHADERS
     // Do we need a default shader?
@@ -1906,8 +1907,9 @@ static int InitImageWithSurface(GPU_Renderer* renderer, GPU_Image* image, SDL_Su
         alignment = 4;
 
     glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
-    //glPixelStorei(GL_UNPACK_ROW_LENGTH,
-    //                          (newSurface->pitch / newSurface->format->BytesPerPixel));
+    #ifdef SDL_GPU_USE_OPENGL
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, (newSurface->pitch / newSurface->format->BytesPerPixel));
+    #endif
     if(!need_power_of_two_upload)
     {
         //GPU_LogError("InitImageWithSurface(), Copy? %d, internal: %d, original: %d, GL_RGB: %d, GL_RGBA: %d\n", (newSurface != surface), internal_format, original_format, GL_RGB, GL_RGBA);
@@ -1916,6 +1918,8 @@ static int InitImageWithSurface(GPU_Renderer* renderer, GPU_Image* image, SDL_Su
     }
     else
     {
+        //GPU_LogError("InitImageWithSurface(), POT upload. Copy? %d, internal: %d, original: %d, GL_RGB: %d, GL_RGBA: %d\n", (newSurface != surface), internal_format, original_format, GL_RGB, GL_RGBA);
+        
         // Create POT texture
         glTexImage2D(GL_TEXTURE_2D, 0, internal_format, w, h, 0,
                      original_format, GL_UNSIGNED_BYTE, NULL);
@@ -2085,7 +2089,7 @@ static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surf
     
     //GPU_LogError("Format...  Channels: %d, BPP: %d, Masks: %X %X %X %X\n", channels, fmt->BytesPerPixel, fmt->Rmask, fmt->Gmask, fmt->Bmask, fmt->Amask);
     
-    //Uint32 pix = getPixel(surface, 128, 128);
+    //Uint32 pix = getPixel(surface, surface->w/2, surface->h/2);
     //GPU_LogError("Middle pixel: %X\n", pix);
     image = CreateUninitializedImage(renderer, surface->w, surface->h, channels);
     if(image == NULL)
@@ -2769,7 +2773,9 @@ static void GenerateMipmaps(GPU_Renderer* renderer, GPU_Image* image)
 {
     if(image == NULL)
         return;
-
+    
+    // FIXME: Mipmaps are temporarily disabled on GLES.
+    #ifndef SDL_GPU_USE_GLES
     if(image->target != NULL && isCurrentTarget(renderer, image->target))
         renderer->FlushBlitBuffer(renderer);
     bindTexture(renderer, image);
@@ -2780,6 +2786,7 @@ static void GenerateMipmaps(GPU_Renderer* renderer, GPU_Image* image)
     glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, &filter);
     if(filter == GL_LINEAR)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+    #endif
 }
 
 
@@ -2979,7 +2986,6 @@ static void FlushBlitBuffer(GPU_Renderer* renderer)
     CONTEXT_DATA* cdata = (CONTEXT_DATA*)renderer->current_context_target->context->data;
     if(cdata->blit_buffer_num_vertices > 0 && cdata->last_target != NULL && cdata->last_image != NULL)
     {
-
         glEnable(GL_TEXTURE_2D);
         GPU_Target* dest = cdata->last_target;
         Uint8 isRTT = (dest->image != NULL);

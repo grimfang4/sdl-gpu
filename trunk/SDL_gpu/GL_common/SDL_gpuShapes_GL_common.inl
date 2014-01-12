@@ -81,11 +81,16 @@ do { \
     glverts[_vertex_array_index++] = (_t); \
 } while(0);
 
+#ifdef SDL_GPU_USE_GLES
+#define DECLARE_COLOR_RGBA \
+glColor4f(color.r/255.01f, color.g/255.01f, color.b/255.01f, GET_ALPHA(color)/255.01f);
+#else
 #define DECLARE_COLOR_RGBA \
 glColor4ub(color.r, color.g, color.b, GET_ALPHA(color));
+#endif
 
 #define RESET_COLOR \
-glColor4ub(255, 255, 255, 255);
+glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 
 #endif
 
@@ -248,7 +253,7 @@ static inline void draw_vertices(GLfloat* glverts, int num_vertices, GLenum prim
         data->blit_VBO_flop = !data->blit_VBO_flop;
         
         // Copy the whole blit buffer to the GPU
-        glBufferData(GL_ARRAY_BUFFER, buffer_stride * num_vertices, glverts, GL_STREAM_DRAW);  // Creates space on the GPU and fills it with data.
+        glBufferSubData(GL_ARRAY_BUFFER, 0, buffer_stride * num_vertices, glverts);
         
         // Specify the formatting of the blit buffer
         if(data->current_shader_block.position_loc >= 0)
@@ -320,7 +325,7 @@ static inline void draw_vertices_textured(GLfloat* glverts, int num_vertices, GL
         data->blit_VBO_flop = !data->blit_VBO_flop;
         
         // Copy the whole blit buffer to the GPU
-        glBufferData(GL_ARRAY_BUFFER, buffer_stride * num_vertices, glverts, GL_STREAM_DRAW);  // Creates space on the GPU and fills it with data.
+        glBufferSubData(GL_ARRAY_BUFFER, 0, buffer_stride * num_vertices, glverts);
         
         // Specify the formatting of the blit buffer
         if(data->current_shader_block.position_loc >= 0)
