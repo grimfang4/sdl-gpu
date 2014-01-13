@@ -499,20 +499,20 @@ static void makeContextCurrent(GPU_Renderer* renderer, GPU_Target* target)
 
 static void setClipRect(GPU_Renderer* renderer, GPU_Target* target)
 {
-    if(target->useClip)
+    if(target->use_clip_rect)
     {
         glEnable(GL_SCISSOR_TEST);
         GPU_Target* context_target = renderer->current_context_target;
-        int y = (target->context != NULL? context_target->h - (target->clipRect.y + target->clipRect.h) : target->clipRect.y);
+        int y = (target->context != NULL? context_target->h - (target->clip_rect.y + target->clip_rect.h) : target->clip_rect.y);
         float xFactor = ((float)context_target->context->window_w)/context_target->w;
         float yFactor = ((float)context_target->context->window_h)/context_target->h;
-        glScissor(target->clipRect.x * xFactor, y * yFactor, target->clipRect.w * xFactor, target->clipRect.h * yFactor);
+        glScissor(target->clip_rect.x * xFactor, y * yFactor, target->clip_rect.w * xFactor, target->clip_rect.h * yFactor);
     }
 }
 
 static void unsetClipRect(GPU_Renderer* renderer, GPU_Target* target)
 {
-    if(target->useClip)
+    if(target->use_clip_rect)
         glDisable(GL_SCISSOR_TEST);
 }
 
@@ -643,7 +643,10 @@ static void changeBlendMode(GPU_Renderer* renderer, GPU_BlendEnum mode)
     }
 }
 
-static void prepareToRenderImage(GPU_Renderer* renderer, GPU_Image* image)
+#define MIX_COLOR_COMPONENT(a, b) (((a)/255.0f * (b)/255.0f)*255)
+#define MIX_COLORS(color1, color2) {MIX_COLOR_COMPONENT(color1.r, color2.r), MIX_COLOR_COMPONENT(color1.g, color2.g), MIX_COLOR_COMPONENT(color1.b, color2.b), MIX_COLOR_COMPONENT(GET_ALPHA(color1), GET_ALPHA(color2))}
+
+static void prepareToRenderImage(GPU_Renderer* renderer, GPU_Target* target, GPU_Image* image)
 {
     GPU_Context* context = renderer->current_context_target->context;
     CONTEXT_DATA* cdata = (CONTEXT_DATA*)context->data;
@@ -652,7 +655,13 @@ static void prepareToRenderImage(GPU_Renderer* renderer, GPU_Image* image)
     glEnable(GL_TEXTURE_2D);
     
     // Blitting
-    changeColor(renderer, image->color);
+    if(target->use_color)
+    {
+        SDL_Color color = MIX_COLORS(target->color, image->color);
+        changeColor(renderer, color);
+    }
+    else
+        changeColor(renderer, image->color);
     changeBlending(renderer, image->use_blending);
     changeBlendMode(renderer, image->blend_mode);
     
@@ -936,11 +945,12 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     target->w = target->context->window_w;
     target->h = target->context->window_h;
 
-    target->useClip = 0;
-    target->clipRect.x = 0;
-    target->clipRect.y = 0;
-    target->clipRect.w = target->w;
-    target->clipRect.h = target->h;
+    target->use_clip_rect = 0;
+    target->clip_rect.x = 0;
+    target->clip_rect.y = 0;
+    target->clip_rect.w = target->w;
+    target->clip_rect.h = target->h;
+    target->use_color = 0;
     
     target->camera = GPU_GetDefaultCamera();
     
@@ -2290,11 +2300,12 @@ static GPU_Target* LoadTarget(GPU_Renderer* renderer, GPU_Image* image)
     
     result->camera = GPU_GetDefaultCamera();
     
-    result->useClip = 0;
-    result->clipRect.x = 0;
-    result->clipRect.y = 0;
-    result->clipRect.w = image->w;
-    result->clipRect.h = image->h;
+    result->use_clip_rect = 0;
+    result->clip_rect.x = 0;
+    result->clip_rect.y = 0;
+    result->clip_rect.w = image->w;
+    result->clip_rect.h = image->h;
+    result->use_color = 0;
 
     image->target = result;
     return result;
@@ -2374,7 +2385,7 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_T
     if(bindFramebuffer(renderer, dest))
     {
         prepareToRenderToTarget(renderer, dest);
-        prepareToRenderImage(renderer, src);
+        prepareToRenderImage(renderer, dest, src);
         
         Uint16 tex_w = ((IMAGE_DATA*)src->data)->tex_w;
         Uint16 tex_h = ((IMAGE_DATA*)src->data)->tex_h;
@@ -2550,7 +2561,7 @@ static int BlitTransformX(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcr
     if(bindFramebuffer(renderer, dest))
     {
         prepareToRenderToTarget(renderer, dest);
-        prepareToRenderImage(renderer, src);
+        prepareToRenderImage(renderer, dest, src);
         
         Uint16 tex_w = ((IMAGE_DATA*)src->data)->tex_w;
         Uint16 tex_h = ((IMAGE_DATA*)src->data)->tex_h;
@@ -2830,14 +2841,14 @@ static GPU_Rect SetClip(GPU_Renderer* renderer, GPU_Target* target, Sint16 x, Si
 
     if(isCurrentTarget(renderer, target))
         renderer->FlushBlitBuffer(renderer);
-    target->useClip = 1;
+    target->use_clip_rect = 1;
 
-    GPU_Rect r = target->clipRect;
+    GPU_Rect r = target->clip_rect;
 
-    target->clipRect.x = x;
-    target->clipRect.y = y;
-    target->clipRect.w = w;
-    target->clipRect.h = h;
+    target->clip_rect.x = x;
+    target->clip_rect.y = y;
+    target->clip_rect.w = w;
+    target->clip_rect.h = h;
 
     return r;
 }
@@ -2851,11 +2862,11 @@ static void ClearClip(GPU_Renderer* renderer, GPU_Target* target)
     
     if(isCurrentTarget(renderer, target))
         renderer->FlushBlitBuffer(renderer);
-    target->useClip = 0;
-    target->clipRect.x = 0;
-    target->clipRect.y = 0;
-    target->clipRect.w = target->w;
-    target->clipRect.h = target->h;
+    target->use_clip_rect = 0;
+    target->clip_rect.x = 0;
+    target->clip_rect.y = 0;
+    target->clip_rect.w = target->w;
+    target->clip_rect.h = target->h;
 }
 
 

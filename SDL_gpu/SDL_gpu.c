@@ -649,6 +649,50 @@ void GPU_SetRGBA(GPU_Image* image, Uint8 r, Uint8 g, Uint8 b, Uint8 a)
 	image->color = c;
 }
 
+void GPU_SetTargetColor(GPU_Target* target, SDL_Color* color)
+{
+	if(target == NULL)
+		return;
+	
+	if(color == NULL)
+        target->use_color = 0;
+    else
+    {
+        target->use_color = 1;
+        target->color = *color;
+    }
+}
+
+void GPU_SetTargetRGB(GPU_Target* target, Uint8 r, Uint8 g, Uint8 b)
+{
+	if(target == NULL)
+		return;
+	
+	if(r == 255 && g == 255 && b == 255)
+        target->use_color = 0;
+    else
+    {
+        target->use_color = 1;
+        SDL_Color c = {r, g, b, 255};
+        target->color = c;
+    }
+}
+
+void GPU_SetTargetRGBA(GPU_Target* target, Uint8 r, Uint8 g, Uint8 b, Uint8 a)
+{
+	if(target == NULL)
+		return;
+	
+	if(r == 255 && g == 255 && b == 255 && a == 255)
+        target->use_color = 0;
+    else
+    {
+        target->use_color = 1;
+        SDL_Color c = {r, g, b, a};
+        target->color = c;
+    }
+}
+
 Uint8 GPU_GetBlending(GPU_Image* image)
 {
 	if(image == NULL)
