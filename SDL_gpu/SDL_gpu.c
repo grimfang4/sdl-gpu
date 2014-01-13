@@ -211,7 +211,6 @@ void GPU_GetVirtualCoords(GPU_Target* target, float* x, float* y, float displayX
 	if(target == NULL)
 		return;
 	
-	float real_w, real_h;
 	if(target->context != NULL)
     {
         if(x != NULL)

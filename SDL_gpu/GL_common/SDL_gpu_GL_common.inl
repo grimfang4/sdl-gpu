@@ -271,12 +271,29 @@ static float* GPU_GetProjection(void)
     #endif
 }
 
+
 static Uint8 isExtensionSupported(const char* extension_str)
 {
 #ifdef SDL_GPU_USE_OPENGL
     return glewIsExtensionSupported(extension_str);
 #else
-    return (strstr((const char*)glGetString(GL_EXTENSIONS), extension_str ) != NULL);
+    // As suggested by Mesa3D.org
+    char* p = (char*)glGetString(GL_EXTENSIONS);
+    char* end;
+    int extNameLen;
+
+    extNameLen = strlen(extension_str);
+    end = p + strlen(p);
+
+    while(p < end)
+    {
+        int n = strcspn(p, " ");
+        if((extNameLen == n) && (strncmp(extension_str, p, n) == 0))
+            return 1;
+        
+        p += (n + 1);
+    }
+    return 0;
 #endif
 }
 
@@ -299,7 +316,8 @@ static void init_features(GPU_Renderer* renderer)
     else
         renderer->enabled_features &= ~GPU_FEATURE_NON_POWER_OF_TWO;
 #elif defined(SDL_GPU_USE_GLES)
-    if(isExtensionSupported("GL_OES_texture_npot") || isExtensionSupported("GL_IMG_texture_npot") || isExtensionSupported("GL_ARB_texture_non_power_of_two"))
+    if(isExtensionSupported("GL_OES_texture_npot") || isExtensionSupported("GL_IMG_texture_npot")
+       || isExtensionSupported("GL_APPLE_texture_2D_limited_npot") || isExtensionSupported("GL_ARB_texture_non_power_of_two"))
         renderer->enabled_features |= GPU_FEATURE_NON_POWER_OF_TWO;
     else
         renderer->enabled_features &= ~GPU_FEATURE_NON_POWER_OF_TWO;
@@ -699,6 +717,9 @@ static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request,
         renderer_request.major_version = 1;
         renderer_request.minor_version = 1;
     }
+    #ifdef SDL_GPU_USE_GLES
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_ES);
+    #endif
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, renderer_request.major_version);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, renderer_request.minor_version);
 #else
@@ -3464,7 +3485,11 @@ static void SetUniformiv(GPU_Renderer* renderer, int location, int num_elements_
 static void GetUniformuiv(GPU_Renderer* renderer, Uint32 program_object, int location, unsigned int* values)
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
+    #if defined(SDL_GPU_USE_GLES) && SDL_GPU_GLES_MAJOR_VERSION < 3
+    glGetUniformiv(program_object, location, (int*)values);
+    #else
     glGetUniformuiv(program_object, location, values);
+    #endif
     #endif
 }
 
@@ -3472,7 +3497,11 @@ static void SetUniformui(GPU_Renderer* renderer, int location, unsigned int valu
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
     renderer->FlushBlitBuffer(renderer);
+    #if defined(SDL_GPU_USE_GLES) && SDL_GPU_GLES_MAJOR_VERSION < 3
+    glUniform1i(location, (int)value);
+    #else
     glUniform1ui(location, value);
+    #endif
     #endif
 }
 
@@ -3480,6 +3509,23 @@ static void SetUniformuiv(GPU_Renderer* renderer, int location, int num_elements
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
     renderer->FlushBlitBuffer(renderer);
+    #if defined(SDL_GPU_USE_GLES) && SDL_GPU_GLES_MAJOR_VERSION < 3
+    switch(num_elements_per_value)
+    {
+        case 1:
+        glUniform1iv(location, num_values, (int*)values);
+        break;
+        case 2:
+        glUniform2iv(location, num_values, (int*)values);
+        break;
+        case 3:
+        glUniform3iv(location, num_values, (int*)values);
+        break;
+        case 4:
+        glUniform4iv(location, num_values, (int*)values);
+        break;
+    }
+    #else
     switch(num_elements_per_value)
     {
         case 1:
@@ -3495,6 +3541,7 @@ static void SetUniformuiv(GPU_Renderer* renderer, int location, int num_elements
         glUniform4uiv(location, num_values, values);
         break;
     }
+    #endif
     #endif
 }
 
