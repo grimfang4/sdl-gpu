@@ -2802,8 +2802,6 @@ static void GenerateMipmaps(GPU_Renderer* renderer, GPU_Image* image)
     if(image == NULL)
         return;
     
-    // FIXME: Mipmaps are temporarily disabled on GLES.
-    #ifndef SDL_GPU_USE_GLES
     if(image->target != NULL && isCurrentTarget(renderer, image->target))
         renderer->FlushBlitBuffer(renderer);
     bindTexture(renderer, image);
@@ -2814,7 +2812,6 @@ static void GenerateMipmaps(GPU_Renderer* renderer, GPU_Image* image)
     glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, &filter);
     if(filter == GL_LINEAR)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
-    #endif
 }
 
 

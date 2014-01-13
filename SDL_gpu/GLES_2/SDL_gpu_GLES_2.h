@@ -14,20 +14,6 @@
     #include "GLES2/gl2ext.h"
 #endif
 
-    #define glFrustum glFrustumf
-    #define glOrtho glOrthof
-    #define glGenerateMipmap glGenerateMipmapOES
-
-    #define glBlendEquation glBlendEquationOES
-    #define glBlendFuncSeparate glBlendFuncSeparateOES
-    
-    #define glGetUniformuiv glGetUniformiv
-    #define glUniform1ui glUniform1i
-    #define glUniform1uiv glUniform1iv
-    #define glUniform2uiv glUniform2iv
-    #define glUniform3uiv glUniform3iv
-    #define glUniform4uiv glUniform4iv
-
 #endif
 
 
