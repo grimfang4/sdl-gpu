@@ -1284,7 +1284,7 @@ static GPU_Image* CreateUninitializedImage(GPU_Renderer* renderer, Uint16 w, Uin
     result->refcount = 1;
     data->handle = handle;
     data->format = format;
-    data->hasMipmaps = 0;
+    data->has_mipmaps = 0;
 
     result->w = w;
     result->h = h;
@@ -2819,7 +2819,7 @@ static void GenerateMipmaps(GPU_Renderer* renderer, GPU_Image* image)
         renderer->FlushBlitBuffer(renderer);
     bindTexture(renderer, image);
     glGenerateMipmap(GL_TEXTURE_2D);
-    ((IMAGE_DATA*)image->data)->hasMipmaps = 1;
+    ((IMAGE_DATA*)image->data)->has_mipmaps = 1;
 
     GLint filter;
     glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, &filter);
@@ -2918,7 +2918,7 @@ static void SetImageFilter(GPU_Renderer* renderer, GPU_Image* image, GPU_FilterE
 
     if(filter == GPU_LINEAR)
     {
-        if(((IMAGE_DATA*)image->data)->hasMipmaps)
+        if(((IMAGE_DATA*)image->data)->has_mipmaps)
             minFilter = GL_LINEAR_MIPMAP_NEAREST;
         else
             minFilter = GL_LINEAR;
@@ -2927,7 +2927,7 @@ static void SetImageFilter(GPU_Renderer* renderer, GPU_Image* image, GPU_FilterE
     }
     else if(filter == GPU_LINEAR_MIPMAP)
     {
-        if(((IMAGE_DATA*)image->data)->hasMipmaps)
+        if(((IMAGE_DATA*)image->data)->has_mipmaps)
             minFilter = GL_LINEAR_MIPMAP_LINEAR;
         else
             minFilter = GL_LINEAR;
