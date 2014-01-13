@@ -7,22 +7,22 @@ if(renderer == NULL) \
     return ret;
 
 
-float GPU_SetThickness(float thickness)
+float GPU_SetLineThickness(float thickness)
 {
 	CHECK_RENDERER(1.0f);
-	if(renderer->SetThickness == NULL)
+	if(renderer->SetLineThickness == NULL)
 		return 1.0f;
 	
-	return renderer->SetThickness(renderer, thickness);
+	return renderer->SetLineThickness(renderer, thickness);
 }
 
-float GPU_GetThickness(void)
+float GPU_GetLineThickness(void)
 {
 	CHECK_RENDERER(1.0f);
-	if(renderer->GetThickness == NULL)
+	if(renderer->GetLineThickness == NULL)
 		return 1.0f;
 	
-	return renderer->GetThickness(renderer);
+	return renderer->GetLineThickness(renderer);
 }
 
 void GPU_Pixel(GPU_Target* target, float x, float y, SDL_Color color)

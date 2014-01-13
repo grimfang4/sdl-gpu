@@ -368,7 +368,7 @@ static inline void draw_vertices_textured(GLfloat* glverts, int num_vertices, GL
 }
 
 
-static float SetThickness(GPU_Renderer* renderer, float thickness)
+static float SetLineThickness(GPU_Renderer* renderer, float thickness)
 {
     if(renderer->current_context_target == NULL)
         return 1.0f;
@@ -379,7 +379,7 @@ static float SetThickness(GPU_Renderer* renderer, float thickness)
 	return old;
 }
 
-static float GetThickness(GPU_Renderer* renderer)
+static float GetLineThickness(GPU_Renderer* renderer)
 {
     return ((TARGET_DATA*)renderer->current_context_target->data)->line_thickness;
 }
@@ -683,7 +683,7 @@ static void Rectangle(GPU_Renderer* renderer, GPU_Target* target, float x1, floa
         x2 = x;
     }
     
-	float thickness = renderer->GetThickness(renderer);
+	float thickness = renderer->GetLineThickness(renderer);
 
     float t = thickness/2;
     

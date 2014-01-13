@@ -167,14 +167,14 @@ int main(int argc, char* argv[])
 				{
 					thickness += 0.25f;
 					GPU_LogError("thickness: %.2f\n", thickness);
-					GPU_SetThickness(thickness);
+					GPU_SetLineThickness(thickness);
 				}
 				else if(event.key.keysym.sym == SDLK_DOWN)
 				{
 					if(thickness > 0.25f)
 						thickness -= 0.25f;
 					GPU_LogError("thickness: %.2f\n", thickness);
-					GPU_SetThickness(thickness);
+					GPU_SetLineThickness(thickness);
 				}
 			}
 		}

@@ -986,7 +986,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     // Set up camera
     applyTargetCamera(target);
     
-    renderer->SetThickness(renderer, 1.0f);
+    renderer->SetLineThickness(renderer, 1.0f);
     
     
     cdata->default_textured_shader_program = 0;
@@ -3735,9 +3735,9 @@ static void SetUniformMatrixfv(GPU_Renderer* renderer, int location, int num_mat
 	 \
 	/* Shape rendering */ \
 	 \
-    renderer->SetThickness = &SetThickness; \
-    renderer->SetThickness(renderer, 1.0f); \
-    renderer->GetThickness = &GetThickness; \
+    renderer->SetLineThickness = &SetLineThickness; \
+    renderer->SetLineThickness(renderer, 1.0f); \
+    renderer->GetLineThickness = &GetLineThickness; \
     renderer->Pixel = &Pixel; \
     renderer->Line = &Line; \
     renderer->Arc = &Arc; \
