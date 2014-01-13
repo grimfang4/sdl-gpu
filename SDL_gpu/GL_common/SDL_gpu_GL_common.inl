@@ -12,6 +12,7 @@ TARGET_DATA  // Appropriate type for the target data (via pointer)
 
 
 #include "SDL_gpu_GL_matrix.h"
+#include "SDL_platform.h"
 
 #include "stb_image.h"
 #include "stb_image_write.h"
@@ -562,7 +563,7 @@ static void changeBlending(GPU_Renderer* renderer, Uint8 enable)
 static void changeBlendMode(GPU_Renderer* renderer, GPU_BlendEnum mode)
 {
     CONTEXT_DATA* cdata = (CONTEXT_DATA*)renderer->current_context_target->context->data;
-    if(cdata->last_blend_mode == mode)
+    if(cdata->last_blend_mode != GPU_BLEND_OVERRIDE && cdata->last_blend_mode == mode)
         return;
     
     renderer->FlushBlitBuffer(renderer);
@@ -2799,6 +2800,7 @@ static float GetZ(GPU_Renderer* renderer)
 
 static void GenerateMipmaps(GPU_Renderer* renderer, GPU_Image* image)
 {
+    #ifndef __IPHONEOS__
     if(image == NULL)
         return;
     
@@ -2812,6 +2814,7 @@ static void GenerateMipmaps(GPU_Renderer* renderer, GPU_Image* image)
     glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, &filter);
     if(filter == GL_LINEAR)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+    #endif
 }
 
 
