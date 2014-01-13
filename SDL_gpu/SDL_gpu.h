@@ -424,8 +424,8 @@ struct GPU_Renderer
     
     // Shapes
     
-	float (*SetThickness)(GPU_Renderer* renderer, float thickness);
-	float (*GetThickness)(GPU_Renderer* renderer);
+	float (*SetLineThickness)(GPU_Renderer* renderer, float thickness);
+	float (*GetLineThickness)(GPU_Renderer* renderer);
 	
 	void (*Pixel)(GPU_Renderer* renderer, GPU_Target* target, float x, float y, SDL_Color color);
 
@@ -879,9 +879,9 @@ void GPU_SetUniformMatrixfv(int location, int num_matrices, int num_rows, int nu
 
 // Shapes
 
-float GPU_SetThickness(float thickness);
+float GPU_SetLineThickness(float thickness);
 
-float GPU_GetThickness(void);
+float GPU_GetLineThickness(void);
 
 void GPU_Pixel(GPU_Target* target, float x, float y, SDL_Color color);
 
