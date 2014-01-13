@@ -53,6 +53,11 @@ do { \
 } while(0);
 
 #define DECLARE_COLOR_RGBA \
+if(target->use_color) \
+{ \
+    SDL_Color c = MIX_COLORS(target->color, color); \
+    color = c; \
+} \
 float r = color.r/255.0f; \
 float g = color.g/255.0f; \
 float b = color.b/255.0f; \
@@ -83,9 +88,19 @@ do { \
 
 #ifdef SDL_GPU_USE_GLES
 #define DECLARE_COLOR_RGBA \
+if(target->use_color) \
+{ \
+    SDL_Color c = MIX_COLORS(target->color, color); \
+    color = c; \
+} \
 glColor4f(color.r/255.01f, color.g/255.01f, color.b/255.01f, GET_ALPHA(color)/255.01f);
 #else
 #define DECLARE_COLOR_RGBA \
+if(target->use_color) \
+{ \
+    SDL_Color c = MIX_COLORS(target->color, color); \
+    color = c; \
+} \
 glColor4ub(color.r, color.g, color.b, GET_ALPHA(color));
 #endif
 
@@ -164,7 +179,7 @@ int _vertex_array_index = 0;
         if(bindFramebuffer(renderer, target)) \
         { \
             prepareToRenderToTarget(renderer, target); \
-            prepareToRenderImage(renderer, src); \
+            prepareToRenderImage(renderer, target, src); \
             /*glPushAttrib(GL_COLOR_BUFFER_BIT);*/ \
             \
             GLint vp[4]; \
@@ -196,7 +211,7 @@ int _vertex_array_index = 0;
         GPU_PopMatrix(); \
         GPU_MatrixMode( GPU_MODELVIEW ); \
     } \
-	if(target->useClip) \
+	if(target->use_clip_rect) \
 	{ \
 			glDisable(GL_SCISSOR_TEST); \
 	} \

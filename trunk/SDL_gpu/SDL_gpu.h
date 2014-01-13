@@ -176,8 +176,10 @@ struct GPU_Target
 	GPU_Image* image;
 	void* data;
 	Uint16 w, h;
-	Uint8 useClip;
-	GPU_Rect clipRect;
+	Uint8 use_clip_rect;
+	GPU_Rect clip_rect;
+	Uint8 use_color;
+	SDL_Color color;
 	
 	/*! Perspective and object viewing transforms. */
 	GPU_Camera camera;
@@ -708,14 +710,35 @@ GPU_Rect GPU_SetClip(GPU_Target* target, Sint16 x, Sint16 y, Uint16 w, Uint16 h)
 /*! Clears (resets) the clipping rect for the given render target. */
 void GPU_ClearClip(GPU_Target* target);
 
-/*! Sets the modulation color for subsequent drawing. */
+/*! Sets the modulation color for subsequent drawing of the given image. */
 void GPU_SetColor(GPU_Image* image, SDL_Color* color);
 
-/*! Sets the modulation color for subsequent drawing. */
+/*! Sets the modulation color for subsequent drawing of the given image. */
 void GPU_SetRGB(GPU_Image* image, Uint8 r, Uint8 g, Uint8 b);
 
-/*! Sets the modulation color for subsequent drawing. */
+/*! Sets the modulation color for subsequent drawing of the given image. */
 void GPU_SetRGBA(GPU_Image* image, Uint8 r, Uint8 g, Uint8 b, Uint8 a);
+
+/*! Sets the modulation color for subsequent drawing of images and shapes on the given target. 
+ *  This has a cumulative effect with the image coloring functions.
+ *  e.g. GPU_SetRGB(image, 255, 128, 0); GPU_SetTargetRGB(target, 128, 128, 128);
+ *  Would make the image draw with color of roughly (128, 64, 0).
+ */
+void GPU_SetTargetColor(GPU_Target* target, SDL_Color* color);
+
+/*! Sets the modulation color for subsequent drawing of images and shapes on the given target. 
+ *  This has a cumulative effect with the image coloring functions.
+ *  e.g. GPU_SetRGB(image, 255, 128, 0); GPU_SetTargetRGB(target, 128, 128, 128);
+ *  Would make the image draw with color of roughly (128, 64, 0).
+ */
+void GPU_SetTargetRGB(GPU_Target* target, Uint8 r, Uint8 g, Uint8 b);
+
+/*! Sets the modulation color for subsequent drawing of images and shapes on the given target. 
+ *  This has a cumulative effect with the image coloring functions.
+ *  e.g. GPU_SetRGB(image, 255, 128, 0); GPU_SetTargetRGB(target, 128, 128, 128);
+ *  Would make the image draw with color of roughly (128, 64, 0).
+ */
+void GPU_SetTargetRGBA(GPU_Target* target, Uint8 r, Uint8 g, Uint8 b, Uint8 a);
 
 /*! Gets the current alpha blending setting. */
 Uint8 GPU_GetBlending(GPU_Image* image);
