@@ -64,8 +64,6 @@ typedef struct TargetData_OpenGL_3
 {
 	Uint32 handle;
 	Uint32 format;
-	
-	float line_thickness;
     
     // Tier 3 rendering
     unsigned int blit_VAO;

@@ -75,8 +75,6 @@ typedef struct TargetData_GLES_1
 {
 	Uint32 handle;
 	Uint32 format;
-	
-	float line_thickness;
 } TargetData_GLES_1;
 
 

@@ -939,7 +939,6 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     
     ((TARGET_DATA*)target->data)->handle = 0;
     ((TARGET_DATA*)target->data)->format = GL_RGBA;
-    ((TARGET_DATA*)target->data)->line_thickness = 1.0f;
 
     target->renderer = renderer;
     target->w = target->context->window_w;
@@ -954,6 +953,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     
     target->camera = GPU_GetDefaultCamera();
     
+    target->context->line_thickness = 1.0f;
     target->context->shapes_use_blending = 1;
     target->context->shapes_blend_mode = GPU_BLEND_NORMAL;
     
@@ -2290,7 +2290,6 @@ static GPU_Target* LoadTarget(GPU_Renderer* renderer, GPU_Image* image)
     result->data = data;
     data->handle = handle;
     data->format = ((IMAGE_DATA*)image->data)->format;
-    data->line_thickness = 1.0f;
     
     result->renderer = renderer;
     result->context = NULL;

@@ -163,13 +163,13 @@ int main(int argc, char* argv[])
 					blend = !blend;
 					GPU_SetShapeBlending(blend);
 				}
-				else if(event.key.keysym.sym == SDLK_UP)
+				else if(event.key.keysym.sym == SDLK_UP || event.key.keysym.sym == SDLK_EQUALS)
 				{
 					thickness += 0.25f;
 					GPU_LogError("thickness: %.2f\n", thickness);
 					GPU_SetLineThickness(thickness);
 				}
-				else if(event.key.keysym.sym == SDLK_DOWN)
+				else if(event.key.keysym.sym == SDLK_DOWN || event.key.keysym.sym == SDLK_MINUS)
 				{
 					if(thickness > 0.25f)
 						thickness -= 0.25f;

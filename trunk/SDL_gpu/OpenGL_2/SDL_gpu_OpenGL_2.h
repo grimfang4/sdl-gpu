@@ -64,8 +64,6 @@ typedef struct TargetData_OpenGL_2
 {
 	Uint32 handle;
 	Uint32 format;
-	
-	float line_thickness;
 } TargetData_OpenGL_2;
 
 
