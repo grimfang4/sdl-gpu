@@ -806,6 +806,13 @@ static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request,
     }
     #endif
     
+    // Did the wrong runtime library try to use a later versioned renderer?
+    if(renderer->id.major_version < renderer_request.major_version)
+    {
+        GPU_LogError("GPU_Init failed: Renderer %s can not be run by the version %d.%d library that is linked.\n", GPU_GetRendererEnumString(renderer_request.id), renderer->id.major_version, renderer->id.minor_version);
+        return NULL;
+    }
+    
     return renderer->current_context_target;
 }
 
