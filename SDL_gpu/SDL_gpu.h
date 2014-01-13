@@ -156,6 +156,7 @@ typedef struct GPU_Context
 	
 	Uint8 shapes_use_blending;
 	GPU_BlendEnum shapes_blend_mode;
+	float line_thickness;
 	
 	void* data;
 } GPU_Context;

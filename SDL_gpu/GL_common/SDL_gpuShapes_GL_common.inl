@@ -373,15 +373,15 @@ static float SetLineThickness(GPU_Renderer* renderer, float thickness)
     if(renderer->current_context_target == NULL)
         return 1.0f;
     
-	float old = ((TARGET_DATA*)renderer->current_context_target->data)->line_thickness;
-	((TARGET_DATA*)renderer->current_context_target->data)->line_thickness = thickness;
+	float old = renderer->current_context_target->context->line_thickness;
+	renderer->current_context_target->context->line_thickness = thickness;
 	glLineWidth(thickness);
 	return old;
 }
 
 static float GetLineThickness(GPU_Renderer* renderer)
 {
-    return ((TARGET_DATA*)renderer->current_context_target->data)->line_thickness;
+    return renderer->current_context_target->context->line_thickness;
 }
 
 static void Pixel(GPU_Renderer* renderer, GPU_Target* target, float x, float y, SDL_Color color)

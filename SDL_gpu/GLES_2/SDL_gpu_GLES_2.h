@@ -56,8 +56,6 @@ typedef struct TargetData_GLES_2
 {
 	Uint32 handle;
 	Uint32 format;
-	
-	float line_thickness;
     
     // Tier 3 rendering
     unsigned int blit_VBO[2];  // For double-buffering
