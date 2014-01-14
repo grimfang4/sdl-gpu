@@ -556,6 +556,557 @@ int GPU_BlitTransformMatrix(GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest,
 	return current_renderer->BlitTransformMatrix(current_renderer, src, srcrect, dest, x, y, matrix3x3);
 }
 
+int GPU_BlitBatch(GPU_Image* src, GPU_Target* dest, unsigned int numSprites, float* values, GPU_BlitFlagEnum flags)
+{
+	if(current_renderer == NULL || current_renderer->BlitBatch == NULL)
+		return -2;
+	if(src == NULL || dest == NULL)
+		return -1;
+    if(numSprites == 0 || values == NULL)
+        return 0;
+    
+    // Is it already in the right format?
+    if((flags & GPU_PASSTHROUGH_ALL) == GPU_PASSTHROUGH_ALL)
+        return current_renderer->BlitBatch(current_renderer, src, dest, numSprites, values, flags);
+	
+	// Conversion time...
+	int size = numSprites*(12 + 8 + 16);
+	float* new_values = (float*)malloc(sizeof(float)*size);
+	
+	// Convert condensed interleaved format into full interleaved format for the renderer to use.
+	// Condensed: Each vertex has 2 pos, 4 rect, 4 color
+	
+	// Default values: Each sprite is defined by a position, a rect, and a color.
+	int src_position_floats_per_sprite = 2;
+	int src_rect_floats_per_sprite = 4;
+	int src_color_floats_per_sprite = 4;
+	
+	Uint8 no_positions = (flags & GPU_USE_DEFAULT_POSITIONS);
+	Uint8 no_rects = (flags & GPU_USE_DEFAULT_SRC_RECTS);
+	Uint8 no_colors = (flags & GPU_USE_DEFAULT_COLORS);
+	Uint8 pass_vertices = (flags & GPU_PASSTHROUGH_VERTICES);
+	Uint8 pass_texcoords = (flags & GPU_PASSTHROUGH_TEXCOORDS);
+	Uint8 pass_colors = (flags & GPU_PASSTHROUGH_COLORS);
+	if(pass_vertices)
+        src_position_floats_per_sprite = 12; // 4 vertices of x, y, z
+	if(pass_texcoords)
+        src_rect_floats_per_sprite = 8; // 4 vertices of s, t
+	if(pass_colors)
+        src_color_floats_per_sprite = 16; // 4 vertices of r, g, b, a
+    
+	int src_floats_per_sprite = src_position_floats_per_sprite + src_rect_floats_per_sprite + src_color_floats_per_sprite;
+    
+	int n;  // The sprite number iteration variable.
+	// Source indices (per sprite)
+	int pos_n = 0;
+	int rect_n = src_position_floats_per_sprite;
+	int color_n = src_position_floats_per_sprite + src_rect_floats_per_sprite;
+	// Dest indices
+	int vert_i = 0;
+	int texcoord_i = 3;
+	int color_i = 5;
+	// Dest float stride
+	int floats_per_vertex = 9;
+	
+	float w2 = 0.5f*src->w;  // texcoord helpers for position expansion
+	float h2 = 0.5f*src->h;
+	
+	// FIXME: Does not do the right thing when pass_* is used.
+	//        I need to specify what the expected format is because mixing expanded values with passthrough values leads to format ambiguities.
+    for(n = 0; n < numSprites; n++)
+    {
+        if(no_rects)
+        {
+            new_values[texcoord_i] = 0.0f;
+            new_values[texcoord_i+1] = 0.0f;
+            texcoord_i += floats_per_vertex;
+            new_values[texcoord_i] = 1.0f;
+            new_values[texcoord_i+1] = 0.0f;
+            texcoord_i += floats_per_vertex;
+            new_values[texcoord_i] = 1.0f;
+            new_values[texcoord_i+1] = 1.0f;
+            texcoord_i += floats_per_vertex;
+            new_values[texcoord_i] = 0.0f;
+            new_values[texcoord_i+1] = 1.0f;
+            texcoord_i += floats_per_vertex;
+        }
+        else
+        {
+            if(!pass_texcoords)
+            {
+                // TODO: Scale using tex_w instead of w for POT support
+                float s1 = values[rect_n]/src->w;
+                float t1 = values[rect_n+1]/src->h;
+                float s3 = s1 + values[rect_n+2]/src->w;
+                float t3 = t1 + values[rect_n+3]/src->h;
+                rect_n += src_floats_per_sprite;
+                
+                new_values[texcoord_i] = s1;
+                new_values[texcoord_i+1] = t1;
+                texcoord_i += floats_per_vertex;
+                new_values[texcoord_i] = s3;
+                new_values[texcoord_i+1] = t1;
+                texcoord_i += floats_per_vertex;
+                new_values[texcoord_i] = s3;
+                new_values[texcoord_i+1] = t3;
+                texcoord_i += floats_per_vertex;
+                new_values[texcoord_i] = s1;
+                new_values[texcoord_i+1] = t3;
+                texcoord_i += floats_per_vertex;
+            
+                if(!pass_vertices)
+                {
+                    w2 = 0.5f*(s3-s1)*src->w;
+                    h2 = 0.5f*(t3-t1)*src->h;
+                }
+            }
+            else
+            {
+                // 4 vertices all in a row
+                float s1 = new_values[texcoord_i] = values[rect_n];
+                float t1 = new_values[texcoord_i+1] = values[rect_n+1];
+                texcoord_i += floats_per_vertex;
+                new_values[texcoord_i] = values[rect_n+2];
+                new_values[texcoord_i+1] = values[rect_n+3];
+                texcoord_i += floats_per_vertex;
+                float s3 = new_values[texcoord_i] = values[rect_n+4];
+                float t3 = new_values[texcoord_i+1] = values[rect_n+5];
+                texcoord_i += floats_per_vertex;
+                new_values[texcoord_i] = values[rect_n+6];
+                new_values[texcoord_i+1] = values[rect_n+7];
+                texcoord_i += floats_per_vertex;
+                rect_n += src_floats_per_sprite;
+            
+                if(!pass_vertices)
+                {
+                    w2 = 0.5f*(s3-s1)*src->w;
+                    h2 = 0.5f*(t3-t1)*src->h;
+                }
+            }
+        }
+        
+        if(no_positions)
+        {
+            new_values[vert_i] = 0.0f;
+            new_values[vert_i+1] = 0.0f;
+            new_values[vert_i+2] = 0;
+            vert_i += floats_per_vertex;
+            new_values[vert_i] = 0.0f;
+            new_values[vert_i+1] = 0.0f;
+            new_values[vert_i+2] = 0;
+            vert_i += floats_per_vertex;
+            new_values[vert_i] = 0.0f;
+            new_values[vert_i+1] = 0.0f;
+            new_values[vert_i+2] = 0;
+            vert_i += floats_per_vertex;
+            new_values[vert_i] = 0.0f;
+            new_values[vert_i+1] = 0.0f;
+            new_values[vert_i+2] = 0;
+            vert_i += floats_per_vertex;
+        }
+        else
+        {
+            if(!pass_vertices)
+            {
+                // Expand vertices from the position and dimensions
+                float x = values[pos_n];
+                float y = values[pos_n+1];
+                pos_n += src_floats_per_sprite;
+                
+                new_values[vert_i] = x - w2;
+                new_values[vert_i+1] = y - h2;
+                new_values[vert_i+2] = 0;
+                vert_i += floats_per_vertex;
+                new_values[vert_i] = x + w2;
+                new_values[vert_i+1] = y - h2;
+                new_values[vert_i+2] = 0;
+                vert_i += floats_per_vertex;
+                new_values[vert_i] = x + w2;
+                new_values[vert_i+1] = y + h2;
+                new_values[vert_i+2] = 0;
+                vert_i += floats_per_vertex;
+                new_values[vert_i] = x - w2;
+                new_values[vert_i+1] = y + h2;
+                new_values[vert_i+2] = 0;
+                vert_i += floats_per_vertex;
+            }
+            else
+            {
+                // 4 vertices all in a row
+                new_values[vert_i] = values[pos_n];
+                new_values[vert_i+1] = values[pos_n+1];
+                new_values[vert_i+2] = values[pos_n+2];
+                vert_i += floats_per_vertex;
+                new_values[vert_i] = values[pos_n+3];
+                new_values[vert_i+1] = values[pos_n+4];
+                new_values[vert_i+2] = values[pos_n+5];
+                vert_i += floats_per_vertex;
+                new_values[vert_i] = values[pos_n+6];
+                new_values[vert_i+1] = values[pos_n+7];
+                new_values[vert_i+2] = values[pos_n+8];
+                vert_i += floats_per_vertex;
+                new_values[vert_i] = values[pos_n+9];
+                new_values[vert_i+1] = values[pos_n+10];
+                new_values[vert_i+2] = values[pos_n+11];
+                vert_i += floats_per_vertex;
+                pos_n += src_floats_per_sprite;
+            }
+        }
+        
+        if(no_colors)
+        {
+                new_values[color_i] = 1.0f;
+                new_values[color_i+1] = 1.0f;
+                new_values[color_i+2] = 1.0f;
+                new_values[color_i+3] = 1.0f;
+                color_i += floats_per_vertex;
+                new_values[color_i] = 1.0f;
+                new_values[color_i+1] = 1.0f;
+                new_values[color_i+2] = 1.0f;
+                new_values[color_i+3] = 1.0f;
+                color_i += floats_per_vertex;
+                new_values[color_i] = 1.0f;
+                new_values[color_i+1] = 1.0f;
+                new_values[color_i+2] = 1.0f;
+                new_values[color_i+3] = 1.0f;
+                color_i += floats_per_vertex;
+                new_values[color_i] = 1.0f;
+                new_values[color_i+1] = 1.0f;
+                new_values[color_i+2] = 1.0f;
+                new_values[color_i+3] = 1.0f;
+                color_i += floats_per_vertex;
+        }
+        else
+        {
+            if(!pass_colors)
+            {
+                float r = values[color_n]/255.0f;
+                float g = values[color_n+1]/255.0f;
+                float b = values[color_n+2]/255.0f;
+                float a = values[color_n+3]/255.0f;
+                color_n += src_floats_per_sprite;
+                
+                new_values[color_i] = r;
+                new_values[color_i+1] = g;
+                new_values[color_i+2] = b;
+                new_values[color_i+3] = a;
+                color_i += floats_per_vertex;
+                new_values[color_i] = r;
+                new_values[color_i+1] = g;
+                new_values[color_i+2] = b;
+                new_values[color_i+3] = a;
+                color_i += floats_per_vertex;
+                new_values[color_i] = r;
+                new_values[color_i+1] = g;
+                new_values[color_i+2] = b;
+                new_values[color_i+3] = a;
+                color_i += floats_per_vertex;
+                new_values[color_i] = r;
+                new_values[color_i+1] = g;
+                new_values[color_i+2] = b;
+                new_values[color_i+3] = a;
+                color_i += floats_per_vertex;
+            }
+            else
+            {
+                // 4 vertices all in a row
+                new_values[color_i] = values[color_n];
+                new_values[color_i+1] = values[color_n+1];
+                new_values[color_i+2] = values[color_n+2];
+                new_values[color_i+3] = values[color_n+3];
+                color_i += floats_per_vertex;
+                new_values[color_i] = values[color_n+4];
+                new_values[color_i+1] = values[color_n+5];
+                new_values[color_i+2] = values[color_n+6];
+                new_values[color_i+3] = values[color_n+7];
+                color_i += floats_per_vertex;
+                new_values[color_i] = values[color_n+8];
+                new_values[color_i+1] = values[color_n+9];
+                new_values[color_i+2] = values[color_n+10];
+                new_values[color_i+3] = values[color_n+11];
+                color_i += floats_per_vertex;
+                new_values[color_i] = values[color_n+12];
+                new_values[color_i+1] = values[color_n+13];
+                new_values[color_i+2] = values[color_n+14];
+                new_values[color_i+3] = values[color_n+15];
+                color_i += floats_per_vertex;
+                color_n += src_floats_per_sprite;
+            }
+        }
+    }
+    
+	int result = current_renderer->BlitBatch(current_renderer, src, dest, numSprites, new_values, flags | GPU_PASSTHROUGH_ALL);
+	
+	free(new_values);
+	return result;
+}
+
+int GPU_BlitBatchSeparate(GPU_Image* src, GPU_Target* dest, unsigned int numSprites, float* positions, float* src_rects, float* colors, GPU_BlitFlagEnum flags)
+{
+	if(current_renderer == NULL || current_renderer->BlitBatch == NULL)
+		return -2;
+	if(src == NULL || dest == NULL)
+		return -1;
+    if(numSprites == 0)
+        return 0;
+	
+	// Repack the given arrays into an interleaved array for more efficient access
+	// Default values: Each sprite is defined by a position, a rect, and a color.
+	int src_position_floats_per_sprite = 2;
+	int src_rect_floats_per_sprite = 4;
+	int src_color_floats_per_sprite = 4;
+	
+	Uint8 pass_vertices = (flags & GPU_PASSTHROUGH_VERTICES);
+	Uint8 pass_texcoords = (flags & GPU_PASSTHROUGH_TEXCOORDS);
+	Uint8 pass_colors = (flags & GPU_PASSTHROUGH_COLORS);
+	if(pass_vertices)
+        src_position_floats_per_sprite = 12; // 4 vertices of x, y, z
+	if(pass_texcoords)
+        src_rect_floats_per_sprite = 8; // 4 vertices of s, t
+	if(pass_colors)
+        src_color_floats_per_sprite = 16; // 4 vertices of r, g, b, a
+    
+	int src_floats_per_sprite = src_position_floats_per_sprite + src_rect_floats_per_sprite + src_color_floats_per_sprite;
+	int size = numSprites*(12 + 8 + 16);
+	float* values = (float*)malloc(sizeof(float)*size);
+	
+	int n;  // The sprite number iteration variable.
+	// Source indices
+	int pos_n = 0;
+	int rect_n = 0;
+	int color_n = 0;
+	// Dest indices
+	int vert_i = 0;
+	int texcoord_i = 3;
+	int color_i = 5;
+	// Dest float stride
+	int floats_per_vertex = 9;
+	
+	float w2 = 0.5f*src->w;  // texcoord helpers for position expansion
+	float h2 = 0.5f*src->h;
+    
+	for(n = 0; n < numSprites; n++)
+    {
+        // Unpack the arrays
+        
+        if(src_rects == NULL)
+        {
+            values[texcoord_i] = 0.0f;
+            values[texcoord_i+1] = 0.0f;
+            texcoord_i += floats_per_vertex;
+            values[texcoord_i] = 1.0f;
+            values[texcoord_i+1] = 0.0f;
+            texcoord_i += floats_per_vertex;
+            values[texcoord_i] = 1.0f;
+            values[texcoord_i+1] = 1.0f;
+            texcoord_i += floats_per_vertex;
+            values[texcoord_i] = 0.0f;
+            values[texcoord_i+1] = 1.0f;
+            texcoord_i += floats_per_vertex;
+        }
+        else
+        {
+            if(!pass_texcoords)
+            {
+                // TODO: Scale using tex_w instead of w for POT support
+                float s1 = src_rects[rect_n++]/src->w;
+                float t1 = src_rects[rect_n++]/src->h;
+                float s3 = s1 + src_rects[rect_n++]/src->w;
+                float t3 = t1 + src_rects[rect_n++]/src->h;
+                
+                values[texcoord_i] = s1;
+                values[texcoord_i+1] = t1;
+                texcoord_i += floats_per_vertex;
+                values[texcoord_i] = s3;
+                values[texcoord_i+1] = t1;
+                texcoord_i += floats_per_vertex;
+                values[texcoord_i] = s3;
+                values[texcoord_i+1] = t3;
+                texcoord_i += floats_per_vertex;
+                values[texcoord_i] = s1;
+                values[texcoord_i+1] = t3;
+                texcoord_i += floats_per_vertex;
+            
+                if(!pass_vertices)
+                {
+                    w2 = 0.5f*(s3-s1)*src->w;
+                    h2 = 0.5f*(t3-t1)*src->h;
+                }
+            }
+            else
+            {
+                // 4 vertices all in a row
+                float s1 = values[texcoord_i] = src_rects[rect_n++];
+                float t1 = values[texcoord_i+1] = src_rects[rect_n++];
+                texcoord_i += floats_per_vertex;
+                values[texcoord_i] = src_rects[rect_n++];
+                values[texcoord_i+1] = src_rects[rect_n++];
+                texcoord_i += floats_per_vertex;
+                float s3 = values[texcoord_i] = src_rects[rect_n++];
+                float t3 = values[texcoord_i+1] = src_rects[rect_n++];
+                texcoord_i += floats_per_vertex;
+                values[texcoord_i] = src_rects[rect_n++];
+                values[texcoord_i+1] = src_rects[rect_n++];
+                texcoord_i += floats_per_vertex;
+            
+                if(!pass_vertices)
+                {
+                    w2 = 0.5f*(s3-s1)*src->w;
+                    h2 = 0.5f*(t3-t1)*src->h;
+                }
+            }
+        }
+        
+        if(positions == NULL)
+        {
+            values[vert_i] = 0.0f;
+            values[vert_i+1] = 0.0f;
+            values[vert_i+2] = 0;
+            vert_i += floats_per_vertex;
+            values[vert_i] = 0.0f;
+            values[vert_i+1] = 0.0f;
+            values[vert_i+2] = 0;
+            vert_i += floats_per_vertex;
+            values[vert_i] = 0.0f;
+            values[vert_i+1] = 0.0f;
+            values[vert_i+2] = 0;
+            vert_i += floats_per_vertex;
+            values[vert_i] = 0.0f;
+            values[vert_i+1] = 0.0f;
+            values[vert_i+2] = 0;
+            vert_i += floats_per_vertex;
+        }
+        else
+        {
+            if(!pass_vertices)
+            {
+                // Expand vertices from the position and dimensions
+                float x = positions[pos_n++];
+                float y = positions[pos_n++];
+                values[vert_i] = x - w2;
+                values[vert_i+1] = y - h2;
+                values[vert_i+2] = 0;
+                vert_i += floats_per_vertex;
+                values[vert_i] = x + w2;
+                values[vert_i+1] = y - h2;
+                values[vert_i+2] = 0;
+                vert_i += floats_per_vertex;
+                values[vert_i] = x + w2;
+                values[vert_i+1] = y + h2;
+                values[vert_i+2] = 0;
+                vert_i += floats_per_vertex;
+                values[vert_i] = x - w2;
+                values[vert_i+1] = y + h2;
+                values[vert_i+2] = 0;
+                vert_i += floats_per_vertex;
+            }
+            else
+            {
+                // 4 vertices all in a row
+                values[vert_i] = positions[pos_n++];
+                values[vert_i+1] = positions[pos_n++];
+                values[vert_i+2] = positions[pos_n++];
+                vert_i += floats_per_vertex;
+                values[vert_i] = positions[pos_n++];
+                values[vert_i+1] = positions[pos_n++];
+                values[vert_i+2] = positions[pos_n++];
+                vert_i += floats_per_vertex;
+                values[vert_i] = positions[pos_n++];
+                values[vert_i+1] = positions[pos_n++];
+                values[vert_i+2] = positions[pos_n++];
+                vert_i += floats_per_vertex;
+                values[vert_i] = positions[pos_n++];
+                values[vert_i+1] = positions[pos_n++];
+                values[vert_i+2] = positions[pos_n++];
+                vert_i += floats_per_vertex;
+            }
+        }
+        if(colors == NULL)
+        {
+                values[color_i] = 1.0f;
+                values[color_i+1] = 1.0f;
+                values[color_i+2] = 1.0f;
+                values[color_i+3] = 1.0f;
+                color_i += floats_per_vertex;
+                values[color_i] = 1.0f;
+                values[color_i+1] = 1.0f;
+                values[color_i+2] = 1.0f;
+                values[color_i+3] = 1.0f;
+                color_i += floats_per_vertex;
+                values[color_i] = 1.0f;
+                values[color_i+1] = 1.0f;
+                values[color_i+2] = 1.0f;
+                values[color_i+3] = 1.0f;
+                color_i += floats_per_vertex;
+                values[color_i] = 1.0f;
+                values[color_i+1] = 1.0f;
+                values[color_i+2] = 1.0f;
+                values[color_i+3] = 1.0f;
+                color_i += floats_per_vertex;
+        }
+        else
+        {
+            if(!pass_colors)
+            {
+                float r = colors[color_n++]/255.0f;
+                float g = colors[color_n++]/255.0f;
+                float b = colors[color_n++]/255.0f;
+                float a = colors[color_n++]/255.0f;
+                
+                values[color_i] = r;
+                values[color_i+1] = g;
+                values[color_i+2] = b;
+                values[color_i+3] = a;
+                color_i += floats_per_vertex;
+                values[color_i] = r;
+                values[color_i+1] = g;
+                values[color_i+2] = b;
+                values[color_i+3] = a;
+                color_i += floats_per_vertex;
+                values[color_i] = r;
+                values[color_i+1] = g;
+                values[color_i+2] = b;
+                values[color_i+3] = a;
+                color_i += floats_per_vertex;
+                values[color_i] = r;
+                values[color_i+1] = g;
+                values[color_i+2] = b;
+                values[color_i+3] = a;
+                color_i += floats_per_vertex;
+            }
+            else
+            {
+                // 4 vertices all in a row
+                values[color_i] = colors[color_n++];
+                values[color_i+1] = colors[color_n++];
+                values[color_i+2] = colors[color_n++];
+                values[color_i+3] = colors[color_n++];
+                color_i += floats_per_vertex;
+                values[color_i] = colors[color_n++];
+                values[color_i+1] = colors[color_n++];
+                values[color_i+2] = colors[color_n++];
+                values[color_i+3] = colors[color_n++];
+                color_i += floats_per_vertex;
+                values[color_i] = colors[color_n++];
+                values[color_i+1] = colors[color_n++];
+                values[color_i+2] = colors[color_n++];
+                values[color_i+3] = colors[color_n++];
+                color_i += floats_per_vertex;
+                values[color_i] = colors[color_n++];
+                values[color_i+1] = colors[color_n++];
+                values[color_i+2] = colors[color_n++];
+                values[color_i+3] = colors[color_n++];
+                color_i += floats_per_vertex;
+            }
+        }
+    }
+	
+	int result = current_renderer->BlitBatch(current_renderer, src, dest, numSprites, values, flags | GPU_PASSTHROUGH_ALL);
+	free(values);
+	
+	return result;
+}
+
 
 float GPU_SetZ(float z)
 {

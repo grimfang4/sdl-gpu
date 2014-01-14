@@ -211,6 +211,20 @@ static const GPU_FeatureEnum GPU_FEATURE_GEOMETRY_SHADER = 0x400;
 #define GPU_FEATURE_ALL_GL_FORMATS (GPU_FEATURE_GL_BGR | GPU_FEATURE_GL_BGRA | GPU_FEATURE_GL_ABGR)
 #define GPU_FEATURE_ALL_SHADERS (GPU_FEATURE_FRAGMENT_SHADER | GPU_FEATURE_PIXEL_SHADER | GPU_FEATURE_GEOMETRY_SHADER)
 
+/*! Bit flags for the blit batch functions.
+ * \see GPU_BlitBatch()
+ * \see GPU_BlitBatchSeparate()
+ */
+typedef Uint32 GPU_BlitFlagEnum;
+static const GPU_BlitFlagEnum GPU_PASSTHROUGH_VERTICES = 0x1;
+static const GPU_BlitFlagEnum GPU_PASSTHROUGH_TEXCOORDS = 0x2;
+static const GPU_BlitFlagEnum GPU_PASSTHROUGH_COLORS = 0x4;
+static const GPU_BlitFlagEnum GPU_USE_DEFAULT_POSITIONS = 0x8;
+static const GPU_BlitFlagEnum GPU_USE_DEFAULT_SRC_RECTS = 0x10;
+static const GPU_BlitFlagEnum GPU_USE_DEFAULT_COLORS = 0x20;
+
+#define GPU_PASSTHROUGH_ALL (GPU_PASSTHROUGH_VERTICES | GPU_PASSTHROUGH_TEXCOORDS | GPU_PASSTHROUGH_COLORS)
+
 
 /*! Renderer object which specializes the API to a particular backend. */
 struct GPU_Renderer
@@ -312,6 +326,9 @@ struct GPU_Renderer
 	
 	/*! \see GPU_BlitTransformMatrix() */
 	int (*BlitTransformMatrix)(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest, float x, float y, float* matrix3x3);
+	
+	/*! \see GPU_BlitBatch() */
+	int (*BlitBatch)(GPU_Renderer* renderer, GPU_Image* src, GPU_Target* dest, unsigned int numSprites, float* values, GPU_BlitFlagEnum flags);
 	
 	/*! \see GPU_SetX() */
 	float (*SetZ)(GPU_Renderer* renderer, float z);
@@ -689,6 +706,20 @@ int GPU_BlitTransformX(GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest, floa
 	* \param y Destination y-position
 	* \param matrix3x3 3x3 matrix in column-major order (index = row + column*numColumns) */
 int GPU_BlitTransformMatrix(GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest, float x, float y, float* matrix3x3);
+
+/*! Performs 'numSprites' blits of the 'src' image to the 'dest' target.
+ * \param values A tightly-packed array of position (x,y), color (r,g,b,a) values with a range from 0-255, and src_rect (x,y,w,h) values in image coordinates
+ * \param flags Bit flags to control the interpretation of the array parameters
+ */
+int GPU_BlitBatch(GPU_Image* src, GPU_Target* dest, unsigned int numSprites, float* values, GPU_BlitFlagEnum flags);
+
+/*! Performs 'numSprites' blits of the 'src' image to the 'dest' target.
+ * \param positions A tightly-packed array of (x,y) values
+ * \param colors A tightly-packed array of (r,g,b,a) values with a range from 0-255
+ * \param src_rects A tightly-packed array of (x,y,w,h) values in image coordinates
+ * \param flags Bit flags to control the interpretation of the array parameters
+ */
+int GPU_BlitBatchSeparate(GPU_Image* src, GPU_Target* dest, unsigned int numSprites, float* positions, float* src_rects, float* colors, GPU_BlitFlagEnum flags);
 
 
 /*! Sets the renderer's z-depth.
