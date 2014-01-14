@@ -2042,8 +2042,9 @@ static void UpdateImage(GPU_Renderer* renderer, GPU_Image* image, const GPU_Rect
     if(newSurface->format->BytesPerPixel == 4)
         alignment = 4;
     glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
-    //glPixelStorei(GL_UNPACK_ROW_LENGTH,
-    //                          (newSurface->pitch / newSurface->format->BytesPerPixel));
+    #ifdef SDL_GPU_USE_OPENGL
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, (newSurface->pitch / newSurface->format->BytesPerPixel));
+    #endif
     glTexSubImage2D(GL_TEXTURE_2D, 0, updateRect.x, updateRect.y, updateRect.w,
                     updateRect.h, original_format, GL_UNSIGNED_BYTE,
                     newSurface->pixels);
