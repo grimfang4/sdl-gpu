@@ -593,6 +593,12 @@ int GPU_BlitBatch(GPU_Image* src, GPU_Target* dest, unsigned int numSprites, flo
         src_rect_floats_per_sprite = 8; // 4 vertices of s, t
 	if(pass_colors)
         src_color_floats_per_sprite = 16; // 4 vertices of r, g, b, a
+	if(no_positions)
+        src_position_floats_per_sprite = 0;
+	if(no_rects)
+        src_rect_floats_per_sprite = 0;
+	if(no_colors)
+        src_color_floats_per_sprite = 0;
     
 	int src_floats_per_sprite = src_position_floats_per_sprite + src_rect_floats_per_sprite + src_color_floats_per_sprite;
     
