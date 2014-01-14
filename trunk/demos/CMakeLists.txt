@@ -91,3 +91,6 @@ target_link_libraries (windows2-demo SDL_gpu)
 
 add_executable(shader-attributes-demo shader-attributes/main.c common/common.c)
 target_link_libraries (shader-attributes-demo SDL_gpu)
+
+add_executable(blit-batch-demo blit-batch/main.c common/common.c)
+target_link_libraries (blit-batch-demo SDL_gpu)

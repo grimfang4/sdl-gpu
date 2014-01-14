@@ -1,0 +1,294 @@
+#include "SDL.h"
+#include "SDL_gpu.h"
+#include "common.h"
+
+int do_interleaved(GPU_Target* screen)
+{
+	
+	GPU_Image* image = GPU_LoadImage("data/small_test.png");
+	if(image == NULL)
+		return -1;
+	
+	int return_value = 0;
+	
+	float dt = 0.010f;
+	
+	Uint32 startTime = SDL_GetTicks();
+	long frameCount = 0;
+	
+	int maxSprites = 50000;
+	int numSprites = 101;
+	
+	int floats_per_sprite = 2 + 4 + 4;
+	float* sprite_values = (float*)malloc(sizeof(float)*maxSprites*floats_per_sprite);
+	float* velx = (float*)malloc(sizeof(float)*maxSprites);
+	float* vely = (float*)malloc(sizeof(float)*maxSprites);
+	int i;
+    int val_n = 0;
+	for(i = 0; i < maxSprites; i++)
+	{
+		sprite_values[val_n++] = rand()%screen->w;
+		sprite_values[val_n++] = rand()%screen->h;
+		sprite_values[val_n++] = 0;
+		sprite_values[val_n++] = 0;
+		sprite_values[val_n++] = image->w;
+		sprite_values[val_n++] = image->h;
+		sprite_values[val_n++] = 255;
+		sprite_values[val_n++] = 255;
+		sprite_values[val_n++] = 255;
+		sprite_values[val_n++] = 255;
+		velx[i] = 10 + rand()%screen->w/10;
+		vely[i] = 10 + rand()%screen->h/10;
+		if(rand()%2)
+            velx[i] = -velx[i];
+		if(rand()%2)
+            vely[i] = -vely[i];
+	}
+	
+	
+	Uint8 done = 0;
+	SDL_Event event;
+	while(!done)
+	{
+		while(SDL_PollEvent(&event))
+		{
+			if(event.type == SDL_QUIT)
+				done = 1;
+			else if(event.type == SDL_KEYDOWN)
+			{
+				if(event.key.keysym.sym == SDLK_ESCAPE)
+					done = 1;
+				else if(event.key.keysym.sym == SDLK_SPACE)
+                {
+					done = 1;
+					return_value = 2;
+                }
+				else if(event.key.keysym.sym == SDLK_EQUALS || event.key.keysym.sym == SDLK_PLUS)
+				{
+					if(numSprites < maxSprites)
+						numSprites += 100;
+                    GPU_LogError("Sprites: %d\n", numSprites);
+                    frameCount = 0;
+                    startTime = SDL_GetTicks();
+				}
+				else if(event.key.keysym.sym == SDLK_MINUS)
+				{
+					if(numSprites > 1)
+						numSprites -= 100;
+					if(numSprites < 1)
+                        numSprites = 1;
+                    GPU_LogError("Sprites: %d\n", numSprites);
+                    frameCount = 0;
+                    startTime = SDL_GetTicks();
+				}
+			}
+		}
+		
+		for(i = 0; i < numSprites; i++)
+		{
+		    val_n = floats_per_sprite*i;
+			sprite_values[val_n] += velx[i]*dt;
+			sprite_values[val_n+1] += vely[i]*dt;
+			if(sprite_values[val_n] < 0)
+			{
+				sprite_values[val_n] = 0;
+				velx[i] = -velx[i];
+			}
+			else if(sprite_values[val_n] > screen->w)
+			{
+				sprite_values[val_n] = screen->w;
+				velx[i] = -velx[i];
+			}
+			
+			if(sprite_values[val_n+1] < 0)
+			{
+				sprite_values[val_n+1] = 0;
+				vely[i] = -vely[i];
+			}
+			else if(sprite_values[val_n+1] > screen->h)
+			{
+				sprite_values[val_n+1] = screen->h;
+				vely[i] = -vely[i];
+			}
+		}
+		
+		GPU_Clear(screen);
+		
+        GPU_BlitBatch(image, screen, numSprites, sprite_values, 0);
+		
+		GPU_Flip(screen);
+		
+		frameCount++;
+		if(SDL_GetTicks() - startTime > 5000)
+        {
+			printf("Average FPS: %.2f\n", 1000.0f*frameCount/(SDL_GetTicks() - startTime));
+			frameCount = 0;
+			startTime = SDL_GetTicks();
+        }
+	}
+	
+	printf("Average FPS: %.2f\n", 1000.0f*frameCount/(SDL_GetTicks() - startTime));
+	
+	free(sprite_values);
+	free(velx);
+	free(vely);
+	
+	GPU_FreeImage(image);
+	
+	return return_value;
+}
+
+int do_separate(GPU_Target* screen)
+{
+	
+	GPU_Image* image = GPU_LoadImage("data/small_test.png");
+	if(image == NULL)
+		return -1;
+	
+	int return_value = 0;
+	
+	float dt = 0.010f;
+	
+	Uint32 startTime = SDL_GetTicks();
+	long frameCount = 0;
+	
+	int maxSprites = 50000;
+	int numSprites = 101;
+	
+	float* positions = (float*)malloc(sizeof(float)*maxSprites*2);
+	float* velx = (float*)malloc(sizeof(float)*maxSprites);
+	float* vely = (float*)malloc(sizeof(float)*maxSprites);
+	int i;
+    int val_n = 0;
+	for(i = 0; i < maxSprites; i++)
+	{
+		positions[val_n++] = rand()%screen->w;
+		positions[val_n++] = rand()%screen->h;
+		velx[i] = 10 + rand()%screen->w/10;
+		vely[i] = 10 + rand()%screen->h/10;
+		if(rand()%2)
+            velx[i] = -velx[i];
+		if(rand()%2)
+            vely[i] = -vely[i];
+	}
+	
+	
+	Uint8 done = 0;
+	SDL_Event event;
+	while(!done)
+	{
+		while(SDL_PollEvent(&event))
+		{
+			if(event.type == SDL_QUIT)
+				done = 1;
+			else if(event.type == SDL_KEYDOWN)
+			{
+				if(event.key.keysym.sym == SDLK_ESCAPE)
+					done = 1;
+				else if(event.key.keysym.sym == SDLK_SPACE)
+                {
+					done = 1;
+					return_value = 1;
+                }
+				else if(event.key.keysym.sym == SDLK_EQUALS || event.key.keysym.sym == SDLK_PLUS)
+				{
+					if(numSprites < maxSprites)
+						numSprites += 100;
+                    GPU_LogError("Sprites: %d\n", numSprites);
+                    frameCount = 0;
+                    startTime = SDL_GetTicks();
+				}
+				else if(event.key.keysym.sym == SDLK_MINUS)
+				{
+					if(numSprites > 1)
+						numSprites -= 100;
+					if(numSprites < 1)
+                        numSprites = 1;
+                    GPU_LogError("Sprites: %d\n", numSprites);
+                    frameCount = 0;
+                    startTime = SDL_GetTicks();
+				}
+			}
+		}
+		
+		for(i = 0; i < numSprites; i++)
+		{
+		    val_n = 2*i;
+			positions[val_n] += velx[i]*dt;
+			positions[val_n+1] += vely[i]*dt;
+			if(positions[val_n] < 0)
+			{
+				positions[val_n] = 0;
+				velx[i] = -velx[i];
+			}
+			else if(positions[val_n] > screen->w)
+			{
+				positions[val_n] = screen->w;
+				velx[i] = -velx[i];
+			}
+			
+			if(positions[val_n+1] < 0)
+			{
+				positions[val_n+1] = 0;
+				vely[i] = -vely[i];
+			}
+			else if(positions[val_n+1] > screen->h)
+			{
+				positions[val_n+1] = screen->h;
+				vely[i] = -vely[i];
+			}
+		}
+		
+		GPU_Clear(screen);
+		
+        GPU_BlitBatchSeparate(image, screen, numSprites, positions, NULL, NULL, 0);
+		
+		GPU_Flip(screen);
+		
+		frameCount++;
+		if(SDL_GetTicks() - startTime > 5000)
+        {
+			printf("Average FPS: %.2f\n", 1000.0f*frameCount/(SDL_GetTicks() - startTime));
+			frameCount = 0;
+			startTime = SDL_GetTicks();
+        }
+	}
+	
+	printf("Average FPS: %.2f\n", 1000.0f*frameCount/(SDL_GetTicks() - startTime));
+	
+	free(positions);
+	free(velx);
+	free(vely);
+	
+	GPU_FreeImage(image);
+	
+	return return_value;
+}
+
+int main(int argc, char* argv[])
+{
+	printRenderers();
+	
+	GPU_Target* screen = GPU_Init(800, 600, 0);
+	if(screen == NULL)
+		return -1;
+	
+	printCurrentRenderer();
+	
+	int i = 1;
+	while(i > 0)
+    {
+        if(i == 1)
+            i = do_interleaved(screen);
+        else if(i == 2)
+            i = do_separate(screen);
+        else
+            i = 0;
+    }
+	
+	GPU_Quit();
+	
+	return i;
+}
+
+
