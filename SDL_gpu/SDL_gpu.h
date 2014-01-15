@@ -708,8 +708,9 @@ int GPU_BlitTransformX(GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest, floa
 int GPU_BlitTransformMatrix(GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest, float x, float y, float* matrix3x3);
 
 /*! Performs 'numSprites' blits of the 'src' image to the 'dest' target.
+ * Note: GPU_BlitBatch() cannot interpret a mix of normal values and "passthrough" values due to format ambiguity.
  * \param values A tightly-packed array of position (x,y), color (r,g,b,a) values with a range from 0-255, and src_rect (x,y,w,h) values in image coordinates
- * \param flags Bit flags to control the interpretation of the array parameters
+ * \param flags Bit flags to control the interpretation of the array parameters.  The only passthrough option accepted is GPU_PASSTHROUGH_ALL.
  */
 int GPU_BlitBatch(GPU_Image* src, GPU_Target* dest, unsigned int numSprites, float* values, GPU_BlitFlagEnum flags);
 
