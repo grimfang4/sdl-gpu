@@ -570,8 +570,6 @@ int GPU_BlitBatch(GPU_Image* src, GPU_Target* dest, unsigned int numSprites, flo
         return current_renderer->BlitBatch(current_renderer, src, dest, numSprites, values, flags);
 	
 	// Conversion time...
-	int size = numSprites*(12 + 8 + 16);
-	float* new_values = (float*)malloc(sizeof(float)*size);
 	
 	// Convert condensed interleaved format into full interleaved format for the renderer to use.
 	// Condensed: Each vertex has 2 pos, 4 rect, 4 color
@@ -587,6 +585,14 @@ int GPU_BlitBatch(GPU_Image* src, GPU_Target* dest, unsigned int numSprites, flo
 	Uint8 pass_vertices = (flags & GPU_PASSTHROUGH_VERTICES);
 	Uint8 pass_texcoords = (flags & GPU_PASSTHROUGH_TEXCOORDS);
 	Uint8 pass_colors = (flags & GPU_PASSTHROUGH_COLORS);
+	
+	// Passthrough data is per-vertex.  Non-passthrough is per-sprite.  They can't interleave cleanly.
+	if((flags & GPU_PASSTHROUGH_ALL) != GPU_PASSTHROUGH_ALL)
+    {
+        GPU_LogError("GPU_BlitBatch: Cannot interpret interleaved data using partial passthrough.\n");
+        return -1;
+    }
+	
 	if(pass_vertices)
         src_position_floats_per_sprite = 12; // 4 vertices of x, y, z
 	if(pass_texcoords)
@@ -601,6 +607,9 @@ int GPU_BlitBatch(GPU_Image* src, GPU_Target* dest, unsigned int numSprites, flo
         src_color_floats_per_sprite = 0;
     
 	int src_floats_per_sprite = src_position_floats_per_sprite + src_rect_floats_per_sprite + src_color_floats_per_sprite;
+	
+	int size = numSprites*(12 + 8 + 16);
+	float* new_values = (float*)malloc(sizeof(float)*size);
     
 	int n;  // The sprite number iteration variable.
 	// Source indices (per sprite)
@@ -617,8 +626,6 @@ int GPU_BlitBatch(GPU_Image* src, GPU_Target* dest, unsigned int numSprites, flo
 	float w2 = 0.5f*src->w;  // texcoord helpers for position expansion
 	float h2 = 0.5f*src->h;
 	
-	// FIXME: Does not do the right thing when pass_* is used.
-	//        I need to specify what the expected format is because mixing expanded values with passthrough values leads to format ambiguities.
     for(n = 0; n < numSprites; n++)
     {
         if(no_rects)
