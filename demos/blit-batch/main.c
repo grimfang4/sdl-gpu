@@ -4,7 +4,7 @@
 
 int do_interleaved(GPU_Target* screen)
 {
-	
+	GPU_LogError("do_interleaved()\n");
 	GPU_Image* image = GPU_LoadImage("data/small_test.png");
 	if(image == NULL)
 		return -1;
@@ -140,7 +140,7 @@ int do_interleaved(GPU_Target* screen)
 
 int do_separate(GPU_Target* screen)
 {
-	
+	GPU_LogError("do_separate()\n");
 	GPU_Image* image = GPU_LoadImage("data/small_test.png");
 	if(image == NULL)
 		return -1;
@@ -188,7 +188,7 @@ int do_separate(GPU_Target* screen)
 				else if(event.key.keysym.sym == SDLK_SPACE)
                 {
 					done = 1;
-					return_value = 1;
+					return_value = 3;
                 }
 				else if(event.key.keysym.sym == SDLK_EQUALS || event.key.keysym.sym == SDLK_PLUS)
 				{
@@ -265,6 +265,215 @@ int do_separate(GPU_Target* screen)
 	return return_value;
 }
 
+
+int do_attributes(GPU_Target* screen)
+{
+	GPU_LogError("do_attributes()\n");
+	GPU_Image* image = GPU_LoadImage("data/small_test.png");
+	if(image == NULL)
+		return -1;
+	
+	int return_value = 0;
+	
+	float dt = 0.010f;
+	
+	Uint32 startTime = SDL_GetTicks();
+	long frameCount = 0;
+	
+	int maxSprites = 50000;
+	int numSprites = 101;
+	
+	// 3 pos floats per vertex, 2 texcoords, 4 color components
+	int floats_per_vertex = 3 + 2 + 4;
+	int floats_per_sprite = floats_per_vertex*4;
+	float* sprite_values = (float*)malloc(sizeof(float)*maxSprites*floats_per_sprite);
+	
+	// FIXME: Need a better way to be sure of which shader is current.
+	GPU_Attribute attributes[3] = {
+	    GPU_MakeAttribute(GPU_GetAttributeLocation(screen->context->current_shader_program, "gpu_Vertex"), sprite_values, 
+                                                    GPU_MakeAttributeFormat(3, GPU_FLOAT, 0, floats_per_vertex*sizeof(float), 0)),
+        GPU_MakeAttribute(GPU_GetAttributeLocation(screen->context->current_shader_program, "gpu_TexCoord"), sprite_values, 
+                                                    GPU_MakeAttributeFormat(2, GPU_FLOAT, 0, floats_per_vertex*sizeof(float), 3*sizeof(float))),
+        GPU_MakeAttribute(GPU_GetAttributeLocation(screen->context->current_shader_program, "gpu_Color"), sprite_values, 
+                                                    GPU_MakeAttributeFormat(4, GPU_FLOAT, 0, floats_per_vertex*sizeof(float), 5*sizeof(float)))
+    };
+	
+	float* velx = (float*)malloc(sizeof(float)*maxSprites);
+	float* vely = (float*)malloc(sizeof(float)*maxSprites);
+	int i;
+    int val_n = 0;
+	for(i = 0; i < maxSprites; i++)
+	{
+	    float x = rand()%screen->w;
+		float y = rand()%screen->h;
+		sprite_values[val_n++] = x - image->w/2;
+		sprite_values[val_n++] = y - image->h/2;
+		sprite_values[val_n++] = 0;
+		
+		sprite_values[val_n++] = 0;
+		sprite_values[val_n++] = 0;
+		
+		sprite_values[val_n++] = 1.0f;
+		sprite_values[val_n++] = 1.0f;
+		sprite_values[val_n++] = 1.0f;
+		sprite_values[val_n++] = 1.0f;
+		
+		sprite_values[val_n++] = x + image->w/2;
+		sprite_values[val_n++] = y - image->h/2;
+		sprite_values[val_n++] = 0;
+		
+		sprite_values[val_n++] = 1;
+		sprite_values[val_n++] = 0;
+		
+		sprite_values[val_n++] = 1.0f;
+		sprite_values[val_n++] = 1.0f;
+		sprite_values[val_n++] = 1.0f;
+		sprite_values[val_n++] = 1.0f;
+		
+		sprite_values[val_n++] = x + image->w/2;
+		sprite_values[val_n++] = y + image->h/2;
+		sprite_values[val_n++] = 0;
+		
+		sprite_values[val_n++] = 1;
+		sprite_values[val_n++] = 1;
+		
+		sprite_values[val_n++] = 1.0f;
+		sprite_values[val_n++] = 1.0f;
+		sprite_values[val_n++] = 1.0f;
+		sprite_values[val_n++] = 1.0f;
+		
+		sprite_values[val_n++] = x - image->w/2;
+		sprite_values[val_n++] = y + image->h/2;
+		sprite_values[val_n++] = 0;
+		
+		sprite_values[val_n++] = 0;
+		sprite_values[val_n++] = 1;
+		
+		sprite_values[val_n++] = 1.0f;
+		sprite_values[val_n++] = 1.0f;
+		sprite_values[val_n++] = 1.0f;
+		sprite_values[val_n++] = 1.0f;
+		
+		velx[i] = 10 + rand()%screen->w/10;
+		vely[i] = 10 + rand()%screen->h/10;
+		if(rand()%2)
+            velx[i] = -velx[i];
+		if(rand()%2)
+            vely[i] = -vely[i];
+	}
+	
+	
+	Uint8 done = 0;
+	SDL_Event event;
+	while(!done)
+	{
+		while(SDL_PollEvent(&event))
+		{
+			if(event.type == SDL_QUIT)
+				done = 1;
+			else if(event.type == SDL_KEYDOWN)
+			{
+				if(event.key.keysym.sym == SDLK_ESCAPE)
+					done = 1;
+				else if(event.key.keysym.sym == SDLK_SPACE)
+                {
+					done = 1;
+					return_value = 1;
+                }
+				else if(event.key.keysym.sym == SDLK_EQUALS || event.key.keysym.sym == SDLK_PLUS)
+				{
+					if(numSprites < maxSprites)
+						numSprites += 100;
+                    GPU_LogError("Sprites: %d\n", numSprites);
+                    frameCount = 0;
+                    startTime = SDL_GetTicks();
+				}
+				else if(event.key.keysym.sym == SDLK_MINUS)
+				{
+					if(numSprites > 1)
+						numSprites -= 100;
+					if(numSprites < 1)
+                        numSprites = 1;
+                    GPU_LogError("Sprites: %d\n", numSprites);
+                    frameCount = 0;
+                    startTime = SDL_GetTicks();
+				}
+			}
+		}
+		
+		GPU_Clear(screen);
+		
+		for(i = 0; i < numSprites; i++)
+		{
+		    val_n = floats_per_sprite*i;
+		    float x = sprite_values[val_n] + image->w/2;
+		    float y = sprite_values[val_n+1] + image->h/2;
+		    
+			x += velx[i]*dt;
+			y += vely[i]*dt;
+			if(x < 0)
+			{
+				x = 0;
+				velx[i] = -velx[i];
+			}
+			else if(x > screen->w)
+			{
+				x = screen->w;
+				velx[i] = -velx[i];
+			}
+			
+			if(y < 0)
+			{
+				y = 0;
+				vely[i] = -vely[i];
+			}
+			else if(y > screen->h)
+			{
+				y = screen->h;
+				vely[i] = -vely[i];
+			}
+			
+            sprite_values[val_n] = x - image->w/2;
+            sprite_values[val_n+1] = y - image->h/2;
+            sprite_values[val_n+2] = 0;
+            val_n += floats_per_vertex;
+            sprite_values[val_n] = x + image->w/2;
+            sprite_values[val_n+1] = y - image->h/2;
+            sprite_values[val_n+2] = 0;
+            val_n += floats_per_vertex;
+            sprite_values[val_n] = x + image->w/2;
+            sprite_values[val_n+1] = y + image->h/2;
+            sprite_values[val_n+2] = 0;
+            val_n += floats_per_vertex;
+            sprite_values[val_n] = x - image->w/2;
+            sprite_values[val_n+1] = y + image->h/2;
+            sprite_values[val_n+2] = 0;
+		}
+		
+        GPU_BlitBatchAttributes(image, screen, numSprites, 3, attributes);
+		
+		GPU_Flip(screen);
+		
+		frameCount++;
+		if(SDL_GetTicks() - startTime > 5000)
+        {
+			printf("Average FPS: %.2f\n", 1000.0f*frameCount/(SDL_GetTicks() - startTime));
+			frameCount = 0;
+			startTime = SDL_GetTicks();
+        }
+	}
+	
+	printf("Average FPS: %.2f\n", 1000.0f*frameCount/(SDL_GetTicks() - startTime));
+	
+	free(sprite_values);
+	free(velx);
+	free(vely);
+	
+	GPU_FreeImage(image);
+	
+	return return_value;
+}
+
 int main(int argc, char* argv[])
 {
 	printRenderers();
@@ -282,6 +491,8 @@ int main(int argc, char* argv[])
             i = do_interleaved(screen);
         else if(i == 2)
             i = do_separate(screen);
+        else if(i == 3)
+            i = do_attributes(screen);
         else
             i = 0;
     }

@@ -587,7 +587,7 @@ int GPU_BlitBatch(GPU_Image* src, GPU_Target* dest, unsigned int numSprites, flo
 	Uint8 pass_colors = (flags & GPU_PASSTHROUGH_COLORS);
 	
 	// Passthrough data is per-vertex.  Non-passthrough is per-sprite.  They can't interleave cleanly.
-	if((flags & GPU_PASSTHROUGH_ALL) != GPU_PASSTHROUGH_ALL)
+	if(flags & GPU_PASSTHROUGH_ALL && (flags & GPU_PASSTHROUGH_ALL) != GPU_PASSTHROUGH_ALL)
     {
         GPU_LogError("GPU_BlitBatch: Cannot interpret interleaved data using partial passthrough.\n");
         return -1;
@@ -1120,6 +1120,14 @@ int GPU_BlitBatchSeparate(GPU_Image* src, GPU_Target* dest, unsigned int numSpri
 	return result;
 }
 
+int GPU_BlitBatchAttributes(GPU_Image* src, GPU_Target* dest, unsigned int numSprites, unsigned int numAttributes, GPU_Attribute* attributes)
+{
+	if(current_renderer == NULL || current_renderer->BlitBatchAttributes == NULL || numSprites == 0 || numAttributes == 0 || attributes == NULL)
+		return 0;
+	
+	return current_renderer->BlitBatchAttributes(current_renderer, src, dest, numSprites, numAttributes, attributes);
+}
+
 
 float GPU_SetZ(float z)
 {
@@ -1467,12 +1475,24 @@ const char* GPU_GetShaderMessage(void)
 	return current_renderer->GetShaderMessage(current_renderer);
 }
 
-int GPU_GetAttribLocation(Uint32 program_object, const char* attrib_name)
+int GPU_GetAttributeLocation(Uint32 program_object, const char* attrib_name)
 {
-	if(current_renderer == NULL || current_renderer->GetAttribLocation == NULL)
+	if(current_renderer == NULL || current_renderer->GetAttributeLocation == NULL)
 		return 0;
 	
-	return current_renderer->GetAttribLocation(current_renderer, program_object, attrib_name);
+	return current_renderer->GetAttributeLocation(current_renderer, program_object, attrib_name);
+}
+
+GPU_AttributeFormat GPU_MakeAttributeFormat(int num_elems_per_vertex, GPU_TypeEnum type, Uint8 normalize, int stride_bytes, int offset_bytes)
+{
+    GPU_AttributeFormat f = {num_elems_per_vertex, type, normalize, stride_bytes, offset_bytes};
+    return f;
+}
+
+GPU_Attribute GPU_MakeAttribute(int location, void* values, GPU_AttributeFormat format)
+{
+    GPU_Attribute a = {location, values, format};
+    return a;
 }
 
 int GPU_GetUniformLocation(Uint32 program_object, const char* uniform_name)

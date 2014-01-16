@@ -225,6 +225,36 @@ static const GPU_BlitFlagEnum GPU_USE_DEFAULT_COLORS = 0x20;
 
 #define GPU_PASSTHROUGH_ALL (GPU_PASSTHROUGH_VERTICES | GPU_PASSTHROUGH_TEXCOORDS | GPU_PASSTHROUGH_COLORS)
 
+/*! Type enumeration for GPU_AttributeFormat specifications. */
+typedef Uint32 GPU_TypeEnum;
+// Use OpenGL's values for simpler translation
+static const GPU_BlitFlagEnum GPU_BYTE = 0x1400;
+static const GPU_BlitFlagEnum GPU_UNSIGNED_BYTE = 0x1401;
+static const GPU_BlitFlagEnum GPU_SHORT = 0x1402;
+static const GPU_BlitFlagEnum GPU_UNSIGNED_SHORT = 0x1403;
+static const GPU_BlitFlagEnum GPU_INT = 0x1404;
+static const GPU_BlitFlagEnum GPU_UNSIGNED_INT = 0x1405;
+static const GPU_BlitFlagEnum GPU_FLOAT = 0x1406;
+static const GPU_BlitFlagEnum GPU_DOUBLE = 0x140A;
+
+
+typedef struct GPU_AttributeFormat
+{
+    int num_elems_per_vertex;
+    GPU_TypeEnum type;  // GPU_FLOAT, GPU_INT, GPU_UNSIGNED_INT, etc.
+    Uint8 normalize;
+    int stride_bytes;  // Number of bytes between two vertex specifications
+    int offset_bytes;  // Number of bytes to skip at the beginning of 'values'
+} GPU_AttributeFormat;
+
+typedef struct GPU_Attribute
+{
+    int location;
+    void* values;  // Expect 4 values for each sprite
+    GPU_AttributeFormat format;
+} GPU_Attribute;
+
+
 
 /*! Renderer object which specializes the API to a particular backend. */
 struct GPU_Renderer
@@ -330,6 +360,9 @@ struct GPU_Renderer
 	/*! \see GPU_BlitBatch() */
 	int (*BlitBatch)(GPU_Renderer* renderer, GPU_Image* src, GPU_Target* dest, unsigned int numSprites, float* values, GPU_BlitFlagEnum flags);
 	
+	/*! \see GPU_BlitBatchAttributes() */
+	int (*BlitBatchAttributes)(GPU_Renderer* renderer, GPU_Image* src, GPU_Target* dest, unsigned int numSprites, unsigned int numAttributes, GPU_Attribute* attributes);
+	
 	/*! \see GPU_SetX() */
 	float (*SetZ)(GPU_Renderer* renderer, float z);
 	
@@ -398,7 +431,7 @@ struct GPU_Renderer
     const char* (*GetShaderMessage)(GPU_Renderer* renderer);
 
     /*! \see GPU_GetAttribLocation() */
-    int (*GetAttribLocation)(GPU_Renderer* renderer, Uint32 program_object, const char* attrib_name);
+    int (*GetAttributeLocation)(GPU_Renderer* renderer, Uint32 program_object, const char* attrib_name);
 
     /*! \see GPU_GetUniformLocation() */
     int (*GetUniformLocation)(GPU_Renderer* renderer, Uint32 program_object, const char* uniform_name);
@@ -722,6 +755,11 @@ int GPU_BlitBatch(GPU_Image* src, GPU_Target* dest, unsigned int numSprites, flo
  */
 int GPU_BlitBatchSeparate(GPU_Image* src, GPU_Target* dest, unsigned int numSprites, float* positions, float* src_rects, float* colors, GPU_BlitFlagEnum flags);
 
+/*! Performs 'numSprites' blits of the 'src' image to the 'dest' target.
+ * \param numAttributes Number of shader attributes to use
+ * \param attributes Array of 'numAttributes' shader attribute specifiers
+ */
+int GPU_BlitBatchAttributes(GPU_Image* src, GPU_Target* dest, unsigned int numSprites, unsigned int numAttributes, GPU_Attribute* attributes);
 
 /*! Sets the renderer's z-depth.
     * \return The previous z-depth */
@@ -858,6 +896,12 @@ const char* GPU_GetShaderMessage(void);
 
 /*! Returns an integer representing the location of the specified attribute shader variable. */
 int GPU_GetAttributeLocation(Uint32 program_object, const char* attrib_name);
+
+/*! Returns a filled GPU_AttributeFormat object. */
+GPU_AttributeFormat GPU_MakeAttributeFormat(int num_elems_per_vertex, GPU_TypeEnum type, Uint8 normalize, int stride_bytes, int offset_bytes);
+
+/*! Returns a filled GPU_Attribute object. */
+GPU_Attribute GPU_MakeAttribute(int location, void* values, GPU_AttributeFormat format);
 
 /*! Returns an integer representing the location of the specified uniform shader variable. */
 int GPU_GetUniformLocation(Uint32 program_object, const char* uniform_name);
