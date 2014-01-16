@@ -784,9 +784,11 @@ static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request,
     
     // Create or re-init the current target.  This also creates the GL context and initializes enabled_features.
     #ifdef SDL_GPU_USE_SDL2
-    renderer->CreateTargetFromWindow(renderer, SDL_GetWindowID(window), renderer->current_context_target);
+    if(renderer->CreateTargetFromWindow(renderer, SDL_GetWindowID(window), renderer->current_context_target) == NULL)
+        return NULL;
     #else
-    renderer->CreateTargetFromWindow(renderer, 0, renderer->current_context_target);
+    if(renderer->CreateTargetFromWindow(renderer, 0, renderer->current_context_target) == NULL)
+        return NULL;
     #endif
     
     // Update our renderer info from the current GL context.
@@ -916,24 +918,6 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     
     #endif
     
-
-    #ifdef SDL_GPU_USE_OPENGL
-    GLenum err = glewInit();
-    if (GLEW_OK != err)
-    {
-        /* Problem: glewInit failed, something is seriously wrong. */
-        GPU_LogError("Failed to initialize: %s\n", glewGetErrorString(err));
-    }
-    #endif
-
-    init_features(renderer);
-    
-    if(!renderer->IsFeatureEnabled(renderer, GPU_FEATURE_RENDER_TARGETS))
-        GPU_LogError("RENDER TARGETS not supported.\n");
-    if(!renderer->IsFeatureEnabled(renderer, GPU_FEATURE_NON_POWER_OF_TWO))
-        GPU_LogError("NPOT TEXTURES not supported.\n");
-    if(!renderer->IsFeatureEnabled(renderer, GPU_FEATURE_BLEND_FUNC_SEPARATE))
-        GPU_LogError("BLEND FUNC SEPARATE not supported.\n");
     
     ((TARGET_DATA*)target->data)->handle = 0;
     ((TARGET_DATA*)target->data)->format = GL_RGBA;
@@ -960,6 +944,25 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     cdata->last_use_blending = 0;
     cdata->last_blend_mode = GPU_BLEND_NORMAL;
     cdata->last_camera = target->camera;  // Redundant due to applyTargetCamera()
+    
+
+    #ifdef SDL_GPU_USE_OPENGL
+    GLenum err = glewInit();
+    if (GLEW_OK != err)
+    {
+        // Probably don't have the right GL version for this renderer
+        return NULL;
+    }
+    #endif
+
+    init_features(renderer);
+    
+    if(!renderer->IsFeatureEnabled(renderer, GPU_FEATURE_RENDER_TARGETS))
+        GPU_LogError("RENDER TARGETS not supported.\n");
+    if(!renderer->IsFeatureEnabled(renderer, GPU_FEATURE_NON_POWER_OF_TWO))
+        GPU_LogError("NPOT TEXTURES not supported.\n");
+    if(!renderer->IsFeatureEnabled(renderer, GPU_FEATURE_BLEND_FUNC_SEPARATE))
+        GPU_LogError("BLEND FUNC SEPARATE not supported.\n");
     
     // Set up GL state
     
@@ -2316,8 +2319,10 @@ static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
     
     if(renderer->enabled_features & GPU_FEATURE_RENDER_TARGETS)
     {
-        flushAndClearBlitBufferIfCurrentFramebuffer(renderer, target);
-        glDeleteFramebuffers(1, &data->handle);
+        if(renderer->current_context_target != NULL)
+            flushAndClearBlitBufferIfCurrentFramebuffer(renderer, target);
+        if(data->handle != 0)
+            glDeleteFramebuffers(1, &data->handle);
     }
 
     if(target->image != NULL)
@@ -2336,10 +2341,13 @@ static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
         #endif
     
         #ifdef SDL_GPU_USE_GL_TIER3
-        glDeleteBuffers(2, data->blit_VBO);
+        if(data->handle != 0)
+        {
+            glDeleteBuffers(2, data->blit_VBO);
             #if !defined(SDL_GPU_USE_GLES) || SDL_GPU_GLES_MAJOR_VERSION != 2
             glDeleteVertexArrays(1, &data->blit_VAO);
             #endif
+        }
         #endif
         
         free(target->context->data);

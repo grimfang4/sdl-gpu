@@ -19,6 +19,14 @@ static GPU_Renderer* rendererMap[MAX_ACTIVE_RENDERERS];
 static RendererRegistration rendererRegister[MAX_REGISTERED_RENDERERS];
 
 
+
+static GPU_RendererID makeRendererID(GPU_RendererEnum id, int major_version, int minor_version, int index)
+{
+    GPU_RendererID r = {id, major_version, minor_version, 0, index};
+    return r;
+}
+
+
 void GPU_InitRendererRegister(void);
 
 int GPU_GetNumActiveRenderers(void)
@@ -88,7 +96,7 @@ void GPU_GetRegisteredRendererList(GPU_RendererID* renderers_array)
 GPU_RendererID GPU_GetRendererID(unsigned int index)
 {
 	if(index >= MAX_REGISTERED_RENDERERS)
-		return GPU_MakeRendererID(GPU_RENDERER_UNKNOWN, 0, 0, -1);
+		return makeRendererID(GPU_RENDERER_UNKNOWN, 0, 0, -1);
 	
 	return rendererRegister[index].id;
 }
@@ -113,7 +121,7 @@ void GPU_RegisterRenderers()
 	
 	#ifndef SDL_GPU_DISABLE_OPENGL
         #ifndef SDL_GPU_DISABLE_OPENGL_1
-        rendererRegister[i].id = GPU_MakeRendererID(GPU_RENDERER_OPENGL_1, 1, 1, i);
+        rendererRegister[i].id = makeRendererID(GPU_RENDERER_OPENGL_1, 1, 1, i);
         rendererRegister[i].createFn = &GPU_CreateRenderer_OpenGL_1;
         rendererRegister[i].freeFn = &GPU_FreeRenderer_OpenGL_1;
         
@@ -123,7 +131,7 @@ void GPU_RegisterRenderers()
         #endif
 	
         #ifndef SDL_GPU_DISABLE_OPENGL_2
-        rendererRegister[i].id = GPU_MakeRendererID(GPU_RENDERER_OPENGL_2, 2, 0, i);
+        rendererRegister[i].id = makeRendererID(GPU_RENDERER_OPENGL_2, 2, 0, i);
         rendererRegister[i].createFn = &GPU_CreateRenderer_OpenGL_2;
         rendererRegister[i].freeFn = &GPU_FreeRenderer_OpenGL_2;
         
@@ -133,7 +141,7 @@ void GPU_RegisterRenderers()
         #endif
 	
         #ifndef SDL_GPU_DISABLE_OPENGL_3
-        rendererRegister[i].id = GPU_MakeRendererID(GPU_RENDERER_OPENGL_3, 3, 0, i);
+        rendererRegister[i].id = makeRendererID(GPU_RENDERER_OPENGL_3, 3, 0, i);
         rendererRegister[i].createFn = &GPU_CreateRenderer_OpenGL_3;
         rendererRegister[i].freeFn = &GPU_FreeRenderer_OpenGL_3;
         
@@ -145,7 +153,7 @@ void GPU_RegisterRenderers()
 	
 	#ifndef SDL_GPU_DISABLE_GLES
         #ifndef SDL_GPU_DISABLE_GLES_1
-        rendererRegister[i].id = GPU_MakeRendererID(GPU_RENDERER_GLES_1, 1, 1, i);
+        rendererRegister[i].id = makeRendererID(GPU_RENDERER_GLES_1, 1, 1, i);
         rendererRegister[i].createFn = &GPU_CreateRenderer_GLES_1;
         rendererRegister[i].freeFn = &GPU_FreeRenderer_GLES_1;
         
@@ -154,7 +162,7 @@ void GPU_RegisterRenderers()
             return;
         #endif
         #ifndef SDL_GPU_DISABLE_GLES_2
-        rendererRegister[i].id = GPU_MakeRendererID(GPU_RENDERER_GLES_2, 2, 0, i);
+        rendererRegister[i].id = makeRendererID(GPU_RENDERER_GLES_2, 2, 0, i);
         rendererRegister[i].createFn = &GPU_CreateRenderer_GLES_2;
         rendererRegister[i].freeFn = &GPU_FreeRenderer_GLES_2;
         
@@ -166,6 +174,9 @@ void GPU_RegisterRenderers()
 	
 }
 
+
+static int renderer_order_size = 0;
+static GPU_RendererID renderer_order[GPU_RENDERER_ORDER_MAX];
 
 void GPU_InitRendererRegister(void)
 {
@@ -185,34 +196,48 @@ void GPU_InitRendererRegister(void)
 		rendererMap[i] = NULL;
 	}
 	
+	GPU_GetDefaultRendererOrder(&renderer_order_size, renderer_order);
+	
 	initialized = 1;
 	
 	GPU_RegisterRenderers();
 }
 
 
-
-
-
-GPU_RendererID GPU_GetDefaultRendererID(void)
+void GPU_GetRendererOrder(int* order_size, GPU_RendererID* order)
 {
+    if(order_size != NULL)
+        *order_size = renderer_order_size;
+    
+    if(order != NULL && renderer_order_size > 0)
+        memcpy(order, renderer_order, renderer_order_size*sizeof(GPU_RendererID));
+}
+
+
+
+void GPU_GetDefaultRendererOrder(int* order_size, GPU_RendererID* order)
+{
+    int count = 0;
+    GPU_RendererID default_order[GPU_RENDERER_ORDER_MAX];
     
     #if defined(__ANDROID__) || defined(__IPHONEOS__)
-        #ifdef SDL_GPU_PREFER_GLES_2
-        return GPU_MakeRendererIDRequest(GPU_RENDERER_GLES_2, 2, 0, 0);
-        #else
-        return GPU_MakeRendererIDRequest(GPU_RENDERER_GLES_1, 1, 1, 0);
-        #endif
+        default_order[count++] = GPU_MakeRendererID(GPU_RENDERER_GLES_2, 2, 0, 0);
+        default_order[count++] = GPU_MakeRendererID(GPU_RENDERER_GLES_1, 1, 1, 0);
     #else
-    return GPU_MakeRendererIDRequest(GPU_RENDERER_OPENGL_1, 1, 1, 0);
+        default_order[count++] = GPU_MakeRendererID(GPU_RENDERER_OPENGL_3, 3, 0, 0);
+        default_order[count++] = GPU_MakeRendererID(GPU_RENDERER_OPENGL_2, 2, 0, 0);
+        default_order[count++] = GPU_MakeRendererID(GPU_RENDERER_OPENGL_1, 1, 1, 0);
     #endif
+    
+    if(order_size != NULL)
+        *order_size = count;
+    
+    if(order != NULL && count > 0)
+        memcpy(order, default_order, count*sizeof(GPU_RendererID));
 }
 
 const char* GPU_GetRendererEnumString(GPU_RendererEnum id)
 {
-    if(id == GPU_RENDERER_DEFAULT)
-        id = GPU_GetDefaultRendererID().id;
-    
     if(id == GPU_RENDERER_OPENGL_1)
         return "OpenGL 1.x";
     if(id == GPU_RENDERER_OPENGL_2)
@@ -229,6 +254,10 @@ const char* GPU_GetRendererEnumString(GPU_RendererEnum id)
         return "OpenGLES 3.x";
     if(id == GPU_RENDERER_D3D9)
         return "Direct3D 9";
+    if(id == GPU_RENDERER_D3D10)
+        return "Direct3D 10";
+    if(id == GPU_RENDERER_D3D11)
+        return "Direct3D 11";
     
     return "Unknown";
 }
@@ -281,9 +310,6 @@ GPU_Renderer* GPU_GetRendererByID(GPU_RendererID id)
 // Create a new renderer based on a registered id and store it in the map.
 GPU_Renderer* GPU_AddRenderer(GPU_RendererID id)
 {
-    if(id.id == GPU_RENDERER_DEFAULT)
-        id = GPU_GetDefaultRendererID();
-    
 	int i;
 	for(i = 0; i < MAX_ACTIVE_RENDERERS; i++)
 	{
