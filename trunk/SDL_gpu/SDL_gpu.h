@@ -153,6 +153,9 @@ typedef struct GPU_Context
 	
 	/*! Internal state */
 	Uint32 current_shader_program;
+	Uint32 default_textured_shader_program;
+	Uint32 default_untextured_shader_program;
+	
 	
 	Uint8 shapes_use_blending;
 	GPU_BlendEnum shapes_blend_mode;

@@ -649,7 +649,6 @@ static void changeBlendMode(GPU_Renderer* renderer, GPU_BlendEnum mode)
 static void prepareToRenderImage(GPU_Renderer* renderer, GPU_Target* target, GPU_Image* image)
 {
     GPU_Context* context = renderer->current_context_target->context;
-    CONTEXT_DATA* cdata = (CONTEXT_DATA*)context->data;
     
     // TODO: Store this state and only call it from FlushBlitBuffer()
     glEnable(GL_TEXTURE_2D);
@@ -666,14 +665,13 @@ static void prepareToRenderImage(GPU_Renderer* renderer, GPU_Target* target, GPU
     changeBlendMode(renderer, image->blend_mode);
     
     // If we're using the untextured shader, switch it.
-    if(context->current_shader_program == cdata->default_untextured_shader_program)
-        renderer->ActivateShaderProgram(renderer, cdata->default_textured_shader_program, NULL);
+    if(context->current_shader_program == context->default_untextured_shader_program)
+        renderer->ActivateShaderProgram(renderer, context->default_textured_shader_program, NULL);
 }
 
 static void prepareToRenderShapes(GPU_Renderer* renderer)
 {
     GPU_Context* context = renderer->current_context_target->context;
-    CONTEXT_DATA* cdata = (CONTEXT_DATA*)context->data;
     
     // TODO: Store this state and only call it from FlushBlitBuffer()
     glDisable(GL_TEXTURE_2D);
@@ -684,8 +682,8 @@ static void prepareToRenderShapes(GPU_Renderer* renderer)
     changeBlendMode(renderer, context->shapes_blend_mode);
     
     // If we're using the textured shader, switch it.
-    if(context->current_shader_program == cdata->default_textured_shader_program)
-        renderer->ActivateShaderProgram(renderer, cdata->default_untextured_shader_program, NULL);
+    if(context->current_shader_program == context->default_textured_shader_program)
+        renderer->ActivateShaderProgram(renderer, context->default_untextured_shader_program, NULL);
 }
 
 
@@ -988,8 +986,8 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     renderer->SetLineThickness(renderer, 1.0f);
     
     
-    cdata->default_textured_shader_program = 0;
-    cdata->default_untextured_shader_program = 0;
+    target->context->default_textured_shader_program = 0;
+    target->context->default_untextured_shader_program = 0;
     target->context->current_shader_program = 0;
     
     #ifndef SDL_GPU_DISABLE_SHADERS
@@ -1012,7 +1010,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
         if(!p)
             GPU_LogError("Failed to link default textured shader program: %s\n", renderer->GetShaderMessage(renderer));
         
-        cdata->default_textured_shader_program = p;
+        target->context->default_textured_shader_program = p;
         
         #ifdef SDL_GPU_USE_GL_TIER3
         TARGET_DATA* data = ((TARGET_DATA*)target->data);
@@ -1038,7 +1036,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
         
         glUseProgram(p);
         
-        cdata->default_untextured_shader_program = target->context->current_shader_program = p;
+        target->context->default_untextured_shader_program = target->context->current_shader_program = p;
         
         #ifdef SDL_GPU_USE_GL_TIER3
             // Get locations of the attributes in the shader
@@ -3701,8 +3699,8 @@ static void DetachShader(GPU_Renderer* renderer, Uint32 program_object, Uint32 s
 
 static Uint8 IsDefaultShaderProgram(GPU_Renderer* renderer, Uint32 program_object)
 {
-    CONTEXT_DATA* cdata = (CONTEXT_DATA*)renderer->current_context_target->context->data;
-    return (program_object == cdata->default_textured_shader_program || program_object == cdata->default_untextured_shader_program);
+    GPU_Context* context = renderer->current_context_target->context;
+    return (program_object == context->default_textured_shader_program || program_object == context->default_untextured_shader_program);
 }
 
 static void ActivateShaderProgram(GPU_Renderer* renderer, Uint32 program_object, GPU_ShaderBlock* block)
@@ -3712,15 +3710,14 @@ static void ActivateShaderProgram(GPU_Renderer* renderer, Uint32 program_object,
     if(target == NULL)
         return;
     
-    CONTEXT_DATA* cdata = (CONTEXT_DATA*)target->context->data;
     if(program_object == 0) // Implies default shader
     {
         // Already using a default shader?
-        if(target->context->current_shader_program == cdata->default_textured_shader_program
-            || target->context->current_shader_program == cdata->default_untextured_shader_program)
+        if(target->context->current_shader_program == target->context->default_textured_shader_program
+            || target->context->current_shader_program == target->context->default_untextured_shader_program)
             return;
         
-        program_object = cdata->default_untextured_shader_program;
+        program_object = target->context->default_untextured_shader_program;
     }
     
     if(target == NULL || target->context->current_shader_program == program_object)
@@ -3732,9 +3729,9 @@ static void ActivateShaderProgram(GPU_Renderer* renderer, Uint32 program_object,
         #ifdef SDL_GPU_USE_GL_TIER3
         // Set up our shader attribute and uniform locations
         TARGET_DATA* data = ((TARGET_DATA*)target->data);
-        if(program_object == cdata->default_textured_shader_program)
+        if(program_object == target->context->default_textured_shader_program)
             data->current_shader_block = data->shader_block[0];
-        else if(program_object == cdata->default_untextured_shader_program)
+        else if(program_object == target->context->default_untextured_shader_program)
             data->current_shader_block = data->shader_block[1];
         else
         {

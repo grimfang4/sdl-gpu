@@ -27,9 +27,6 @@
 
 typedef struct ContextData_OpenGL_1
 {
-	Uint32 default_textured_shader_program;
-	Uint32 default_untextured_shader_program;
-	
 	SDL_Color last_color;
 	Uint8 last_use_blending;
 	GPU_BlendEnum last_blend_mode;
