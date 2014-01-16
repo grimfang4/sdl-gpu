@@ -363,12 +363,6 @@ struct GPU_Renderer
 	/*! \see GPU_BlitBatchAttributes() */
 	int (*BlitBatchAttributes)(GPU_Renderer* renderer, GPU_Image* src, GPU_Target* dest, unsigned int numSprites, unsigned int numAttributes, GPU_Attribute* attributes);
 	
-	/*! \see GPU_SetX() */
-	float (*SetZ)(GPU_Renderer* renderer, float z);
-	
-	/*! \see GPU_GetZ() */
-	float (*GetZ)(GPU_Renderer* renderer);
-	
 	/*! \see GPU_GenerateMipmaps() */
 	void (*GenerateMipmaps)(GPU_Renderer* renderer, GPU_Image* image);
 
@@ -760,14 +754,6 @@ int GPU_BlitBatchSeparate(GPU_Image* src, GPU_Target* dest, unsigned int numSpri
  * \param attributes Array of 'numAttributes' shader attribute specifiers
  */
 int GPU_BlitBatchAttributes(GPU_Image* src, GPU_Target* dest, unsigned int numSprites, unsigned int numAttributes, GPU_Attribute* attributes);
-
-/*! Sets the renderer's z-depth.
-    * \return The previous z-depth */
-float GPU_SetZ(float z);
-
-/*! Gets the renderer's z-depth.
-    * \return The current z-depth */
-float GPU_GetZ(void);
 
 /*! Loads mipmaps for the given image, if supported by the renderer. */
 void GPU_GenerateMipmaps(GPU_Image* image);

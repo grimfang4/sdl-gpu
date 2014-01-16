@@ -594,7 +594,7 @@ int GPU_BlitBatch(GPU_Image* src, GPU_Target* dest, unsigned int numSprites, flo
     }
 	
 	if(pass_vertices)
-        src_position_floats_per_sprite = 12; // 4 vertices of x, y, z
+        src_position_floats_per_sprite = 8; // 4 vertices of x, y
 	if(pass_texcoords)
         src_rect_floats_per_sprite = 8; // 4 vertices of s, t
 	if(pass_colors)
@@ -608,7 +608,7 @@ int GPU_BlitBatch(GPU_Image* src, GPU_Target* dest, unsigned int numSprites, flo
     
 	int src_floats_per_sprite = src_position_floats_per_sprite + src_rect_floats_per_sprite + src_color_floats_per_sprite;
 	
-	int size = numSprites*(12 + 8 + 16);
+	int size = numSprites*(8 + 8 + 16);
 	float* new_values = (float*)malloc(sizeof(float)*size);
     
 	int n;  // The sprite number iteration variable.
@@ -618,10 +618,10 @@ int GPU_BlitBatch(GPU_Image* src, GPU_Target* dest, unsigned int numSprites, flo
 	int color_n = src_position_floats_per_sprite + src_rect_floats_per_sprite;
 	// Dest indices
 	int vert_i = 0;
-	int texcoord_i = 3;
-	int color_i = 5;
+	int texcoord_i = 2;
+	int color_i = 4;
 	// Dest float stride
-	int floats_per_vertex = 9;
+	int floats_per_vertex = 8;
 	
 	float w2 = 0.5f*src->w;  // texcoord helpers for position expansion
 	float h2 = 0.5f*src->h;
@@ -702,19 +702,15 @@ int GPU_BlitBatch(GPU_Image* src, GPU_Target* dest, unsigned int numSprites, flo
         {
             new_values[vert_i] = 0.0f;
             new_values[vert_i+1] = 0.0f;
-            new_values[vert_i+2] = 0;
             vert_i += floats_per_vertex;
             new_values[vert_i] = 0.0f;
             new_values[vert_i+1] = 0.0f;
-            new_values[vert_i+2] = 0;
             vert_i += floats_per_vertex;
             new_values[vert_i] = 0.0f;
             new_values[vert_i+1] = 0.0f;
-            new_values[vert_i+2] = 0;
             vert_i += floats_per_vertex;
             new_values[vert_i] = 0.0f;
             new_values[vert_i+1] = 0.0f;
-            new_values[vert_i+2] = 0;
             vert_i += floats_per_vertex;
         }
         else
@@ -728,19 +724,15 @@ int GPU_BlitBatch(GPU_Image* src, GPU_Target* dest, unsigned int numSprites, flo
                 
                 new_values[vert_i] = x - w2;
                 new_values[vert_i+1] = y - h2;
-                new_values[vert_i+2] = 0;
                 vert_i += floats_per_vertex;
                 new_values[vert_i] = x + w2;
                 new_values[vert_i+1] = y - h2;
-                new_values[vert_i+2] = 0;
                 vert_i += floats_per_vertex;
                 new_values[vert_i] = x + w2;
                 new_values[vert_i+1] = y + h2;
-                new_values[vert_i+2] = 0;
                 vert_i += floats_per_vertex;
                 new_values[vert_i] = x - w2;
                 new_values[vert_i+1] = y + h2;
-                new_values[vert_i+2] = 0;
                 vert_i += floats_per_vertex;
             }
             else
@@ -748,19 +740,15 @@ int GPU_BlitBatch(GPU_Image* src, GPU_Target* dest, unsigned int numSprites, flo
                 // 4 vertices all in a row
                 new_values[vert_i] = values[pos_n];
                 new_values[vert_i+1] = values[pos_n+1];
-                new_values[vert_i+2] = values[pos_n+2];
                 vert_i += floats_per_vertex;
-                new_values[vert_i] = values[pos_n+3];
-                new_values[vert_i+1] = values[pos_n+4];
-                new_values[vert_i+2] = values[pos_n+5];
+                new_values[vert_i] = values[pos_n+2];
+                new_values[vert_i+1] = values[pos_n+3];
+                vert_i += floats_per_vertex;
+                new_values[vert_i] = values[pos_n+4];
+                new_values[vert_i+1] = values[pos_n+5];
                 vert_i += floats_per_vertex;
                 new_values[vert_i] = values[pos_n+6];
                 new_values[vert_i+1] = values[pos_n+7];
-                new_values[vert_i+2] = values[pos_n+8];
-                vert_i += floats_per_vertex;
-                new_values[vert_i] = values[pos_n+9];
-                new_values[vert_i+1] = values[pos_n+10];
-                new_values[vert_i+2] = values[pos_n+11];
                 vert_i += floats_per_vertex;
                 pos_n += src_floats_per_sprite;
             }
@@ -873,14 +861,14 @@ int GPU_BlitBatchSeparate(GPU_Image* src, GPU_Target* dest, unsigned int numSpri
 	Uint8 pass_texcoords = (flags & GPU_PASSTHROUGH_TEXCOORDS);
 	Uint8 pass_colors = (flags & GPU_PASSTHROUGH_COLORS);
 	if(pass_vertices)
-        src_position_floats_per_sprite = 12; // 4 vertices of x, y, z
+        src_position_floats_per_sprite = 8; // 4 vertices of x, y
 	if(pass_texcoords)
         src_rect_floats_per_sprite = 8; // 4 vertices of s, t
 	if(pass_colors)
         src_color_floats_per_sprite = 16; // 4 vertices of r, g, b, a
     
 	int src_floats_per_sprite = src_position_floats_per_sprite + src_rect_floats_per_sprite + src_color_floats_per_sprite;
-	int size = numSprites*(12 + 8 + 16);
+	int size = numSprites*(8 + 8 + 16);
 	float* values = (float*)malloc(sizeof(float)*size);
 	
 	int n;  // The sprite number iteration variable.
@@ -890,10 +878,10 @@ int GPU_BlitBatchSeparate(GPU_Image* src, GPU_Target* dest, unsigned int numSpri
 	int color_n = 0;
 	// Dest indices
 	int vert_i = 0;
-	int texcoord_i = 3;
-	int color_i = 5;
+	int texcoord_i = 2;
+	int color_i = 4;
 	// Dest float stride
-	int floats_per_vertex = 9;
+	int floats_per_vertex = 8;
 	
 	float w2 = 0.5f*src->w;  // texcoord helpers for position expansion
 	float h2 = 0.5f*src->h;
@@ -974,19 +962,15 @@ int GPU_BlitBatchSeparate(GPU_Image* src, GPU_Target* dest, unsigned int numSpri
         {
             values[vert_i] = 0.0f;
             values[vert_i+1] = 0.0f;
-            values[vert_i+2] = 0;
             vert_i += floats_per_vertex;
             values[vert_i] = 0.0f;
             values[vert_i+1] = 0.0f;
-            values[vert_i+2] = 0;
             vert_i += floats_per_vertex;
             values[vert_i] = 0.0f;
             values[vert_i+1] = 0.0f;
-            values[vert_i+2] = 0;
             vert_i += floats_per_vertex;
             values[vert_i] = 0.0f;
             values[vert_i+1] = 0.0f;
-            values[vert_i+2] = 0;
             vert_i += floats_per_vertex;
         }
         else
@@ -998,19 +982,15 @@ int GPU_BlitBatchSeparate(GPU_Image* src, GPU_Target* dest, unsigned int numSpri
                 float y = positions[pos_n++];
                 values[vert_i] = x - w2;
                 values[vert_i+1] = y - h2;
-                values[vert_i+2] = 0;
                 vert_i += floats_per_vertex;
                 values[vert_i] = x + w2;
                 values[vert_i+1] = y - h2;
-                values[vert_i+2] = 0;
                 vert_i += floats_per_vertex;
                 values[vert_i] = x + w2;
                 values[vert_i+1] = y + h2;
-                values[vert_i+2] = 0;
                 vert_i += floats_per_vertex;
                 values[vert_i] = x - w2;
                 values[vert_i+1] = y + h2;
-                values[vert_i+2] = 0;
                 vert_i += floats_per_vertex;
             }
             else
@@ -1018,22 +998,19 @@ int GPU_BlitBatchSeparate(GPU_Image* src, GPU_Target* dest, unsigned int numSpri
                 // 4 vertices all in a row
                 values[vert_i] = positions[pos_n++];
                 values[vert_i+1] = positions[pos_n++];
-                values[vert_i+2] = positions[pos_n++];
                 vert_i += floats_per_vertex;
                 values[vert_i] = positions[pos_n++];
                 values[vert_i+1] = positions[pos_n++];
-                values[vert_i+2] = positions[pos_n++];
                 vert_i += floats_per_vertex;
                 values[vert_i] = positions[pos_n++];
                 values[vert_i+1] = positions[pos_n++];
-                values[vert_i+2] = positions[pos_n++];
                 vert_i += floats_per_vertex;
                 values[vert_i] = positions[pos_n++];
                 values[vert_i+1] = positions[pos_n++];
-                values[vert_i+2] = positions[pos_n++];
                 vert_i += floats_per_vertex;
             }
         }
+        
         if(colors == NULL)
         {
                 values[color_i] = 1.0f;
@@ -1126,23 +1103,6 @@ int GPU_BlitBatchAttributes(GPU_Image* src, GPU_Target* dest, unsigned int numSp
 		return 0;
 	
 	return current_renderer->BlitBatchAttributes(current_renderer, src, dest, numSprites, numAttributes, attributes);
-}
-
-
-float GPU_SetZ(float z)
-{
-	if(current_renderer == NULL || current_renderer->SetZ == NULL)
-		return 0.0f;
-	
-	return current_renderer->SetZ(current_renderer, z);
-}
-
-float GPU_GetZ(void)
-{
-	if(current_renderer == NULL || current_renderer->GetZ == NULL)
-		return 0.0f;
-	
-	return current_renderer->GetZ(current_renderer);
 }
 
 void GPU_GenerateMipmaps(GPU_Image* image)

@@ -23,18 +23,18 @@ TARGET_DATA  // Appropriate type for the target data (via pointer)
 #define GPU_BLIT_BUFFER_INIT_MAX_NUM_VERTICES (GPU_BLIT_BUFFER_VERTICES_PER_SPRITE*1000)
 
 #ifndef SDL_GPU_USE_GL_TIER3
-// x, y, z, s, t
-#define GPU_BLIT_BUFFER_FLOATS_PER_VERTEX 5
+// x, y, s, t
+#define GPU_BLIT_BUFFER_FLOATS_PER_VERTEX 4
 #else
-// x, y, z, s, t, r, g, b, a
-#define GPU_BLIT_BUFFER_FLOATS_PER_VERTEX 9
+// x, y, s, t, r, g, b, a
+#define GPU_BLIT_BUFFER_FLOATS_PER_VERTEX 8
 #endif
 
 // bytes per vertex
 #define GPU_BLIT_BUFFER_STRIDE (sizeof(float)*GPU_BLIT_BUFFER_FLOATS_PER_VERTEX)
 #define GPU_BLIT_BUFFER_VERTEX_OFFSET 0
-#define GPU_BLIT_BUFFER_TEX_COORD_OFFSET 3
-#define GPU_BLIT_BUFFER_COLOR_OFFSET 5
+#define GPU_BLIT_BUFFER_TEX_COORD_OFFSET 2
+#define GPU_BLIT_BUFFER_COLOR_OFFSET 4
 
 
 #include <math.h>
@@ -117,7 +117,7 @@ void main(void)\n\
 #define TEXTURED_VERTEX_SHADER_SOURCE \
 "#version 130\n\
 \
-attribute vec3 gpu_Vertex;\n\
+attribute vec2 gpu_Vertex;\n\
 attribute vec2 gpu_TexCoord;\n\
 attribute vec4 gpu_Color;\n\
 uniform mat4 modelViewProjection;\n\
@@ -129,14 +129,14 @@ void main(void)\n\
 {\n\
 	color = gpu_Color;\n\
 	texCoord = vec2(gpu_TexCoord);\n\
-	gl_Position = modelViewProjection * vec4(gpu_Vertex, 1.0);\n\
+	gl_Position = modelViewProjection * vec4(gpu_Vertex, 0.0, 1.0);\n\
 }"
 
 // Tier 3 uses shader attributes to send position, texcoord, and color data for each vertex.
 #define UNTEXTURED_VERTEX_SHADER_SOURCE \
 "#version 130\n\
 \
-attribute vec3 gpu_Vertex;\n\
+attribute vec2 gpu_Vertex;\n\
 attribute vec4 gpu_Color;\n\
 uniform mat4 modelViewProjection;\n\
 \
@@ -145,7 +145,7 @@ varying vec4 color;\n\
 void main(void)\n\
 {\n\
 	color = gpu_Color;\n\
-	gl_Position = modelViewProjection * vec4(gpu_Vertex, 1.0);\n\
+	gl_Position = modelViewProjection * vec4(gpu_Vertex, 0.0, 1.0);\n\
 }"
 
 
@@ -178,7 +178,7 @@ void main(void)\n\
 precision mediump float;\n\
 precision mediump int;\n\
 \
-attribute vec3 gpu_Vertex;\n\
+attribute vec2 gpu_Vertex;\n\
 attribute vec2 gpu_TexCoord;\n\
 attribute vec4 gpu_Color;\n\
 uniform mat4 modelViewProjection;\n\
@@ -190,7 +190,7 @@ void main(void)\n\
 {\n\
 	color = gpu_Color;\n\
 	texCoord = vec2(gpu_TexCoord);\n\
-	gl_Position = modelViewProjection * vec4(gpu_Vertex, 1.0);\n\
+	gl_Position = modelViewProjection * vec4(gpu_Vertex, 0.0, 1.0);\n\
 }"
 
 // Tier 3 uses shader attributes to send position, texcoord, and color data for each vertex.
@@ -199,7 +199,7 @@ void main(void)\n\
 precision mediump float;\n\
 precision mediump int;\n\
 \
-attribute vec3 gpu_Vertex;\n\
+attribute vec2 gpu_Vertex;\n\
 attribute vec4 gpu_Color;\n\
 uniform mat4 modelViewProjection;\n\
 \
@@ -208,7 +208,7 @@ varying vec4 color;\n\
 void main(void)\n\
 {\n\
 	color = gpu_Color;\n\
-	gl_Position = modelViewProjection * vec4(gpu_Vertex, 1.0);\n\
+	gl_Position = modelViewProjection * vec4(gpu_Vertex, 0.0, 1.0);\n\
 }"
 
 
@@ -958,7 +958,6 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     target->context->shapes_blend_mode = GPU_BLEND_NORMAL;
     
     SDL_Color white = {255, 255, 255, 255};
-    cdata->z = 0;
     cdata->last_color = white;
     cdata->last_use_blending = 0;
     cdata->last_blend_mode = GPU_BLEND_NORMAL;
@@ -2441,7 +2440,6 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_T
         int tex_index = GPU_BLIT_BUFFER_TEX_COORD_OFFSET + cdata->blit_buffer_num_vertices*GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
         blit_buffer[vert_index] = dx1;
         blit_buffer[vert_index+1] = dy1;
-        blit_buffer[vert_index+2] = 0.0f;
         blit_buffer[tex_index] = x1;
         blit_buffer[tex_index+1] = y1;
         #ifdef SDL_GPU_USE_GL_TIER3
@@ -2456,7 +2454,6 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_T
         tex_index += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
         blit_buffer[vert_index] = dx2;
         blit_buffer[vert_index+1] = dy1;
-        blit_buffer[vert_index+2] = 0.0f;
         blit_buffer[tex_index] = x2;
         blit_buffer[tex_index+1] = y1;
         #ifdef SDL_GPU_USE_GL_TIER3
@@ -2472,7 +2469,6 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_T
         tex_index += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
         blit_buffer[vert_index] = dx2;
         blit_buffer[vert_index+1] = dy2;
-        blit_buffer[vert_index+2] = 0.0f;
         blit_buffer[tex_index] = x2;
         blit_buffer[tex_index+1] = y2;
         #ifdef SDL_GPU_USE_GL_TIER3
@@ -2488,7 +2484,6 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_T
         tex_index += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
         blit_buffer[vert_index] = dx1;
         blit_buffer[vert_index+1] = dy2;
-        blit_buffer[vert_index+2] = 0.0f;
         blit_buffer[tex_index] = x1;
         blit_buffer[tex_index+1] = y2;
         #ifdef SDL_GPU_USE_GL_TIER3
@@ -2681,7 +2676,6 @@ static int BlitTransformX(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcr
         int tex_index = GPU_BLIT_BUFFER_TEX_COORD_OFFSET + cdata->blit_buffer_num_vertices*GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
         blit_buffer[vert_index] = dx1;
         blit_buffer[vert_index+1] = dy1;
-        blit_buffer[vert_index+2] = 0.0f;
         blit_buffer[tex_index] = x1;
         blit_buffer[tex_index+1] = y1;
         #ifdef SDL_GPU_USE_GL_TIER3
@@ -2696,7 +2690,6 @@ static int BlitTransformX(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcr
         tex_index += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
         blit_buffer[vert_index] = dx3;
         blit_buffer[vert_index+1] = dy3;
-        blit_buffer[vert_index+2] = 0.0f;
         blit_buffer[tex_index] = x2;
         blit_buffer[tex_index+1] = y1;
         #ifdef SDL_GPU_USE_GL_TIER3
@@ -2712,7 +2705,6 @@ static int BlitTransformX(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcr
         tex_index += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
         blit_buffer[vert_index] = dx2;
         blit_buffer[vert_index+1] = dy2;
-        blit_buffer[vert_index+2] = 0.0f;
         blit_buffer[tex_index] = x2;
         blit_buffer[tex_index+1] = y2;
         #ifdef SDL_GPU_USE_GL_TIER3
@@ -2728,7 +2720,6 @@ static int BlitTransformX(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcr
         tex_index += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
         blit_buffer[vert_index] = dx4;
         blit_buffer[vert_index+1] = dy4;
-        blit_buffer[vert_index+2] = 0.0f;
         blit_buffer[tex_index] = x1;
         blit_buffer[tex_index+1] = y2;
         #ifdef SDL_GPU_USE_GL_TIER3
@@ -2845,6 +2836,8 @@ static int BlitBatch(GPU_Renderer* renderer, GPU_Image* src, GPU_Target* dest, u
 
         renderer->FlushBlitBuffer(renderer);
         
+        int floats_per_vertex = 8;
+        
         // Only do so many at a time
         int partial_num_sprites = cdata->blit_buffer_max_num_vertices/4;
         while(1)
@@ -2873,39 +2866,39 @@ static int BlitBatch(GPU_Renderer* renderer, GPU_Image* src, GPU_Target* dest, u
     #ifdef SDL_GPU_USE_GL_TIER1
 
             float* vertex_pointer = values;
-            float* texcoord_pointer = values + 3;
-            float* color_pointer = values + 5;
+            float* texcoord_pointer = values + 2;
+            float* color_pointer = values + 4;
             
             glBegin(GL_QUADS);
             for(i = 0; i < numSprites; i++)
             {
                 glColor4f( *color_pointer, *(color_pointer+1), *(color_pointer+2), *(color_pointer+3) );
                 glTexCoord2f( *texcoord_pointer, *(texcoord_pointer+1) );
-                glVertex3f( *vertex_pointer, *(vertex_pointer+1), *(vertex_pointer+2) );
-                color_pointer += 9;
-                texcoord_pointer += 9;
-                vertex_pointer += 9;
+                glVertex3f( *vertex_pointer, *(vertex_pointer+1), 0.0f );
+                color_pointer += floats_per_vertex;
+                texcoord_pointer += floats_per_vertex;
+                vertex_pointer += floats_per_vertex;
 
                 glColor4f( *color_pointer, *(color_pointer+1), *(color_pointer+2), *(color_pointer+3) );
                 glTexCoord2f( *texcoord_pointer, *(texcoord_pointer+1) );
-                glVertex3f( *vertex_pointer, *(vertex_pointer+1), *(vertex_pointer+2) );
-                color_pointer += 9;
-                texcoord_pointer += 9;
-                vertex_pointer += 9;
+                glVertex3f( *vertex_pointer, *(vertex_pointer+1), 0.0f );
+                color_pointer += floats_per_vertex;
+                texcoord_pointer += floats_per_vertex;
+                vertex_pointer += floats_per_vertex;
 
                 glColor4f( *color_pointer, *(color_pointer+1), *(color_pointer+2), *(color_pointer+3) );
                 glTexCoord2f( *texcoord_pointer, *(texcoord_pointer+1) );
-                glVertex3f( *vertex_pointer, *(vertex_pointer+1), *(vertex_pointer+2) );
-                color_pointer += 9;
-                texcoord_pointer += 9;
-                vertex_pointer += 9;
+                glVertex3f( *vertex_pointer, *(vertex_pointer+1), 0.0f );
+                color_pointer += floats_per_vertex;
+                texcoord_pointer += floats_per_vertex;
+                vertex_pointer += floats_per_vertex;
 
                 glColor4f( *color_pointer, *(color_pointer+1), *(color_pointer+2), *(color_pointer+3) );
                 glTexCoord2f( *texcoord_pointer, *(texcoord_pointer+1) );
-                glVertex3f( *vertex_pointer, *(vertex_pointer+1), *(vertex_pointer+2) );
-                color_pointer += 9;
-                texcoord_pointer += 9;
-                vertex_pointer += 9;
+                glVertex3f( *vertex_pointer, *(vertex_pointer+1), 0.0f );
+                color_pointer += floats_per_vertex;
+                texcoord_pointer += floats_per_vertex;
+                vertex_pointer += floats_per_vertex;
             }
             glEnd();
     #elif defined(SDL_GPU_USE_GL_TIER2)
@@ -2914,9 +2907,10 @@ static int BlitBatch(GPU_Renderer* renderer, GPU_Image* src, GPU_Target* dest, u
             glEnableClientState(GL_TEXTURE_COORD_ARRAY);
             glEnableClientState(GL_COLOR_ARRAY);
             
-            glVertexPointer(3, GL_FLOAT, GPU_BLIT_BUFFER_STRIDE, values + GPU_BLIT_BUFFER_VERTEX_OFFSET);
-            glTexCoordPointer(2, GL_FLOAT, GPU_BLIT_BUFFER_STRIDE, values + GPU_BLIT_BUFFER_TEX_COORD_OFFSET);
-            glColorPointer(4, GL_FLOAT, GPU_BLIT_BUFFER_STRIDE, values + GPU_BLIT_BUFFER_COLOR_OFFSET);
+            int stride = 8*sizeof(float);
+            glVertexPointer(2, GL_FLOAT, stride, values + GPU_BLIT_BUFFER_VERTEX_OFFSET);
+            glTexCoordPointer(2, GL_FLOAT, stride, values + GPU_BLIT_BUFFER_TEX_COORD_OFFSET);
+            glColorPointer(4, GL_FLOAT, stride, values + GPU_BLIT_BUFFER_COLOR_OFFSET);
 
             glDrawElements(GL_TRIANGLES, cdata->index_buffer_num_vertices, GL_UNSIGNED_SHORT, cdata->index_buffer);
 
@@ -2952,7 +2946,7 @@ static int BlitBatch(GPU_Renderer* renderer, GPU_Image* src, GPU_Target* dest, u
             if(data->current_shader_block.position_loc >= 0)
             {
                 glEnableVertexAttribArray(data->current_shader_block.position_loc);  // Tell GL to use client-side attribute data
-                glVertexAttribPointer(data->current_shader_block.position_loc, 3, GL_FLOAT, GL_FALSE, GPU_BLIT_BUFFER_STRIDE, 0);  // Tell how the data is formatted
+                glVertexAttribPointer(data->current_shader_block.position_loc, 2, GL_FLOAT, GL_FALSE, GPU_BLIT_BUFFER_STRIDE, 0);  // Tell how the data is formatted
             }
             if(data->current_shader_block.texcoord_loc >= 0)
             {
@@ -2973,7 +2967,7 @@ static int BlitBatch(GPU_Renderer* renderer, GPU_Image* src, GPU_Target* dest, u
 
     #endif
 
-            values += partial_num_sprites*4*9;  // 9 floats per vertex
+            values += partial_num_sprites*4*floats_per_vertex;
             
             numSprites -= partial_num_sprites;
             
@@ -3174,24 +3168,6 @@ static int BlitBatchAttributes(GPU_Renderer* renderer, GPU_Image* src, GPU_Targe
     }
 
     return 0;
-}
-
-static float SetZ(GPU_Renderer* renderer, float z)
-{
-    if(renderer == NULL)
-        return 0.0f;
-
-    float oldZ = ((CONTEXT_DATA*)renderer->current_context_target->context->data)->z;
-    ((CONTEXT_DATA*)renderer->current_context_target->context->data)->z = z;
-
-    return oldZ;
-}
-
-static float GetZ(GPU_Renderer* renderer)
-{
-    if(renderer == NULL)
-        return 0.0f;
-    return ((CONTEXT_DATA*)renderer->current_context_target->context->data)->z;
 }
 
 static void GenerateMipmaps(GPU_Renderer* renderer, GPU_Image* image)
@@ -3448,22 +3424,22 @@ static void FlushBlitBuffer(GPU_Renderer* renderer)
         for(i = 0; i < cdata->blit_buffer_num_vertices; i += GPU_BLIT_BUFFER_VERTICES_PER_SPRITE)
         {
             glTexCoord2f( *texcoord_pointer, *(texcoord_pointer+1) );
-            glVertex3f( *vertex_pointer, *(vertex_pointer+1), *(vertex_pointer+2) );
+            glVertex3f( *vertex_pointer, *(vertex_pointer+1), 0.0f );
             texcoord_pointer += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
             vertex_pointer += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
 
             glTexCoord2f( *texcoord_pointer, *(texcoord_pointer+1) );
-            glVertex3f( *vertex_pointer, *(vertex_pointer+1), *(vertex_pointer+2) );
+            glVertex3f( *vertex_pointer, *(vertex_pointer+1), 0.0f );
             texcoord_pointer += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
             vertex_pointer += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
 
             glTexCoord2f( *texcoord_pointer, *(texcoord_pointer+1) );
-            glVertex3f( *vertex_pointer, *(vertex_pointer+1), *(vertex_pointer+2) );
+            glVertex3f( *vertex_pointer, *(vertex_pointer+1), 0.0f );
             texcoord_pointer += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
             vertex_pointer += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
 
             glTexCoord2f( *texcoord_pointer, *(texcoord_pointer+1) );
-            glVertex3f( *vertex_pointer, *(vertex_pointer+1), *(vertex_pointer+2) );
+            glVertex3f( *vertex_pointer, *(vertex_pointer+1), 0.0f );
             texcoord_pointer += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
             vertex_pointer += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
         }
@@ -3472,7 +3448,7 @@ static void FlushBlitBuffer(GPU_Renderer* renderer)
 
         glEnableClientState(GL_VERTEX_ARRAY);
         glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-        glVertexPointer(3, GL_FLOAT, GPU_BLIT_BUFFER_STRIDE, cdata->blit_buffer + GPU_BLIT_BUFFER_VERTEX_OFFSET);
+        glVertexPointer(2, GL_FLOAT, GPU_BLIT_BUFFER_STRIDE, cdata->blit_buffer + GPU_BLIT_BUFFER_VERTEX_OFFSET);
         glTexCoordPointer(2, GL_FLOAT, GPU_BLIT_BUFFER_STRIDE, cdata->blit_buffer + GPU_BLIT_BUFFER_TEX_COORD_OFFSET);
 
         glDrawElements(GL_TRIANGLES, cdata->index_buffer_num_vertices, GL_UNSIGNED_SHORT, cdata->index_buffer);
@@ -3508,7 +3484,7 @@ static void FlushBlitBuffer(GPU_Renderer* renderer)
         if(data->current_shader_block.position_loc >= 0)
         {
             glEnableVertexAttribArray(data->current_shader_block.position_loc);  // Tell GL to use client-side attribute data
-            glVertexAttribPointer(data->current_shader_block.position_loc, 3, GL_FLOAT, GL_FALSE, GPU_BLIT_BUFFER_STRIDE, 0);  // Tell how the data is formatted
+            glVertexAttribPointer(data->current_shader_block.position_loc, 2, GL_FLOAT, GL_FALSE, GPU_BLIT_BUFFER_STRIDE, 0);  // Tell how the data is formatted
         }
         if(data->current_shader_block.texcoord_loc >= 0)
         {
@@ -4078,8 +4054,6 @@ static void SetUniformMatrixfv(GPU_Renderer* renderer, int location, int num_mat
     renderer->BlitBatch = &BlitBatch; \
     renderer->BlitBatchAttributes = &BlitBatchAttributes; \
  \
-    renderer->SetZ = &SetZ; \
-    renderer->GetZ = &GetZ; \
     renderer->GenerateMipmaps = &GenerateMipmaps; \
  \
     renderer->SetClip = &SetClip; \
