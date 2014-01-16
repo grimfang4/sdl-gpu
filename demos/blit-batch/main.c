@@ -288,7 +288,8 @@ int do_attributes(GPU_Target* screen)
 	int floats_per_sprite = floats_per_vertex*4;
 	float* sprite_values = (float*)malloc(sizeof(float)*maxSprites*floats_per_sprite);
 	
-	// FIXME: Need a better way to be sure of which shader is current.
+	// Load attributes for the textured shader
+	GPU_ActivateShaderProgram(screen->context->default_textured_shader_program, NULL);
 	GPU_Attribute attributes[3] = {
 	    GPU_MakeAttribute(GPU_GetAttributeLocation(screen->context->current_shader_program, "gpu_Vertex"), sprite_values, 
                                                     GPU_MakeAttributeFormat(2, GPU_FLOAT, 0, floats_per_vertex*sizeof(float), 0)),
