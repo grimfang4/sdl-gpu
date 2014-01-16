@@ -2997,6 +2997,185 @@ static int BlitBatch(GPU_Renderer* renderer, GPU_Image* src, GPU_Target* dest, u
     return 0;
 }
 
+
+static int BlitBatchAttributes(GPU_Renderer* renderer, GPU_Image* src, GPU_Target* dest, unsigned int numSprites, unsigned int numAttributes, GPU_Attribute* attributes)
+{
+    if(src == NULL || dest == NULL)
+        return -1;
+    if(renderer != src->renderer || renderer != dest->renderer)
+        return -2;
+    
+    // TODO: Implement this function for more renderers.    
+    #ifndef SDL_GPU_USE_GL_TIER3
+        GPU_LogError("GPU_BlitBatchAttributes(): Not supported by this renderer.\n");
+        return -4;
+    #endif
+    
+    makeContextCurrent(renderer, dest);
+    if(renderer->current_context_target == NULL)
+        return -3;
+
+    // Bind the texture to which subsequent calls refer
+    bindTexture(renderer, src);
+
+    // Bind the FBO
+    if(bindFramebuffer(renderer, dest))
+    {
+        prepareToRenderToTarget(renderer, dest);
+        prepareToRenderImage(renderer, dest, src);
+        
+        glEnable(GL_TEXTURE_2D);
+        Uint8 isRTT = (dest->image != NULL);
+        
+        // Modify the viewport and projection matrix if rendering to a texture
+        GLint vp[4];
+        if(isRTT)
+        {
+            glGetIntegerv(GL_VIEWPORT, vp);
+
+            unsigned int w = dest->w;
+            unsigned int h = dest->h;
+
+            glViewport( 0, 0, w, h);
+
+            GPU_MatrixMode( GPU_PROJECTION );
+            GPU_PushMatrix();
+            GPU_LoadIdentity();
+
+            GPU_Ortho(0.0f, w, 0.0f, h, -1.0f, 1.0f); // Special inverted orthographic projection because tex coords are inverted already.
+
+            GPU_MatrixMode( GPU_MODELVIEW );
+        }
+
+        setClipRect(renderer, dest);
+        
+
+        CONTEXT_DATA* cdata = (CONTEXT_DATA*)renderer->current_context_target->context->data;
+        unsigned short* index_buffer = cdata->index_buffer;
+
+        renderer->FlushBlitBuffer(renderer);
+        
+        #if defined(SDL_GPU_USE_GL_TIER3)
+        
+        
+
+        TARGET_DATA* data = ((TARGET_DATA*)renderer->current_context_target->data);
+        
+        // Upload our modelviewprojection matrix
+        if(data->current_shader_block.modelViewProjection_loc >= 0)
+        {
+            float mvp[16];
+            GPU_GetModelViewProjection(mvp);
+            glUniformMatrix4fv(data->current_shader_block.modelViewProjection_loc, 1, 0, mvp);
+        }
+    
+        // Update the vertex array object's buffers
+        #if !defined(SDL_GPU_USE_GLES) || SDL_GPU_GLES_MAJOR_VERSION != 2
+        glBindVertexArray(data->blit_VAO);
+        #endif
+        
+        // TODO: Move these into storage so we don't have to keep recreating them
+        GLuint buffers[16];
+        glGenBuffers(16, buffers);
+        
+        int i;
+        for(i = 0; i < numAttributes; i++)
+        {
+            glBindBuffer(GL_ARRAY_BUFFER, buffers[i]);
+            
+            // Copy the whole buffer to the GPU
+            // FIXME: Identify which attributes are interleaved so we can just upload the array once.
+            glBufferData(GL_ARRAY_BUFFER, attributes[i].format.stride_bytes * (numSprites*4), attributes[i].values, GL_STREAM_DRAW);  // Fills GPU buffer with data.
+        }
+        
+        // Only do so many at a time
+        int sprites_so_far = 0;
+        int partial_num_sprites = cdata->blit_buffer_max_num_vertices/4;
+        while(1)
+        {
+            if(numSprites < partial_num_sprites)
+                partial_num_sprites = numSprites;
+            if(partial_num_sprites <= 0)
+                break;
+
+            // Triangle indices
+            for(i = 0; i < partial_num_sprites; i++)
+            {
+                int buffer_num_vertices = (sprites_so_far + i)*4;
+                // First tri
+                index_buffer[cdata->index_buffer_num_vertices++] = buffer_num_vertices;  // 0
+                index_buffer[cdata->index_buffer_num_vertices++] = buffer_num_vertices+1;  // 1
+                index_buffer[cdata->index_buffer_num_vertices++] = buffer_num_vertices+2;  // 2
+
+                // Second tri
+                index_buffer[cdata->index_buffer_num_vertices++] = buffer_num_vertices; // 0
+                index_buffer[cdata->index_buffer_num_vertices++] = buffer_num_vertices+2;  // 2
+                index_buffer[cdata->index_buffer_num_vertices++] = buffer_num_vertices+3;  // 3
+            }
+            
+            // Upload attribute buffers
+            
+            for(i = 0; i < numAttributes; i++)
+            {
+                glBindBuffer(GL_ARRAY_BUFFER, buffers[i]);
+                
+                // Specify the formatting of the buffer
+                if(attributes[i].location >= 0)
+                {
+                    glEnableVertexAttribArray(attributes[i].location);
+                    if(!attributes[i].format.normalize && attributes[i].format.type != GPU_FLOAT && attributes[i].format.type != GPU_DOUBLE)
+                    {
+                        glVertexAttribIPointer(attributes[i].location,
+                                              attributes[i].format.num_elems_per_vertex,
+                                              attributes[i].format.type,
+                                              attributes[i].format.stride_bytes,
+                                              (void*)(attributes[i].format.offset_bytes));
+                    }
+                    else
+                    {
+                        glVertexAttribPointer(attributes[i].location,
+                                              attributes[i].format.num_elems_per_vertex,
+                                              attributes[i].format.type,
+                                              attributes[i].format.normalize,
+                                              attributes[i].format.stride_bytes,
+                                              (void*)(attributes[i].format.offset_bytes));
+                    }
+                }
+            }
+            
+            glDrawElements(GL_TRIANGLES, cdata->index_buffer_num_vertices, GL_UNSIGNED_SHORT, cdata->index_buffer);
+            
+            sprites_so_far += partial_num_sprites;
+            numSprites -= partial_num_sprites;
+            
+            cdata->index_buffer_num_vertices = 0;
+        }
+        
+        glDeleteBuffers(16, buffers);
+            
+        #if !defined(SDL_GPU_USE_GLES) || SDL_GPU_GLES_MAJOR_VERSION != 2
+        glBindVertexArray(0);
+        #endif
+        
+
+        #endif
+
+        unsetClipRect(renderer, dest);
+
+        // restore viewport and projection
+        if(isRTT)
+        {
+            glViewport(vp[0], vp[1], vp[2], vp[3]);
+
+            GPU_MatrixMode( GPU_PROJECTION );
+            GPU_PopMatrix();
+            GPU_MatrixMode( GPU_MODELVIEW );
+        }
+    }
+
+    return 0;
+}
+
 static float SetZ(GPU_Renderer* renderer, float z)
 {
     if(renderer == NULL)
@@ -3611,7 +3790,7 @@ static const char* GetShaderMessage(GPU_Renderer* renderer)
     return shader_message;
 }
 
-static int GetAttribLocation(GPU_Renderer* renderer, Uint32 program_object, const char* attrib_name)
+static int GetAttributeLocation(GPU_Renderer* renderer, Uint32 program_object, const char* attrib_name)
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
     return glGetAttribLocation(program_object, attrib_name);
@@ -3636,17 +3815,17 @@ static GPU_ShaderBlock LoadShaderBlock(GPU_Renderer* renderer, Uint32 program_ob
     if(position_name == NULL)
         b.position_loc = -1;
     else
-        b.position_loc = renderer->GetAttribLocation(renderer, program_object, position_name);
+        b.position_loc = renderer->GetAttributeLocation(renderer, program_object, position_name);
         
     if(texcoord_name == NULL)
         b.texcoord_loc = -1;
     else
-        b.texcoord_loc = renderer->GetAttribLocation(renderer, program_object, texcoord_name);
+        b.texcoord_loc = renderer->GetAttributeLocation(renderer, program_object, texcoord_name);
         
     if(color_name == NULL)
         b.color_loc = -1;
     else
-        b.color_loc = renderer->GetAttribLocation(renderer, program_object, color_name);
+        b.color_loc = renderer->GetAttributeLocation(renderer, program_object, color_name);
         
     if(modelViewMatrix_name == NULL)
         b.modelViewProjection_loc = -1;
@@ -3897,6 +4076,7 @@ static void SetUniformMatrixfv(GPU_Renderer* renderer, int location, int num_mat
     renderer->BlitTransformX = &BlitTransformX; \
     renderer->BlitTransformMatrix = &BlitTransformMatrix; \
     renderer->BlitBatch = &BlitBatch; \
+    renderer->BlitBatchAttributes = &BlitBatchAttributes; \
  \
     renderer->SetZ = &SetZ; \
     renderer->GetZ = &GetZ; \
@@ -3925,7 +4105,7 @@ static void SetUniformMatrixfv(GPU_Renderer* renderer, int location, int num_mat
     renderer->ActivateShaderProgram = &ActivateShaderProgram; \
     renderer->DeactivateShaderProgram = &DeactivateShaderProgram; \
     renderer->GetShaderMessage = &GetShaderMessage; \
-    renderer->GetAttribLocation = &GetAttribLocation; \
+    renderer->GetAttributeLocation = &GetAttributeLocation; \
     renderer->GetUniformLocation = &GetUniformLocation; \
     renderer->LoadShaderBlock = &LoadShaderBlock; \
     renderer->SetShaderBlock = &SetShaderBlock; \
