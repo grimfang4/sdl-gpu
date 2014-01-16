@@ -43,8 +43,6 @@ typedef struct ImageData_GLES_2
 {
 	Uint32 handle;
 	Uint32 format;
-	Uint8 has_mipmaps;
-	Uint32 tex_w, tex_h;  // For power-of-two support
 } ImageData_GLES_2;
 
 typedef struct TargetData_GLES_2
