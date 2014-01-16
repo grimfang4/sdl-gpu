@@ -120,7 +120,7 @@ void main(void)\n\
 attribute vec2 gpu_Vertex;\n\
 attribute vec2 gpu_TexCoord;\n\
 attribute vec4 gpu_Color;\n\
-uniform mat4 modelViewProjection;\n\
+uniform mat4 gpu_ModelViewProjectionMatrix;\n\
 \
 varying vec4 color;\n\
 varying vec2 texCoord;\n\
@@ -129,7 +129,7 @@ void main(void)\n\
 {\n\
 	color = gpu_Color;\n\
 	texCoord = vec2(gpu_TexCoord);\n\
-	gl_Position = modelViewProjection * vec4(gpu_Vertex, 0.0, 1.0);\n\
+	gl_Position = gpu_ModelViewProjectionMatrix * vec4(gpu_Vertex, 0.0, 1.0);\n\
 }"
 
 // Tier 3 uses shader attributes to send position, texcoord, and color data for each vertex.
@@ -138,14 +138,14 @@ void main(void)\n\
 \
 attribute vec2 gpu_Vertex;\n\
 attribute vec4 gpu_Color;\n\
-uniform mat4 modelViewProjection;\n\
+uniform mat4 gpu_ModelViewProjectionMatrix;\n\
 \
 varying vec4 color;\n\
 \
 void main(void)\n\
 {\n\
 	color = gpu_Color;\n\
-	gl_Position = modelViewProjection * vec4(gpu_Vertex, 0.0, 1.0);\n\
+	gl_Position = gpu_ModelViewProjectionMatrix * vec4(gpu_Vertex, 0.0, 1.0);\n\
 }"
 
 
@@ -181,7 +181,7 @@ precision mediump int;\n\
 attribute vec2 gpu_Vertex;\n\
 attribute vec2 gpu_TexCoord;\n\
 attribute vec4 gpu_Color;\n\
-uniform mat4 modelViewProjection;\n\
+uniform mat4 gpu_ModelViewProjectionMatrix;\n\
 \
 varying vec4 color;\n\
 varying vec2 texCoord;\n\
@@ -190,7 +190,7 @@ void main(void)\n\
 {\n\
 	color = gpu_Color;\n\
 	texCoord = vec2(gpu_TexCoord);\n\
-	gl_Position = modelViewProjection * vec4(gpu_Vertex, 0.0, 1.0);\n\
+	gl_Position = gpu_ModelViewProjectionMatrix * vec4(gpu_Vertex, 0.0, 1.0);\n\
 }"
 
 // Tier 3 uses shader attributes to send position, texcoord, and color data for each vertex.
@@ -201,14 +201,14 @@ precision mediump int;\n\
 \
 attribute vec2 gpu_Vertex;\n\
 attribute vec4 gpu_Color;\n\
-uniform mat4 modelViewProjection;\n\
+uniform mat4 gpu_ModelViewProjectionMatrix;\n\
 \
 varying vec4 color;\n\
 \
 void main(void)\n\
 {\n\
 	color = gpu_Color;\n\
-	gl_Position = modelViewProjection * vec4(gpu_Vertex, 0.0, 1.0);\n\
+	gl_Position = gpu_ModelViewProjectionMatrix * vec4(gpu_Vertex, 0.0, 1.0);\n\
 }"
 
 
@@ -1017,7 +1017,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
         #ifdef SDL_GPU_USE_GL_TIER3
         TARGET_DATA* data = ((TARGET_DATA*)target->data);
         // Get locations of the attributes in the shader
-        data->shader_block[0] = GPU_LoadShaderBlock(p, "gpu_Vertex", "gpu_TexCoord", "gpu_Color", "modelViewProjection");
+        data->shader_block[0] = GPU_LoadShaderBlock(p, "gpu_Vertex", "gpu_TexCoord", "gpu_Color", "gpu_ModelViewProjectionMatrix");
         #endif
         
         // Untextured shader
@@ -1042,7 +1042,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
         
         #ifdef SDL_GPU_USE_GL_TIER3
             // Get locations of the attributes in the shader
-            data->shader_block[1] = GPU_LoadShaderBlock(p, "gpu_Vertex", NULL, "gpu_Color", "modelViewProjection");
+            data->shader_block[1] = GPU_LoadShaderBlock(p, "gpu_Vertex", NULL, "gpu_Color", "gpu_ModelViewProjectionMatrix");
             GPU_SetShaderBlock(data->shader_block[1]);
             
             // Create vertex array container and buffer
