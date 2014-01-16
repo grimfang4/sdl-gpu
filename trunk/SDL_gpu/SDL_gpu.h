@@ -100,6 +100,9 @@ typedef struct GPU_Image
 	GPU_Target* target;
 	Uint16 w, h;
 	int channels;
+	Uint32 texture_w, texture_h;  // Underlying texture dimensions
+	Uint8 has_mipmaps;
+	
 	SDL_Color color;
 	Uint8 use_blending;
 	GPU_BlendEnum blend_mode;

@@ -1271,6 +1271,8 @@ static GPU_Image* CreateUninitializedImage(GPU_Renderer* renderer, Uint16 w, Uin
     result->target = NULL;
     result->renderer = renderer;
     result->channels = channels;
+    result->has_mipmaps = 0;
+    
     SDL_Color white = {255, 255, 255, 255};
     result->color = white;
     result->use_blending = (channels > 3? 1 : 0);
@@ -1281,13 +1283,12 @@ static GPU_Image* CreateUninitializedImage(GPU_Renderer* renderer, Uint16 w, Uin
     result->refcount = 1;
     data->handle = handle;
     data->format = format;
-    data->has_mipmaps = 0;
 
     result->w = w;
     result->h = h;
     // POT textures will change this later
-    data->tex_w = w;
-    data->tex_h = h;
+    result->texture_w = w;
+    result->texture_h = h;
 
     return result;
 }
@@ -1327,8 +1328,8 @@ static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint8 
     glTexImage2D(GL_TEXTURE_2D, 0, internal_format, w, h, 0,
                  internal_format, GL_UNSIGNED_BYTE, NULL);
     // Tell SDL_gpu what we got.
-    ((IMAGE_DATA*)(result->data))->tex_w = w;
-    ((IMAGE_DATA*)(result->data))->tex_h = h;
+    result->texture_w = w;
+    result->texture_h = h;
 
     return result;
 }
@@ -1965,8 +1966,8 @@ static int InitImageWithSurface(GPU_Renderer* renderer, GPU_Image* image, SDL_Su
                         original_format, GL_UNSIGNED_BYTE, newSurface->pixels);
 
         // Tell everyone what we did.
-        ((IMAGE_DATA*)(image->data))->tex_w = w;
-        ((IMAGE_DATA*)(image->data))->tex_h = h;
+        image->texture_w = w;
+        image->texture_h = h;
     }
 
     // Delete temporary surface
@@ -2384,8 +2385,8 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_T
         prepareToRenderToTarget(renderer, dest);
         prepareToRenderImage(renderer, dest, src);
         
-        Uint16 tex_w = ((IMAGE_DATA*)src->data)->tex_w;
-        Uint16 tex_h = ((IMAGE_DATA*)src->data)->tex_h;
+        Uint16 tex_w = src->texture_w;
+        Uint16 tex_h = src->texture_h;
 
         float x1, y1, x2, y2;
         float dx1, dy1, dx2, dy2;
@@ -2556,8 +2557,8 @@ static int BlitTransformX(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcr
         prepareToRenderToTarget(renderer, dest);
         prepareToRenderImage(renderer, dest, src);
         
-        Uint16 tex_w = ((IMAGE_DATA*)src->data)->tex_w;
-        Uint16 tex_h = ((IMAGE_DATA*)src->data)->tex_h;
+        Uint16 tex_w = src->texture_w;
+        Uint16 tex_h = src->texture_h;
 
         float x1, y1, x2, y2;
         /*
@@ -3178,7 +3179,7 @@ static void GenerateMipmaps(GPU_Renderer* renderer, GPU_Image* image)
         renderer->FlushBlitBuffer(renderer);
     bindTexture(renderer, image);
     glGenerateMipmap(GL_TEXTURE_2D);
-    ((IMAGE_DATA*)image->data)->has_mipmaps = 1;
+    image->has_mipmaps = 1;
 
     GLint filter;
     glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, &filter);
@@ -3277,7 +3278,7 @@ static void SetImageFilter(GPU_Renderer* renderer, GPU_Image* image, GPU_FilterE
 
     if(filter == GPU_LINEAR)
     {
-        if(((IMAGE_DATA*)image->data)->has_mipmaps)
+        if(image->has_mipmaps)
             minFilter = GL_LINEAR_MIPMAP_NEAREST;
         else
             minFilter = GL_LINEAR;
@@ -3286,7 +3287,7 @@ static void SetImageFilter(GPU_Renderer* renderer, GPU_Image* image, GPU_FilterE
     }
     else if(filter == GPU_LINEAR_MIPMAP)
     {
-        if(((IMAGE_DATA*)image->data)->has_mipmaps)
+        if(image->has_mipmaps)
             minFilter = GL_LINEAR_MIPMAP_LINEAR;
         else
             minFilter = GL_LINEAR;
