@@ -46,8 +46,6 @@ typedef struct ContextData_GLES_1
 	GPU_BlendEnum last_blend_mode;
 	GPU_Camera last_camera;
 	
-	float z;
-	
 	GPU_Image* last_image;
 	GPU_Target* last_target;
 	float* blit_buffer;  // Holds sets of 4 vertices and 4 tex coords interleaved (e.g. [x0, y0, z0, s0, t0, ...]).

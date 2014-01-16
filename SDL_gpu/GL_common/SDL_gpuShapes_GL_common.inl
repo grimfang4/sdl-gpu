@@ -26,13 +26,12 @@ static void Circle(GPU_Renderer* renderer, GPU_Target* target, float x, float y,
 
 #ifdef SDL_GPU_USE_GL_TIER3
 
-#define SDL_GPU_SHAPE_FLOATS_PER_VERTEX 7
+#define SDL_GPU_SHAPE_FLOATS_PER_VERTEX 6
 
 #define SET_VERTEX(_x, _y) \
 do { \
     glverts[_vertex_array_index++] = (_x); \
     glverts[_vertex_array_index++] = (_y); \
-    glverts[_vertex_array_index++] = z; \
     glverts[_vertex_array_index++] = r; \
     glverts[_vertex_array_index++] = g; \
     glverts[_vertex_array_index++] = b; \
@@ -43,7 +42,6 @@ do { \
 do { \
     glverts[_vertex_array_index++] = (_x); \
     glverts[_vertex_array_index++] = (_y); \
-    glverts[_vertex_array_index++] = z; \
     glverts[_vertex_array_index++] = r; \
     glverts[_vertex_array_index++] = g; \
     glverts[_vertex_array_index++] = b; \
@@ -68,20 +66,18 @@ float a = GET_ALPHA(color)/255.0f;
 
 #else
 
-#define SDL_GPU_SHAPE_FLOATS_PER_VERTEX 3
+#define SDL_GPU_SHAPE_FLOATS_PER_VERTEX 2
 
 #define SET_VERTEX(_x, _y) \
 do { \
     glverts[_vertex_array_index++] = (_x); \
     glverts[_vertex_array_index++] = (_y); \
-    glverts[_vertex_array_index++] = z; \
 } while(0);
 
 #define SET_VERTEX_TEXTURED(_x, _y, _s, _t) \
 do { \
     glverts[_vertex_array_index++] = (_x); \
     glverts[_vertex_array_index++] = (_y); \
-    glverts[_vertex_array_index++] = z; \
     glverts[_vertex_array_index++] = (_s); \
     glverts[_vertex_array_index++] = (_t); \
 } while(0);
@@ -133,7 +129,6 @@ int _vertex_array_index = 0;
                 return; \
         if(renderer != target->renderer) \
                 return; \
-        float z = ((CONTEXT_DATA*)renderer->current_context_target->context->data)->z;  \
          \
         renderer->FlushBlitBuffer(renderer); \
         makeContextCurrent(renderer, target); \
@@ -170,7 +165,6 @@ int _vertex_array_index = 0;
                 return; \
         if(renderer != target->renderer) \
                 return; \
-        float z = ((CONTEXT_DATA*)renderer->current_context_target->context->data)->z;  \
          \
         renderer->FlushBlitBuffer(renderer); \
         makeContextCurrent(renderer, target); \
@@ -227,15 +221,15 @@ static inline void draw_vertices(GLfloat* glverts, int num_vertices, GLenum prim
 {
     #ifdef SDL_GPU_USE_GL_TIER1
         glBegin(prim_type);
-        int size = 3*num_vertices;
+        int size = 2*num_vertices;
         int i;
-        for(i = 0; i < size; i += 3)
+        for(i = 0; i < size; i += 2)
         {
-            glVertex3f(glverts[i], glverts[i+1], glverts[i+2]);
+            glVertex3f(glverts[i], glverts[i+1], 0.0f);
         }
         glEnd();
     #elif defined(SDL_GPU_USE_GL_TIER2)
-        glVertexPointer(3, GL_FLOAT, 0, glverts);
+        glVertexPointer(2, GL_FLOAT, 0, glverts);
         glEnableClientState(GL_VERTEX_ARRAY);
         glDrawArrays(prim_type, 0, num_vertices);
         glDisableClientState(GL_VERTEX_ARRAY);
@@ -247,7 +241,7 @@ static inline void draw_vertices(GLfloat* glverts, int num_vertices, GLenum prim
 
         TARGET_DATA* data = ((TARGET_DATA*)target->data);
         
-        int floats_per_vertex = 7;  // position (3), color (4)
+        int floats_per_vertex = 6;  // position (2), color (4)
         int buffer_stride = floats_per_vertex * sizeof(float);
         
         // Upload our modelviewprojection matrix
@@ -274,12 +268,12 @@ static inline void draw_vertices(GLfloat* glverts, int num_vertices, GLenum prim
         if(data->current_shader_block.position_loc >= 0)
         {
             glEnableVertexAttribArray(data->current_shader_block.position_loc);  // Tell GL to use client-side attribute data
-            glVertexAttribPointer(data->current_shader_block.position_loc, 3, GL_FLOAT, GL_FALSE, buffer_stride, 0);  // Tell how the data is formatted
+            glVertexAttribPointer(data->current_shader_block.position_loc, 2, GL_FLOAT, GL_FALSE, buffer_stride, 0);  // Tell how the data is formatted
         }
         if(data->current_shader_block.color_loc >= 0)
         {
             glEnableVertexAttribArray(data->current_shader_block.color_loc);
-            glVertexAttribPointer(data->current_shader_block.color_loc, 4, GL_FLOAT, GL_FALSE, buffer_stride, (void*)(3 * sizeof(float)));
+            glVertexAttribPointer(data->current_shader_block.color_loc, 4, GL_FLOAT, GL_FALSE, buffer_stride, (void*)(2 * sizeof(float)));
         }
         
         glDrawArrays(prim_type, 0, num_vertices);
@@ -295,17 +289,17 @@ static inline void draw_vertices_textured(GLfloat* glverts, int num_vertices, GL
 {
     #ifdef SDL_GPU_USE_GL_TIER1
         glBegin(prim_type);
-        int size = 5*num_vertices;
+        int size = 4*num_vertices;
         int i;
         for(i = 0; i < size; i += 5)
         {
-            glTexCoord2f(glverts[i+3], glverts[i+4]);
-            glVertex3f(glverts[i], glverts[i+1], glverts[i+2]);
+            glTexCoord2f(glverts[i+2], glverts[i+3]);
+            glVertex3f(glverts[i], glverts[i+1], 0.0f);
         }
         glEnd();
     #elif defined(SDL_GPU_USE_GL_TIER2)
-        glVertexPointer(3, GL_FLOAT, 5*sizeof(float), glverts);
-        glTexCoordPointer(2, GL_FLOAT, 5*sizeof(float), (glverts + 3));
+        glVertexPointer(2, GL_FLOAT, 5*sizeof(float), glverts);
+        glTexCoordPointer(2, GL_FLOAT, 5*sizeof(float), (glverts + 2));
         glEnableClientState(GL_VERTEX_ARRAY);
         glEnableClientState(GL_TEXTURE_COORD_ARRAY);
         glDrawArrays(prim_type, 0, num_vertices);
@@ -319,7 +313,7 @@ static inline void draw_vertices_textured(GLfloat* glverts, int num_vertices, GL
 
         TARGET_DATA* data = ((TARGET_DATA*)target->data);
         
-        int floats_per_vertex = 9;  // position (3), color (4), texcoord (2)
+        int floats_per_vertex = 8;  // position (2), color (4), texcoord (2)
         int buffer_stride = floats_per_vertex * sizeof(float);
         
         // Upload our modelviewprojection matrix
@@ -346,17 +340,17 @@ static inline void draw_vertices_textured(GLfloat* glverts, int num_vertices, GL
         if(data->current_shader_block.position_loc >= 0)
         {
             glEnableVertexAttribArray(data->current_shader_block.position_loc);  // Tell GL to use client-side attribute data
-            glVertexAttribPointer(data->current_shader_block.position_loc, 3, GL_FLOAT, GL_FALSE, buffer_stride, 0);  // Tell how the data is formatted
+            glVertexAttribPointer(data->current_shader_block.position_loc, 2, GL_FLOAT, GL_FALSE, buffer_stride, 0);  // Tell how the data is formatted
         }
         if(data->current_shader_block.color_loc >= 0)
         {
             glEnableVertexAttribArray(data->current_shader_block.color_loc);
-            glVertexAttribPointer(data->current_shader_block.color_loc, 4, GL_FLOAT, GL_FALSE, buffer_stride, (void*)(3 * sizeof(float)));
+            glVertexAttribPointer(data->current_shader_block.color_loc, 4, GL_FLOAT, GL_FALSE, buffer_stride, (void*)(2 * sizeof(float)));
         }
         if(data->current_shader_block.texcoord_loc >= 0)
         {
             glEnableVertexAttribArray(data->current_shader_block.texcoord_loc);
-            glVertexAttribPointer(data->current_shader_block.texcoord_loc, 2, GL_FLOAT, GL_FALSE, buffer_stride, (void*)(7 * sizeof(float)));
+            glVertexAttribPointer(data->current_shader_block.texcoord_loc, 2, GL_FLOAT, GL_FALSE, buffer_stride, (void*)(6 * sizeof(float)));
         }
         
         glDrawArrays(prim_type, 0, num_vertices);

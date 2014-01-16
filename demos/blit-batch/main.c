@@ -283,19 +283,19 @@ int do_attributes(GPU_Target* screen)
 	int maxSprites = 50000;
 	int numSprites = 101;
 	
-	// 3 pos floats per vertex, 2 texcoords, 4 color components
-	int floats_per_vertex = 3 + 2 + 4;
+	// 2 pos floats per vertex, 2 texcoords, 4 color components
+	int floats_per_vertex = 2 + 2 + 4;
 	int floats_per_sprite = floats_per_vertex*4;
 	float* sprite_values = (float*)malloc(sizeof(float)*maxSprites*floats_per_sprite);
 	
 	// FIXME: Need a better way to be sure of which shader is current.
 	GPU_Attribute attributes[3] = {
 	    GPU_MakeAttribute(GPU_GetAttributeLocation(screen->context->current_shader_program, "gpu_Vertex"), sprite_values, 
-                                                    GPU_MakeAttributeFormat(3, GPU_FLOAT, 0, floats_per_vertex*sizeof(float), 0)),
+                                                    GPU_MakeAttributeFormat(2, GPU_FLOAT, 0, floats_per_vertex*sizeof(float), 0)),
         GPU_MakeAttribute(GPU_GetAttributeLocation(screen->context->current_shader_program, "gpu_TexCoord"), sprite_values, 
-                                                    GPU_MakeAttributeFormat(2, GPU_FLOAT, 0, floats_per_vertex*sizeof(float), 3*sizeof(float))),
+                                                    GPU_MakeAttributeFormat(2, GPU_FLOAT, 0, floats_per_vertex*sizeof(float), 2*sizeof(float))),
         GPU_MakeAttribute(GPU_GetAttributeLocation(screen->context->current_shader_program, "gpu_Color"), sprite_values, 
-                                                    GPU_MakeAttributeFormat(4, GPU_FLOAT, 0, floats_per_vertex*sizeof(float), 5*sizeof(float)))
+                                                    GPU_MakeAttributeFormat(4, GPU_FLOAT, 0, floats_per_vertex*sizeof(float), 4*sizeof(float)))
     };
 	
 	float* velx = (float*)malloc(sizeof(float)*maxSprites);
@@ -308,7 +308,6 @@ int do_attributes(GPU_Target* screen)
 		float y = rand()%screen->h;
 		sprite_values[val_n++] = x - image->w/2;
 		sprite_values[val_n++] = y - image->h/2;
-		sprite_values[val_n++] = 0;
 		
 		sprite_values[val_n++] = 0;
 		sprite_values[val_n++] = 0;
@@ -320,7 +319,6 @@ int do_attributes(GPU_Target* screen)
 		
 		sprite_values[val_n++] = x + image->w/2;
 		sprite_values[val_n++] = y - image->h/2;
-		sprite_values[val_n++] = 0;
 		
 		sprite_values[val_n++] = 1;
 		sprite_values[val_n++] = 0;
@@ -332,7 +330,6 @@ int do_attributes(GPU_Target* screen)
 		
 		sprite_values[val_n++] = x + image->w/2;
 		sprite_values[val_n++] = y + image->h/2;
-		sprite_values[val_n++] = 0;
 		
 		sprite_values[val_n++] = 1;
 		sprite_values[val_n++] = 1;
@@ -344,7 +341,6 @@ int do_attributes(GPU_Target* screen)
 		
 		sprite_values[val_n++] = x - image->w/2;
 		sprite_values[val_n++] = y + image->h/2;
-		sprite_values[val_n++] = 0;
 		
 		sprite_values[val_n++] = 0;
 		sprite_values[val_n++] = 1;
@@ -435,19 +431,15 @@ int do_attributes(GPU_Target* screen)
 			
             sprite_values[val_n] = x - image->w/2;
             sprite_values[val_n+1] = y - image->h/2;
-            sprite_values[val_n+2] = 0;
             val_n += floats_per_vertex;
             sprite_values[val_n] = x + image->w/2;
             sprite_values[val_n+1] = y - image->h/2;
-            sprite_values[val_n+2] = 0;
             val_n += floats_per_vertex;
             sprite_values[val_n] = x + image->w/2;
             sprite_values[val_n+1] = y + image->h/2;
-            sprite_values[val_n+2] = 0;
             val_n += floats_per_vertex;
             sprite_values[val_n] = x - image->w/2;
             sprite_values[val_n+1] = y + image->h/2;
-            sprite_values[val_n+2] = 0;
 		}
 		
         GPU_BlitBatchAttributes(image, screen, numSprites, 3, attributes);
