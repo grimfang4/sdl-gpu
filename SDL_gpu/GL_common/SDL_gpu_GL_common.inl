@@ -1101,9 +1101,6 @@ static void SetAsCurrent(GPU_Renderer* renderer)
 
 static int SetWindowResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
 {
-    if(renderer->current_context_target == NULL)
-        return 0;
-
 #ifdef SDL_GPU_USE_SDL2
     SDL_SetWindowSize(SDL_GetWindowFromID(renderer->current_context_target->context->windowID), w, h);
     SDL_GetWindowSize(SDL_GetWindowFromID(renderer->current_context_target->context->windowID), &renderer->current_context_target->context->window_w, &renderer->current_context_target->context->window_h);
@@ -1177,9 +1174,6 @@ static void Quit(GPU_Renderer* renderer)
 static int ToggleFullscreen(GPU_Renderer* renderer)
 {
 #ifdef SDL_GPU_USE_SDL2
-    if(renderer->current_context_target == NULL)
-        return 0;
-    
     Uint8 enable = !(SDL_GetWindowFlags(SDL_GetWindowFromID(renderer->current_context_target->context->windowID)) & SDL_WINDOW_FULLSCREEN);
 
     if(SDL_SetWindowFullscreen(SDL_GetWindowFromID(renderer->current_context_target->context->windowID), enable) < 0)
@@ -1202,7 +1196,7 @@ static int ToggleFullscreen(GPU_Renderer* renderer)
 
 static GPU_Camera SetCamera(GPU_Renderer* renderer, GPU_Target* target, GPU_Camera* cam)
 {
-    if(target == NULL || renderer->current_context_target == NULL)
+    if(target == NULL)
         return GPU_GetDefaultCamera();
     
     
@@ -1905,7 +1899,7 @@ static SDL_Surface* copySurfaceIfNeeded(GPU_Renderer* renderer, GLenum glFormat,
 // From SDL_UpdateTexture()
 static int InitImageWithSurface(GPU_Renderer* renderer, GPU_Image* image, SDL_Surface* surface)
 {
-    if(renderer == NULL || image == NULL || surface == NULL)
+    if(image == NULL || surface == NULL)
         return 0;
 
     IMAGE_DATA* data = (IMAGE_DATA*)image->data;
@@ -2001,7 +1995,7 @@ static GPU_Image* CopyImage(GPU_Renderer* renderer, GPU_Image* image)
 // From SDL_UpdateTexture()
 static void UpdateImage(GPU_Renderer* renderer, GPU_Image* image, const GPU_Rect* rect, SDL_Surface* surface)
 {
-    if(renderer == NULL || image == NULL || surface == NULL)
+    if(image == NULL || surface == NULL)
         return;
 
     IMAGE_DATA* data = (IMAGE_DATA*)image->data;
@@ -2098,9 +2092,6 @@ static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surf
     GPU_Image* image;
     int channels;
 
-    if(renderer == NULL)
-        return NULL;
-
     if (!surface) {
         GPU_LogError("GPU_CopyImageFromSurface() passed NULL surface.\n");
         return NULL;
@@ -2184,7 +2175,7 @@ static void FreeImage(GPU_Renderer* renderer, GPU_Image* image)
 
 static void SubSurfaceCopy(GPU_Renderer* renderer, SDL_Surface* src, GPU_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y)
 {
-    if(renderer == NULL || src == NULL || dest == NULL || dest->image == NULL)
+    if(src == NULL || dest == NULL || dest->image == NULL)
         return;
 
     if(renderer != dest->renderer)
@@ -2263,7 +2254,7 @@ static void SubSurfaceCopy(GPU_Renderer* renderer, SDL_Surface* src, GPU_Rect* s
 
 static GPU_Target* LoadTarget(GPU_Renderer* renderer, GPU_Image* image)
 {
-    if(renderer == NULL || image == NULL)
+    if(image == NULL)
         return NULL;
 
     if(image->target != NULL)
@@ -2545,8 +2536,6 @@ static int BlitTransformX(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcr
 
 
     makeContextCurrent(renderer, dest);
-    if(renderer->current_context_target == NULL)
-        return -3;
     
     // Bind the texture to which subsequent calls refer
     bindTexture(renderer, src);
@@ -2792,8 +2781,6 @@ static int BlitBatch(GPU_Renderer* renderer, GPU_Image* src, GPU_Target* dest, u
         return -2;
     
     makeContextCurrent(renderer, dest);
-    if(renderer->current_context_target == NULL)
-        return -3;
 
     // Bind the texture to which subsequent calls refer
     bindTexture(renderer, src);
@@ -3005,8 +2992,6 @@ static int BlitBatchAttributes(GPU_Renderer* renderer, GPU_Image* src, GPU_Targe
     #endif
     
     makeContextCurrent(renderer, dest);
-    if(renderer->current_context_target == NULL)
-        return -3;
 
     // Bind the texture to which subsequent calls refer
     bindTexture(renderer, src);
@@ -3529,8 +3514,6 @@ static void Flip(GPU_Renderer* renderer, GPU_Target* target)
     makeContextCurrent(renderer, target);
 
 #ifdef SDL_GPU_USE_SDL2
-    if(renderer->current_context_target == NULL)
-        return;
     SDL_GL_SwapWindow(SDL_GetWindowFromID(renderer->current_context_target->context->windowID));
 #else
     SDL_GL_SwapBuffers();
@@ -3708,8 +3691,6 @@ static void ActivateShaderProgram(GPU_Renderer* renderer, Uint32 program_object,
 {
     GPU_Target* target = renderer->current_context_target;
     #ifndef SDL_GPU_DISABLE_SHADERS
-    if(target == NULL)
-        return;
     
     if(program_object == 0) // Implies default shader
     {
@@ -3721,7 +3702,7 @@ static void ActivateShaderProgram(GPU_Renderer* renderer, Uint32 program_object,
         program_object = target->context->default_untextured_shader_program;
     }
     
-    if(target == NULL || target->context->current_shader_program == program_object)
+    if(target->context->current_shader_program == program_object)
         return;
     
     renderer->FlushBlitBuffer(renderer);
@@ -3812,11 +3793,7 @@ static GPU_ShaderBlock LoadShaderBlock(GPU_Renderer* renderer, Uint32 program_ob
 static void SetShaderBlock(GPU_Renderer* renderer, GPU_ShaderBlock block)
 {
     #ifdef SDL_GPU_USE_GL_TIER3
-    GPU_Target* target = renderer->current_context_target;
-    if(target == NULL)
-        return;
-    TARGET_DATA* data = ((TARGET_DATA*)target->data);
-    data->current_shader_block = block;
+    ((TARGET_DATA*)renderer->current_context_target->data)->current_shader_block = block;
     #endif
 }
 
