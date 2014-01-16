@@ -67,24 +67,8 @@ void GPU_LogError(const char* format, ...)
 }
 
 
-static Uint32 isolate_renderer_flags(Uint32 flags)
+static Uint8 init_SDL(void)
 {
-    // TODO: Make video/window/renderer flags combinable and make this work right.
-    return 0;
-}
-
-
-
-
-GPU_Target* GPU_Init(Uint16 w, Uint16 h, Uint32 flags)
-{
-    return GPU_InitRenderer(GPU_MakeRendererIDRequest(GPU_RENDERER_DEFAULT, 0, 0, isolate_renderer_flags(flags)), w, h, flags);
-}
-
-GPU_Target* GPU_InitRenderer(GPU_RendererID renderer_request, Uint16 w, Uint16 h, Uint32 flags)
-{
-	GPU_InitRendererRegister();
-	
 	if(GPU_GetNumActiveRenderers() == 0)
 	{
 	    Uint32 subsystems = SDL_WasInit(SDL_INIT_EVERYTHING);
@@ -94,7 +78,7 @@ GPU_Target* GPU_InitRenderer(GPU_RendererID renderer_request, Uint16 w, Uint16 h
             if(SDL_Init(SDL_INIT_VIDEO) < 0)
             {
                 GPU_LogError("GPU_Init() failed to initialize SDL.\n");
-                return NULL;
+                return 0;
             }
         }
         else if(!(subsystems & SDL_INIT_VIDEO))
@@ -103,10 +87,47 @@ GPU_Target* GPU_InitRenderer(GPU_RendererID renderer_request, Uint16 w, Uint16 h
             if(SDL_InitSubSystem(SDL_INIT_VIDEO) < 0)
             {
                 GPU_LogError("GPU_Init() failed to initialize SDL video subsystem.\n");
-                return NULL;
+                return 0;
             }
         }
 	}
+	return 1;
+}
+
+GPU_Target* GPU_Init(Uint16 w, Uint16 h, Uint32 flags)
+{
+	GPU_InitRendererRegister();
+	
+	if(!init_SDL())
+        return NULL;
+        
+    int renderer_order_size = 0;
+    GPU_RendererID renderer_order[GPU_RENDERER_ORDER_MAX];
+    GPU_GetRendererOrder(&renderer_order_size, renderer_order);
+	
+    // Init the renderers in order
+    int i;
+    for(i = 0; i < renderer_order_size; i++)
+    {
+        GPU_Target* screen = GPU_InitRendererByID(renderer_order[i], w, h, flags);
+        if(screen != NULL)
+            return screen;
+    }
+    
+    return NULL;
+}
+
+GPU_Target* GPU_InitRenderer(GPU_RendererEnum renderer_enum, Uint16 w, Uint16 h, Uint32 flags)
+{
+    return GPU_InitRendererByID(GPU_MakeRendererID(renderer_enum, 0, 0, 0), w, h, flags);
+}
+
+GPU_Target* GPU_InitRendererByID(GPU_RendererID renderer_request, Uint16 w, Uint16 h, Uint32 flags)
+{
+	GPU_InitRendererRegister();
+	
+	if(!init_SDL())
+        return NULL;
 	
 	GPU_Renderer* renderer = GPU_AddRenderer(renderer_request);
 	if(renderer == NULL || renderer->Init == NULL)
@@ -114,7 +135,13 @@ GPU_Target* GPU_InitRenderer(GPU_RendererID renderer_request, Uint16 w, Uint16 h
     
 	GPU_SetCurrentRenderer(renderer->id);
 	
-	return renderer->Init(renderer, renderer_request, w, h, flags);
+	GPU_Target* screen = renderer->Init(renderer, renderer_request, w, h, flags);
+	if(screen == NULL)
+    {
+        // Init failed, destroy the renderer...
+        GPU_CloseCurrentRenderer();
+    }
+    return screen;
 }
 
 Uint8 GPU_IsFeatureEnabled(GPU_FeatureEnum feature)
@@ -240,15 +267,9 @@ GPU_Rect GPU_MakeRect(float x, float y, float w, float h)
     return r;
 }
 
-GPU_RendererID GPU_MakeRendererIDRequest(GPU_RendererEnum id, int major_version, int minor_version, Uint32 flags)
+GPU_RendererID GPU_MakeRendererID(GPU_RendererEnum id, int major_version, int minor_version, Uint32 flags)
 {
     GPU_RendererID r = {id, major_version, minor_version, flags, -1};
-    return r;
-}
-
-GPU_RendererID GPU_MakeRendererID(GPU_RendererEnum id, int major_version, int minor_version, int index)
-{
-    GPU_RendererID r = {id, major_version, minor_version, 0, index};
     return r;
 }
 
@@ -867,7 +888,6 @@ int GPU_BlitBatchSeparate(GPU_Image* src, GPU_Target* dest, unsigned int numSpri
 	if(pass_colors)
         src_color_floats_per_sprite = 16; // 4 vertices of r, g, b, a
     
-	int src_floats_per_sprite = src_position_floats_per_sprite + src_rect_floats_per_sprite + src_color_floats_per_sprite;
 	int size = numSprites*(8 + 8 + 16);
 	float* values = (float*)malloc(sizeof(float)*size);
 	

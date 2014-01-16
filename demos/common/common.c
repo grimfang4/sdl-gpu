@@ -9,7 +9,16 @@ void printRenderers(void)
 	int i;
 	for(i = 0; i < GPU_GetNumRegisteredRenderers(); i++)
 	{
-		printf("%d) %s (%d.%d)\n", i+1, GPU_GetRendererEnumString(renderers[i].id), renderers[i].major_version, renderers[i].minor_version);
+		printf("* %s (%d.%d)\n", GPU_GetRendererEnumString(renderers[i].id), renderers[i].major_version, renderers[i].minor_version);
+	}
+	printf("Renderer order:\n");
+	
+	int order_size;
+	GPU_RendererID order[GPU_RENDERER_ORDER_MAX];
+	GPU_GetRendererOrder(&order_size, order);
+	for(i = 0; i < order_size; i++)
+	{
+		printf("%d) %s (%d.%d)\n", i+1, GPU_GetRendererEnumString(order[i].id), order[i].major_version, order[i].minor_version);
 	}
 }
 
