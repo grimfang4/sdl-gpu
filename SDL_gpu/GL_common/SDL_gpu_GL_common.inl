@@ -2987,7 +2987,7 @@ static int BlitBatch(GPU_Renderer* renderer, GPU_Image* src, GPU_Target* dest, u
 }
 
 
-static int BlitBatchAttributes(GPU_Renderer* renderer, GPU_Image* src, GPU_Target* dest, unsigned int numSprites, unsigned int numAttributes, GPU_Attribute* attributes)
+static int ShaderBatch(GPU_Renderer* renderer, GPU_Image* src, GPU_Target* dest, unsigned int numSprites, unsigned int numAttributes, GPU_Attribute* attributes)
 {
     if(src == NULL || dest == NULL)
         return -1;
@@ -2996,7 +2996,7 @@ static int BlitBatchAttributes(GPU_Renderer* renderer, GPU_Image* src, GPU_Targe
     
     // TODO: Implement this function for more renderers.    
     #ifndef SDL_GPU_USE_GL_TIER3
-        GPU_LogError("GPU_BlitBatchAttributes(): Not supported by this renderer.\n");
+        GPU_LogError("GPU_ShaderBatch(): Not supported by this renderer.\n");
         return -4;
     #endif
     
@@ -4032,7 +4032,7 @@ static void SetUniformMatrixfv(GPU_Renderer* renderer, int location, int num_mat
     renderer->BlitTransformX = &BlitTransformX; \
     renderer->BlitTransformMatrix = &BlitTransformMatrix; \
     renderer->BlitBatch = &BlitBatch; \
-    renderer->BlitBatchAttributes = &BlitBatchAttributes; \
+    renderer->ShaderBatch = &ShaderBatch; \
  \
     renderer->GenerateMipmaps = &GenerateMipmaps; \
  \

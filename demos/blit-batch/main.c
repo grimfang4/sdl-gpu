@@ -443,7 +443,7 @@ int do_attributes(GPU_Target* screen)
             sprite_values[val_n+1] = y + image->h/2;
 		}
 		
-        GPU_BlitBatchAttributes(image, screen, numSprites, 3, attributes);
+        GPU_ShaderBatch(image, screen, numSprites, 3, attributes);
 		
 		GPU_Flip(screen);
 		
