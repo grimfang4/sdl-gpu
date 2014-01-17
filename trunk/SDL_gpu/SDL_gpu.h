@@ -371,8 +371,8 @@ struct GPU_Renderer
 	/*! \see GPU_BlitBatch() */
 	int (*BlitBatch)(GPU_Renderer* renderer, GPU_Image* src, GPU_Target* dest, unsigned int numSprites, float* values, GPU_BlitFlagEnum flags);
 	
-	/*! \see GPU_BlitBatchAttributes() */
-	int (*BlitBatchAttributes)(GPU_Renderer* renderer, GPU_Image* src, GPU_Target* dest, unsigned int numSprites, unsigned int numAttributes, GPU_Attribute* attributes);
+	/*! \see GPU_ShaderBatch() */
+	int (*ShaderBatch)(GPU_Renderer* renderer, GPU_Image* src, GPU_Target* dest, unsigned int numSprites, unsigned int numAttributes, GPU_Attribute* attributes);
 	
 	/*! \see GPU_GenerateMipmaps() */
 	void (*GenerateMipmaps)(GPU_Renderer* renderer, GPU_Image* image);
@@ -777,7 +777,7 @@ int GPU_BlitBatchSeparate(GPU_Image* src, GPU_Target* dest, unsigned int numSpri
  * \param numAttributes Number of shader attributes to use
  * \param attributes Array of 'numAttributes' shader attribute specifiers
  */
-int GPU_BlitBatchAttributes(GPU_Image* src, GPU_Target* dest, unsigned int numSprites, unsigned int numAttributes, GPU_Attribute* attributes);
+int GPU_ShaderBatch(GPU_Image* src, GPU_Target* dest, unsigned int numSprites, unsigned int numAttributes, GPU_Attribute* attributes);
 
 /*! Loads mipmaps for the given image, if supported by the renderer. */
 void GPU_GenerateMipmaps(GPU_Image* image);

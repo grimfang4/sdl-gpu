@@ -1128,12 +1128,12 @@ int GPU_BlitBatchSeparate(GPU_Image* src, GPU_Target* dest, unsigned int numSpri
 	return result;
 }
 
-int GPU_BlitBatchAttributes(GPU_Image* src, GPU_Target* dest, unsigned int numSprites, unsigned int numAttributes, GPU_Attribute* attributes)
+int GPU_ShaderBatch(GPU_Image* src, GPU_Target* dest, unsigned int numSprites, unsigned int numAttributes, GPU_Attribute* attributes)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->BlitBatchAttributes == NULL || numSprites == 0 || numAttributes == 0 || attributes == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->ShaderBatch == NULL || numSprites == 0 || numAttributes == 0 || attributes == NULL)
 		return 0;
 	
-	return current_renderer->BlitBatchAttributes(current_renderer, src, dest, numSprites, numAttributes, attributes);
+	return current_renderer->ShaderBatch(current_renderer, src, dest, numSprites, numAttributes, attributes);
 }
 
 void GPU_GenerateMipmaps(GPU_Image* image)
