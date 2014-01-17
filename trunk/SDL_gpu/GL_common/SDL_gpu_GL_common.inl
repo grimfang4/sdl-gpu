@@ -250,7 +250,7 @@ static SDL_PixelFormat* AllocFormat(GLenum glFormat);
 static void FreeFormat(SDL_PixelFormat* format);
 
 // To make these public, I need to move them into the renderer.  But should they be?
-static float* GPU_GetModelView(void)
+/*static float* GPU_GetModelView(void)
 {
     #ifdef SDL_GPU_USE_INTERNAL_MATRICES
     return _GPU_GetModelView();
@@ -270,7 +270,7 @@ static float* GPU_GetProjection(void)
     glGetFloatv(GL_PROJECTION_MATRIX, A);
     return A;
     #endif
-}
+}*/
 
 
 static Uint8 isExtensionSupported(const char* extension_str)
@@ -296,16 +296,6 @@ static Uint8 isExtensionSupported(const char* extension_str)
     }
     return 0;
 #endif
-}
-
-static Uint8 checkExtension(const char* str)
-{
-    if(!isExtensionSupported(str))
-    {
-        GPU_LogError("GL error: %s is not supported.\n", str);
-        return 0;
-    }
-    return 1;
 }
 
 static void init_features(GPU_Renderer* renderer)
@@ -539,7 +529,7 @@ static void changeColor(GPU_Renderer* renderer, SDL_Color color)
     {
         renderer->FlushBlitBuffer(renderer);
         cdata->last_color = color;
-        glColor4f(color.r/255.01f, color.g/255.01f, color.b/255.01f, color.a/255.01f);
+        glColor4f(color.r/255.01f, color.g/255.01f, color.b/255.01f, GET_ALPHA(color)/255.01f);
     }
     #endif
 }
@@ -747,6 +737,8 @@ static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request,
     SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
     SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
     SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
+	
+	renderer->requested_id = renderer_request;
 
 #ifdef SDL_GPU_USE_SDL2
 
@@ -796,38 +788,6 @@ static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request,
     if(renderer->CreateTargetFromWindow(renderer, 0, renderer->current_context_target) == NULL)
         return NULL;
     #endif
-    
-    // Update our renderer info from the current GL context.
-    #ifdef GL_MAJOR_VERSION
-    glGetIntegerv(GL_MAJOR_VERSION, &renderer->id.major_version);
-    glGetIntegerv(GL_MINOR_VERSION, &renderer->id.minor_version);
-    #else
-    // GLES doesn't have GL_MAJOR_VERSION.  Check via version string instead.
-    const char* version_string = (const char*)glGetString(GL_VERSION);
-    // OpenGL ES 2.0?
-    if(sscanf(version_string, "OpenGL ES %d.%d", &renderer->id.major_version, &renderer->id.minor_version) <= 0)
-    {
-        // OpenGL ES-CM 1.1?  OpenGL ES-CL 1.1?
-        if(sscanf(version_string, "OpenGL ES-C%*c %d.%d", &renderer->id.major_version, &renderer->id.minor_version) <= 0)
-        {
-            renderer->id.major_version = SDL_GPU_GLES_MAJOR_VERSION;
-            #if SDL_GPU_GLES_MAJOR_VERSION == 1
-                renderer->id.minor_version = 1;
-            #else
-                renderer->id.minor_version = 0;
-            #endif
-            
-            GPU_LogError("Failed to parse OpenGLES version string: %s\n  Defaulting to version %d.%d.\n", version_string, renderer->id.major_version, renderer->id.minor_version);
-        }
-    }
-    #endif
-    
-    // Did the wrong runtime library try to use a later versioned renderer?
-    if(renderer->id.major_version < renderer_request.major_version)
-    {
-        GPU_LogError("GPU_Init failed: Renderer %s can not be run by the version %d.%d library that is linked.\n", GPU_GetRendererEnumString(renderer_request.id), renderer->id.major_version, renderer->id.minor_version);
-        return NULL;
-    }
     
     return renderer->current_context_target;
 }
@@ -960,6 +920,41 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
         return NULL;
     }
     #endif
+    
+    
+    // Update our renderer info from the current GL context.
+    #ifdef GL_MAJOR_VERSION
+    glGetIntegerv(GL_MAJOR_VERSION, &renderer->id.major_version);
+    glGetIntegerv(GL_MINOR_VERSION, &renderer->id.minor_version);
+    #else
+    // GLES doesn't have GL_MAJOR_VERSION.  Check via version string instead.
+    const char* version_string = (const char*)glGetString(GL_VERSION);
+    // OpenGL ES 2.0?
+    if(sscanf(version_string, "OpenGL ES %d.%d", &renderer->id.major_version, &renderer->id.minor_version) <= 0)
+    {
+        // OpenGL ES-CM 1.1?  OpenGL ES-CL 1.1?
+        if(sscanf(version_string, "OpenGL ES-C%*c %d.%d", &renderer->id.major_version, &renderer->id.minor_version) <= 0)
+        {
+            renderer->id.major_version = SDL_GPU_GLES_MAJOR_VERSION;
+            #if SDL_GPU_GLES_MAJOR_VERSION == 1
+                renderer->id.minor_version = 1;
+            #else
+                renderer->id.minor_version = 0;
+            #endif
+            
+            GPU_LogError("Failed to parse OpenGLES version string: %s\n  Defaulting to version %d.%d.\n", version_string, renderer->id.major_version, renderer->id.minor_version);
+        }
+    }
+    #endif
+    
+    // Did the wrong runtime library try to use a later versioned renderer?
+    if(renderer->id.major_version < renderer->requested_id.major_version)
+    {
+		#ifdef SDL_GPU_USE_GLES
+			GPU_LogError("GPU_Init failed: Renderer %s can not be run by the version %d.%d library that is linked.\n", GPU_GetRendererEnumString(renderer->requested_id.id), renderer->id.major_version, renderer->id.minor_version);
+		#endif
+        return NULL;
+    }
 
     init_features(renderer);
     
@@ -1125,8 +1120,8 @@ static int SetWindowResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
     if(screen == NULL)
         return 0;
 
-    renderer->current_context_target->window_w = screen->w;
-    renderer->current_context_target->window_h = screen->h;
+    renderer->current_context_target->context->window_w = screen->w;
+    renderer->current_context_target->context->window_h = screen->h;
 #endif
 
     Uint16 virtualW = renderer->current_context_target->w;
@@ -3253,11 +3248,7 @@ static SDL_Color GetPixel(GPU_Renderer* renderer, GPU_Target* target, Sint16 x, 
         result.r = pixels[0];
         result.g = pixels[1];
         result.b = pixels[2];
-#ifdef SDL_GPU_USE_SDL2
-        result.a = pixels[3];
-#else
-        result.unused = pixels[3];
-#endif
+        GET_ALPHA(result) = pixels[3];
     }
 
     return result;

@@ -34,7 +34,8 @@ GPU_ShaderBlock load_shaders(Uint32* v, Uint32* f, Uint32* p)
     if(!*p)
     {
         GPU_LogError("Failed to link shader program: %s\n", GPU_GetShaderMessage());
-        return;
+		GPU_ShaderBlock b = {-1, -1, -1, -1};
+        return b;
     }
     
     GPU_ShaderBlock block = GPU_LoadShaderBlock(*p, "gpu_Vertex", "gpu_TexCoord", "gpu_Color", "modelViewProjection");
