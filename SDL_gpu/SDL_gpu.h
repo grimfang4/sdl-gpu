@@ -268,6 +268,7 @@ struct GPU_Renderer
 {
 	/*! Struct identifier of the renderer. */
 	GPU_RendererID id;
+	GPU_RendererID requested_id;
 	
 	int tier;
     GPU_FeatureEnum enabled_features;
