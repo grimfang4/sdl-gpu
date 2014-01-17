@@ -94,6 +94,18 @@ static Uint8 init_SDL(void)
 	return 1;
 }
 
+static Uint32 init_windowID = 0;
+
+void GPU_SetInitWindow(Uint32 windowID)
+{
+    init_windowID = windowID;
+}
+
+Uint32 GPU_GetInitWindow(void)
+{
+    return init_windowID;
+}
+
 GPU_Target* GPU_Init(Uint16 w, Uint16 h, Uint32 flags)
 {
 	GPU_InitRendererRegister();
@@ -141,6 +153,8 @@ GPU_Target* GPU_InitRendererByID(GPU_RendererID renderer_request, Uint16 w, Uint
         // Init failed, destroy the renderer...
         GPU_CloseCurrentRenderer();
     }
+    else
+        GPU_SetInitWindow(0);
     return screen;
 }
 
@@ -202,9 +216,6 @@ void GPU_CloseCurrentRenderer(void)
 		current_renderer->Quit(current_renderer);
 	GPU_RemoveRenderer(current_renderer->id);
 	current_renderer = NULL;
-	
-	if(GPU_GetNumActiveRenderers() == 0)
-		SDL_Quit();
 }
 
 void GPU_Quit(void)

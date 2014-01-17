@@ -752,9 +752,14 @@ static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request,
 
     SDL_Window* window = NULL;
     
+    // Is there a window already set up that we are supposed to use?
     if(renderer->current_context_target != NULL)
     {
         window = SDL_GetWindowFromID(renderer->current_context_target->context->windowID);
+    }
+    else
+    {
+        window = SDL_GetWindowFromID(GPU_GetInitWindow());
     }
     
     if(window == NULL)
@@ -770,6 +775,7 @@ static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request,
             return NULL;
         }
         
+        GPU_SetInitWindow(SDL_GetWindowID(window));
     }
 
 #else

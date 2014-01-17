@@ -529,6 +529,12 @@ void GPU_LogError(const char* format, ...);
 
 
 // Setup calls
+/*! The window corresponding to 'windowID' will be used to create the rendering context. */
+void GPU_SetInitWindow(Uint32 windowID);
+
+/*! Returns the window ID that has been set via GPU_SetInitWindow(). */
+Uint32 GPU_GetInitWindow(void);
+
 /*! Initializes SDL and SDL_gpu.  Creates a window and goes through the renderer order to create a renderer context.
  * \see GPU_SetRendererOrder()
  */
