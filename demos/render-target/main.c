@@ -3,6 +3,7 @@
 #include <math.h>
 #include "compat.h"
 #include "common.h"
+#include "demo-font.h"
 
 
 int main(int argc, char* argv[])
@@ -25,6 +26,10 @@ int main(int argc, char* argv[])
 	if(image3 == NULL)
 		return -1;
 	
+	SDL_Surface* font_surface = GPU_LoadSurface("data/comic14.png");
+	DemoFont* font = FONT_Alloc(font_surface);
+	GPU_SetRGB(font->image, 255, 0, 0);
+	SDL_FreeSurface(font_surface);
 	
 	GPU_Image* mode1image = GPU_CreateImage(300, 300, 4);
 	if(mode1image == NULL)
@@ -130,6 +135,8 @@ int main(int argc, char* argv[])
             GPU_Blit(mode2image, NULL, screen, mode2image->w/2, mode2image->h/2);
         }
 		
+		FONT_Draw(font, screen, 20, 20, "Testing");
+		
 		GPU_Flip(screen);
 		
 		frameCount++;
@@ -142,6 +149,7 @@ int main(int argc, char* argv[])
 	
 	printf("Average FPS: %.2f\n", 1000.0f*frameCount/(SDL_GetTicks() - startTime));
 	
+	FONT_Free(font);
 	GPU_FreeImage(mode2image);
 	GPU_FreeImage(mode1image);
 	GPU_Quit();
