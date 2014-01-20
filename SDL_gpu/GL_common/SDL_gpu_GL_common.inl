@@ -2259,7 +2259,7 @@ static void SubSurfaceCopy(GPU_Renderer* renderer, SDL_Surface* src, GPU_Rect* s
 
     // Copy image to dest
     GPU_FlushBlitBuffer();
-    GPU_SetBlending(image, 1);
+    GPU_SetBlending(image, 0);
     GPU_Blit(image, NULL, dest, x + r.w/2, y + r.h/2);
     GPU_FlushBlitBuffer();
 
