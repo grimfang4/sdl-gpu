@@ -493,10 +493,15 @@ static void setClipRect(GPU_Renderer* renderer, GPU_Target* target)
     {
         glEnable(GL_SCISSOR_TEST);
         GPU_Target* context_target = renderer->current_context_target;
-        int y = (target->context != NULL? context_target->h - (target->clip_rect.y + target->clip_rect.h) : target->clip_rect.y);
-        float xFactor = ((float)context_target->context->window_w)/context_target->w;
-        float yFactor = ((float)context_target->context->window_h)/context_target->h;
-        glScissor(target->clip_rect.x * xFactor, y * yFactor, target->clip_rect.w * xFactor, target->clip_rect.h * yFactor);
+        if(target->context != NULL)
+        {
+            int y = context_target->h - (target->clip_rect.y + target->clip_rect.h);
+            float xFactor = ((float)context_target->context->window_w)/context_target->w;
+            float yFactor = ((float)context_target->context->window_h)/context_target->h;
+            glScissor(target->clip_rect.x * xFactor, y * yFactor, target->clip_rect.w * xFactor, target->clip_rect.h * yFactor);
+        }
+        else
+            glScissor(target->clip_rect.x, target->clip_rect.y, target->clip_rect.w, target->clip_rect.h);
     }
 }
 
