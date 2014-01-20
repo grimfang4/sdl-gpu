@@ -1299,10 +1299,13 @@ void GPU_SetShapeBlendMode(GPU_BlendEnum mode)
 
 void GPU_SetImageFilter(GPU_Image* image, GPU_FilterEnum filter)
 {
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->SetImageFilter == NULL)
+		return;
 	if(image == NULL)
 		return;
 	
 	image->filter_mode = filter;
+	current_renderer->SetImageFilter(current_renderer, image, filter);
 }
 
 
