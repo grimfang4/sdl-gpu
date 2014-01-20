@@ -923,9 +923,20 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     
     
     // Update our renderer info from the current GL context.
-    #ifdef GL_MAJOR_VERSION
-    glGetIntegerv(GL_MAJOR_VERSION, &renderer->id.major_version);
-    glGetIntegerv(GL_MINOR_VERSION, &renderer->id.minor_version);
+    #ifdef SDL_GPU_USE_OPENGL
+    // OpenGL < 3.0 doesn't have GL_MAJOR_VERSION.  Check via version string instead.
+    const char* version_string = (const char*)glGetString(GL_VERSION);
+    if(sscanf(version_string, "%d.%d", &renderer->id.major_version, &renderer->id.minor_version) <= 0)
+    {
+        renderer->id.major_version = SDL_GPU_GL_MAJOR_VERSION;
+        #if SDL_GPU_GL_MAJOR_VERSION != 3
+            renderer->id.minor_version = 1;
+        #else
+            renderer->id.minor_version = 0;
+        #endif
+        
+        GPU_LogError("Failed to parse OpenGL version string: %s\n  Defaulting to version %d.%d.\n", version_string, renderer->id.major_version, renderer->id.minor_version);
+    }
     #else
     // GLES doesn't have GL_MAJOR_VERSION.  Check via version string instead.
     const char* version_string = (const char*)glGetString(GL_VERSION);
@@ -3545,8 +3556,6 @@ static int read_string_rw(SDL_RWops* rwops, char* result)
         total += len;
     }
     
-    SDL_RWclose(rwops);
-    
     result[total] = '\0';
     
     return total;
@@ -3753,6 +3762,8 @@ static const char* GetShaderMessage(GPU_Renderer* renderer)
 static int GetAttributeLocation(GPU_Renderer* renderer, Uint32 program_object, const char* attrib_name)
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
+    if(program_object == 0)
+        return -1;
     return glGetAttribLocation(program_object, attrib_name);
     #else
     return -1;
@@ -3762,6 +3773,8 @@ static int GetAttributeLocation(GPU_Renderer* renderer, Uint32 program_object, c
 static int GetUniformLocation(GPU_Renderer* renderer, Uint32 program_object, const char* uniform_name)
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
+    if(program_object == 0)
+        return -1;
     return glGetUniformLocation(program_object, uniform_name);
     #else
     return -1;
@@ -3806,6 +3819,8 @@ static void SetShaderBlock(GPU_Renderer* renderer, GPU_ShaderBlock block)
 static void GetUniformiv(GPU_Renderer* renderer, Uint32 program_object, int location, int* values)
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
+    if(program_object == 0)
+        return;
     glGetUniformiv(program_object, location, values);
     #endif
 }
@@ -3814,6 +3829,8 @@ static void SetUniformi(GPU_Renderer* renderer, int location, int value)
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
     renderer->FlushBlitBuffer(renderer);
+    if(renderer->current_context_target->context->current_shader_program == 0)
+        return;
     glUniform1i(location, value);
     #endif
 }
@@ -3822,6 +3839,8 @@ static void SetUniformiv(GPU_Renderer* renderer, int location, int num_elements_
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
     renderer->FlushBlitBuffer(renderer);
+    if(renderer->current_context_target->context->current_shader_program == 0)
+        return;
     switch(num_elements_per_value)
     {
         case 1:
@@ -3844,6 +3863,8 @@ static void SetUniformiv(GPU_Renderer* renderer, int location, int num_elements_
 static void GetUniformuiv(GPU_Renderer* renderer, Uint32 program_object, int location, unsigned int* values)
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
+    if(program_object == 0)
+        return;
     #if defined(SDL_GPU_USE_GLES) && SDL_GPU_GLES_MAJOR_VERSION < 3
     glGetUniformiv(program_object, location, (int*)values);
     #else
@@ -3856,6 +3877,8 @@ static void SetUniformui(GPU_Renderer* renderer, int location, unsigned int valu
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
     renderer->FlushBlitBuffer(renderer);
+    if(renderer->current_context_target->context->current_shader_program == 0)
+        return;
     #if defined(SDL_GPU_USE_GLES) && SDL_GPU_GLES_MAJOR_VERSION < 3
     glUniform1i(location, (int)value);
     #else
@@ -3868,6 +3891,8 @@ static void SetUniformuiv(GPU_Renderer* renderer, int location, int num_elements
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
     renderer->FlushBlitBuffer(renderer);
+    if(renderer->current_context_target->context->current_shader_program == 0)
+        return;
     #if defined(SDL_GPU_USE_GLES) && SDL_GPU_GLES_MAJOR_VERSION < 3
     switch(num_elements_per_value)
     {
@@ -3908,6 +3933,8 @@ static void SetUniformuiv(GPU_Renderer* renderer, int location, int num_elements
 static void GetUniformfv(GPU_Renderer* renderer, Uint32 program_object, int location, float* values)
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
+    if(program_object == 0)
+        return;
     glGetUniformfv(program_object, location, values);
     #endif
 }
@@ -3916,6 +3943,8 @@ static void SetUniformf(GPU_Renderer* renderer, int location, float value)
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
     renderer->FlushBlitBuffer(renderer);
+    if(renderer->current_context_target->context->current_shader_program == 0)
+        return;
     glUniform1f(location, value);
     #endif
 }
@@ -3924,6 +3953,8 @@ static void SetUniformfv(GPU_Renderer* renderer, int location, int num_elements_
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
     renderer->FlushBlitBuffer(renderer);
+    if(renderer->current_context_target->context->current_shader_program == 0)
+        return;
     switch(num_elements_per_value)
     {
         case 1:
@@ -3946,6 +3977,8 @@ static void SetUniformMatrixfv(GPU_Renderer* renderer, int location, int num_mat
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
     renderer->FlushBlitBuffer(renderer);
+    if(renderer->current_context_target->context->current_shader_program == 0)
+        return;
     if(num_rows < 2 || num_rows > 4 || num_columns < 2 || num_columns > 4)
     {
         GPU_LogError("GPU_SetUniformMatrixfv(): Given invalid dimensions (%dx%d).\n", num_rows, num_columns);
