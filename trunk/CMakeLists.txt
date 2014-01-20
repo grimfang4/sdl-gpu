@@ -95,7 +95,9 @@ else (SDL_gpu_DISABLE_GLES)
 endif (SDL_gpu_DISABLE_GLES)
 
 find_library(M_LIB m)
-link_libraries(${M_LIB})
+if (M_LIB_FOUND)
+	link_libraries(${M_LIB})
+endif (M_LIB_FOUND)
 
 # Make local includes look in the right places
 include_directories(SDL_gpu)
