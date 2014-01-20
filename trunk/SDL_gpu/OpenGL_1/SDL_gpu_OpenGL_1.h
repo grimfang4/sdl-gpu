@@ -22,6 +22,69 @@
 	#if defined(GL_EXT_abgr) && !defined(GL_ABGR)
 		#define GL_ABGR GL_ABGR_EXT
 	#endif
+	
+	#undef glCreateShader
+	#undef GL_VERTEX_SHADER
+	#undef GL_FRAGMENT_SHADER
+	#undef glShaderSource
+	#undef glCompileShader
+	#undef glGetShaderiv
+	#undef GL_COMPILE_STATUS
+	#undef glGetShaderInfoLog
+	#undef glDeleteShader
+	#define glCreateShader glCreateShaderObjectARB
+	#define GL_VERTEX_SHADER GL_VERTEX_SHADER_ARB
+	#define GL_FRAGMENT_SHADER GL_FRAGMENT_SHADER_ARB
+	#define glShaderSource glShaderSourceARB
+	#define glCompileShader glCompileShaderARB
+	#define glGetShaderiv glGetObjectParameterivARB
+	#define GL_COMPILE_STATUS GL_OBJECT_COMPILE_STATUS_ARB
+	#define glGetShaderInfoLog glGetInfoLogARB
+	#define glDeleteShader glDeleteObjectARB
+	
+	#undef glCreateProgram
+	#undef glAttachShader
+	#undef glLinkProgram
+	#undef GL_LINK_STATUS
+	#undef glGetProgramiv
+	#undef glGetProgramInfoLog
+	#undef glUseProgram
+	#undef glDeleteProgram
+	#define glCreateProgram glCreateProgramObjectARB
+	#define glAttachShader glAttachObjectARB
+	#define glLinkProgram glLinkProgramARB
+	#define GL_LINK_STATUS GL_OBJECT_LINK_STATUS_ARB
+	#define glGetProgramiv glGetObjectParameterivARB
+	#define glGetProgramInfoLog glGetInfoLogARB
+	#define glUseProgram glUseProgramObjectARB
+	#define glDeleteProgram glDeleteObjectARB
+	
+	#undef glGetAttribLocation
+	#undef glGetUniformLocation
+	#undef glGetUniformiv
+	#undef glUniform1i
+	#undef glUniform1iv
+	#undef glUniform2iv
+	#undef glUniform3iv
+	#undef glUniform4iv
+	#undef glUniform1f
+	#undef glUniform1fv
+	#undef glUniform2fv
+	#undef glUniform3fv
+	#undef glUniform4fv
+	#define glGetAttribLocation glGetAttribLocationARB
+	#define glGetUniformLocation glGetUniformLocationARB
+	#define glGetUniformiv glGetUniformivARB
+	#define glUniform1i glUniform1iARB
+	#define glUniform1iv glUniform1ivARB
+	#define glUniform2iv glUniform2ivARB
+	#define glUniform3iv glUniform3ivARB
+	#define glUniform4iv glUniform4ivARB
+	#define glUniform1f glUniform1fARB
+	#define glUniform1fv glUniform1fvARB
+	#define glUniform2fv glUniform2fvARB
+	#define glUniform3fv glUniform3fvARB
+	#define glUniform4fv glUniform4fvARB
 #endif
 
 

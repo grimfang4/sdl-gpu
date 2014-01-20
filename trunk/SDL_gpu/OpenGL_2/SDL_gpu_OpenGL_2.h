@@ -22,6 +22,7 @@
 	#if defined(GL_EXT_abgr) && !defined(GL_ABGR)
 		#define GL_ABGR GL_ABGR_EXT
 	#endif
+	
 #endif
 
 
