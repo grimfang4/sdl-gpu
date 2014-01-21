@@ -123,6 +123,13 @@ int _vertex_array_index = 0;
 #define DRAW_VERTICES_TEXTURED(_prim_type) draw_vertices_textured(glverts, _num_vertices, _prim_type);
 
 
+#ifdef SDL_GPU_APPLY_TRANSFORMS_TO_GL_STACK
+    #define APPLY_TRANSFORMS \
+    /*if(!renderer->IsFeatureEnabled(GPU_FEATURE_VERTEX_SHADER))*/ \
+        applyTransforms();
+#else
+    #define APPLY_TRANSFORMS
+#endif
 
 #define BEGIN \
 	if(target == NULL) \
@@ -157,7 +164,8 @@ int _vertex_array_index = 0;
                 GPU_Ortho(0.0f, w, 0.0f, h, -1.0f, 1.0f); /* Special inverted orthographic projection because tex coords are inverted already. */ \
                 \
                 GPU_MatrixMode( GPU_MODELVIEW ); \
-            }
+            } \
+            APPLY_TRANSFORMS;
 
 
 #define BEGIN_TEXTURED \
@@ -193,7 +201,8 @@ int _vertex_array_index = 0;
                 GPU_Ortho(0.0f, w, 0.0f, h, -1.0f, 1.0f); /* Special inverted orthographic projection because tex coords are inverted already. */ \
                 \
                 GPU_MatrixMode( GPU_MODELVIEW ); \
-            }
+            } \
+            APPLY_TRANSFORMS;
 
 #define END \
     RESET_COLOR; \
