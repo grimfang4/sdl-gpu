@@ -94,3 +94,6 @@ target_link_libraries (shader-attributes-demo SDL_gpu)
 
 add_executable(blit-batch-demo blit-batch/main.c common/common.c common/demo-font.c)
 target_link_libraries (blit-batch-demo SDL_gpu)
+
+add_executable(viewport-demo viewport/main.c common/common.c common/demo-font.c)
+target_link_libraries (viewport-demo SDL_gpu)

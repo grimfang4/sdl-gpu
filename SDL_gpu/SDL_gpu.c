@@ -284,6 +284,12 @@ GPU_RendererID GPU_MakeRendererID(GPU_RendererEnum id, int major_version, int mi
     return r;
 }
 
+void GPU_SetViewport(GPU_Target* target, GPU_Rect viewport)
+{
+    if(target != NULL)
+        target->viewport = viewport;
+}
+
 GPU_Camera GPU_GetDefaultCamera(void)
 {
 	GPU_Camera cam = {0.0f, 0.0f, -10.0f, 0.0f, 1.0f};
