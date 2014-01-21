@@ -83,7 +83,7 @@ static const GPU_BlendEnum GPU_BLEND_LIGHTEN = 7;
 static const GPU_BlendEnum GPU_BLEND_DIFFERENCE = 8;
 static const GPU_BlendEnum GPU_BLEND_PUNCHOUT = 9;
 static const GPU_BlendEnum GPU_BLEND_CUTOUT = 10;
-static const GPU_BlendEnum GPU_BLEND_OVERRIDE = 11;  // Lets you specify direct GL calls before blitting
+static const GPU_BlendEnum GPU_BLEND_OVERRIDE = 11;  // Lets you specify direct GL calls before blitting.  Note: Call GPU_FlushBlitBuffer() before you change blend modes via OpenGL so the new blend mode doesn't affect SDL_gpu's previously buffered blits.
 
 
 /*! Image object for containing pixel/texture data.
