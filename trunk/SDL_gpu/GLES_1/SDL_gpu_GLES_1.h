@@ -41,6 +41,7 @@ typedef struct ContextData_GLES_1
 	SDL_Color last_color;
 	Uint8 last_use_blending;
 	GPU_BlendEnum last_blend_mode;
+	GPU_Rect last_viewport;
 	GPU_Camera last_camera;
 	
 	GPU_Image* last_image;

@@ -206,6 +206,8 @@ struct GPU_Target
 	Uint8 use_color;
 	SDL_Color color;
 	
+	GPU_Rect viewport;
+	
 	/*! Perspective and object viewing transforms. */
 	GPU_Camera camera;
 	
@@ -659,6 +661,9 @@ GPU_Renderer* GPU_GetCurrentRenderer(void);
 
 /*! \return A GPU_Rect with the given values. */
 GPU_Rect GPU_MakeRect(float x, float y, float w, float h);
+
+/*! Sets the given target's viewport. */
+void GPU_SetViewport(GPU_Target* target, GPU_Rect viewport);
 
 /*! \return A GPU_Camera with position (0, 0, -10), angle of 0, and zoom of 1. */
 GPU_Camera GPU_GetDefaultCamera(void);

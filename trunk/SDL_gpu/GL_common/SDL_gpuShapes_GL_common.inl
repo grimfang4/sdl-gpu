@@ -145,23 +145,16 @@ int _vertex_array_index = 0;
         { \
             prepareToRenderToTarget(renderer, target); \
             prepareToRenderShapes(renderer); \
+            changeViewport(target); \
             /*glPushAttrib(GL_COLOR_BUFFER_BIT);*/ \
             \
-            GLint vp[4]; \
             if(target->image != NULL) \
             { \
-                glGetIntegerv(GL_VIEWPORT, vp); \
-                \
-                unsigned int w = target->w; \
-                unsigned int h = target->h; \
-                \
-                glViewport( 0, 0, w, h); \
-                \
                 GPU_MatrixMode( GPU_PROJECTION ); \
                 GPU_PushMatrix(); \
                 GPU_LoadIdentity(); \
                 \
-                GPU_Ortho(0.0f, w, 0.0f, h, -1.0f, 1.0f); /* Special inverted orthographic projection because tex coords are inverted already. */ \
+                GPU_Ortho(0.0f, target->viewport.w, 0.0f, target->viewport.h, -1.0f, 1.0f); /* Special inverted orthographic projection because tex coords are inverted already. */ \
                 \
                 GPU_MatrixMode( GPU_MODELVIEW ); \
             } \
@@ -182,23 +175,16 @@ int _vertex_array_index = 0;
         { \
             prepareToRenderToTarget(renderer, target); \
             prepareToRenderImage(renderer, target, src); \
+            changeViewport(target); \
             /*glPushAttrib(GL_COLOR_BUFFER_BIT);*/ \
             \
-            GLint vp[4]; \
             if(target->image != NULL) \
             { \
-                glGetIntegerv(GL_VIEWPORT, vp); \
-                \
-                unsigned int w = target->w; \
-                unsigned int h = target->h; \
-                \
-                glViewport( 0, 0, w, h); \
-                \
                 GPU_MatrixMode( GPU_PROJECTION ); \
                 GPU_PushMatrix(); \
                 GPU_LoadIdentity(); \
                 \
-                GPU_Ortho(0.0f, w, 0.0f, h, -1.0f, 1.0f); /* Special inverted orthographic projection because tex coords are inverted already. */ \
+                GPU_Ortho(0.0f, target->viewport.w, 0.0f, target->viewport.h, -1.0f, 1.0f); /* Special inverted orthographic projection because tex coords are inverted already. */ \
                 \
                 GPU_MatrixMode( GPU_MODELVIEW ); \
             } \
@@ -208,8 +194,6 @@ int _vertex_array_index = 0;
     RESET_COLOR; \
     if(target->image != NULL) \
     { \
-        glViewport(vp[0], vp[1], vp[2], vp[3]); \
-         \
         GPU_MatrixMode( GPU_PROJECTION ); \
         GPU_PopMatrix(); \
         GPU_MatrixMode( GPU_MODELVIEW ); \
