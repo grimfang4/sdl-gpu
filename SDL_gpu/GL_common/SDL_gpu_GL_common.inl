@@ -558,7 +558,7 @@ static void changeBlending(GPU_Renderer* renderer, Uint8 enable)
 static void changeBlendMode(GPU_Renderer* renderer, GPU_BlendEnum mode)
 {
     CONTEXT_DATA* cdata = (CONTEXT_DATA*)renderer->current_context_target->context->data;
-    if(cdata->last_blend_mode != GPU_BLEND_OVERRIDE && cdata->last_blend_mode == mode)
+    if(cdata->last_blend_mode == mode)
         return;
     
     renderer->FlushBlitBuffer(renderer);
