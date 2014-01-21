@@ -842,6 +842,20 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
         cdata->index_buffer_num_vertices = 0;
         int index_buffer_storage_size = GPU_BLIT_BUFFER_INIT_MAX_NUM_VERTICES*GPU_BLIT_BUFFER_STRIDE;
         cdata->index_buffer = (unsigned short*)malloc(index_buffer_storage_size);
+        // Init index buffer
+        int i, n;
+        for(i = 0, n = 0; i < cdata->index_buffer_max_num_vertices; i+=4)
+        {
+            // First tri
+            cdata->index_buffer[n++] = i;  // 0
+            cdata->index_buffer[n++] = i+1;  // 1
+            cdata->index_buffer[n++] = i+2;  // 2
+
+            // Second tri
+            cdata->index_buffer[n++] = i; // 0
+            cdata->index_buffer[n++] = i+2;  // 2
+            cdata->index_buffer[n++] = i+3;  // 3
+        }
     }
     else
         cdata = (CONTEXT_DATA*)target->context->data;
@@ -2453,7 +2467,6 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_T
 
         CONTEXT_DATA* cdata = (CONTEXT_DATA*)renderer->current_context_target->context->data;
         float* blit_buffer = cdata->blit_buffer;
-        unsigned short* index_buffer = cdata->index_buffer;
 
         if(cdata->blit_buffer_num_vertices + GPU_BLIT_BUFFER_VERTICES_PER_SPRITE >= cdata->blit_buffer_max_num_vertices)
             renderer->FlushBlitBuffer(renderer);
@@ -2528,16 +2541,7 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_T
         #endif
 
         // Triangle indices
-        
-        // First tri
-        index_buffer[cdata->index_buffer_num_vertices++] = cdata->blit_buffer_num_vertices;  // 0
-        index_buffer[cdata->index_buffer_num_vertices++] = cdata->blit_buffer_num_vertices+1;  // 1
-        index_buffer[cdata->index_buffer_num_vertices++] = cdata->blit_buffer_num_vertices+2;  // 2
-
-        // Second tri
-        index_buffer[cdata->index_buffer_num_vertices++] = cdata->blit_buffer_num_vertices; // 0
-        index_buffer[cdata->index_buffer_num_vertices++] = cdata->blit_buffer_num_vertices+2;  // 2
-        index_buffer[cdata->index_buffer_num_vertices++] = cdata->blit_buffer_num_vertices+3;  // 3
+        cdata->index_buffer_num_vertices += 6;
 
         cdata->blit_buffer_num_vertices += GPU_BLIT_BUFFER_VERTICES_PER_SPRITE;
     }
@@ -2687,7 +2691,6 @@ static int BlitTransformX(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcr
 
         CONTEXT_DATA* cdata = (CONTEXT_DATA*)renderer->current_context_target->context->data;
         float* blit_buffer = cdata->blit_buffer;
-        unsigned short* index_buffer = cdata->index_buffer;
 
         if(cdata->blit_buffer_num_vertices + GPU_BLIT_BUFFER_VERTICES_PER_SPRITE >= cdata->blit_buffer_max_num_vertices)
             renderer->FlushBlitBuffer(renderer);
@@ -2763,16 +2766,7 @@ static int BlitTransformX(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcr
         
 
         // Triangle indices
-        
-        // First tri
-        index_buffer[cdata->index_buffer_num_vertices++] = cdata->blit_buffer_num_vertices;  // 0
-        index_buffer[cdata->index_buffer_num_vertices++] = cdata->blit_buffer_num_vertices+1;  // 1
-        index_buffer[cdata->index_buffer_num_vertices++] = cdata->blit_buffer_num_vertices+2;  // 2
-
-        // Second tri
-        index_buffer[cdata->index_buffer_num_vertices++] = cdata->blit_buffer_num_vertices; // 0
-        index_buffer[cdata->index_buffer_num_vertices++] = cdata->blit_buffer_num_vertices+2;  // 2
-        index_buffer[cdata->index_buffer_num_vertices++] = cdata->blit_buffer_num_vertices+3;  // 3
+        cdata->index_buffer_num_vertices += 6;
 
         cdata->blit_buffer_num_vertices += GPU_BLIT_BUFFER_VERTICES_PER_SPRITE;
     }
@@ -2866,7 +2860,6 @@ static int BlitBatch(GPU_Renderer* renderer, GPU_Image* src, GPU_Target* dest, u
         
 
         CONTEXT_DATA* cdata = (CONTEXT_DATA*)renderer->current_context_target->context->data;
-        unsigned short* index_buffer = cdata->index_buffer;
 
         renderer->FlushBlitBuffer(renderer);
         
@@ -2882,20 +2875,7 @@ static int BlitBatch(GPU_Renderer* renderer, GPU_Image* src, GPU_Target* dest, u
                 break;
 
             // Triangle indices
-            int i;
-            for(i = 0; i < partial_num_sprites; i++)
-            {
-                int buffer_num_vertices = i*4;
-                // First tri
-                index_buffer[cdata->index_buffer_num_vertices++] = buffer_num_vertices;  // 0
-                index_buffer[cdata->index_buffer_num_vertices++] = buffer_num_vertices+1;  // 1
-                index_buffer[cdata->index_buffer_num_vertices++] = buffer_num_vertices+2;  // 2
-
-                // Second tri
-                index_buffer[cdata->index_buffer_num_vertices++] = buffer_num_vertices; // 0
-                index_buffer[cdata->index_buffer_num_vertices++] = buffer_num_vertices+2;  // 2
-                index_buffer[cdata->index_buffer_num_vertices++] = buffer_num_vertices+3;  // 3
-            }
+            cdata->index_buffer_num_vertices += 6*partial_num_sprites;
             
     #ifdef SDL_GPU_USE_GL_TIER1
 
@@ -2904,6 +2884,7 @@ static int BlitBatch(GPU_Renderer* renderer, GPU_Image* src, GPU_Target* dest, u
             float* color_pointer = values + 4;
             
             glBegin(GL_QUADS);
+            int i;
             for(i = 0; i < numSprites; i++)
             {
                 glColor4f( *color_pointer, *(color_pointer+1), *(color_pointer+2), *(color_pointer+3) );
@@ -3082,7 +3063,6 @@ static int ShaderBatch(GPU_Renderer* renderer, GPU_Image* src, GPU_Target* dest,
         
 
         CONTEXT_DATA* cdata = (CONTEXT_DATA*)renderer->current_context_target->context->data;
-        unsigned short* index_buffer = cdata->index_buffer;
 
         renderer->FlushBlitBuffer(renderer);
         
@@ -3130,19 +3110,7 @@ static int ShaderBatch(GPU_Renderer* renderer, GPU_Image* src, GPU_Target* dest,
                 break;
 
             // Triangle indices
-            for(i = 0; i < partial_num_sprites; i++)
-            {
-                int buffer_num_vertices = (sprites_so_far + i)*4;
-                // First tri
-                index_buffer[cdata->index_buffer_num_vertices++] = buffer_num_vertices;  // 0
-                index_buffer[cdata->index_buffer_num_vertices++] = buffer_num_vertices+1;  // 1
-                index_buffer[cdata->index_buffer_num_vertices++] = buffer_num_vertices+2;  // 2
-
-                // Second tri
-                index_buffer[cdata->index_buffer_num_vertices++] = buffer_num_vertices; // 0
-                index_buffer[cdata->index_buffer_num_vertices++] = buffer_num_vertices+2;  // 2
-                index_buffer[cdata->index_buffer_num_vertices++] = buffer_num_vertices+3;  // 3
-            }
+            cdata->index_buffer_num_vertices += 6*partial_num_sprites;
             
             // Upload attribute buffers
             
