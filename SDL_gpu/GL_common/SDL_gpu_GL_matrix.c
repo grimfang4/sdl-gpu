@@ -1,6 +1,4 @@
 #include "SDL_gpu.h"
-
-#define SDL_GPU_USE_INTERNAL_MATRICES
 #include "SDL_gpu_GL_matrix.h"
 #include <math.h>
 #include <string.h>
@@ -17,19 +15,19 @@
 // Column-major
 #define INDEX(row,col) ((col)*4 + (row))
 
-void _GPU_MatrixCopy(float* result, const float* A)
+void GPU_MatrixCopy(float* result, const float* A)
 {
     memcpy(result, A, 16*sizeof(float));
 }
 
-void _GPU_MatrixIdentity(float* result)
+void GPU_MatrixIdentity(float* result)
 {
     memset(result, 0, 16*sizeof(float));
     result[0] = result[5] = result[10] = result[15] = 1;
 }
 
 // Matrix multiply: result = A * B
-void _GPU_Multiply4x4(float* result, float* A, float* B)
+void GPU_Multiply4x4(float* result, float* A, float* B)
 {
     int r, c, i;
     float s;
@@ -46,17 +44,16 @@ void _GPU_Multiply4x4(float* result, float* A, float* B)
     }
 }
 
-void _GPU_MultiplyAndAssign(float* result, float* A)
+void GPU_MultiplyAndAssign(float* result, float* A)
 {
     float temp[16];
-    _GPU_Multiply4x4(temp, result, A);
-    _GPU_MatrixCopy(result, temp);
+    GPU_Multiply4x4(temp, result, A);
+    GPU_MatrixCopy(result, temp);
 }
 
 
-// Public API
 
-void _GPU_Dummy(void) {}
+
 
 // Can be used up to two times per line evaluation...
 const char* GPU_GetMatrixString(float* A)
@@ -79,7 +76,16 @@ const char* GPU_GetMatrixString(float* A)
     return b;
 }
 
-float* _GPU_GetModelView(void)
+void GPU_MatrixMode(int matrix_mode)
+{
+    GPU_Target* target = GPU_GetContextTarget();
+    if(target == NULL || target->context == NULL)
+        return;
+    
+    target->context->matrix_mode = matrix_mode;
+}
+
+float* GPU_GetModelView(void)
 {
     GPU_Target* target = GPU_GetContextTarget();
     if(target == NULL || target->context == NULL)
@@ -90,7 +96,7 @@ float* _GPU_GetModelView(void)
     return stack->matrix[stack->size-1];
 }
 
-float* _GPU_GetProjection(void)
+float* GPU_GetProjection(void)
 {
     GPU_Target* target = GPU_GetContextTarget();
     if(target == NULL || target->context == NULL)
@@ -101,7 +107,7 @@ float* _GPU_GetProjection(void)
     return stack->matrix[stack->size-1];
 }
 
-float* _GPU_GetCurrentMatrix(void)
+float* GPU_GetCurrentMatrix(void)
 {
     GPU_Target* target = GPU_GetContextTarget();
     if(target == NULL || target->context == NULL)
@@ -117,16 +123,7 @@ float* _GPU_GetCurrentMatrix(void)
     return stack->matrix[stack->size-1];
 }
 
-void _GPU_MatrixMode(int matrix_mode)
-{
-    GPU_Target* target = GPU_GetContextTarget();
-    if(target == NULL || target->context == NULL)
-        return;
-    
-    target->context->matrix_mode = matrix_mode;
-}
-
-void _GPU_PushMatrix()
+void GPU_PushMatrix()
 {
     GPU_Target* target = GPU_GetContextTarget();
     if(target == NULL || target->context == NULL)
@@ -138,11 +135,11 @@ void _GPU_PushMatrix()
         GPU_LogError("GPU_PushMatrix() failed to push to a full stack!\n");
         return;
     }
-    _GPU_MatrixCopy(stack->matrix[stack->size], stack->matrix[stack->size-1]);
+    GPU_MatrixCopy(stack->matrix[stack->size], stack->matrix[stack->size-1]);
     stack->size++;
 }
 
-void _GPU_PopMatrix()
+void GPU_PopMatrix()
 {
     GPU_Target* target = GPU_GetContextTarget();
     if(target == NULL || target->context == NULL)
@@ -157,17 +154,17 @@ void _GPU_PopMatrix()
     stack->size--;
 }
 
-void _GPU_LoadIdentity(void)
+void GPU_LoadIdentity(void)
 {
-    float* result = _GPU_GetCurrentMatrix();
+    float* result = GPU_GetCurrentMatrix();
     if(result == NULL)
         return;
-    _GPU_MatrixIdentity(result);
+    GPU_MatrixIdentity(result);
 }
 
-void _GPU_Ortho(float left, float right, float bottom, float top, float near, float far)
+void GPU_Ortho(float left, float right, float bottom, float top, float near, float far)
 {
-    float* result = _GPU_GetCurrentMatrix();
+    float* result = GPU_GetCurrentMatrix();
     if(result == NULL)
         return;
     #ifdef ROW_MAJOR
@@ -182,12 +179,12 @@ void _GPU_Ortho(float left, float right, float bottom, float top, float near, fl
                    -(right + left)/(right - left), -(top + bottom)/(top - bottom), -(far + near)/(far - near), 1};
     #endif
     
-    _GPU_MultiplyAndAssign(result, A);
+    GPU_MultiplyAndAssign(result, A);
 }
 
-void _GPU_Frustum(float right, float left, float bottom, float top, float near, float far)
+void GPU_Frustum(float right, float left, float bottom, float top, float near, float far)
 {
-    float* result = _GPU_GetCurrentMatrix();
+    float* result = GPU_GetCurrentMatrix();
     if(result == NULL)
         return;
     #ifdef ROW_MAJOR
@@ -202,12 +199,12 @@ void _GPU_Frustum(float right, float left, float bottom, float top, float near, 
                    0, 0, -1, 0};
     #endif
                    
-    _GPU_MultiplyAndAssign(result, A);
+    GPU_MultiplyAndAssign(result, A);
 }
 
-void _GPU_Translate(float x, float y, float z)
+void GPU_Translate(float x, float y, float z)
 {
-    float* result = _GPU_GetCurrentMatrix();
+    float* result = GPU_GetCurrentMatrix();
     if(result == NULL)
         return;
     #ifdef ROW_MAJOR
@@ -222,12 +219,12 @@ void _GPU_Translate(float x, float y, float z)
                    x, y, z, 1};
     #endif
     
-    _GPU_MultiplyAndAssign(result, A);
+    GPU_MultiplyAndAssign(result, A);
 }
 
-void _GPU_Scale(float sx, float sy, float sz)
+void GPU_Scale(float sx, float sy, float sz)
 {
-    float* result = _GPU_GetCurrentMatrix();
+    float* result = GPU_GetCurrentMatrix();
     if(result == NULL)
         return;
     float A[16] = {sx, 0,  0,  0,
@@ -235,10 +232,10 @@ void _GPU_Scale(float sx, float sy, float sz)
                     0,  0,  sz, 0,
                     0,  0,  0,  1};
                   
-    _GPU_MultiplyAndAssign(result, A);
+    GPU_MultiplyAndAssign(result, A);
 }
 
-void _GPU_Rotate(float degrees, float x, float y, float z)
+void GPU_Rotate(float degrees, float x, float y, float z)
 {
     const float p = 1/sqrtf(x*x + y*y + z*z);
     x *= p; y *= p; z *= p;
@@ -255,7 +252,7 @@ void _GPU_Rotate(float degrees, float x, float y, float z)
     const float ys = y*s;
     const float zs = z*s;
 
-    float* result = _GPU_GetCurrentMatrix();
+    float* result = GPU_GetCurrentMatrix();
     if(result == NULL)
         return;
     #ifdef ROW_MAJOR
@@ -270,19 +267,19 @@ void _GPU_Rotate(float degrees, float x, float y, float z)
                     0,           0,           0,         1};
     #endif
                   
-    _GPU_MultiplyAndAssign(result, A);
+    GPU_MultiplyAndAssign(result, A);
 }
 
-void _GPU_MultMatrix(float* A)
+void GPU_MultMatrix(float* A)
 {
-    float* result = _GPU_GetCurrentMatrix();
+    float* result = GPU_GetCurrentMatrix();
     if(result == NULL)
         return;
-    _GPU_MultiplyAndAssign(result, A);
+    GPU_MultiplyAndAssign(result, A);
 }
 
-void _GPU_GetModelViewProjection(float* result)
+void GPU_GetModelViewProjection(float* result)
 {
     // MVP = P * MV
-    _GPU_Multiply4x4(result, _GPU_GetProjection(), _GPU_GetModelView());
+    GPU_Multiply4x4(result, GPU_GetProjection(), GPU_GetModelView());
 }

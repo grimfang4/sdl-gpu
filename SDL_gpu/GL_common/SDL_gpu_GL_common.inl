@@ -710,6 +710,18 @@ static void applyTargetCamera(GPU_Target* target)
     GPU_Translate(-target->camera.x - offsetX, -target->camera.y - offsetY, 0);
 }
 
+#ifdef SDL_GPU_APPLY_TRANSFORMS_TO_GL_STACK
+static void applyTransforms(void)
+{
+    float* p = GPU_GetProjection();
+    float* m = GPU_GetModelView();
+    glMatrixMode(GL_PROJECTION);
+    glLoadMatrixf(p);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadMatrixf(m);
+}
+#endif
+
 static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request, Uint16 w, Uint16 h, Uint32 flags)
 {
     // Tell SDL what we want.
@@ -984,10 +996,10 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     // Set up GL state
     
     target->context->projection_matrix.size = 1;
-    _GPU_MatrixIdentity(target->context->projection_matrix.matrix[0]);
+    GPU_MatrixIdentity(target->context->projection_matrix.matrix[0]);
     
     target->context->modelview_matrix.size = 1;
-    _GPU_MatrixIdentity(target->context->modelview_matrix.matrix[0]);
+    GPU_MatrixIdentity(target->context->modelview_matrix.matrix[0]);
     
     target->context->matrix_mode = GPU_MODELVIEW;
     
@@ -2847,6 +2859,11 @@ static int BlitBatch(GPU_Renderer* renderer, GPU_Image* src, GPU_Target* dest, u
 
         setClipRect(renderer, dest);
         
+        #ifdef SDL_GPU_APPLY_TRANSFORMS_TO_GL_STACK
+        //if(!renderer->IsFeatureEnabled(GPU_FEATURE_VERTEX_SHADER))
+            applyTransforms();
+        #endif
+        
 
         CONTEXT_DATA* cdata = (CONTEXT_DATA*)renderer->current_context_target->context->data;
         unsigned short* index_buffer = cdata->index_buffer;
@@ -3057,6 +3074,11 @@ static int ShaderBatch(GPU_Renderer* renderer, GPU_Image* src, GPU_Target* dest,
         }
 
         setClipRect(renderer, dest);
+        
+        #ifdef SDL_GPU_APPLY_TRANSFORMS_TO_GL_STACK
+        //if(!renderer->IsFeatureEnabled(GPU_FEATURE_VERTEX_SHADER))
+            applyTransforms();
+        #endif
         
 
         CONTEXT_DATA* cdata = (CONTEXT_DATA*)renderer->current_context_target->context->data;
@@ -3420,7 +3442,12 @@ static void FlushBlitBuffer(GPU_Renderer* renderer)
 
             GPU_MatrixMode( GPU_MODELVIEW );
         }
-
+        
+        #ifdef SDL_GPU_APPLY_TRANSFORMS_TO_GL_STACK
+        //if(!renderer->IsFeatureEnabled(GPU_FEATURE_VERTEX_SHADER))
+            applyTransforms();
+        #endif
+        
         setClipRect(renderer, dest);
 
 

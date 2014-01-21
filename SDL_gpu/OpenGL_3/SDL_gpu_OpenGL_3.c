@@ -15,7 +15,6 @@ void GPU_FreeRenderer_OpenGL_3(GPU_Renderer* renderer) {}
 #define SDL_GPU_USE_GL_TIER3
 #define SDL_GPU_GL_TIER 3
 #define SDL_GPU_GL_MAJOR_VERSION 3
-#define SDL_GPU_USE_INTERNAL_MATRICES
 #define CONTEXT_DATA ContextData_OpenGL_3
 #define RENDERER_DATA RendererData_OpenGL_3
 #define IMAGE_DATA ImageData_OpenGL_3
