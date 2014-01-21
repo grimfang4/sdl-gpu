@@ -1,10 +1,6 @@
 #ifndef _SDL_GPU_GL_MATRIX_H__
 #define _SDL_GPU_GL_MATRIX_H__
 
-#ifdef SDL_GPU_USE_GL_TIER3
-#define SDL_GPU_USE_INTERNAL_MATRICES
-#endif
-
 const char* GPU_GetMatrixString(float* A);
 
 #ifdef SDL_GPU_USE_INTERNAL_MATRICES

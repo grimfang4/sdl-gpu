@@ -142,6 +142,20 @@ typedef struct GPU_ShaderBlock
 } GPU_ShaderBlock;
 
 
+
+
+#ifndef GPU_MATRIX_STACK_MAX
+#define GPU_MATRIX_STACK_MAX 5
+#endif
+
+/*! Matrix stack data structure for replacing the old OpenGL matrix stack.  */
+typedef struct GPU_MatrixStack
+{
+    unsigned int size;
+    float matrix[GPU_MATRIX_STACK_MAX][16];
+} GPU_MatrixStack;
+
+
 /*! Rendering context data.  Only GPU_Targets which represent windows will store this. */
 typedef struct GPU_Context
 {
@@ -160,10 +174,13 @@ typedef struct GPU_Context
 	Uint32 default_textured_shader_program;
 	Uint32 default_untextured_shader_program;
 	
-	
 	Uint8 shapes_use_blending;
 	GPU_BlendEnum shapes_blend_mode;
 	float line_thickness;
+	
+    int matrix_mode;
+    GPU_MatrixStack projection_matrix;
+    GPU_MatrixStack modelview_matrix;
 	
 	void* data;
 } GPU_Context;

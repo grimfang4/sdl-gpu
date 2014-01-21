@@ -10,72 +10,7 @@
 #define M_PI 3.1415926f
 #endif
 
-static int _gpu_matrix_mode = GPU_MODELVIEW;
 
-#ifndef GPU_MATRIX_STACK_MAX
-#define GPU_MATRIX_STACK_MAX 5
-#endif
-
-// Can be used up to two times per line evaluation...
-const char* GPU_GetMatrixString(float* A)
-{
-    static char buffer[512];
-    static char buffer2[512];
-    static char flip = 0;
-    
-    char* b = (flip? buffer : buffer2);
-    flip = !flip;
-    
-    snprintf(b, 512, "%.1f %.1f %.1f %.1f\n"
-                          "%.1f %.1f %.1f %.1f\n"
-                          "%.1f %.1f %.1f %.1f\n"
-                          "%.1f %.1f %.1f %.1f", 
-                          A[0], A[1], A[2], A[3], 
-                          A[4], A[5], A[6], A[7], 
-                          A[8], A[9], A[10], A[11], 
-                          A[12], A[13], A[14], A[15]);
-    return b;
-}
-
-typedef struct GPU_MatrixStack
-{
-    unsigned int size;
-    float matrix[GPU_MATRIX_STACK_MAX][16];
-} GPU_MatrixStack;
-
-static GPU_MatrixStack projection_matrix = {0};
-
-static GPU_MatrixStack modelview_matrix = {0};
-
-float* _GPU_GetModelView(void)
-{
-    if(modelview_matrix.size == 0)
-        return NULL;
-    return modelview_matrix.matrix[modelview_matrix.size-1];
-}
-
-float* _GPU_GetProjection(void)
-{
-    if(projection_matrix.size == 0)
-        return NULL;
-    return projection_matrix.matrix[projection_matrix.size-1];
-}
-
-float* _GPU_GetCurrentMatrix(void)
-{
-    if(_gpu_matrix_mode == GPU_MODELVIEW)
-    {
-        if(modelview_matrix.size == 0)
-            return NULL;
-        return modelview_matrix.matrix[modelview_matrix.size-1];
-    }
-    else
-    {
-        if(projection_matrix.size == 0)
-            return NULL;
-        return projection_matrix.matrix[projection_matrix.size-1];
-    }
-}
 
 // Implementations based on Wayne Cochran's (wcochran) matrix.c
 
@@ -123,25 +58,81 @@ void _GPU_MultiplyAndAssign(float* result, float* A)
 
 void _GPU_Dummy(void) {}
 
-void _GPU_InitMatrix(void)
+// Can be used up to two times per line evaluation...
+const char* GPU_GetMatrixString(float* A)
 {
-    projection_matrix.size = 1;
-    _GPU_MatrixIdentity(projection_matrix.matrix[0]);
+    static char buffer[512];
+    static char buffer2[512];
+    static char flip = 0;
     
-    modelview_matrix.size = 1;
-    _GPU_MatrixIdentity(modelview_matrix.matrix[0]);
+    char* b = (flip? buffer : buffer2);
+    flip = !flip;
     
-    _gpu_matrix_mode = GPU_MODELVIEW;
+    snprintf(b, 512, "%.1f %.1f %.1f %.1f\n"
+                          "%.1f %.1f %.1f %.1f\n"
+                          "%.1f %.1f %.1f %.1f\n"
+                          "%.1f %.1f %.1f %.1f", 
+                          A[0], A[1], A[2], A[3], 
+                          A[4], A[5], A[6], A[7], 
+                          A[8], A[9], A[10], A[11], 
+                          A[12], A[13], A[14], A[15]);
+    return b;
+}
+
+float* _GPU_GetModelView(void)
+{
+    GPU_Target* target = GPU_GetContextTarget();
+    if(target == NULL || target->context == NULL)
+        return NULL;
+    GPU_MatrixStack* stack = &target->context->modelview_matrix;
+    if(stack->size == 0)
+        return NULL;
+    return stack->matrix[stack->size-1];
+}
+
+float* _GPU_GetProjection(void)
+{
+    GPU_Target* target = GPU_GetContextTarget();
+    if(target == NULL || target->context == NULL)
+        return NULL;
+    GPU_MatrixStack* stack = &target->context->projection_matrix;
+    if(stack->size == 0)
+        return NULL;
+    return stack->matrix[stack->size-1];
+}
+
+float* _GPU_GetCurrentMatrix(void)
+{
+    GPU_Target* target = GPU_GetContextTarget();
+    if(target == NULL || target->context == NULL)
+        return NULL;
+    GPU_MatrixStack* stack;
+    if(target->context->matrix_mode == GPU_MODELVIEW)
+        stack = &target->context->modelview_matrix;
+    else
+        stack = &target->context->projection_matrix;
+    
+    if(stack->size == 0)
+        return NULL;
+    return stack->matrix[stack->size-1];
 }
 
 void _GPU_MatrixMode(int matrix_mode)
 {
-    _gpu_matrix_mode = matrix_mode;
+    GPU_Target* target = GPU_GetContextTarget();
+    if(target == NULL || target->context == NULL)
+        return;
+    
+    target->context->matrix_mode = matrix_mode;
 }
 
 void _GPU_PushMatrix()
 {
-    GPU_MatrixStack* stack = (_gpu_matrix_mode == GPU_MODELVIEW? &modelview_matrix : &projection_matrix);
+    GPU_Target* target = GPU_GetContextTarget();
+    if(target == NULL || target->context == NULL)
+        return;
+    
+    GPU_MatrixStack* stack = (target->context->matrix_mode == GPU_MODELVIEW? &target->context->modelview_matrix : &target->context->projection_matrix);
     if(stack->size + 1 >= GPU_MATRIX_STACK_MAX)
     {
         GPU_LogError("GPU_PushMatrix() failed to push to a full stack!\n");
@@ -153,7 +144,11 @@ void _GPU_PushMatrix()
 
 void _GPU_PopMatrix()
 {
-    GPU_MatrixStack* stack = (_gpu_matrix_mode == GPU_MODELVIEW? &modelview_matrix : &projection_matrix);
+    GPU_Target* target = GPU_GetContextTarget();
+    if(target == NULL || target->context == NULL)
+        return;
+    
+    GPU_MatrixStack* stack = (target->context->matrix_mode == GPU_MODELVIEW? &target->context->modelview_matrix : &target->context->projection_matrix);
     if(stack->size == 0)
     {
         GPU_LogError("GPU_PopMatrix() failed to pop an empty stack!\n");

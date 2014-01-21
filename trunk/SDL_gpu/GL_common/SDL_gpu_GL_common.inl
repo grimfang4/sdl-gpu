@@ -983,7 +983,13 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     
     // Set up GL state
     
-    GPU_InitMatrix();
+    target->context->projection_matrix.size = 1;
+    _GPU_MatrixIdentity(target->context->projection_matrix.matrix[0]);
+    
+    target->context->modelview_matrix.size = 1;
+    _GPU_MatrixIdentity(target->context->modelview_matrix.matrix[0]);
+    
+    target->context->matrix_mode = GPU_MODELVIEW;
     
     // Modes
     glEnable( GL_TEXTURE_2D );
