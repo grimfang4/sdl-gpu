@@ -690,7 +690,18 @@ static void changeViewport(GPU_Target* target)
     if(cdata->last_viewport.x == viewport.x && cdata->last_viewport.y == viewport.y && cdata->last_viewport.w == viewport.w && cdata->last_viewport.h == viewport.h)
         return;
     cdata->last_viewport = viewport;
-    glViewport(viewport.x, target->h - viewport.h - viewport.y, viewport.w, viewport.h);
+    float w, h;
+    if(target->image != NULL)
+    {
+        w = target->image->w;
+        h = target->image->h;
+    }
+    else if(target->context != NULL)
+    {
+        w = target->context->window_w;
+        h = target->context->window_h;
+    }
+    glViewport(viewport.x, h - viewport.h - viewport.y, viewport.w, h);
 }
 
 static void applyTargetCamera(GPU_Target* target)
@@ -2854,7 +2865,7 @@ static int BlitBatch(GPU_Renderer* renderer, GPU_Image* src, GPU_Target* dest, u
             GPU_PushMatrix();
             GPU_LoadIdentity();
 
-            GPU_Ortho(0.0f, dest->viewport.w, 0.0f, dest->viewport.h, -1.0f, 1.0f); // Special inverted orthographic projection because tex coords are inverted already.
+            GPU_Ortho(0.0f, dest->w, 0.0f, dest->h, -1.0f, 1.0f); // Special inverted orthographic projection because tex coords are inverted already.
 
             GPU_MatrixMode( GPU_MODELVIEW );
         }
@@ -3048,7 +3059,7 @@ static int ShaderBatch(GPU_Renderer* renderer, GPU_Image* src, GPU_Target* dest,
             GPU_PushMatrix();
             GPU_LoadIdentity();
 
-            GPU_Ortho(0.0f, dest->viewport.w, 0.0f, dest->viewport.h, -1.0f, 1.0f); // Special inverted orthographic projection because tex coords are inverted already.
+            GPU_Ortho(0.0f, dest->w, 0.0f, dest->h, -1.0f, 1.0f); // Special inverted orthographic projection because tex coords are inverted already.
 
             GPU_MatrixMode( GPU_MODELVIEW );
         }
@@ -3370,7 +3381,7 @@ static void FlushBlitBuffer(GPU_Renderer* renderer)
             GPU_PushMatrix();
             GPU_LoadIdentity();
 
-            GPU_Ortho(0.0f, dest->viewport.w, 0.0f, dest->viewport.h, -1.0f, 1.0f); // Special inverted orthographic projection because tex coords are inverted already.
+            GPU_Ortho(0.0f, dest->w, 0.0f, dest->h, -1.0f, 1.0f); // Special inverted orthographic projection because tex coords are inverted already.
 
             GPU_MatrixMode( GPU_MODELVIEW );
         }

@@ -17,6 +17,9 @@ int main(int argc, char* argv[])
 	GPU_Image* image = GPU_LoadImage("data/test.bmp");
 	if(image == NULL)
 		return -1;
+    
+    GPU_Image* buffer = GPU_CreateImage(800, 600, 3);
+    GPU_LoadTarget(buffer);
 	
 	Uint32 startTime = SDL_GetTicks();
 	long frameCount = 0;
@@ -40,8 +43,10 @@ int main(int argc, char* argv[])
 	
 	Uint8* keystates = SDL_GetKeyState(NULL);
 	
-	GPU_Rect small_viewport = GPU_MakeRect(20, 20, 100, 100);
-	GPU_Rect viewport = screen->viewport;
+	GPU_Rect buffer_viewport = GPU_MakeRect(400, 20, 400, 580);
+	GPU_Rect buffer_screen_viewport = GPU_MakeRect(20, 20, 100, 100);
+	GPU_Rect small_viewport = GPU_MakeRect(600, 20, 100, 100);
+	GPU_Rect viewport = GPU_MakeRect(100, 100, 600, 400);
 	
 	float dt = 0.010f;
 	Uint8 done = 0;
@@ -123,6 +128,21 @@ int main(int argc, char* argv[])
 		
 		GPU_ClearClip(screen);
 		GPU_Clear(screen);
+		
+		// Draw on buffer
+		GPU_ClearRGBA(buffer->target, 100, 0, 0, 0);
+		
+		GPU_SetViewport(buffer->target, buffer_viewport);
+		for(i = 0; i < numSprites; i++)
+		{
+			GPU_Blit(image, NULL, buffer->target, x[i], y[i]);
+		}
+		
+		// Draw buffer to screen
+		GPU_SetViewport(screen, buffer_screen_viewport);
+        GPU_Blit(buffer, NULL, screen, screen->w/2, screen->h/2);
+		
+		
 		
 		GPU_SetClipRect(screen, small_viewport);
 		GPU_ClearRGBA(screen, 0, 100, 0, 0);
