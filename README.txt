@@ -25,14 +25,7 @@ DEPENDENCIES
 
 SDL 1.2 or SDL 2.0 (www.libsdl.org)
 A rendering backend
-	Currently implemented: OpenGL 1.1, OpenGL 2.0, OpenGL 3.0, OpenGLES 1.1
-
-===================
-SELECTING RENDERERS
-===================
-
-The renderer selection system is due for a refactoring, so hold tight.  For now, the renderer can be selected by using GPU_InitRenderer(), e.g.:
-GPU_Target* screen = GPU_InitRenderer(GPU_MakeRendererIDRequest(GPU_RENDERER_OPENGL_3, 3, 0, 0), 800, 600, 0);
+	Currently implemented: OpenGL 1.1, OpenGL 2.0, OpenGL 3.0, OpenGL ES 1.1, OpenGL ES 2.0
 
 
 ========
@@ -49,7 +42,7 @@ sudo make install
 For Linux/UNIX systems, changing the default installation directory can be done like so:
 cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX=/usr
 
-For Windows systems, you can use cmake-gui and select options in there.
+For Windows systems, you can use cmake-gui and select appropriate options in there (warning: cmake-gui is messy!).
 
 
 =========
