@@ -1037,7 +1037,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     glClearColor( 0.0f, 0.0f, 0.0f, 0.0f );
 
     // Viewport and Framebuffer
-    glViewport(target->viewport.x, target->viewport.y, target->viewport.w, target->viewport.h);
+    glViewport(0.0f, 0.0f, target->viewport.w, target->viewport.h);
 
     glClear( GL_COLOR_BUFFER_BIT );
     #if SDL_GPU_GL_TIER < 3
@@ -3301,25 +3301,6 @@ static void SetImageFilter(GPU_Renderer* renderer, GPU_Image* image, GPU_FilterE
 
 
 
-
-static GPU_Rect getViewport()
-{
-    float v[4];
-    glGetFloatv(GL_VIEWPORT, v);
-    GPU_Rect r = {v[0], v[1], v[2], v[3]};
-    return r;
-}
-
-static void setViewport(GPU_Rect rect)
-{
-    if(rect.w < 0.0f || rect.h < 0.0f)
-    {
-        GPU_LogError("SDL_gpu: Couldn't set viewport to negative rect: %dx%d\n", (int)rect.w, (int)rect.h);
-        return;
-    }
-    
-    glViewport(rect.x, rect.y, rect.w, rect.h);
-}
 
 
 static void Clear(GPU_Renderer* renderer, GPU_Target* target)
