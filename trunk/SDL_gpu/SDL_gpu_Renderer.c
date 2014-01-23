@@ -22,7 +22,7 @@ static RendererRegistration rendererRegister[MAX_REGISTERED_RENDERERS];
 
 static GPU_RendererID makeRendererID(GPU_RendererEnum id, int major_version, int minor_version, int index)
 {
-    GPU_RendererID r = {id, major_version, minor_version, 0, index};
+    GPU_RendererID r = {id, major_version, minor_version, index};
     return r;
 }
 
@@ -221,12 +221,12 @@ void GPU_GetDefaultRendererOrder(int* order_size, GPU_RendererID* order)
     GPU_RendererID default_order[GPU_RENDERER_ORDER_MAX];
     
     #if defined(__ANDROID__) || defined(__IPHONEOS__)
-        default_order[count++] = GPU_MakeRendererID(GPU_RENDERER_GLES_2, 2, 0, 0);
-        default_order[count++] = GPU_MakeRendererID(GPU_RENDERER_GLES_1, 1, 1, 0);
+        default_order[count++] = GPU_MakeRendererID(GPU_RENDERER_GLES_2, 2, 0);
+        default_order[count++] = GPU_MakeRendererID(GPU_RENDERER_GLES_1, 1, 1);
     #else
-        default_order[count++] = GPU_MakeRendererID(GPU_RENDERER_OPENGL_3, 3, 0, 0);
-        default_order[count++] = GPU_MakeRendererID(GPU_RENDERER_OPENGL_2, 2, 0, 0);
-        default_order[count++] = GPU_MakeRendererID(GPU_RENDERER_OPENGL_1, 1, 1, 0);
+        default_order[count++] = GPU_MakeRendererID(GPU_RENDERER_OPENGL_3, 3, 0);
+        default_order[count++] = GPU_MakeRendererID(GPU_RENDERER_OPENGL_2, 2, 0);
+        default_order[count++] = GPU_MakeRendererID(GPU_RENDERER_OPENGL_1, 1, 1);
     #endif
     
     if(order_size != NULL)

@@ -743,30 +743,30 @@ static void applyTransforms(void)
 }
 #endif
 
-static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request, Uint16 w, Uint16 h, Uint32 flags)
+static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request, Uint16 w, Uint16 h, SDL_WindowFlags SDL_flags)
 {
-    // Tell SDL what we want.
-#ifdef SDL_GPU_USE_SDL2
-    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     if(renderer_request.major_version < 1)
     {
         renderer_request.major_version = 1;
         renderer_request.minor_version = 1;
     }
+    
+    GPU_InitFlagEnum GPU_flags = GPU_GetPreInitFlags();
+    // Tell SDL what we want.
+    renderer->GPU_init_flags = GPU_flags;
+    if(GPU_flags & GPU_INIT_DISABLE_DOUBLE_BUFFER)
+        SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 0);
+    else
+        SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+#ifdef SDL_GPU_USE_SDL2
     #ifdef SDL_GPU_USE_GLES
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
     #endif
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, renderer_request.major_version);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, renderer_request.minor_version);
 #else
-    Uint8 useDoubleBuffering = flags & SDL_DOUBLEBUF;
-    if(useDoubleBuffering)
-    {
-        SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-        flags &= ~SDL_DOUBLEBUF;
-    }
-    SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, 1);
-    flags |= SDL_OPENGL;
+    if(!(GPU_flags & GPU_INIT_DISABLE_VSYNC))
+        SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, 1);
 #endif
 
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
@@ -784,20 +784,22 @@ static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request,
     
     // Is there a window already set up that we are supposed to use?
     if(renderer->current_context_target != NULL)
-    {
         window = SDL_GetWindowFromID(renderer->current_context_target->context->windowID);
-    }
     else
-    {
         window = SDL_GetWindowFromID(GPU_GetInitWindow());
-    }
     
     if(window == NULL)
     {
+        // Set up window flags
+        SDL_flags |= SDL_WINDOW_OPENGL;
+        if(!(SDL_flags & SDL_WINDOW_HIDDEN))
+            SDL_flags |= SDL_WINDOW_SHOWN;
+        
+        renderer->SDL_init_flags = SDL_flags;
         window = SDL_CreateWindow("",
                                   SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
                                   w, h,
-                                  SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL);
+                                  SDL_flags);
 
         if(window == NULL)
         {
@@ -807,9 +809,13 @@ static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request,
         
         GPU_SetInitWindow(SDL_GetWindowID(window));
     }
+    else
+        renderer->SDL_init_flags = SDL_flags;
 
 #else
-    SDL_Surface* screen = SDL_SetVideoMode(w, h, 0, flags);
+    SDL_flags |= SDL_OPENGL;
+    renderer->SDL_init_flags = SDL_flags;
+    SDL_Surface* screen = SDL_SetVideoMode(w, h, 0, SDL_flags);
 
     if(screen == NULL)
         return NULL;
@@ -1023,12 +1029,26 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
 
     init_features(renderer);
     
-    if(!renderer->IsFeatureEnabled(renderer, GPU_FEATURE_RENDER_TARGETS))
-        GPU_LogError("RENDER TARGETS not supported.\n");
-    if(!renderer->IsFeatureEnabled(renderer, GPU_FEATURE_NON_POWER_OF_TWO))
-        GPU_LogError("NPOT TEXTURES not supported.\n");
-    if(!renderer->IsFeatureEnabled(renderer, GPU_FEATURE_BLEND_FUNC_SEPARATE))
-        GPU_LogError("BLEND FUNC SEPARATE not supported.\n");
+    GPU_FeatureEnum required_features = (renderer->GPU_init_flags & GPU_FEATURE_MASK);
+    if(!renderer->IsFeatureEnabled(renderer, required_features))
+    {
+        GPU_LogError("Error: Renderer %s does not support required features.\n", GPU_GetRendererEnumString(renderer->id.id));
+        return NULL;
+    }
+    
+    #ifdef SDL_GPU_USE_SDL2
+    // No preference for vsync?
+    if(!(renderer->GPU_init_flags & (GPU_INIT_DISABLE_VSYNC | GPU_INIT_ENABLE_VSYNC)))
+    {
+        // Default to late swap vsync if available
+        if(SDL_GL_SetSwapInterval(-1) < 0)
+            SDL_GL_SetSwapInterval(1);  // Or go for vsync
+    }
+    else if(renderer->GPU_init_flags & GPU_INIT_ENABLE_VSYNC)
+        SDL_GL_SetSwapInterval(1);
+    else if(renderer->GPU_init_flags & GPU_INIT_DISABLE_VSYNC)
+        SDL_GL_SetSwapInterval(0);
+    #endif
     
     // Set up GL state
     

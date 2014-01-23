@@ -106,7 +106,20 @@ Uint32 GPU_GetInitWindow(void)
     return init_windowID;
 }
 
-GPU_Target* GPU_Init(Uint16 w, Uint16 h, Uint32 flags)
+static GPU_InitFlagEnum preinit_flags = GPU_DEFAULT_INIT_FLAGS;
+
+void GPU_SetPreInitFlags(GPU_InitFlagEnum GPU_flags)
+{
+    preinit_flags = GPU_flags;
+}
+
+GPU_InitFlagEnum GPU_GetPreInitFlags(void)
+{
+    return preinit_flags;
+}
+
+
+GPU_Target* GPU_Init(Uint16 w, Uint16 h, SDL_WindowFlags SDL_flags)
 {
 	GPU_InitRendererRegister();
 	
@@ -121,7 +134,7 @@ GPU_Target* GPU_Init(Uint16 w, Uint16 h, Uint32 flags)
     int i;
     for(i = 0; i < renderer_order_size; i++)
     {
-        GPU_Target* screen = GPU_InitRendererByID(renderer_order[i], w, h, flags);
+        GPU_Target* screen = GPU_InitRendererByID(renderer_order[i], w, h, SDL_flags);
         if(screen != NULL)
             return screen;
     }
@@ -129,12 +142,12 @@ GPU_Target* GPU_Init(Uint16 w, Uint16 h, Uint32 flags)
     return NULL;
 }
 
-GPU_Target* GPU_InitRenderer(GPU_RendererEnum renderer_enum, Uint16 w, Uint16 h, Uint32 flags)
+GPU_Target* GPU_InitRenderer(GPU_RendererEnum renderer_enum, Uint16 w, Uint16 h, SDL_WindowFlags SDL_flags)
 {
-    return GPU_InitRendererByID(GPU_MakeRendererID(renderer_enum, 0, 0, 0), w, h, flags);
+    return GPU_InitRendererByID(GPU_MakeRendererID(renderer_enum, 0, 0), w, h, SDL_flags);
 }
 
-GPU_Target* GPU_InitRendererByID(GPU_RendererID renderer_request, Uint16 w, Uint16 h, Uint32 flags)
+GPU_Target* GPU_InitRendererByID(GPU_RendererID renderer_request, Uint16 w, Uint16 h, SDL_WindowFlags SDL_flags)
 {
 	GPU_InitRendererRegister();
 	
@@ -147,7 +160,7 @@ GPU_Target* GPU_InitRendererByID(GPU_RendererID renderer_request, Uint16 w, Uint
     
 	GPU_SetCurrentRenderer(renderer->id);
 	
-	GPU_Target* screen = renderer->Init(renderer, renderer_request, w, h, flags);
+	GPU_Target* screen = renderer->Init(renderer, renderer_request, w, h, SDL_flags);
 	if(screen == NULL)
     {
         // Init failed, destroy the renderer...
@@ -278,9 +291,9 @@ GPU_Rect GPU_MakeRect(float x, float y, float w, float h)
     return r;
 }
 
-GPU_RendererID GPU_MakeRendererID(GPU_RendererEnum id, int major_version, int minor_version, Uint32 flags)
+GPU_RendererID GPU_MakeRendererID(GPU_RendererEnum id, int major_version, int minor_version)
 {
-    GPU_RendererID r = {id, major_version, minor_version, flags, -1};
+    GPU_RendererID r = {id, major_version, minor_version, -1};
     return r;
 }
 

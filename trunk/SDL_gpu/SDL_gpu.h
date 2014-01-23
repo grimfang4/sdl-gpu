@@ -10,6 +10,7 @@
     #define SDL_GPU_USE_SDL2
 #else
     #define SDL_Window SDL_Surface
+    #define SDL_WindowFlags Uint32
 #endif
 
 
@@ -54,7 +55,6 @@ typedef struct GPU_RendererID
     GPU_RendererEnum id;
     int major_version;
     int minor_version;
-    Uint32 flags;
     
     int index;
 } GPU_RendererID;
@@ -217,6 +217,8 @@ struct GPU_Target
 
 /*! Important GPU features which may not be supported depending on a device's extension support.  Can be OR'd together.
  * \see GPU_IsFeatureEnabled()
+ * \see GPU_SetPreInitFlags()
+ * \see GPU_GetPreInitFlags()
  */
 typedef Uint32 GPU_FeatureEnum;
 static const GPU_FeatureEnum GPU_FEATURE_NON_POWER_OF_TWO = 0x1;
@@ -235,7 +237,26 @@ static const GPU_FeatureEnum GPU_FEATURE_GEOMETRY_SHADER = 0x400;
 #define GPU_FEATURE_ALL_BASE GPU_FEATURE_RENDER_TARGETS
 #define GPU_FEATURE_ALL_BLEND_MODES (GPU_FEATURE_BLEND_EQUATIONS | GPU_FEATURE_BLEND_FUNC_SEPARATE)
 #define GPU_FEATURE_ALL_GL_FORMATS (GPU_FEATURE_GL_BGR | GPU_FEATURE_GL_BGRA | GPU_FEATURE_GL_ABGR)
+#define GPU_FEATURE_BASIC_SHADERS (GPU_FEATURE_FRAGMENT_SHADER | GPU_FEATURE_PIXEL_SHADER)
 #define GPU_FEATURE_ALL_SHADERS (GPU_FEATURE_FRAGMENT_SHADER | GPU_FEATURE_PIXEL_SHADER | GPU_FEATURE_GEOMETRY_SHADER)
+
+/*! For separating combined feature flags from init flags. */
+#define GPU_FEATURE_MASK 0x00FFFF
+#define GPU_INIT_MASK 0xFF0000
+
+
+/*! Initialization flags for changing default init parameters.  Can be bitwise OR'ed together with GPU_FeatureEnums.
+ * Default (0) is to use late swap vsync and double buffering.
+ * \see GPU_SetPreInitFlags()
+ * \see GPU_GetPreInitFlags()
+ */
+typedef Uint32 GPU_InitFlagEnum;
+static const GPU_InitFlagEnum GPU_INIT_ENABLE_VSYNC = 0x10000;
+static const GPU_InitFlagEnum GPU_INIT_DISABLE_VSYNC = 0x20000;
+static const GPU_InitFlagEnum GPU_INIT_DISABLE_DOUBLE_BUFFER = 0x40000;
+
+#define GPU_DEFAULT_INIT_FLAGS 0
+
 
 /*! Bit flags for the blit batch functions.
  * \see GPU_BlitBatch()
@@ -288,6 +309,8 @@ struct GPU_Renderer
 	/*! Struct identifier of the renderer. */
 	GPU_RendererID id;
 	GPU_RendererID requested_id;
+	SDL_WindowFlags SDL_init_flags;
+	GPU_InitFlagEnum GPU_init_flags;
 	
 	int tier;
     GPU_FeatureEnum enabled_features;
@@ -300,7 +323,7 @@ struct GPU_Renderer
 	 *  \see GPU_InitRenderer()
 	 *  \see GPU_InitRendererByID()
 	 */
-	GPU_Target* (*Init)(GPU_Renderer* renderer, GPU_RendererID renderer_request, Uint16 w, Uint16 h, Uint32 flags);
+	GPU_Target* (*Init)(GPU_Renderer* renderer, GPU_RendererID renderer_request, Uint16 w, Uint16 h, SDL_WindowFlags SDL_flags);
 	
 	/*! \see GPU_IsFeatureEnabled() */
 	Uint8 (*IsFeatureEnabled)(GPU_Renderer* renderer, GPU_FeatureEnum feature);
@@ -555,18 +578,24 @@ void GPU_SetInitWindow(Uint32 windowID);
 /*! Returns the window ID that has been set via GPU_SetInitWindow(). */
 Uint32 GPU_GetInitWindow(void);
 
+/*! Set special flags to use for initialization. */
+void GPU_SetPreInitFlags(GPU_InitFlagEnum GPU_flags);
+
+/*! Returns the current special flags to use for initialization. */
+GPU_InitFlagEnum GPU_GetPreInitFlags(void);
+
 /*! Initializes SDL and SDL_gpu.  Creates a window and goes through the renderer order to create a renderer context.
  * \see GPU_SetRendererOrder()
  */
-GPU_Target* GPU_Init(Uint16 w, Uint16 h, Uint32 flags);
+GPU_Target* GPU_Init(Uint16 w, Uint16 h, SDL_WindowFlags SDL_flags);
 
 /*! Initializes SDL and SDL_gpu.  Creates a window and the requested renderer context. */
-GPU_Target* GPU_InitRenderer(GPU_RendererEnum renderer_enum, Uint16 w, Uint16 h, Uint32 flags);
+GPU_Target* GPU_InitRenderer(GPU_RendererEnum renderer_enum, Uint16 w, Uint16 h, SDL_WindowFlags SDL_flags);
 
 /*! Initializes SDL and SDL_gpu.  Creates a window and the requested renderer context.
  * By requesting a renderer via ID, you can specify the major and minor versions of an individual renderer backend.
  */
-GPU_Target* GPU_InitRendererByID(GPU_RendererID renderer_request, Uint16 w, Uint16 h, Uint32 flags);
+GPU_Target* GPU_InitRendererByID(GPU_RendererID renderer_request, Uint16 w, Uint16 h, SDL_WindowFlags SDL_flags);
 
 /*! Gets the current renderer ID order for initialization.  Pass NULL for 'order' to just get the size of the renderer order array. */
 void GPU_GetRendererOrder(int* order_size, GPU_RendererID* order);
@@ -624,7 +653,7 @@ GPU_RendererID GPU_GetDefaultRendererID(void);
 const char* GPU_GetRendererEnumString(GPU_RendererEnum id);
 
 /*! Returns an initialized GPU_RendererID. */
-GPU_RendererID GPU_MakeRendererID(GPU_RendererEnum id, int major_version, int minor_version, Uint32 flags);
+GPU_RendererID GPU_MakeRendererID(GPU_RendererEnum id, int major_version, int minor_version);
 
 /*! Gets the renderer identifier for the given registration index. */
 GPU_RendererID GPU_GetRendererID(unsigned int index);
