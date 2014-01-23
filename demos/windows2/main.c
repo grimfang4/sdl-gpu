@@ -86,7 +86,7 @@ int main(int argc, char* argv[])
 {
 	printRenderers();
 	
-    GPU_Target* screen = GPU_Init(screen_w, screen_h, 0);
+    GPU_Target* screen = GPU_Init(screen_w, screen_h, GPU_DEFAULT_INIT_FLAGS);
     if(screen == NULL)
         return -1;
     
