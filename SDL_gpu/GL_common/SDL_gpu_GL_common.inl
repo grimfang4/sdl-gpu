@@ -743,6 +743,14 @@ static void applyTransforms(void)
 }
 #endif
 
+
+// Workaround for Intel HD glVertexAttrib() bug.
+#ifdef SDL_GPU_USE_OPENGL
+// FIXME: This should probably exist in context storage, as I expect it to be a problem across contexts.
+static Uint8 apply_Intel_attrib_workaround = 0;
+static Uint8 vendor_is_Intel = 0;
+#endif
+
 static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request, Uint16 w, Uint16 h, SDL_WindowFlags SDL_flags)
 {
     if(renderer_request.major_version < 1)
@@ -831,6 +839,16 @@ static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request,
     #else
     if(renderer->CreateTargetFromWindow(renderer, 0, renderer->current_context_target) == NULL)
         return NULL;
+    #endif
+    
+    // Init glVertexAttrib workaround
+    #ifdef SDL_GPU_USE_OPENGL
+    const char* vendor_string = (const char*)glGetString(GL_VENDOR);
+    if(strstr(vendor_string, "Intel") != NULL)
+    {
+        vendor_is_Intel = 1;
+        apply_Intel_attrib_workaround = 1;
+    }
     #endif
     
     return renderer->current_context_target;
@@ -3387,6 +3405,11 @@ static void FlushBlitBuffer(GPU_Renderer* renderer)
     CONTEXT_DATA* cdata = (CONTEXT_DATA*)renderer->current_context_target->context->data;
     if(cdata->blit_buffer_num_vertices > 0 && cdata->last_target != NULL && cdata->last_image != NULL)
     {
+        #ifdef SDL_GPU_USE_OPENGL
+        if(vendor_is_Intel)
+            apply_Intel_attrib_workaround = 1;
+        #endif
+        
         GPU_Target* dest = cdata->last_target;
         
         changeViewport(dest);
@@ -4029,6 +4052,182 @@ static void SetUniformMatrixfv(GPU_Renderer* renderer, int location, int num_mat
 }
 
 
+static void SetAttributef(GPU_Renderer* renderer, int location, float value)
+{
+    #ifndef SDL_GPU_DISABLE_SHADERS
+    renderer->FlushBlitBuffer(renderer);
+    if(renderer->current_context_target->context->current_shader_program == 0)
+        return;
+    
+    #ifdef SDL_GPU_USE_OPENGL
+    if(apply_Intel_attrib_workaround && location == 0)
+    {
+        apply_Intel_attrib_workaround = 0;
+        glBegin(GL_TRIANGLES);
+        glEnd();
+    }
+    #endif
+    
+    glVertexAttrib1f(location, value);
+    
+    #endif
+}
+
+static void SetAttributei(GPU_Renderer* renderer, int location, int value)
+{
+    #ifndef SDL_GPU_DISABLE_SHADERS
+    renderer->FlushBlitBuffer(renderer);
+    if(renderer->current_context_target->context->current_shader_program == 0)
+        return;
+    
+    #ifdef SDL_GPU_USE_OPENGL
+    if(apply_Intel_attrib_workaround && location == 0)
+    {
+        apply_Intel_attrib_workaround = 0;
+        glBegin(GL_TRIANGLES);
+        glEnd();
+    }
+    #endif
+    
+    glVertexAttribI1i(location, value);
+    
+    #endif
+}
+
+static void SetAttributeui(GPU_Renderer* renderer, int location, unsigned int value)
+{
+    #ifndef SDL_GPU_DISABLE_SHADERS
+    renderer->FlushBlitBuffer(renderer);
+    if(renderer->current_context_target->context->current_shader_program == 0)
+        return;
+    
+    #ifdef SDL_GPU_USE_OPENGL
+    if(apply_Intel_attrib_workaround && location == 0)
+    {
+        apply_Intel_attrib_workaround = 0;
+        glBegin(GL_TRIANGLES);
+        glEnd();
+    }
+    #endif
+    
+    glVertexAttribI1ui(location, value);
+    
+    #endif
+}
+
+
+static void SetAttributefv(GPU_Renderer* renderer, int location, int num_elements, float* value)
+{
+    #ifndef SDL_GPU_DISABLE_SHADERS
+    renderer->FlushBlitBuffer(renderer);
+    if(renderer->current_context_target->context->current_shader_program == 0)
+        return;
+    
+    #ifdef SDL_GPU_USE_OPENGL
+    if(apply_Intel_attrib_workaround && location == 0)
+    {
+        apply_Intel_attrib_workaround = 0;
+        glBegin(GL_TRIANGLES);
+        glEnd();
+    }
+    #endif
+    
+    switch(num_elements)
+    {
+        case 1:
+            glVertexAttrib1f(location, value[0]);
+            break;
+        case 2:
+            glVertexAttrib2f(location, value[0], value[1]);
+            break;
+        case 3:
+            glVertexAttrib3f(location, value[0], value[1], value[2]);
+            break;
+        case 4:
+            glVertexAttrib4f(location, value[0], value[1], value[2], value[3]);
+            break;
+    }
+    
+    #endif
+}
+
+static void SetAttributeiv(GPU_Renderer* renderer, int location, int num_elements, int* value)
+{
+    #ifndef SDL_GPU_DISABLE_SHADERS
+    renderer->FlushBlitBuffer(renderer);
+    if(renderer->current_context_target->context->current_shader_program == 0)
+        return;
+    
+    #ifdef SDL_GPU_USE_OPENGL
+    if(apply_Intel_attrib_workaround && location == 0)
+    {
+        apply_Intel_attrib_workaround = 0;
+        glBegin(GL_TRIANGLES);
+        glEnd();
+    }
+    #endif
+    
+    switch(num_elements)
+    {
+        case 1:
+            glVertexAttribI1i(location, value[0]);
+            break;
+        case 2:
+            glVertexAttribI2i(location, value[0], value[1]);
+            break;
+        case 3:
+            glVertexAttribI3i(location, value[0], value[1], value[2]);
+            break;
+        case 4:
+            glVertexAttribI4i(location, value[0], value[1], value[2], value[3]);
+            break;
+    }
+    
+    #endif
+}
+
+static void SetAttributeuiv(GPU_Renderer* renderer, int location, int num_elements, unsigned int* value)
+{
+    #ifndef SDL_GPU_DISABLE_SHADERS
+    renderer->FlushBlitBuffer(renderer);
+    if(renderer->current_context_target->context->current_shader_program == 0)
+        return;
+    
+    #ifdef SDL_GPU_USE_OPENGL
+    if(apply_Intel_attrib_workaround && location == 0)
+    {
+        apply_Intel_attrib_workaround = 0;
+        glBegin(GL_TRIANGLES);
+        glEnd();
+    }
+    #endif
+    
+    switch(num_elements)
+    {
+        case 1:
+            glVertexAttribI1ui(location, value[0]);
+            break;
+        case 2:
+            glVertexAttribI2ui(location, value[0], value[1]);
+            break;
+        case 3:
+            glVertexAttribI3ui(location, value[0], value[1], value[2]);
+            break;
+        case 4:
+            glVertexAttribI4ui(location, value[0], value[1], value[2], value[3]);
+            break;
+    }
+    
+    #endif
+}
+
+static void SetAttributeSource(GPU_Renderer* renderer, int location, void* values, GPU_AttributeFormat format)
+{
+    
+}
+
+
+
 #define SET_COMMON_FUNCTIONS(renderer) \
     renderer->Init = &Init; \
     renderer->IsFeatureEnabled = &IsFeatureEnabled; \
@@ -4105,6 +4304,13 @@ static void SetUniformMatrixfv(GPU_Renderer* renderer, int location, int num_mat
     renderer->SetUniformf = &SetUniformf; \
     renderer->SetUniformfv = &SetUniformfv; \
     renderer->SetUniformMatrixfv = &SetUniformMatrixfv; \
+    renderer->SetAttributef = &SetAttributef; \
+    renderer->SetAttributei = &SetAttributei; \
+    renderer->SetAttributeui = &SetAttributeui; \
+    renderer->SetAttributefv = &SetAttributefv; \
+    renderer->SetAttributeiv = &SetAttributeiv; \
+    renderer->SetAttributeuiv = &SetAttributeuiv; \
+    renderer->SetAttributeSource = &SetAttributeSource; \
 	 \
 	/* Shape rendering */ \
 	 \

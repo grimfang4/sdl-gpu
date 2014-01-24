@@ -1631,3 +1631,59 @@ void GPU_SetUniformMatrixfv(int location, int num_matrices, int num_rows, int nu
 }
 
 
+void GPU_SetAttributef(int location, float value)
+{
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->SetAttributef == NULL)
+		return;
+	
+	current_renderer->SetAttributef(current_renderer, location, value);
+}
+
+void GPU_SetAttributei(int location, int value)
+{
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->SetAttributei == NULL)
+		return;
+	
+	current_renderer->SetAttributei(current_renderer, location, value);
+}
+
+void GPU_SetAttributeui(int location, unsigned int value)
+{
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->SetAttributeui == NULL)
+		return;
+	
+	current_renderer->SetAttributeui(current_renderer, location, value);
+}
+
+void GPU_SetAttributefv(int location, int num_elements, float* value)
+{
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->SetAttributefv == NULL)
+		return;
+	
+	current_renderer->SetAttributefv(current_renderer, location, num_elements, value);
+}
+
+void GPU_SetAttributeiv(int location, int num_elements, int* value)
+{
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->SetAttributeiv == NULL)
+		return;
+	
+	current_renderer->SetAttributeiv(current_renderer, location, num_elements, value);
+}
+
+void GPU_SetAttributeuiv(int location, int num_elements, unsigned int* value)
+{
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->SetAttributeuiv == NULL)
+		return;
+	
+	current_renderer->SetAttributeuiv(current_renderer, location, num_elements, value);
+}
+
+void GPU_SetAttributeSource(int location, void* values, GPU_AttributeFormat format)
+{
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->SetAttributeSource == NULL)
+		return;
+	
+	current_renderer->SetAttributeSource(current_renderer, location, values, format);
+}
+

@@ -519,6 +519,27 @@ struct GPU_Renderer
     /*! \see GPU_SetUniformMatrixfv() */
     void (*SetUniformMatrixfv)(GPU_Renderer* renderer, int location, int num_matrices, int num_rows, int num_columns, Uint8 transpose, float* values);
     
+    /*! \see GPU_SetAttributef() */
+    void (*SetAttributef)(GPU_Renderer* renderer, int location, float value);
+    
+    /*! \see GPU_SetAttributei() */
+    void (*SetAttributei)(GPU_Renderer* renderer, int location, int value);
+    
+    /*! \see GPU_SetAttributeui() */
+    void (*SetAttributeui)(GPU_Renderer* renderer, int location, unsigned int value);
+    
+    /*! \see GPU_SetAttributefv() */
+    void (*SetAttributefv)(GPU_Renderer* renderer, int location, int num_elements, float* value);
+    
+    /*! \see GPU_SetAttributeiv() */
+    void (*SetAttributeiv)(GPU_Renderer* renderer, int location, int num_elements, int* value);
+    
+    /*! \see GPU_SetAttributeuiv() */
+    void (*SetAttributeuiv)(GPU_Renderer* renderer, int location, int num_elements, unsigned int* value);
+    
+    /*! \see GPU_SetAttributeSource() */
+    void (*SetAttributeSource)(GPU_Renderer* renderer, int location, void* values, GPU_AttributeFormat format);
+    
     
     // Shapes
     
@@ -1009,6 +1030,26 @@ void GPU_GetUniformMatrixfv(Uint32 program_object, int location, float* values);
 /*! Sets the value of the matrix uniform shader variable at the given location.  The size of the matrices sent is specified by num_rows and num_columns.  Rows and columns must be between 2 and 4. */
 void GPU_SetUniformMatrixfv(int location, int num_matrices, int num_rows, int num_columns, Uint8 transpose, float* values);
 
+/*! Sets a constant-value shader attribute that will be used for each rendered vertex. */
+void GPU_SetAttributef(int location, float value);
+
+/*! Sets a constant-value shader attribute that will be used for each rendered vertex. */
+void GPU_SetAttributei(int location, int value);
+
+/*! Sets a constant-value shader attribute that will be used for each rendered vertex. */
+void GPU_SetAttributeui(int location, unsigned int value);
+
+/*! Sets a constant-value shader attribute that will be used for each rendered vertex. */
+void GPU_SetAttributefv(int location, int num_elements, float* value);
+
+/*! Sets a constant-value shader attribute that will be used for each rendered vertex. */
+void GPU_SetAttributeiv(int location, int num_elements, int* value);
+
+/*! Sets a constant-value shader attribute that will be used for each rendered vertex. */
+void GPU_SetAttributeuiv(int location, int num_elements, unsigned int* value);
+
+/*! Sets a source array and format for a per-vertex shader attribute. */
+void GPU_SetAttributeSource(int location, void* values, GPU_AttributeFormat format);
 
 
 
