@@ -3033,6 +3033,14 @@ static int BlitBatch(GPU_Renderer* renderer, GPU_Image* src, GPU_Target* dest, u
             
             glDrawElements(GL_TRIANGLES, cdata->index_buffer_num_vertices, GL_UNSIGNED_SHORT, cdata->index_buffer);
             
+            // Disable the vertex arrays again
+            if(data->current_shader_block.position_loc >= 0)
+                glDisableVertexAttribArray(data->current_shader_block.position_loc);
+            if(data->current_shader_block.texcoord_loc >= 0)
+                glDisableVertexAttribArray(data->current_shader_block.texcoord_loc);
+            if(data->current_shader_block.color_loc >= 0)
+                glDisableVertexAttribArray(data->current_shader_block.color_loc);
+            
             #if !defined(SDL_GPU_USE_GLES) || SDL_GPU_GLES_MAJOR_VERSION != 2
             glBindVertexArray(0);
             #endif
@@ -3191,6 +3199,13 @@ static int ShaderBatch(GPU_Renderer* renderer, GPU_Image* src, GPU_Target* dest,
             }
             
             glDrawElements(GL_TRIANGLES, cdata->index_buffer_num_vertices, GL_UNSIGNED_SHORT, cdata->index_buffer);
+            
+            // Disable the vertex arrays again
+            for(i = 0; i < numAttributes; i++)
+            {
+                if(attributes[i].location >= 0)
+                    glDisableVertexAttribArray(attributes[i].location);
+            }
             
             sprites_so_far += partial_num_sprites;
             numSprites -= partial_num_sprites;
@@ -3405,11 +3420,6 @@ static void FlushBlitBuffer(GPU_Renderer* renderer)
     CONTEXT_DATA* cdata = (CONTEXT_DATA*)renderer->current_context_target->context->data;
     if(cdata->blit_buffer_num_vertices > 0 && cdata->last_target != NULL && cdata->last_image != NULL)
     {
-        #ifdef SDL_GPU_USE_OPENGL
-        if(vendor_is_Intel)
-            apply_Intel_attrib_workaround = 1;
-        #endif
-        
         GPU_Target* dest = cdata->last_target;
         
         changeViewport(dest);
@@ -3523,6 +3533,14 @@ static void FlushBlitBuffer(GPU_Renderer* renderer)
         
         glDrawElements(GL_TRIANGLES, cdata->index_buffer_num_vertices, GL_UNSIGNED_SHORT, cdata->index_buffer);
         
+        // Disable the vertex arrays again
+        if(data->current_shader_block.position_loc >= 0)
+            glDisableVertexAttribArray(data->current_shader_block.position_loc);
+        if(data->current_shader_block.texcoord_loc >= 0)
+            glDisableVertexAttribArray(data->current_shader_block.texcoord_loc);
+        if(data->current_shader_block.color_loc >= 0)
+            glDisableVertexAttribArray(data->current_shader_block.color_loc);
+        
         #if !defined(SDL_GPU_USE_GLES) || SDL_GPU_GLES_MAJOR_VERSION != 2
         glBindVertexArray(0);
         #endif
@@ -3556,6 +3574,11 @@ static void Flip(GPU_Renderer* renderer, GPU_Target* target)
 #else
     SDL_GL_SwapBuffers();
 #endif
+
+    #ifdef SDL_GPU_USE_OPENGL
+    if(vendor_is_Intel)
+        apply_Intel_attrib_workaround = 1;
+    #endif
 }
 
 
