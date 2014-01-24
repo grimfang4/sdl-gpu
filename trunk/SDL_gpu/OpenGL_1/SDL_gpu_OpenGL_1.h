@@ -59,7 +59,6 @@
 	#define glUseProgram glUseProgramObjectARB
 	#define glDeleteProgram glDeleteObjectARB
 	
-	#undef glGetAttribLocation
 	#undef glGetUniformLocation
 	#undef glGetUniformiv
 	#undef glUniform1i
@@ -72,7 +71,6 @@
 	#undef glUniform2fv
 	#undef glUniform3fv
 	#undef glUniform4fv
-	#define glGetAttribLocation glGetAttribLocationARB
 	#define glGetUniformLocation glGetUniformLocationARB
 	#define glGetUniformiv glGetUniformivARB
 	#define glUniform1i glUniform1iARB
@@ -85,6 +83,33 @@
 	#define glUniform2fv glUniform2fvARB
 	#define glUniform3fv glUniform3fvARB
 	#define glUniform4fv glUniform4fvARB
+	
+	#undef glGetAttribLocation
+	#undef glVertexAttrib1f
+	#undef glVertexAttrib2f
+	#undef glVertexAttrib3f
+	#undef glVertexAttrib4f
+	#undef glVertexAttribI1i
+	#undef glVertexAttribI2i
+	#undef glVertexAttribI3i
+	#undef glVertexAttribI4i
+	#undef glVertexAttribI1ui
+	#undef glVertexAttribI2ui
+	#undef glVertexAttribI3ui
+	#undef glVertexAttribI4ui
+	#define glGetAttribLocation glGetAttribLocationARB
+	#define glVertexAttrib1f glVertexAttrib1fARB
+	#define glVertexAttrib2f glVertexAttrib2fARB
+	#define glVertexAttrib3f glVertexAttrib3fARB
+	#define glVertexAttrib4f glVertexAttrib4fARB
+	#define glVertexAttribI1i glVertexAttrib1sARB
+	#define glVertexAttribI2i glVertexAttrib2sARB
+	#define glVertexAttribI3i glVertexAttrib3sARB
+	#define glVertexAttribI4i glVertexAttrib4sARB
+	#define glVertexAttribI1ui glVertexAttrib1sARB
+	#define glVertexAttribI2ui glVertexAttrib2sARB
+	#define glVertexAttribI3ui glVertexAttrib3sARB
+	#define glVertexAttribI4ui glVertexAttrib4sARB
 #endif
 
 
