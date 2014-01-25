@@ -232,41 +232,41 @@ static inline void draw_vertices(GLfloat* glverts, int num_vertices, GLenum prim
         if(target == NULL)
             return;
 
-        TARGET_DATA* data = ((TARGET_DATA*)target->data);
+        CONTEXT_DATA* cdata = ((CONTEXT_DATA*)target->context->data);
         
         int floats_per_vertex = 6;  // position (2), color (4)
         int buffer_stride = floats_per_vertex * sizeof(float);
         
         // Upload our modelviewprojection matrix
-        if(data->current_shader_block.modelViewProjection_loc >= 0)
+        if(cdata->current_shader_block.modelViewProjection_loc >= 0)
         {
             float mvp[16];
             GPU_GetModelViewProjection(mvp);
-            GPU_SetUniformMatrixfv(data->current_shader_block.modelViewProjection_loc, 1, 4, 4, 0, mvp);
+            GPU_SetUniformMatrixfv(cdata->current_shader_block.modelViewProjection_loc, 1, 4, 4, 0, mvp);
         }
     
         // Update the vertex array object's buffers
         #if !defined(SDL_GPU_USE_GLES) || SDL_GPU_GLES_MAJOR_VERSION != 2
-        glBindVertexArray(data->blit_VAO);
+        glBindVertexArray(cdata->blit_VAO);
         #endif
         
         // Upload blit buffer to a single buffer object
-        glBindBuffer(GL_ARRAY_BUFFER, data->blit_VBO[data->blit_VBO_flop]);
-        data->blit_VBO_flop = !data->blit_VBO_flop;
+        glBindBuffer(GL_ARRAY_BUFFER, cdata->blit_VBO[cdata->blit_VBO_flop]);
+        cdata->blit_VBO_flop = !cdata->blit_VBO_flop;
         
         // Copy the whole blit buffer to the GPU
         glBufferSubData(GL_ARRAY_BUFFER, 0, buffer_stride * num_vertices, glverts);
         
         // Specify the formatting of the blit buffer
-        if(data->current_shader_block.position_loc >= 0)
+        if(cdata->current_shader_block.position_loc >= 0)
         {
-            glEnableVertexAttribArray(data->current_shader_block.position_loc);  // Tell GL to use client-side attribute data
-            glVertexAttribPointer(data->current_shader_block.position_loc, 2, GL_FLOAT, GL_FALSE, buffer_stride, 0);  // Tell how the data is formatted
+            glEnableVertexAttribArray(cdata->current_shader_block.position_loc);  // Tell GL to use client-side attribute data
+            glVertexAttribPointer(cdata->current_shader_block.position_loc, 2, GL_FLOAT, GL_FALSE, buffer_stride, 0);  // Tell how the data is formatted
         }
-        if(data->current_shader_block.color_loc >= 0)
+        if(cdata->current_shader_block.color_loc >= 0)
         {
-            glEnableVertexAttribArray(data->current_shader_block.color_loc);
-            glVertexAttribPointer(data->current_shader_block.color_loc, 4, GL_FLOAT, GL_FALSE, buffer_stride, (void*)(2 * sizeof(float)));
+            glEnableVertexAttribArray(cdata->current_shader_block.color_loc);
+            glVertexAttribPointer(cdata->current_shader_block.color_loc, 4, GL_FLOAT, GL_FALSE, buffer_stride, (void*)(2 * sizeof(float)));
         }
         
         glDrawArrays(prim_type, 0, num_vertices);
@@ -304,46 +304,46 @@ static inline void draw_vertices_textured(GLfloat* glverts, int num_vertices, GL
         if(target == NULL)
             return;
 
-        TARGET_DATA* data = ((TARGET_DATA*)target->data);
+        CONTEXT_DATA* cdata = ((CONTEXT_DATA*)target->context->data);
         
         int floats_per_vertex = 8;  // position (2), color (4), texcoord (2)
         int buffer_stride = floats_per_vertex * sizeof(float);
         
         // Upload our modelviewprojection matrix
-        if(data->current_shader_block.modelViewProjection_loc >= 0)
+        if(cdata->current_shader_block.modelViewProjection_loc >= 0)
         {
             float mvp[16];
             GPU_GetModelViewProjection(mvp);
-            GPU_SetUniformMatrixfv(data->current_shader_block.modelViewProjection_loc, 1, 4, 4, 0, mvp);
+            GPU_SetUniformMatrixfv(cdata->current_shader_block.modelViewProjection_loc, 1, 4, 4, 0, mvp);
         }
     
         // Update the vertex array object's buffers
         #if !defined(SDL_GPU_USE_GLES) || SDL_GPU_GLES_MAJOR_VERSION != 2
-        glBindVertexArray(data->blit_VAO);
+        glBindVertexArray(cdata->blit_VAO);
         #endif
         
         // Upload blit buffer to a single buffer object
-        glBindBuffer(GL_ARRAY_BUFFER, data->blit_VBO[data->blit_VBO_flop]);
-        data->blit_VBO_flop = !data->blit_VBO_flop;
+        glBindBuffer(GL_ARRAY_BUFFER, cdata->blit_VBO[cdata->blit_VBO_flop]);
+        cdata->blit_VBO_flop = !cdata->blit_VBO_flop;
         
         // Copy the whole blit buffer to the GPU
         glBufferSubData(GL_ARRAY_BUFFER, 0, buffer_stride * num_vertices, glverts);
         
         // Specify the formatting of the blit buffer
-        if(data->current_shader_block.position_loc >= 0)
+        if(cdata->current_shader_block.position_loc >= 0)
         {
-            glEnableVertexAttribArray(data->current_shader_block.position_loc);  // Tell GL to use client-side attribute data
-            glVertexAttribPointer(data->current_shader_block.position_loc, 2, GL_FLOAT, GL_FALSE, buffer_stride, 0);  // Tell how the data is formatted
+            glEnableVertexAttribArray(cdata->current_shader_block.position_loc);  // Tell GL to use client-side attribute data
+            glVertexAttribPointer(cdata->current_shader_block.position_loc, 2, GL_FLOAT, GL_FALSE, buffer_stride, 0);  // Tell how the data is formatted
         }
-        if(data->current_shader_block.color_loc >= 0)
+        if(cdata->current_shader_block.color_loc >= 0)
         {
-            glEnableVertexAttribArray(data->current_shader_block.color_loc);
-            glVertexAttribPointer(data->current_shader_block.color_loc, 4, GL_FLOAT, GL_FALSE, buffer_stride, (void*)(2 * sizeof(float)));
+            glEnableVertexAttribArray(cdata->current_shader_block.color_loc);
+            glVertexAttribPointer(cdata->current_shader_block.color_loc, 4, GL_FLOAT, GL_FALSE, buffer_stride, (void*)(2 * sizeof(float)));
         }
-        if(data->current_shader_block.texcoord_loc >= 0)
+        if(cdata->current_shader_block.texcoord_loc >= 0)
         {
-            glEnableVertexAttribArray(data->current_shader_block.texcoord_loc);
-            glVertexAttribPointer(data->current_shader_block.texcoord_loc, 2, GL_FLOAT, GL_FALSE, buffer_stride, (void*)(6 * sizeof(float)));
+            glEnableVertexAttribArray(cdata->current_shader_block.texcoord_loc);
+            glVertexAttribPointer(cdata->current_shader_block.texcoord_loc, 2, GL_FLOAT, GL_FALSE, buffer_stride, (void*)(6 * sizeof(float)));
         }
         
         glDrawArrays(prim_type, 0, num_vertices);

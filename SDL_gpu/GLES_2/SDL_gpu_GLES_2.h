@@ -33,6 +33,12 @@ typedef struct ContextData_GLES_2
 	unsigned short* index_buffer;  // Indexes into the blit buffer so we can use 4 vertices for every 2 triangles (1 quad)
 	int index_buffer_num_vertices;
 	int index_buffer_max_num_vertices;
+    
+    // Tier 3 rendering
+    unsigned int blit_VBO[2];  // For double-buffering
+    Uint8 blit_VBO_flop;
+    GPU_ShaderBlock shader_block[2];
+    GPU_ShaderBlock current_shader_block;
 } ContextData_GLES_2;
 
 typedef struct RendererData_GLES_2
@@ -50,13 +56,6 @@ typedef struct TargetData_GLES_2
 {
 	Uint32 handle;
 	Uint32 format;
-    
-    // Tier 3 rendering
-    unsigned int blit_VBO[2];  // For double-buffering
-    Uint8 blit_VBO_flop;
-    GPU_ShaderBlock shader_block[2];
-    GPU_ShaderBlock current_shader_block;
-    
 } TargetData_GLES_2;
 
 
