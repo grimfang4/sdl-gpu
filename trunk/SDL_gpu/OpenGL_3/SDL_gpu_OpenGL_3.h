@@ -41,6 +41,13 @@ typedef struct ContextData_OpenGL_3
 	unsigned short* index_buffer;  // Indexes into the blit buffer so we can use 4 vertices for every 2 triangles (1 quad)
 	int index_buffer_num_vertices;
 	int index_buffer_max_num_vertices;
+	
+    // Tier 3 rendering
+    unsigned int blit_VAO;
+    unsigned int blit_VBO[2];  // For double-buffering
+    Uint8 blit_VBO_flop;
+    GPU_ShaderBlock shader_block[2];
+    GPU_ShaderBlock current_shader_block;
 } ContextData_OpenGL_3;
 
 typedef struct RendererData_OpenGL_3
@@ -58,13 +65,6 @@ typedef struct TargetData_OpenGL_3
 {
 	Uint32 handle;
 	Uint32 format;
-    
-    // Tier 3 rendering
-    unsigned int blit_VAO;
-    unsigned int blit_VBO[2];  // For double-buffering
-    Uint8 blit_VBO_flop;
-    GPU_ShaderBlock shader_block[2];
-    GPU_ShaderBlock current_shader_block;
     
 } TargetData_OpenGL_3;
 
