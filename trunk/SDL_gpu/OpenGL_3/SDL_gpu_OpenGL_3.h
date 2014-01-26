@@ -28,13 +28,13 @@
 #define GPU_DEFAULT_TEXTURED_VERTEX_SHADER_SOURCE \
 "#version 130\n\
 \
-attribute vec2 gpu_Vertex;\n\
-attribute vec2 gpu_TexCoord;\n\
-attribute vec4 gpu_Color;\n\
+in vec2 gpu_Vertex;\n\
+in vec2 gpu_TexCoord;\n\
+in vec4 gpu_Color;\n\
 uniform mat4 gpu_ModelViewProjectionMatrix;\n\
 \
-varying vec4 color;\n\
-varying vec2 texCoord;\n\
+out vec4 color;\n\
+out vec2 texCoord;\n\
 \
 void main(void)\n\
 {\n\
@@ -47,11 +47,11 @@ void main(void)\n\
 #define GPU_DEFAULT_UNTEXTURED_VERTEX_SHADER_SOURCE \
 "#version 130\n\
 \
-attribute vec2 gpu_Vertex;\n\
-attribute vec4 gpu_Color;\n\
+in vec2 gpu_Vertex;\n\
+in vec4 gpu_Color;\n\
 uniform mat4 gpu_ModelViewProjectionMatrix;\n\
 \
-varying vec4 color;\n\
+out vec4 color;\n\
 \
 void main(void)\n\
 {\n\
@@ -63,8 +63,8 @@ void main(void)\n\
 #define GPU_DEFAULT_TEXTURED_FRAGMENT_SHADER_SOURCE \
 "#version 130\n\
 \
-varying vec4 color;\n\
-varying vec2 texCoord;\n\
+in vec4 color;\n\
+in vec2 texCoord;\n\
 \
 uniform sampler2D tex;\n\
 \
@@ -76,7 +76,7 @@ void main(void)\n\
 #define GPU_DEFAULT_UNTEXTURED_FRAGMENT_SHADER_SOURCE \
 "#version 130\n\
 \
-varying vec4 color;\n\
+in vec4 color;\n\
 \
 void main(void)\n\
 {\n\
