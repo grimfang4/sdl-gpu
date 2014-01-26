@@ -1679,11 +1679,11 @@ void GPU_SetAttributeuiv(int location, int num_elements, unsigned int* value)
 	current_renderer->SetAttributeuiv(current_renderer, location, num_elements, value);
 }
 
-void GPU_SetAttributeSource(int location, void* values, GPU_AttributeFormat format)
+void GPU_SetAttributeSource(int num_values, GPU_Attribute source)
 {
 	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->SetAttributeSource == NULL)
 		return;
 	
-	current_renderer->SetAttributeSource(current_renderer, location, values, format);
+	current_renderer->SetAttributeSource(current_renderer, num_values, source);
 }
 

@@ -301,6 +301,14 @@ typedef struct GPU_Attribute
     GPU_AttributeFormat format;
 } GPU_Attribute;
 
+typedef struct GPU_AttributeSource
+{
+    Uint8 enabled;
+    int num_values;
+    void* next_value;
+    GPU_Attribute attribute;
+} GPU_AttributeSource;
+
 
 
 /*! Renderer object which specializes the API to a particular backend. */
@@ -538,7 +546,7 @@ struct GPU_Renderer
     void (*SetAttributeuiv)(GPU_Renderer* renderer, int location, int num_elements, unsigned int* value);
     
     /*! \see GPU_SetAttributeSource() */
-    void (*SetAttributeSource)(GPU_Renderer* renderer, int location, void* values, GPU_AttributeFormat format);
+    void (*SetAttributeSource)(GPU_Renderer* renderer, int num_values, GPU_Attribute source);
     
     
     // Shapes
@@ -1048,8 +1056,8 @@ void GPU_SetAttributeiv(int location, int num_elements, int* value);
 /*! Sets a constant-value shader attribute that will be used for each rendered vertex. */
 void GPU_SetAttributeuiv(int location, int num_elements, unsigned int* value);
 
-/*! Sets a source array and format for a per-vertex shader attribute. */
-void GPU_SetAttributeSource(int location, void* values, GPU_AttributeFormat format);
+/*! Enables a shader attribute and sets its source data. */
+void GPU_SetAttributeSource(int num_values, GPU_Attribute source);
 
 
 

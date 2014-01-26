@@ -39,6 +39,9 @@ typedef struct ContextData_GLES_2
     Uint8 blit_VBO_flop;
     GPU_ShaderBlock shader_block[2];
     GPU_ShaderBlock current_shader_block;
+    
+	GPU_AttributeSource shader_attributes[16];
+	unsigned int attribute_VBO[16];
 } ContextData_GLES_2;
 
 typedef struct RendererData_GLES_2

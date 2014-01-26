@@ -48,6 +48,9 @@ typedef struct ContextData_OpenGL_3
     Uint8 blit_VBO_flop;
     GPU_ShaderBlock shader_block[2];
     GPU_ShaderBlock current_shader_block;
+    
+	GPU_AttributeSource shader_attributes[16];
+	unsigned int attribute_VBO[16];
 } ContextData_OpenGL_3;
 
 typedef struct RendererData_OpenGL_3
