@@ -113,6 +113,57 @@
 #endif
 
 
+
+
+#define GPU_DEFAULT_TEXTURED_VERTEX_SHADER_SOURCE \
+"#version 120\n\
+\
+varying vec4 color;\n\
+varying vec2 texCoord;\n\
+\
+void main(void)\n\
+{\n\
+	color = gl_Color;\n\
+	texCoord = vec2(gl_MultiTexCoord0);\n\
+	gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\n\
+}"
+
+#define GPU_DEFAULT_UNTEXTURED_VERTEX_SHADER_SOURCE \
+"#version 120\n\
+\
+varying vec4 color;\n\
+\
+void main(void)\n\
+{\n\
+	color = gl_Color;\n\
+	gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\n\
+}"
+
+
+#define GPU_DEFAULT_TEXTURED_FRAGMENT_SHADER_SOURCE \
+"#version 120\n\
+\
+varying vec4 color;\n\
+varying vec2 texCoord;\n\
+\
+uniform sampler2D tex;\n\
+\
+void main(void)\n\
+{\n\
+    gl_FragColor = texture2D(tex, texCoord) * color;\n\
+}"
+
+#define GPU_DEFAULT_UNTEXTURED_FRAGMENT_SHADER_SOURCE \
+"#version 120\n\
+\
+varying vec4 color;\n\
+\
+void main(void)\n\
+{\n\
+    gl_FragColor = color;\n\
+}"
+
+
 typedef struct ContextData_OpenGL_1
 {
 	SDL_Color last_color;

@@ -60,188 +60,6 @@ TARGET_DATA  // Appropriate type for the target data (via pointer)
 #endif
 
 
-// Default shaders
-#ifndef SDL_GPU_USE_GL_TIER3
-
-#define TEXTURED_VERTEX_SHADER_SOURCE \
-"#version 120\n\
-\
-varying vec4 color;\n\
-varying vec2 texCoord;\n\
-\
-void main(void)\n\
-{\n\
-	color = gl_Color;\n\
-	texCoord = vec2(gl_MultiTexCoord0);\n\
-	gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\n\
-}"
-
-#define UNTEXTURED_VERTEX_SHADER_SOURCE \
-"#version 120\n\
-\
-varying vec4 color;\n\
-\
-void main(void)\n\
-{\n\
-	color = gl_Color;\n\
-	gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\n\
-}"
-
-
-#define TEXTURED_FRAGMENT_SHADER_SOURCE \
-"#version 120\n\
-\
-varying vec4 color;\n\
-varying vec2 texCoord;\n\
-\
-uniform sampler2D tex;\n\
-\
-void main(void)\n\
-{\n\
-    gl_FragColor = texture2D(tex, texCoord) * color;\n\
-}"
-
-#define UNTEXTURED_FRAGMENT_SHADER_SOURCE \
-"#version 120\n\
-\
-varying vec4 color;\n\
-\
-void main(void)\n\
-{\n\
-    gl_FragColor = color;\n\
-}"
-
-#else
-// Tier 3 uses shader attributes to send position, texcoord, and color data for each vertex.
-#ifndef SDL_GPU_USE_GLES
-#define TEXTURED_VERTEX_SHADER_SOURCE \
-"#version 130\n\
-\
-attribute vec2 gpu_Vertex;\n\
-attribute vec2 gpu_TexCoord;\n\
-attribute vec4 gpu_Color;\n\
-uniform mat4 gpu_ModelViewProjectionMatrix;\n\
-\
-varying vec4 color;\n\
-varying vec2 texCoord;\n\
-\
-void main(void)\n\
-{\n\
-	color = gpu_Color;\n\
-	texCoord = vec2(gpu_TexCoord);\n\
-	gl_Position = gpu_ModelViewProjectionMatrix * vec4(gpu_Vertex, 0.0, 1.0);\n\
-}"
-
-// Tier 3 uses shader attributes to send position, texcoord, and color data for each vertex.
-#define UNTEXTURED_VERTEX_SHADER_SOURCE \
-"#version 130\n\
-\
-attribute vec2 gpu_Vertex;\n\
-attribute vec4 gpu_Color;\n\
-uniform mat4 gpu_ModelViewProjectionMatrix;\n\
-\
-varying vec4 color;\n\
-\
-void main(void)\n\
-{\n\
-	color = gpu_Color;\n\
-	gl_Position = gpu_ModelViewProjectionMatrix * vec4(gpu_Vertex, 0.0, 1.0);\n\
-}"
-
-
-#define TEXTURED_FRAGMENT_SHADER_SOURCE \
-"#version 130\n\
-\
-varying vec4 color;\n\
-varying vec2 texCoord;\n\
-\
-uniform sampler2D tex;\n\
-\
-void main(void)\n\
-{\n\
-    gl_FragColor = texture2D(tex, texCoord) * color;\n\
-}"
-
-#define UNTEXTURED_FRAGMENT_SHADER_SOURCE \
-"#version 130\n\
-\
-varying vec4 color;\n\
-\
-void main(void)\n\
-{\n\
-    gl_FragColor = color;\n\
-}"
-#else
-// GLES
-#define TEXTURED_VERTEX_SHADER_SOURCE \
-"#version 100\n\
-precision mediump float;\n\
-precision mediump int;\n\
-\
-attribute vec2 gpu_Vertex;\n\
-attribute vec2 gpu_TexCoord;\n\
-attribute vec4 gpu_Color;\n\
-uniform mat4 gpu_ModelViewProjectionMatrix;\n\
-\
-varying vec4 color;\n\
-varying vec2 texCoord;\n\
-\
-void main(void)\n\
-{\n\
-	color = gpu_Color;\n\
-	texCoord = vec2(gpu_TexCoord);\n\
-	gl_Position = gpu_ModelViewProjectionMatrix * vec4(gpu_Vertex, 0.0, 1.0);\n\
-}"
-
-// Tier 3 uses shader attributes to send position, texcoord, and color data for each vertex.
-#define UNTEXTURED_VERTEX_SHADER_SOURCE \
-"#version 100\n\
-precision mediump float;\n\
-precision mediump int;\n\
-\
-attribute vec2 gpu_Vertex;\n\
-attribute vec4 gpu_Color;\n\
-uniform mat4 gpu_ModelViewProjectionMatrix;\n\
-\
-varying vec4 color;\n\
-\
-void main(void)\n\
-{\n\
-	color = gpu_Color;\n\
-	gl_Position = gpu_ModelViewProjectionMatrix * vec4(gpu_Vertex, 0.0, 1.0);\n\
-}"
-
-
-#define TEXTURED_FRAGMENT_SHADER_SOURCE \
-"#version 100\n\
-precision mediump float;\n\
-precision mediump int;\n\
-\
-varying vec4 color;\n\
-varying vec2 texCoord;\n\
-\
-uniform sampler2D tex;\n\
-\
-void main(void)\n\
-{\n\
-    gl_FragColor = texture2D(tex, texCoord) * color;\n\
-}"
-
-#define UNTEXTURED_FRAGMENT_SHADER_SOURCE \
-"#version 100\n\
-precision mediump float;\n\
-precision mediump int;\n\
-\
-varying vec4 color;\n\
-\
-void main(void)\n\
-{\n\
-    gl_FragColor = color;\n\
-}"
-
-#endif
-
-#endif
 
 
 
@@ -249,28 +67,6 @@ void main(void)\n\
 static SDL_PixelFormat* AllocFormat(GLenum glFormat);
 static void FreeFormat(SDL_PixelFormat* format);
 
-// To make these public, I need to move them into the renderer.  But should they be?
-/*static float* GPU_GetModelView(void)
-{
-    #ifdef SDL_GPU_USE_INTERNAL_MATRICES
-    return _GPU_GetModelView();
-    #else
-    static float A[16];
-    glGetFloatv(GL_MODELVIEW_MATRIX, A);
-    return A;
-    #endif
-}
-
-static float* GPU_GetProjection(void)
-{
-    #ifdef SDL_GPU_USE_INTERNAL_MATRICES
-    return _GPU_GetProjection();
-    #else
-    static float A[16];
-    glGetFloatv(GL_PROJECTION_MATRIX, A);
-    return A;
-    #endif
-}*/
 
 
 static Uint8 isExtensionSupported(const char* extension_str)
@@ -1108,12 +904,12 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     if(renderer->id.major_version >= 2)
     {
         // Textured shader
-        Uint32 v = renderer->CompileShader(renderer, GPU_VERTEX_SHADER, TEXTURED_VERTEX_SHADER_SOURCE);
+        Uint32 v = renderer->CompileShader(renderer, GPU_VERTEX_SHADER, GPU_DEFAULT_TEXTURED_VERTEX_SHADER_SOURCE);
         
         if(!v)
             GPU_LogError("Failed to load default textured vertex shader: %s\n", renderer->GetShaderMessage(renderer));
         
-        Uint32 f = renderer->CompileShader(renderer, GPU_FRAGMENT_SHADER, TEXTURED_FRAGMENT_SHADER_SOURCE);
+        Uint32 f = renderer->CompileShader(renderer, GPU_FRAGMENT_SHADER, GPU_DEFAULT_TEXTURED_FRAGMENT_SHADER_SOURCE);
         
         if(!f)
             GPU_LogError("Failed to load default textured fragment shader: %s\n", renderer->GetShaderMessage(renderer));
@@ -1132,12 +928,12 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
         #endif
         
         // Untextured shader
-        v = renderer->CompileShader(renderer, GPU_VERTEX_SHADER, UNTEXTURED_VERTEX_SHADER_SOURCE);
+        v = renderer->CompileShader(renderer, GPU_VERTEX_SHADER, GPU_DEFAULT_UNTEXTURED_VERTEX_SHADER_SOURCE);
         
         if(!v)
             GPU_LogError("Failed to load default untextured vertex shader: %s\n", renderer->GetShaderMessage(renderer));
         
-        f = renderer->CompileShader(renderer, GPU_FRAGMENT_SHADER, UNTEXTURED_FRAGMENT_SHADER_SOURCE);
+        f = renderer->CompileShader(renderer, GPU_FRAGMENT_SHADER, GPU_DEFAULT_UNTEXTURED_FRAGMENT_SHADER_SOURCE);
         
         if(!f)
             GPU_LogError("Failed to load default untextured fragment shader: %s\n", renderer->GetShaderMessage(renderer));
