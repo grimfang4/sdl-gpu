@@ -421,9 +421,6 @@ struct GPU_Renderer
 	/*! \see GPU_BlitBatch() */
 	int (*BlitBatch)(GPU_Renderer* renderer, GPU_Image* src, GPU_Target* dest, unsigned int numSprites, float* values, GPU_BlitFlagEnum flags);
 	
-	/*! \see GPU_ShaderBatch() */
-	int (*ShaderBatch)(GPU_Renderer* renderer, GPU_Image* src, GPU_Target* dest, unsigned int numSprites, unsigned int numAttributes, GPU_Attribute* attributes);
-	
 	/*! \see GPU_GenerateMipmaps() */
 	void (*GenerateMipmaps)(GPU_Renderer* renderer, GPU_Image* image);
 
@@ -840,7 +837,7 @@ int GPU_BlitTransformMatrix(GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest,
 
 /*! Performs 'numSprites' blits of the 'src' image to the 'dest' target.
  * Note: GPU_BlitBatch() cannot interpret a mix of normal values and "passthrough" values due to format ambiguity.
- * \param values A tightly-packed array of position (x,y), color (r,g,b,a) values with a range from 0-255, and src_rect (x,y,w,h) values in image coordinates
+ * \param values A tightly-packed array of position (x,y), color (r,g,b,a) values with a range from 0-255, and src_rect (x,y,w,h) values in image coordinates.  Pass NULL to render with only custom shader attributes.
  * \param flags Bit flags to control the interpretation of the array parameters.  The only passthrough option accepted is GPU_PASSTHROUGH_ALL.
  */
 int GPU_BlitBatch(GPU_Image* src, GPU_Target* dest, unsigned int numSprites, float* values, GPU_BlitFlagEnum flags);
@@ -852,12 +849,6 @@ int GPU_BlitBatch(GPU_Image* src, GPU_Target* dest, unsigned int numSprites, flo
  * \param flags Bit flags to control the interpretation of the array parameters
  */
 int GPU_BlitBatchSeparate(GPU_Image* src, GPU_Target* dest, unsigned int numSprites, float* positions, float* src_rects, float* colors, GPU_BlitFlagEnum flags);
-
-/*! Performs 'numSprites' blits of the 'src' image to the 'dest' target.
- * \param numAttributes Number of shader attributes to use
- * \param attributes Array of 'numAttributes' shader attribute specifiers
- */
-int GPU_ShaderBatch(GPU_Image* src, GPU_Target* dest, unsigned int numSprites, unsigned int numAttributes, GPU_Attribute* attributes);
 
 /*! Loads mipmaps for the given image, if supported by the renderer. */
 void GPU_GenerateMipmaps(GPU_Image* image);
