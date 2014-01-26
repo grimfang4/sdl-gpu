@@ -33,10 +33,10 @@ int do_interleaved(GPU_Target* screen)
 		sprite_values[val_n++] = 0;
 		sprite_values[val_n++] = image->w;
 		sprite_values[val_n++] = image->h;
-		sprite_values[val_n++] = 255;
-		sprite_values[val_n++] = 255;
-		sprite_values[val_n++] = 255;
-		sprite_values[val_n++] = 255;
+		sprite_values[val_n++] = rand()%256;
+		sprite_values[val_n++] = rand()%256;
+		sprite_values[val_n++] = rand()%256;
+		sprite_values[val_n++] = rand()%256;
 		velx[i] = 10 + rand()%screen->w/10;
 		vely[i] = 10 + rand()%screen->h/10;
 		if(rand()%2)
@@ -156,6 +156,7 @@ int do_separate(GPU_Target* screen)
 	int numSprites = 101;
 	
 	float* positions = (float*)malloc(sizeof(float)*maxSprites*2);
+	float* colors = (float*)malloc(sizeof(float)*maxSprites*4);
 	float* velx = (float*)malloc(sizeof(float)*maxSprites);
 	float* vely = (float*)malloc(sizeof(float)*maxSprites);
 	int i;
@@ -164,6 +165,10 @@ int do_separate(GPU_Target* screen)
 	{
 		positions[val_n++] = rand()%screen->w;
 		positions[val_n++] = rand()%screen->h;
+		colors[i*4] = rand()%256;
+		colors[i*4+1] = rand()%256;
+		colors[i*4+2] = rand()%256;
+		colors[i*4+3] = rand()%256;
 		velx[i] = 10 + rand()%screen->w/10;
 		vely[i] = 10 + rand()%screen->h/10;
 		if(rand()%2)
@@ -241,7 +246,7 @@ int do_separate(GPU_Target* screen)
 		
 		GPU_Clear(screen);
 		
-        GPU_BlitBatchSeparate(image, screen, numSprites, positions, NULL, NULL, 0);
+        GPU_BlitBatchSeparate(image, screen, numSprites, positions, NULL, colors, 0);
 		
 		GPU_Flip(screen);
 		
@@ -257,6 +262,7 @@ int do_separate(GPU_Target* screen)
 	printf("Average FPS: %.2f\n", 1000.0f*frameCount/(SDL_GetTicks() - startTime));
 	
 	free(positions);
+	free(colors);
 	free(velx);
 	free(vely);
 	
@@ -290,6 +296,10 @@ int do_attributes(GPU_Target* screen)
 	
 	// Load attributes for the textured shader
 	GPU_ActivateShaderProgram(screen->context->default_textured_shader_program, NULL);
+	// Disable the default shader's attributes (not a typical thing to do...)
+	GPU_ShaderBlock block = {-1,-1,-1,GPU_GetUniformLocation(screen->context->current_shader_program, "gpu_ModelViewProjectionMatrix")};
+	GPU_ActivateShaderProgram(screen->context->default_textured_shader_program, &block);
+	
 	GPU_Attribute attributes[3] = {
 	    GPU_MakeAttribute(GPU_GetAttributeLocation(screen->context->current_shader_program, "gpu_Vertex"), sprite_values, 
                                                     GPU_MakeAttributeFormat(2, GPU_FLOAT, 0, floats_per_vertex*sizeof(float), 0)),
@@ -313,10 +323,10 @@ int do_attributes(GPU_Target* screen)
 		sprite_values[val_n++] = 0;
 		sprite_values[val_n++] = 0;
 		
-		sprite_values[val_n++] = 1.0f;
-		sprite_values[val_n++] = 1.0f;
-		sprite_values[val_n++] = 1.0f;
-		sprite_values[val_n++] = 1.0f;
+		sprite_values[val_n++] = rand()%101/100.0f;
+		sprite_values[val_n++] = rand()%101/100.0f;
+		sprite_values[val_n++] = rand()%101/100.0f;
+		sprite_values[val_n++] = rand()%101/100.0f;
 		
 		sprite_values[val_n++] = x + image->w/2;
 		sprite_values[val_n++] = y - image->h/2;
@@ -324,10 +334,10 @@ int do_attributes(GPU_Target* screen)
 		sprite_values[val_n++] = 1;
 		sprite_values[val_n++] = 0;
 		
-		sprite_values[val_n++] = 1.0f;
-		sprite_values[val_n++] = 1.0f;
-		sprite_values[val_n++] = 1.0f;
-		sprite_values[val_n++] = 1.0f;
+		sprite_values[val_n++] = rand()%101/100.0f;
+		sprite_values[val_n++] = rand()%101/100.0f;
+		sprite_values[val_n++] = rand()%101/100.0f;
+		sprite_values[val_n++] = rand()%101/100.0f;
 		
 		sprite_values[val_n++] = x + image->w/2;
 		sprite_values[val_n++] = y + image->h/2;
@@ -335,10 +345,10 @@ int do_attributes(GPU_Target* screen)
 		sprite_values[val_n++] = 1;
 		sprite_values[val_n++] = 1;
 		
-		sprite_values[val_n++] = 1.0f;
-		sprite_values[val_n++] = 1.0f;
-		sprite_values[val_n++] = 1.0f;
-		sprite_values[val_n++] = 1.0f;
+		sprite_values[val_n++] = rand()%101/100.0f;
+		sprite_values[val_n++] = rand()%101/100.0f;
+		sprite_values[val_n++] = rand()%101/100.0f;
+		sprite_values[val_n++] = rand()%101/100.0f;
 		
 		sprite_values[val_n++] = x - image->w/2;
 		sprite_values[val_n++] = y + image->h/2;
@@ -346,10 +356,10 @@ int do_attributes(GPU_Target* screen)
 		sprite_values[val_n++] = 0;
 		sprite_values[val_n++] = 1;
 		
-		sprite_values[val_n++] = 1.0f;
-		sprite_values[val_n++] = 1.0f;
-		sprite_values[val_n++] = 1.0f;
-		sprite_values[val_n++] = 1.0f;
+		sprite_values[val_n++] = rand()%101/100.0f;
+		sprite_values[val_n++] = rand()%101/100.0f;
+		sprite_values[val_n++] = rand()%101/100.0f;
+		sprite_values[val_n++] = rand()%101/100.0f;
 		
 		velx[i] = 10 + rand()%screen->w/10;
 		vely[i] = 10 + rand()%screen->h/10;
@@ -443,7 +453,12 @@ int do_attributes(GPU_Target* screen)
             sprite_values[val_n+1] = y + image->h/2;
 		}
 		
-        GPU_ShaderBatch(image, screen, numSprites, 3, attributes);
+		//float color[4] = {0.5f, 0, 0, 1.0f};
+		//GPU_SetAttributefv(attributes[2].location, 4, color);
+		GPU_SetAttributeSource(numSprites*4, attributes[0]);
+		GPU_SetAttributeSource(numSprites*4, attributes[1]);
+		GPU_SetAttributeSource(numSprites*4, attributes[2]);
+        GPU_BlitBatch(image, screen, numSprites, NULL, 0);
 		
 		GPU_Flip(screen);
 		
@@ -463,6 +478,9 @@ int do_attributes(GPU_Target* screen)
 	free(vely);
 	
 	GPU_FreeImage(image);
+	
+	// Reset the default shader's block
+	GPU_ActivateShaderProgram(screen->context->default_textured_shader_program, NULL);
 	
 	return return_value;
 }

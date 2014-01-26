@@ -2879,6 +2879,76 @@ static int BlitTransformMatrix(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect*
 
 
 
+#ifdef SDL_GPU_USE_GL_TIER3
+static void upload_attribute_data(CONTEXT_DATA* cdata, int num_vertices)
+{
+    int i;
+    for(i = 0; i < 16; i++)
+    {
+        GPU_AttributeSource* a = &cdata->shader_attributes[i];
+        if(a->attribute.values != NULL && a->attribute.location >= 0 && a->num_values > 0)
+        {
+            int num_values_used = num_vertices;
+            if(a->num_values < num_values_used)
+                num_values_used = a->num_values;
+            
+            glBindBuffer(GL_ARRAY_BUFFER, cdata->attribute_VBO[i]);
+            
+            int bytes_used = a->attribute.format.stride_bytes * num_values_used;
+            glBufferData(GL_ARRAY_BUFFER, bytes_used, a->next_value, GL_STREAM_DRAW);
+            
+            glEnableVertexAttribArray(a->attribute.location);
+            glVertexAttribPointer(a->attribute.location, a->attribute.format.num_elems_per_vertex, a->attribute.format.type, a->attribute.format.normalize, a->attribute.format.stride_bytes, (void*)a->attribute.format.offset_bytes);
+            
+            a->enabled = 1;
+            // Move the data along so we use the next values for the next flush
+            a->num_values -= num_values_used;
+            if(a->num_values <= 0)
+                a->next_value = a->attribute.values;
+            else
+                a->next_value = (void*)(((char*)a->next_value) + bytes_used);
+        }
+    }
+}
+
+static void disable_attribute_data(CONTEXT_DATA* cdata)
+{
+    int i;
+    for(i = 0; i < 16; i++)
+    {
+        GPU_AttributeSource* a = &cdata->shader_attributes[i];
+        if(a->enabled)
+        {
+            glDisableVertexAttribArray(a->attribute.location);
+            a->enabled = 0;
+        }
+    }
+}
+
+#endif
+
+static int get_lowest_attribute_num_values(CONTEXT_DATA* cdata, int cap)
+{
+    int lowest = cap;
+    
+#ifdef SDL_GPU_USE_GL_TIER3
+    int i;
+    for(i = 0; i < 16; i++)
+    {
+        GPU_AttributeSource* a = &cdata->shader_attributes[i];
+        if(a->attribute.values != NULL && a->attribute.location >= 0)
+        {
+            if(a->num_values < lowest)
+                lowest = a->num_values;
+        }
+    }
+#endif
+    
+    return lowest;
+}
+
+
+
 
 static int BlitBatch(GPU_Renderer* renderer, GPU_Image* src, GPU_Target* dest, unsigned int numSprites, float* values, GPU_BlitFlagEnum flags)
 {
@@ -3037,6 +3107,8 @@ static int BlitBatch(GPU_Renderer* renderer, GPU_Image* src, GPU_Target* dest, u
                 glVertexAttribPointer(cdata->current_shader_block.color_loc, 4, GL_FLOAT, GL_FALSE, GPU_BLIT_BUFFER_STRIDE, (void*)(GPU_BLIT_BUFFER_COLOR_OFFSET * sizeof(float)));
             }
             
+            upload_attribute_data(cdata, partial_num_sprites*4);
+            
             glDrawElements(GL_TRIANGLES, cdata->index_buffer_num_vertices, GL_UNSIGNED_SHORT, cdata->index_buffer);
             
             // Disable the vertex arrays again
@@ -3046,6 +3118,8 @@ static int BlitBatch(GPU_Renderer* renderer, GPU_Image* src, GPU_Target* dest, u
                 glDisableVertexAttribArray(cdata->current_shader_block.texcoord_loc);
             if(cdata->current_shader_block.color_loc >= 0)
                 glDisableVertexAttribArray(cdata->current_shader_block.color_loc);
+            
+            disable_attribute_data(cdata);
             
             #if !defined(SDL_GPU_USE_GLES) || SDL_GPU_GLES_MAJOR_VERSION != 2
             glBindVertexArray(0);
@@ -3060,173 +3134,6 @@ static int BlitBatch(GPU_Renderer* renderer, GPU_Image* src, GPU_Target* dest, u
             cdata->blit_buffer_num_vertices = 0;
             cdata->index_buffer_num_vertices = 0;
         }
-
-        unsetClipRect(renderer, dest);
-
-        // restore matrices
-        if(isRTT)
-        {
-            GPU_MatrixMode( GPU_PROJECTION );
-            GPU_PopMatrix();
-            GPU_MatrixMode( GPU_MODELVIEW );
-        }
-    }
-
-    return 0;
-}
-
-
-static int ShaderBatch(GPU_Renderer* renderer, GPU_Image* src, GPU_Target* dest, unsigned int numSprites, unsigned int numAttributes, GPU_Attribute* attributes)
-{
-    if(src == NULL || dest == NULL)
-        return -1;
-    if(renderer != src->renderer || renderer != dest->renderer)
-        return -2;
-    
-    // TODO: Implement this function for more renderers.    
-    #ifndef SDL_GPU_USE_GL_TIER3
-        GPU_LogError("GPU_ShaderBatch(): Not supported by this renderer.\n");
-        return -4;
-    #endif
-    
-    makeContextCurrent(renderer, dest);
-
-    // Bind the texture to which subsequent calls refer
-    bindTexture(renderer, src);
-
-    // Bind the FBO
-    if(bindFramebuffer(renderer, dest))
-    {
-        prepareToRenderToTarget(renderer, dest);
-        prepareToRenderImage(renderer, dest, src);
-        changeViewport(dest);
-        
-        glEnable(GL_TEXTURE_2D);
-        Uint8 isRTT = (dest->image != NULL);
-        
-        // Modify the projection matrix if rendering to a texture
-        if(isRTT)
-        {
-            GPU_MatrixMode( GPU_PROJECTION );
-            GPU_PushMatrix();
-            GPU_LoadIdentity();
-
-            GPU_Ortho(0.0f, dest->w, 0.0f, dest->h, -1.0f, 1.0f); // Special inverted orthographic projection because tex coords are inverted already.
-
-            GPU_MatrixMode( GPU_MODELVIEW );
-        }
-
-        setClipRect(renderer, dest);
-        
-        #ifdef SDL_GPU_APPLY_TRANSFORMS_TO_GL_STACK
-        //if(!renderer->IsFeatureEnabled(GPU_FEATURE_VERTEX_SHADER))
-            applyTransforms();
-        #endif
-        
-
-        CONTEXT_DATA* cdata = (CONTEXT_DATA*)renderer->current_context_target->context->data;
-
-        renderer->FlushBlitBuffer(renderer);
-        
-        #if defined(SDL_GPU_USE_GL_TIER3)
-        
-        
-
-        TARGET_DATA* data = ((TARGET_DATA*)renderer->current_context_target->data);
-        
-        // Upload our modelviewprojection matrix
-        if(cdata->current_shader_block.modelViewProjection_loc >= 0)
-        {
-            float mvp[16];
-            GPU_GetModelViewProjection(mvp);
-            glUniformMatrix4fv(cdata->current_shader_block.modelViewProjection_loc, 1, 0, mvp);
-        }
-    
-        // Update the vertex array object's buffers
-        #if !defined(SDL_GPU_USE_GLES) || SDL_GPU_GLES_MAJOR_VERSION != 2
-        glBindVertexArray(cdata->blit_VAO);
-        #endif
-        
-        // TODO: Move these into storage so we don't have to keep recreating them
-        GLuint buffers[16];
-        glGenBuffers(16, buffers);
-        
-        int i;
-        for(i = 0; i < numAttributes; i++)
-        {
-            glBindBuffer(GL_ARRAY_BUFFER, buffers[i]);
-            
-            // Copy the whole buffer to the GPU
-            // FIXME: Identify which attributes are interleaved so we can just upload the array once.
-            glBufferData(GL_ARRAY_BUFFER, attributes[i].format.stride_bytes * (numSprites*4), attributes[i].values, GL_STREAM_DRAW);  // Fills GPU buffer with data.
-        }
-        
-        // Only do so many at a time
-        int sprites_so_far = 0;
-        int partial_num_sprites = cdata->blit_buffer_max_num_vertices/4;
-        while(1)
-        {
-            if(numSprites < partial_num_sprites)
-                partial_num_sprites = numSprites;
-            if(partial_num_sprites <= 0)
-                break;
-
-            // Triangle indices
-            cdata->index_buffer_num_vertices += 6*partial_num_sprites;
-            
-            // Upload attribute buffers
-            
-            for(i = 0; i < numAttributes; i++)
-            {
-                glBindBuffer(GL_ARRAY_BUFFER, buffers[i]);
-                
-                // Specify the formatting of the buffer
-                if(attributes[i].location >= 0)
-                {
-                    glEnableVertexAttribArray(attributes[i].location);
-                    if(!attributes[i].format.normalize && attributes[i].format.type != GPU_FLOAT && attributes[i].format.type != GPU_DOUBLE)
-                    {
-                        glVertexAttribIPointer(attributes[i].location,
-                                              attributes[i].format.num_elems_per_vertex,
-                                              attributes[i].format.type,
-                                              attributes[i].format.stride_bytes,
-                                              (void*)(attributes[i].format.offset_bytes));
-                    }
-                    else
-                    {
-                        glVertexAttribPointer(attributes[i].location,
-                                              attributes[i].format.num_elems_per_vertex,
-                                              attributes[i].format.type,
-                                              attributes[i].format.normalize,
-                                              attributes[i].format.stride_bytes,
-                                              (void*)(attributes[i].format.offset_bytes));
-                    }
-                }
-            }
-            
-            glDrawElements(GL_TRIANGLES, cdata->index_buffer_num_vertices, GL_UNSIGNED_SHORT, cdata->index_buffer);
-            
-            // Disable the vertex arrays again
-            for(i = 0; i < numAttributes; i++)
-            {
-                if(attributes[i].location >= 0)
-                    glDisableVertexAttribArray(attributes[i].location);
-            }
-            
-            sprites_so_far += partial_num_sprites;
-            numSprites -= partial_num_sprites;
-            
-            cdata->index_buffer_num_vertices = 0;
-        }
-        
-        glDeleteBuffers(16, buffers);
-            
-        #if !defined(SDL_GPU_USE_GLES) || SDL_GPU_GLES_MAJOR_VERSION != 2
-        glBindVertexArray(0);
-        #endif
-        
-
-        #endif
 
         unsetClipRect(renderer, dest);
 
@@ -3419,70 +3326,6 @@ static void ClearRGBA(GPU_Renderer* renderer, GPU_Target* target, Uint8 r, Uint8
 
         unsetClipRect(renderer, target);
     }
-}
-
-#ifdef SDL_GPU_USE_GL_TIER3
-static void upload_attribute_data(CONTEXT_DATA* cdata, int num_vertices)
-{
-    int i;
-    for(i = 0; i < 16; i++)
-    {
-        GPU_AttributeSource* a = &cdata->shader_attributes[i];
-        if(a->attribute.values != NULL && a->attribute.location >= 0 && a->num_values >= num_vertices)
-        {
-            glBindBuffer(GL_ARRAY_BUFFER, cdata->attribute_VBO[i]);
-            
-            int bytes_used = a->attribute.format.stride_bytes * num_vertices;
-            glBufferData(GL_ARRAY_BUFFER, bytes_used, a->next_value, GL_STREAM_DRAW);
-            
-            glEnableVertexAttribArray(a->attribute.location);
-            glVertexAttribPointer(a->attribute.location, a->attribute.format.num_elems_per_vertex, a->attribute.format.type, a->attribute.format.normalize, a->attribute.format.stride_bytes, (void*)a->attribute.format.offset_bytes);
-            
-            a->enabled = 1;
-            // Move the data along so we use the next values for the next flush
-            a->num_values -= num_vertices;
-            if(a->num_values <= 0)
-                a->next_value = a->attribute.values;
-            else
-                a->next_value = (void*)(((char*)a->next_value) + bytes_used);
-        }
-    }
-}
-
-static void disable_attribute_data(CONTEXT_DATA* cdata)
-{
-    int i;
-    for(i = 0; i < 16; i++)
-    {
-        GPU_AttributeSource* a = &cdata->shader_attributes[i];
-        if(a->enabled)
-        {
-            glDisableVertexAttribArray(a->attribute.location);
-            a->enabled = 0;
-        }
-    }
-}
-
-#endif
-
-static int get_lowest_attribute_num_values(CONTEXT_DATA* cdata, int cap)
-{
-    int lowest = cap;
-    
-#ifdef SDL_GPU_USE_GL_TIER3
-    int i;
-    for(i = 0; i < 16; i++)
-    {
-        GPU_AttributeSource* a = &cdata->shader_attributes[i];
-        if(a->attribute.values != NULL && a->attribute.location >= 0)
-        {
-            if(a->num_values < lowest)
-                lowest = a->num_values;
-        }
-    }
-#endif
-    
-    return lowest;
 }
 
 static void DoPartialFlush(CONTEXT_DATA* cdata, int num_vertices, float* blit_buffer, int num_indices, unsigned short* index_buffer)
@@ -3853,33 +3696,30 @@ static void ActivateShaderProgram(GPU_Renderer* renderer, Uint32 program_object,
         program_object = target->context->default_untextured_shader_program;
     }
     
-    if(target->context->current_shader_program == program_object)
-        return;
-    
     renderer->FlushBlitBuffer(renderer);
     glUseProgram(program_object);
     
         #ifdef SDL_GPU_USE_GL_TIER3
         // Set up our shader attribute and uniform locations
         CONTEXT_DATA* cdata = ((CONTEXT_DATA*)target->context->data);
-        if(program_object == target->context->default_textured_shader_program)
-            cdata->current_shader_block = cdata->shader_block[0];
-        else if(program_object == target->context->default_untextured_shader_program)
-            cdata->current_shader_block = cdata->shader_block[1];
-        else
+        if(block == NULL)
         {
-            if(block == NULL)
-            {
-                GPU_ShaderBlock b;
-                b.position_loc = -1;
-                b.texcoord_loc = -1;
-                b.color_loc = -1;
-                b.modelViewProjection_loc = -1;
-                cdata->current_shader_block = b;
-            }
+            if(program_object == target->context->default_textured_shader_program)
+                cdata->current_shader_block = cdata->shader_block[0];
+            else if(program_object == target->context->default_untextured_shader_program)
+                cdata->current_shader_block = cdata->shader_block[1];
             else
-                cdata->current_shader_block = *block;
+            {
+                    GPU_ShaderBlock b;
+                    b.position_loc = -1;
+                    b.texcoord_loc = -1;
+                    b.color_loc = -1;
+                    b.modelViewProjection_loc = -1;
+                    cdata->current_shader_block = b;
+            }
         }
+        else
+            cdata->current_shader_block = *block;
         #endif
     #endif
     
@@ -4386,7 +4226,6 @@ static void SetAttributeSource(GPU_Renderer* renderer, int num_values, GPU_Attri
     renderer->BlitTransformX = &BlitTransformX; \
     renderer->BlitTransformMatrix = &BlitTransformMatrix; \
     renderer->BlitBatch = &BlitBatch; \
-    renderer->ShaderBatch = &ShaderBatch; \
  \
     renderer->GenerateMipmaps = &GenerateMipmaps; \
  \

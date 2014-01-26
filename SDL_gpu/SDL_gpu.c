@@ -613,11 +613,11 @@ int GPU_BlitBatch(GPU_Image* src, GPU_Target* dest, unsigned int numSprites, flo
 		return -2;
 	if(src == NULL || dest == NULL)
 		return -1;
-    if(numSprites == 0 || values == NULL)
+    if(numSprites == 0)
         return 0;
     
     // Is it already in the right format?
-    if((flags & GPU_PASSTHROUGH_ALL) == GPU_PASSTHROUGH_ALL)
+    if((flags & GPU_PASSTHROUGH_ALL) == GPU_PASSTHROUGH_ALL || values == NULL)
         return current_renderer->BlitBatch(current_renderer, src, dest, numSprites, values, flags);
 	
 	// Conversion time...
@@ -901,6 +901,10 @@ int GPU_BlitBatchSeparate(GPU_Image* src, GPU_Target* dest, unsigned int numSpri
 		return -1;
     if(numSprites == 0)
         return 0;
+    
+    // No data to repack?  Skip it.
+    if(positions == NULL && src_rects == NULL && colors == NULL)
+        return current_renderer->BlitBatch(current_renderer, src, dest, numSprites, NULL, flags);
 	
 	// Repack the given arrays into an interleaved array for more efficient access
 	// Default values: Each sprite is defined by a position, a rect, and a color.
@@ -1145,14 +1149,6 @@ int GPU_BlitBatchSeparate(GPU_Image* src, GPU_Target* dest, unsigned int numSpri
 	free(values);
 	
 	return result;
-}
-
-int GPU_ShaderBatch(GPU_Image* src, GPU_Target* dest, unsigned int numSprites, unsigned int numAttributes, GPU_Attribute* attributes)
-{
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->ShaderBatch == NULL || numSprites == 0 || numAttributes == 0 || attributes == NULL)
-		return 0;
-	
-	return current_renderer->ShaderBatch(current_renderer, src, dest, numSprites, numAttributes, attributes);
 }
 
 void GPU_GenerateMipmaps(GPU_Image* image)
