@@ -1169,6 +1169,11 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
             glBindBuffer(GL_ARRAY_BUFFER, cdata->blit_VBO[1]);
             glBufferData(GL_ARRAY_BUFFER, GPU_BLIT_BUFFER_STRIDE * cdata->blit_buffer_max_num_vertices, NULL, GL_STREAM_DRAW);
             cdata->blit_VBO_flop = 0;
+            
+            glGenBuffers(16, cdata->attribute_VBO);
+            
+            // Init 16 attributes to 0 / NULL.
+            memset(cdata->shader_attributes, 0, 16*sizeof(GPU_AttributeSource));
         #endif
     }
     #endif
@@ -2457,6 +2462,7 @@ static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
         if(data->handle != 0)
         {
             glDeleteBuffers(2, cdata->blit_VBO);
+            glDeleteBuffers(16, cdata->attribute_VBO);
             #if !defined(SDL_GPU_USE_GLES) || SDL_GPU_GLES_MAJOR_VERSION != 2
             glDeleteVertexArrays(1, &cdata->blit_VAO);
             #endif
@@ -3415,6 +3421,176 @@ static void ClearRGBA(GPU_Renderer* renderer, GPU_Target* target, Uint8 r, Uint8
     }
 }
 
+#ifdef SDL_GPU_USE_GL_TIER3
+static void upload_attribute_data(CONTEXT_DATA* cdata, int num_vertices)
+{
+    int i;
+    for(i = 0; i < 16; i++)
+    {
+        GPU_AttributeSource* a = &cdata->shader_attributes[i];
+        if(a->attribute.values != NULL && a->attribute.location >= 0 && a->num_values >= num_vertices)
+        {
+            glBindBuffer(GL_ARRAY_BUFFER, cdata->attribute_VBO[i]);
+            
+            int bytes_used = a->attribute.format.stride_bytes * num_vertices;
+            glBufferData(GL_ARRAY_BUFFER, bytes_used, a->next_value, GL_STREAM_DRAW);
+            
+            glEnableVertexAttribArray(a->attribute.location);
+            glVertexAttribPointer(a->attribute.location, a->attribute.format.num_elems_per_vertex, a->attribute.format.type, a->attribute.format.normalize, a->attribute.format.stride_bytes, (void*)a->attribute.format.offset_bytes);
+            
+            a->enabled = 1;
+            // Move the data along so we use the next values for the next flush
+            a->num_values -= num_vertices;
+            if(a->num_values <= 0)
+                a->next_value = a->attribute.values;
+            else
+                a->next_value = (void*)(((char*)a->next_value) + bytes_used);
+        }
+    }
+}
+
+static void disable_attribute_data(CONTEXT_DATA* cdata)
+{
+    int i;
+    for(i = 0; i < 16; i++)
+    {
+        GPU_AttributeSource* a = &cdata->shader_attributes[i];
+        if(a->enabled)
+        {
+            glDisableVertexAttribArray(a->attribute.location);
+            a->enabled = 0;
+        }
+    }
+}
+
+#endif
+
+static int get_lowest_attribute_num_values(CONTEXT_DATA* cdata, int cap)
+{
+    int lowest = cap;
+    
+#ifdef SDL_GPU_USE_GL_TIER3
+    int i;
+    for(i = 0; i < 16; i++)
+    {
+        GPU_AttributeSource* a = &cdata->shader_attributes[i];
+        if(a->attribute.values != NULL && a->attribute.location >= 0)
+        {
+            if(a->num_values < lowest)
+                lowest = a->num_values;
+        }
+    }
+#endif
+    
+    return lowest;
+}
+
+static void DoPartialFlush(CONTEXT_DATA* cdata, int num_vertices, float* blit_buffer, int num_indices, unsigned short* index_buffer)
+{
+#ifdef SDL_GPU_USE_GL_TIER1
+
+        float* vertex_pointer = blit_buffer + GPU_BLIT_BUFFER_VERTEX_OFFSET;
+        float* texcoord_pointer = blit_buffer + GPU_BLIT_BUFFER_TEX_COORD_OFFSET;
+        
+        glBegin(GL_QUADS);
+        int i;
+        for(i = 0; i < num_vertices; i += GPU_BLIT_BUFFER_VERTICES_PER_SPRITE)
+        {
+            glTexCoord2f( *texcoord_pointer, *(texcoord_pointer+1) );
+            glVertex3f( *vertex_pointer, *(vertex_pointer+1), 0.0f );
+            texcoord_pointer += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
+            vertex_pointer += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
+
+            glTexCoord2f( *texcoord_pointer, *(texcoord_pointer+1) );
+            glVertex3f( *vertex_pointer, *(vertex_pointer+1), 0.0f );
+            texcoord_pointer += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
+            vertex_pointer += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
+
+            glTexCoord2f( *texcoord_pointer, *(texcoord_pointer+1) );
+            glVertex3f( *vertex_pointer, *(vertex_pointer+1), 0.0f );
+            texcoord_pointer += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
+            vertex_pointer += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
+
+            glTexCoord2f( *texcoord_pointer, *(texcoord_pointer+1) );
+            glVertex3f( *vertex_pointer, *(vertex_pointer+1), 0.0f );
+            texcoord_pointer += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
+            vertex_pointer += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
+        }
+        glEnd();
+#elif defined(SDL_GPU_USE_GL_TIER2)
+
+        glEnableClientState(GL_VERTEX_ARRAY);
+        glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+        glVertexPointer(2, GL_FLOAT, GPU_BLIT_BUFFER_STRIDE, blit_buffer + GPU_BLIT_BUFFER_VERTEX_OFFSET);
+        glTexCoordPointer(2, GL_FLOAT, GPU_BLIT_BUFFER_STRIDE, blit_buffer + GPU_BLIT_BUFFER_TEX_COORD_OFFSET);
+
+        glDrawElements(GL_TRIANGLES, num_indices, GL_UNSIGNED_SHORT, index_buffer);
+
+        glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+        glDisableClientState(GL_VERTEX_ARRAY);
+
+#elif defined(SDL_GPU_USE_GL_TIER3)
+        
+        // Upload our modelviewprojection matrix
+        if(cdata->current_shader_block.modelViewProjection_loc >= 0)
+        {
+            float mvp[16];
+            GPU_GetModelViewProjection(mvp);
+            glUniformMatrix4fv(cdata->current_shader_block.modelViewProjection_loc, 1, 0, mvp);
+        }
+    
+        // Update the vertex array object's buffers
+        #if !defined(SDL_GPU_USE_GLES) || SDL_GPU_GLES_MAJOR_VERSION != 2
+        glBindVertexArray(cdata->blit_VAO);
+        #endif
+        
+        // Upload blit buffer to a single buffer object
+        glBindBuffer(GL_ARRAY_BUFFER, cdata->blit_VBO[cdata->blit_VBO_flop]);
+        cdata->blit_VBO_flop = !cdata->blit_VBO_flop;
+        
+        // Copy the whole blit buffer to the GPU
+        glBufferSubData(GL_ARRAY_BUFFER, 0, GPU_BLIT_BUFFER_STRIDE * num_vertices, blit_buffer);  // Fills GPU buffer with data.
+        
+        // Specify the formatting of the blit buffer
+        if(cdata->current_shader_block.position_loc >= 0)
+        {
+            glEnableVertexAttribArray(cdata->current_shader_block.position_loc);  // Tell GL to use client-side attribute data
+            glVertexAttribPointer(cdata->current_shader_block.position_loc, 2, GL_FLOAT, GL_FALSE, GPU_BLIT_BUFFER_STRIDE, 0);  // Tell how the data is formatted
+        }
+        if(cdata->current_shader_block.texcoord_loc >= 0)
+        {
+            glEnableVertexAttribArray(cdata->current_shader_block.texcoord_loc);
+            glVertexAttribPointer(cdata->current_shader_block.texcoord_loc, 2, GL_FLOAT, GL_FALSE, GPU_BLIT_BUFFER_STRIDE, (void*)(GPU_BLIT_BUFFER_TEX_COORD_OFFSET * sizeof(float)));
+        }
+        if(cdata->current_shader_block.color_loc >= 0)
+        {
+            glEnableVertexAttribArray(cdata->current_shader_block.color_loc);
+            glVertexAttribPointer(cdata->current_shader_block.color_loc, 4, GL_FLOAT, GL_FALSE, GPU_BLIT_BUFFER_STRIDE, (void*)(GPU_BLIT_BUFFER_COLOR_OFFSET * sizeof(float)));
+        }
+        
+        upload_attribute_data(cdata, num_vertices);
+        
+        glDrawElements(GL_TRIANGLES, num_indices, GL_UNSIGNED_SHORT, index_buffer);
+        
+        // Disable the vertex arrays again
+        if(cdata->current_shader_block.position_loc >= 0)
+            glDisableVertexAttribArray(cdata->current_shader_block.position_loc);
+        if(cdata->current_shader_block.texcoord_loc >= 0)
+            glDisableVertexAttribArray(cdata->current_shader_block.texcoord_loc);
+        if(cdata->current_shader_block.color_loc >= 0)
+            glDisableVertexAttribArray(cdata->current_shader_block.color_loc);
+        
+        disable_attribute_data(cdata);
+        
+        #if !defined(SDL_GPU_USE_GLES) || SDL_GPU_GLES_MAJOR_VERSION != 2
+        glBindVertexArray(0);
+        #endif
+
+#endif
+}
+
+#define MAX(a, b) ((a) > (b)? (a) : (b))
+
 static void FlushBlitBuffer(GPU_Renderer* renderer)
 {
     CONTEXT_DATA* cdata = (CONTEXT_DATA*)renderer->current_context_target->context->data;
@@ -3445,107 +3621,23 @@ static void FlushBlitBuffer(GPU_Renderer* renderer)
         #endif
         
         setClipRect(renderer, dest);
-
-
-
-#ifdef SDL_GPU_USE_GL_TIER1
-
-        float* vertex_pointer = cdata->blit_buffer + GPU_BLIT_BUFFER_VERTEX_OFFSET;
-        float* texcoord_pointer = cdata->blit_buffer + GPU_BLIT_BUFFER_TEX_COORD_OFFSET;
         
-        glBegin(GL_QUADS);
-        int i;
-        for(i = 0; i < cdata->blit_buffer_num_vertices; i += GPU_BLIT_BUFFER_VERTICES_PER_SPRITE)
+        int num_vertices;
+        int num_indices;
+        float* blit_buffer = cdata->blit_buffer;
+        unsigned short* index_buffer = cdata->index_buffer;
+        while(cdata->blit_buffer_num_vertices > 0)
         {
-            glTexCoord2f( *texcoord_pointer, *(texcoord_pointer+1) );
-            glVertex3f( *vertex_pointer, *(vertex_pointer+1), 0.0f );
-            texcoord_pointer += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
-            vertex_pointer += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
-
-            glTexCoord2f( *texcoord_pointer, *(texcoord_pointer+1) );
-            glVertex3f( *vertex_pointer, *(vertex_pointer+1), 0.0f );
-            texcoord_pointer += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
-            vertex_pointer += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
-
-            glTexCoord2f( *texcoord_pointer, *(texcoord_pointer+1) );
-            glVertex3f( *vertex_pointer, *(vertex_pointer+1), 0.0f );
-            texcoord_pointer += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
-            vertex_pointer += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
-
-            glTexCoord2f( *texcoord_pointer, *(texcoord_pointer+1) );
-            glVertex3f( *vertex_pointer, *(vertex_pointer+1), 0.0f );
-            texcoord_pointer += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
-            vertex_pointer += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
+            num_vertices = MAX(cdata->blit_buffer_num_vertices, get_lowest_attribute_num_values(cdata, cdata->blit_buffer_num_vertices));
+            num_indices = num_vertices * 3 / 2;  // 6 indices per sprite / 4 vertices per sprite = 3/2
+            
+            DoPartialFlush(cdata, num_vertices, blit_buffer, num_indices, index_buffer);
+            
+            cdata->blit_buffer_num_vertices -= num_vertices;
+            // Move our pointers ahead
+            blit_buffer += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX*num_vertices;
+            index_buffer += num_indices;
         }
-        glEnd();
-#elif defined(SDL_GPU_USE_GL_TIER2)
-
-        glEnableClientState(GL_VERTEX_ARRAY);
-        glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-        glVertexPointer(2, GL_FLOAT, GPU_BLIT_BUFFER_STRIDE, cdata->blit_buffer + GPU_BLIT_BUFFER_VERTEX_OFFSET);
-        glTexCoordPointer(2, GL_FLOAT, GPU_BLIT_BUFFER_STRIDE, cdata->blit_buffer + GPU_BLIT_BUFFER_TEX_COORD_OFFSET);
-
-        glDrawElements(GL_TRIANGLES, cdata->index_buffer_num_vertices, GL_UNSIGNED_SHORT, cdata->index_buffer);
-
-        glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-        glDisableClientState(GL_VERTEX_ARRAY);
-
-#elif defined(SDL_GPU_USE_GL_TIER3)
-
-        TARGET_DATA* data = ((TARGET_DATA*)renderer->current_context_target->data);
-        
-        // Upload our modelviewprojection matrix
-        if(cdata->current_shader_block.modelViewProjection_loc >= 0)
-        {
-            float mvp[16];
-            GPU_GetModelViewProjection(mvp);
-            glUniformMatrix4fv(cdata->current_shader_block.modelViewProjection_loc, 1, 0, mvp);
-        }
-    
-        // Update the vertex array object's buffers
-        #if !defined(SDL_GPU_USE_GLES) || SDL_GPU_GLES_MAJOR_VERSION != 2
-        glBindVertexArray(cdata->blit_VAO);
-        #endif
-        
-        // Upload blit buffer to a single buffer object
-        glBindBuffer(GL_ARRAY_BUFFER, cdata->blit_VBO[cdata->blit_VBO_flop]);
-        cdata->blit_VBO_flop = !cdata->blit_VBO_flop;
-        
-        // Copy the whole blit buffer to the GPU
-        glBufferSubData(GL_ARRAY_BUFFER, 0, GPU_BLIT_BUFFER_STRIDE * cdata->blit_buffer_num_vertices, cdata->blit_buffer);  // Fills GPU buffer with data.
-        
-        // Specify the formatting of the blit buffer
-        if(cdata->current_shader_block.position_loc >= 0)
-        {
-            glEnableVertexAttribArray(cdata->current_shader_block.position_loc);  // Tell GL to use client-side attribute data
-            glVertexAttribPointer(cdata->current_shader_block.position_loc, 2, GL_FLOAT, GL_FALSE, GPU_BLIT_BUFFER_STRIDE, 0);  // Tell how the data is formatted
-        }
-        if(cdata->current_shader_block.texcoord_loc >= 0)
-        {
-            glEnableVertexAttribArray(cdata->current_shader_block.texcoord_loc);
-            glVertexAttribPointer(cdata->current_shader_block.texcoord_loc, 2, GL_FLOAT, GL_FALSE, GPU_BLIT_BUFFER_STRIDE, (void*)(GPU_BLIT_BUFFER_TEX_COORD_OFFSET * sizeof(float)));
-        }
-        if(cdata->current_shader_block.color_loc >= 0)
-        {
-            glEnableVertexAttribArray(cdata->current_shader_block.color_loc);
-            glVertexAttribPointer(cdata->current_shader_block.color_loc, 4, GL_FLOAT, GL_FALSE, GPU_BLIT_BUFFER_STRIDE, (void*)(GPU_BLIT_BUFFER_COLOR_OFFSET * sizeof(float)));
-        }
-        
-        glDrawElements(GL_TRIANGLES, cdata->index_buffer_num_vertices, GL_UNSIGNED_SHORT, cdata->index_buffer);
-        
-        // Disable the vertex arrays again
-        if(cdata->current_shader_block.position_loc >= 0)
-            glDisableVertexAttribArray(cdata->current_shader_block.position_loc);
-        if(cdata->current_shader_block.texcoord_loc >= 0)
-            glDisableVertexAttribArray(cdata->current_shader_block.texcoord_loc);
-        if(cdata->current_shader_block.color_loc >= 0)
-            glDisableVertexAttribArray(cdata->current_shader_block.color_loc);
-        
-        #if !defined(SDL_GPU_USE_GLES) || SDL_GPU_GLES_MAJOR_VERSION != 2
-        glBindVertexArray(0);
-        #endif
-
-#endif
 
         cdata->blit_buffer_num_vertices = 0;
         cdata->index_buffer_num_vertices = 0;
@@ -4244,9 +4336,17 @@ static void SetAttributeuiv(GPU_Renderer* renderer, int location, int num_elemen
     #endif
 }
 
-static void SetAttributeSource(GPU_Renderer* renderer, int location, void* values, GPU_AttributeFormat format)
+static void SetAttributeSource(GPU_Renderer* renderer, int num_values, GPU_Attribute source)
 {
-    
+    #ifdef SDL_GPU_USE_GL_TIER3
+    if(source.location < 0 || source.location >= 16)
+        return;
+    CONTEXT_DATA* cdata = (CONTEXT_DATA*)renderer->current_context_target->context->data;
+    cdata->shader_attributes[source.location].enabled = 0;
+    cdata->shader_attributes[source.location].num_values = num_values;
+    cdata->shader_attributes[source.location].next_value = source.values;
+    cdata->shader_attributes[source.location].attribute = source;
+    #endif
 }
 
 

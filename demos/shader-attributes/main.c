@@ -38,7 +38,7 @@ GPU_ShaderBlock load_shaders(Uint32* v, Uint32* f, Uint32* p)
         return b;
     }
     
-    GPU_ShaderBlock block = GPU_LoadShaderBlock(*p, "gpu_Vertex", "gpu_TexCoord", "gpu_Color", "modelViewProjection");
+    GPU_ShaderBlock block = GPU_LoadShaderBlock(*p, "gpu_Vertex", "gpu_TexCoord", NULL, "modelViewProjection");
     GPU_ActivateShaderProgram(*p, &block);
     
     return block;
@@ -65,14 +65,18 @@ void add_sprite(float* positions, float* colors, float* src_rects, int* num_spri
 	positions[2*i] = grid_offset_x + (i%grid_row_size)*grid_cell_w;
 	positions[2*i+1] = grid_offset_y + (i/grid_row_size)*grid_cell_h;
 	
-	colors[4*i] = color.r;
-	colors[4*i+1] = color.g;
-	colors[4*i+2] = color.b;
-	#ifdef SDL_GPU_USE_SDL2
-	colors[4*i+3] = color.a;
-	#else
-	colors[4*i+3] = color.unused;
-	#endif
+	int n;
+	for(n = 0; n < 4; n++)
+    {
+        colors[4*(4*i+n)] = color.r/255.0f;
+        colors[4*(4*i+n)+1] = color.g/255.0f;
+        colors[4*(4*i+n)+2] = color.b/255.0f;
+        #ifdef SDL_GPU_USE_SDL2
+        colors[4*(4*i+n)+3] = color.a/255.0f;
+        #else
+        colors[4*(4*i+n)+3] = color.unused/255.0f;
+        #endif
+    }
 	
 	src_rects[4*i] = src_rect.x;
 	src_rects[4*i+1] = src_rect.y;
@@ -83,12 +87,16 @@ void add_sprite(float* positions, float* colors, float* src_rects, int* num_spri
 }
 
 int timeloc = -1;
+GPU_Attribute color_attr;
 
 void set_shader(Uint32 program, GPU_ShaderBlock* block)
 {
+    if(program == 0)
+        program = GPU_GetContextTarget()->context->default_textured_shader_program;
     GPU_ActivateShaderProgram(program, block);
     
     timeloc = GPU_GetUniformLocation(program, "time");
+    color_attr.location = GPU_GetAttributeLocation(program, "gpu_Color");
 }
 
 int main(int argc, char* argv[])
@@ -104,6 +112,18 @@ int main(int argc, char* argv[])
 	GPU_Image* image = GPU_LoadImage("data/happy_50x50.bmp");
 	if(image == NULL)
 		return -1;
+    
+	
+	int maxSprites = 100;
+	int numSprites = 0;
+    
+	float positions[2*maxSprites];
+	float colors[4*maxSprites*4];  // 4 vertices
+	float src_rects[4*maxSprites];
+    
+    color_attr.format = GPU_MakeAttributeFormat(4, GPU_FLOAT, 0, 4*sizeof(float), 0);
+    color_attr.values = colors;
+    
 	
 	Uint32 v, f, p;
 	GPU_ShaderBlock block = load_shaders(&v, &f, &p);
@@ -116,12 +136,6 @@ int main(int argc, char* argv[])
 	Uint32 startTime = SDL_GetTicks();
 	long frameCount = 0;
 	
-	int maxSprites = 100;
-	int numSprites = 0;
-	
-	float positions[2*maxSprites];
-	float colors[4*maxSprites];
-	float src_rects[4*maxSprites];
 	int i;
 	SDL_Color color = {255, 255, 255, 255};
 	GPU_Rect src_rect = {0, 0, image->w, image->h};
@@ -211,11 +225,10 @@ int main(int argc, char* argv[])
         
 		GPU_Clear(screen);
 		
-		// TODO: Sprite batch
+		GPU_SetAttributeSource(numSprites*4, color_attr);
 		for(i = 0; i < numSprites; i++)
 		{
 		    GPU_Rect r = {src_rects[4*i], src_rects[4*i+1], src_rects[4*i+2], src_rects[4*i+3]};
-		    GPU_SetRGBA(image, colors[4*i], colors[4*i+1], colors[4*i+2], colors[4*i+3]);
 		    GPU_Blit(image, &r, screen, positions[2*i], positions[2*i+1]);
 		}
 		
