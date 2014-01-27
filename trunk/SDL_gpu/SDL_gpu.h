@@ -315,6 +315,15 @@ typedef struct GPU_AttributeSource
     GPU_Attribute attribute;
 } GPU_AttributeSource;
 
+static const Uint32 GPU_NONE = 0x0;
+
+/*! Type enumeration for the shader language used by the renderer. */
+typedef Uint32 GPU_ShaderLanguageEnum;
+static const GPU_ShaderLanguageEnum GPU_ARB_ASSEMBLY = 0x1;
+static const GPU_ShaderLanguageEnum GPU_GLSL = 0x2;
+static const GPU_ShaderLanguageEnum GPU_GLSLES = 0x3;
+static const GPU_ShaderLanguageEnum GPU_HLSL = 0x4;
+static const GPU_ShaderLanguageEnum GPU_CG = 0x5;
 
 
 /*! Renderer object which specializes the API to a particular backend. */
@@ -326,7 +335,8 @@ struct GPU_Renderer
 	SDL_WindowFlags SDL_init_flags;
 	GPU_InitFlagEnum GPU_init_flags;
 	
-	int tier;
+	GPU_ShaderLanguageEnum shader_language;
+	int shader_version;
     GPU_FeatureEnum enabled_features;
 	
 	/*! Current display target */

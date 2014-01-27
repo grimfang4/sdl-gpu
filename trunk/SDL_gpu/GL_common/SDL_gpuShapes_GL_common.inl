@@ -246,7 +246,7 @@ static inline void draw_vertices(GLfloat* glverts, int num_vertices, GLenum prim
         }
     
         // Update the vertex array object's buffers
-        #if !defined(SDL_GPU_USE_GLES) || SDL_GPU_GLES_MAJOR_VERSION != 2
+        #if !defined(SDL_GPU_NO_VAO)
         glBindVertexArray(cdata->blit_VAO);
         #endif
         
@@ -271,7 +271,7 @@ static inline void draw_vertices(GLfloat* glverts, int num_vertices, GLenum prim
         
         glDrawArrays(prim_type, 0, num_vertices);
         
-        #if !defined(SDL_GPU_USE_GLES) || SDL_GPU_GLES_MAJOR_VERSION != 2
+        #if !defined(SDL_GPU_NO_VAO)
         glBindVertexArray(0);
         #endif
     #endif
@@ -318,7 +318,7 @@ static inline void draw_vertices_textured(GLfloat* glverts, int num_vertices, GL
         }
     
         // Update the vertex array object's buffers
-        #if !defined(SDL_GPU_USE_GLES) || SDL_GPU_GLES_MAJOR_VERSION != 2
+        #if !defined(SDL_GPU_NO_VAO)
         glBindVertexArray(cdata->blit_VAO);
         #endif
         
@@ -348,7 +348,7 @@ static inline void draw_vertices_textured(GLfloat* glverts, int num_vertices, GL
         
         glDrawArrays(prim_type, 0, num_vertices);
         
-        #if !defined(SDL_GPU_USE_GLES) || SDL_GPU_GLES_MAJOR_VERSION != 2
+        #if !defined(SDL_GPU_NO_VAO)
         glBindVertexArray(0);
         #endif
     #endif

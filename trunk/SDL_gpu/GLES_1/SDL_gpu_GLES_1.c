@@ -16,6 +16,7 @@ void GPU_FreeRenderer_GLES_1(GPU_Renderer* renderer) {}
 #define SDL_GPU_GLES_MAJOR_VERSION 1
 #define SDL_GPU_DISABLE_SHADERS
 #define SDL_GPU_APPLY_TRANSFORMS_TO_GL_STACK
+#define SDL_GPU_NO_VAO
 #define CONTEXT_DATA ContextData_GLES_1
 #define RENDERER_DATA RendererData_GLES_1
 #define IMAGE_DATA ImageData_GLES_1
@@ -33,8 +34,9 @@ GPU_Renderer* GPU_CreateRenderer_GLES_1(GPU_RendererID request)
     memset(renderer, 0, sizeof(GPU_Renderer));
 
     renderer->id = request;
-	renderer->id.id = GPU_RENDERER_GLES_1;
-	renderer->tier = SDL_GPU_GL_TIER;
+    renderer->id.id = GPU_RENDERER_GLES_1;
+    renderer->shader_language = GPU_NONE;
+    renderer->shader_version = 0;
     
     renderer->current_context_target = NULL;
 
