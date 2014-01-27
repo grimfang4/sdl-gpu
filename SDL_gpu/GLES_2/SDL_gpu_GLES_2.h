@@ -14,6 +14,14 @@
     #include "GLES2/gl2ext.h"
 #endif
 
+	#define glVertexAttribI1i glVertexAttrib1f
+	#define glVertexAttribI2i glVertexAttrib2f
+	#define glVertexAttribI3i glVertexAttrib3f
+	#define glVertexAttribI4i glVertexAttrib4f
+	#define glVertexAttribI1ui glVertexAttrib1f
+	#define glVertexAttribI2ui glVertexAttrib2f
+	#define glVertexAttribI3ui glVertexAttrib3f
+	#define glVertexAttribI4ui glVertexAttrib4f
 #endif
 
 

@@ -23,6 +23,7 @@
     #define glCheckFramebufferStatus glCheckFramebufferStatusOES
     #define glBindFramebuffer glBindFramebufferOES
     #define GL_FRAMEBUFFER GL_FRAMEBUFFER_OES
+    #define GL_FRAMEBUFFER_BINDING GL_FRAMEBUFFER_BINDING_OES
     #define GL_COLOR_ATTACHMENT0 GL_COLOR_ATTACHMENT0_OES
     #define GL_FRAMEBUFFER_COMPLETE GL_FRAMEBUFFER_COMPLETE_OES
 

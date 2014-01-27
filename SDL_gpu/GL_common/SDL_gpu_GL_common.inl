@@ -752,8 +752,9 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     
     #endif
     
-    
-    ((TARGET_DATA*)target->data)->handle = 0;
+    int framebuffer_handle;
+    glGetIntegerv(GL_FRAMEBUFFER_BINDING, &framebuffer_handle);
+    ((TARGET_DATA*)target->data)->handle = framebuffer_handle;
     ((TARGET_DATA*)target->data)->format = GL_RGBA;
 
     target->renderer = renderer;
