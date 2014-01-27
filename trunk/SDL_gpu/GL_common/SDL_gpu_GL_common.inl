@@ -486,17 +486,13 @@ static void changeViewport(GPU_Target* target)
     if(cdata->last_viewport.x == viewport.x && cdata->last_viewport.y == viewport.y && cdata->last_viewport.w == viewport.w && cdata->last_viewport.h == viewport.h)
         return;
     cdata->last_viewport = viewport;
-    float w, h;
+    // Need the real height to flip the y-coord (from OpenGL coord system)
+    float h;
     if(target->image != NULL)
-    {
-        w = target->image->w;
         h = target->image->h;
-    }
     else if(target->context != NULL)
-    {
-        w = target->context->window_w;
         h = target->context->window_h;
-    }
+    
     glViewport(viewport.x, h - viewport.h - viewport.y, viewport.w, h);
 }
 
@@ -922,7 +918,6 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
         target->context->default_textured_shader_program = p;
         
         #ifdef SDL_GPU_USE_GL_TIER3
-        TARGET_DATA* data = ((TARGET_DATA*)target->data);
         // Get locations of the attributes in the shader
         cdata->shader_block[0] = GPU_LoadShaderBlock(p, "gpu_Vertex", "gpu_TexCoord", "gpu_Color", "gpu_ModelViewProjectionMatrix");
         #endif
@@ -2912,8 +2907,6 @@ static int BlitBatch(GPU_Renderer* renderer, GPU_Image* src, GPU_Target* dest, u
             glDisableClientState(GL_VERTEX_ARRAY);
 
     #elif defined(SDL_GPU_USE_GL_TIER3)
-
-            TARGET_DATA* data = ((TARGET_DATA*)renderer->current_context_target->data);
             
             // Upload our modelviewprojection matrix
             if(cdata->current_shader_block.modelViewProjection_loc >= 0)
