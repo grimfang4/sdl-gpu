@@ -58,21 +58,37 @@ static const float grid_offset_y = 30;
 static const float grid_cell_w = 60;
 static const float grid_cell_h = 60;
 
-void add_sprite(float* positions, float* colors, float* src_rects, int* num_sprites, SDL_Color color, GPU_Rect src_rect)
+Uint8 use_color_expansion = 0;
+
+void add_sprite(float* positions, float* colors, float* expanded_colors, float* src_rects, int* num_sprites, SDL_Color color, GPU_Rect src_rect)
 {
     int i = *num_sprites;
     
 	positions[2*i] = grid_offset_x + (i%grid_row_size)*grid_cell_w;
 	positions[2*i+1] = grid_offset_y + (i/grid_row_size)*grid_cell_h;
 	
-    colors[4*i] = color.r/255.0f;
-    colors[4*i+1] = color.g/255.0f;
-    colors[4*i+2] = color.b/255.0f;
+	
+    expanded_colors[4*i] = color.r/255.0f;
+    expanded_colors[4*i+1] = color.g/255.0f;
+    expanded_colors[4*i+2] = color.b/255.0f;
     #ifdef SDL_GPU_USE_SDL2
-    colors[4*i+3] = color.a/255.0f;
+    expanded_colors[4*i+3] = color.a/255.0f;
     #else
-    colors[4*i+3] = color.unused/255.0f;
+    expanded_colors[4*i+3] = color.unused/255.0f;
     #endif
+    
+    int n;
+    for(n = 0; n < 4; n++)
+    {
+        colors[4*(4*i+n)] = color.r/255.0f;
+        colors[4*(4*i+n)+1] = color.g/255.0f;
+        colors[4*(4*i+n)+2] = color.b/255.0f;
+        #ifdef SDL_GPU_USE_SDL2
+        colors[4*(4*i+n)+3] = color.a/255.0f;
+        #else
+        colors[4*(4*i+n)+3] = color.unused/255.0f;
+        #endif
+    }
 	
 	src_rects[4*i] = src_rect.x;
 	src_rects[4*i+1] = src_rect.y;
@@ -113,12 +129,14 @@ int main(int argc, char* argv[])
 	int maxSprites = 100;
 	int numSprites = 0;
     
+    
 	float positions[2*maxSprites];
-	float colors[4*maxSprites];
+	float colors[4*4*maxSprites];
+	float expanded_colors[4*maxSprites];
 	float src_rects[4*maxSprites];
     
     color_attr.format = GPU_MakeAttributeFormat(4, GPU_FLOAT, 0, 4*sizeof(float), 0);
-    color_attr.format.is_per_sprite = 1;
+    color_attr.format.is_per_sprite = 0;
     color_attr.values = colors;
     
 	
@@ -135,7 +153,7 @@ int main(int argc, char* argv[])
 	SDL_Color color = {255, 255, 255, 255};
 	GPU_Rect src_rect = {0, 0, image->w, image->h};
 	
-	add_sprite(positions, colors, src_rects, &numSprites, color, src_rect);
+	add_sprite(positions, colors, expanded_colors, src_rects, &numSprites, color, src_rect);
 	
 	int mx, my;
 	Uint32 mouse_state;
@@ -175,7 +193,7 @@ int main(int argc, char* argv[])
 				else if(event.key.keysym.sym == SDLK_EQUALS || event.key.keysym.sym == SDLK_PLUS)
 				{
 					if(numSprites < maxSprites)
-                        add_sprite(positions, colors, src_rects, &numSprites, color, src_rect);
+                        add_sprite(positions, colors, expanded_colors, src_rects, &numSprites, color, src_rect);
 				}
 				else if(event.key.keysym.sym == SDLK_MINUS)
 				{
@@ -190,6 +208,22 @@ int main(int argc, char* argv[])
                         set_shader(0, NULL);
                     else if(shader_index == 1)
                         set_shader(p, &block);
+				}
+				else if(event.key.keysym.sym == SDLK_RETURN)
+				{
+				    use_color_expansion = !use_color_expansion;
+				    if(use_color_expansion)
+                    {
+                        GPU_LogError("Using attribute expansion.\n");
+                        color_attr.format.is_per_sprite = 1;
+                        color_attr.values = expanded_colors;
+                    }
+                    else
+                    {
+                        GPU_LogError("Using per-vertex attributes.\n");
+                        color_attr.format.is_per_sprite = 0;
+                        color_attr.values = colors;
+                    }
 				}
 			}
 		}
@@ -220,12 +254,17 @@ int main(int argc, char* argv[])
         
 		GPU_Clear(screen);
 		
-		GPU_SetAttributeSource(numSprites, color_attr);
+        if(use_color_expansion)
+            GPU_SetAttributeSource(numSprites, color_attr);
+        else
+            GPU_SetAttributeSource(4*numSprites, color_attr);
+        
 		for(i = 0; i < numSprites; i++)
 		{
 		    GPU_Rect r = {src_rects[4*i], src_rects[4*i+1], src_rects[4*i+2], src_rects[4*i+3]};
 		    GPU_Blit(image, &r, screen, positions[2*i], positions[2*i+1]);
 		}
+		//GPU_BlitBatchSeparate(image, screen, numSprites, positions, src_rects, expanded_colors, 0);
 		
 		set_shader(0, NULL);
 		
