@@ -287,7 +287,8 @@ static const GPU_BlitFlagEnum GPU_DOUBLE = 0x140A;
 
 typedef struct GPU_AttributeFormat
 {
-    int num_elems_per_vertex;
+    Uint8 is_per_sprite;  // Per-sprite values are expanded to 4 vertices
+    int num_elems_per_value;
     GPU_TypeEnum type;  // GPU_FLOAT, GPU_INT, GPU_UNSIGNED_INT, etc.
     Uint8 normalize;
     int stride_bytes;  // Number of bytes between two vertex specifications
@@ -306,6 +307,11 @@ typedef struct GPU_AttributeSource
     Uint8 enabled;
     int num_values;
     void* next_value;
+    // Automatic storage format
+    int per_vertex_storage_stride_bytes;
+    int per_vertex_storage_offset_bytes;
+    int per_vertex_storage_size;  // Over 0 means that the per-vertex storage has been automatically allocated
+    void* per_vertex_storage;  // Could point to the attribute's values or to allocated storage
     GPU_Attribute attribute;
 } GPU_AttributeSource;
 
@@ -979,7 +985,7 @@ const char* GPU_GetShaderMessage(void);
 int GPU_GetAttributeLocation(Uint32 program_object, const char* attrib_name);
 
 /*! Returns a filled GPU_AttributeFormat object. */
-GPU_AttributeFormat GPU_MakeAttributeFormat(int num_elems_per_vertex, GPU_TypeEnum type, Uint8 normalize, int stride_bytes, int offset_bytes);
+GPU_AttributeFormat GPU_MakeAttributeFormat(Uint8 is_per_sprite, int num_elems_per_vertex, GPU_TypeEnum type, Uint8 normalize, int stride_bytes, int offset_bytes);
 
 /*! Returns a filled GPU_Attribute object. */
 GPU_Attribute GPU_MakeAttribute(int location, void* values, GPU_AttributeFormat format);

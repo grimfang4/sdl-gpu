@@ -65,18 +65,14 @@ void add_sprite(float* positions, float* colors, float* src_rects, int* num_spri
 	positions[2*i] = grid_offset_x + (i%grid_row_size)*grid_cell_w;
 	positions[2*i+1] = grid_offset_y + (i/grid_row_size)*grid_cell_h;
 	
-	int n;
-	for(n = 0; n < 4; n++)
-    {
-        colors[4*(4*i+n)] = color.r/255.0f;
-        colors[4*(4*i+n)+1] = color.g/255.0f;
-        colors[4*(4*i+n)+2] = color.b/255.0f;
-        #ifdef SDL_GPU_USE_SDL2
-        colors[4*(4*i+n)+3] = color.a/255.0f;
-        #else
-        colors[4*(4*i+n)+3] = color.unused/255.0f;
-        #endif
-    }
+    colors[4*i] = color.r/255.0f;
+    colors[4*i+1] = color.g/255.0f;
+    colors[4*i+2] = color.b/255.0f;
+    #ifdef SDL_GPU_USE_SDL2
+    colors[4*i+3] = color.a/255.0f;
+    #else
+    colors[4*i+3] = color.unused/255.0f;
+    #endif
 	
 	src_rects[4*i] = src_rect.x;
 	src_rects[4*i+1] = src_rect.y;
@@ -118,10 +114,10 @@ int main(int argc, char* argv[])
 	int numSprites = 0;
     
 	float positions[2*maxSprites];
-	float colors[4*maxSprites*4];  // 4 vertices
+	float colors[4*maxSprites];
 	float src_rects[4*maxSprites];
     
-    color_attr.format = GPU_MakeAttributeFormat(4, GPU_FLOAT, 0, 4*sizeof(float), 0);
+    color_attr.format = GPU_MakeAttributeFormat(1, 4, GPU_FLOAT, 0, 4*sizeof(float), 0);
     color_attr.values = colors;
     
 	
@@ -225,7 +221,7 @@ int main(int argc, char* argv[])
         
 		GPU_Clear(screen);
 		
-		GPU_SetAttributeSource(numSprites*4, color_attr);
+		GPU_SetAttributeSource(numSprites, color_attr);
 		for(i = 0; i < numSprites; i++)
 		{
 		    GPU_Rect r = {src_rects[4*i], src_rects[4*i+1], src_rects[4*i+2], src_rects[4*i+3]};

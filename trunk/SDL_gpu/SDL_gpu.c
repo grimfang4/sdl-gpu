@@ -1492,9 +1492,9 @@ int GPU_GetAttributeLocation(Uint32 program_object, const char* attrib_name)
 	return current_renderer->GetAttributeLocation(current_renderer, program_object, attrib_name);
 }
 
-GPU_AttributeFormat GPU_MakeAttributeFormat(int num_elems_per_vertex, GPU_TypeEnum type, Uint8 normalize, int stride_bytes, int offset_bytes)
+GPU_AttributeFormat GPU_MakeAttributeFormat(Uint8 is_per_sprite, int num_elems_per_vertex, GPU_TypeEnum type, Uint8 normalize, int stride_bytes, int offset_bytes)
 {
-    GPU_AttributeFormat f = {num_elems_per_vertex, type, normalize, stride_bytes, offset_bytes};
+    GPU_AttributeFormat f = {is_per_sprite, num_elems_per_vertex, type, normalize, stride_bytes, offset_bytes};
     return f;
 }
 

@@ -2676,6 +2676,51 @@ static int BlitTransformMatrix(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect*
 
 
 #ifdef SDL_GPU_USE_GL_TIER3
+
+
+static inline int sizeof_GPU_type(GPU_TypeEnum type)
+{
+    if(type == GPU_DOUBLE) return sizeof(double);
+    if(type == GPU_FLOAT) return sizeof(float);
+    if(type == GPU_INT) return sizeof(int);
+    if(type == GPU_UNSIGNED_INT) return sizeof(unsigned int);
+    if(type == GPU_SHORT) return sizeof(short);
+    if(type == GPU_UNSIGNED_SHORT) return sizeof(unsigned short);
+    if(type == GPU_BYTE) return sizeof(char);
+    if(type == GPU_UNSIGNED_BYTE) return sizeof(unsigned char);
+    return 0;
+}
+
+static void refresh_attribute_data(CONTEXT_DATA* cdata)
+{
+    int i;
+    for(i = 0; i < 16; i++)
+    {
+        GPU_AttributeSource* a = &cdata->shader_attributes[i];
+        if(a->attribute.values != NULL && a->attribute.location >= 0 && a->num_values > 0 && a->attribute.format.is_per_sprite)
+        {
+            // Expand the values to 4 vertices
+            int n;
+            void* storage_ptr = a->per_vertex_storage;
+            void* values_ptr = (void*)((char*)a->attribute.values + a->attribute.format.offset_bytes);
+            int value_size_bytes = a->attribute.format.num_elems_per_value * sizeof_GPU_type(a->attribute.format.type);
+            for(n = 0; n < a->num_values; n+=4)
+            {
+                memcpy(storage_ptr, values_ptr, value_size_bytes);
+                storage_ptr = (void*)((char*)storage_ptr + a->per_vertex_storage_stride_bytes);
+                memcpy(storage_ptr, values_ptr, value_size_bytes);
+                storage_ptr = (void*)((char*)storage_ptr + a->per_vertex_storage_stride_bytes);
+                memcpy(storage_ptr, values_ptr, value_size_bytes);
+                storage_ptr = (void*)((char*)storage_ptr + a->per_vertex_storage_stride_bytes);
+                memcpy(storage_ptr, values_ptr, value_size_bytes);
+                storage_ptr = (void*)((char*)storage_ptr + a->per_vertex_storage_stride_bytes);
+                
+                values_ptr = (void*)((char*)values_ptr + a->attribute.format.stride_bytes);
+            }
+        }
+    }
+}
+
 static void upload_attribute_data(CONTEXT_DATA* cdata, int num_vertices)
 {
     int i;
@@ -2690,17 +2735,17 @@ static void upload_attribute_data(CONTEXT_DATA* cdata, int num_vertices)
             
             glBindBuffer(GL_ARRAY_BUFFER, cdata->attribute_VBO[i]);
             
-            int bytes_used = a->attribute.format.stride_bytes * num_values_used;
+            int bytes_used = a->per_vertex_storage_stride_bytes * num_values_used;
             glBufferData(GL_ARRAY_BUFFER, bytes_used, a->next_value, GL_STREAM_DRAW);
             
             glEnableVertexAttribArray(a->attribute.location);
-            glVertexAttribPointer(a->attribute.location, a->attribute.format.num_elems_per_vertex, a->attribute.format.type, a->attribute.format.normalize, a->attribute.format.stride_bytes, (void*)a->attribute.format.offset_bytes);
+            glVertexAttribPointer(a->attribute.location, a->attribute.format.num_elems_per_value, a->attribute.format.type, a->attribute.format.normalize, a->per_vertex_storage_stride_bytes, (void*)a->per_vertex_storage_offset_bytes);
             
             a->enabled = 1;
             // Move the data along so we use the next values for the next flush
             a->num_values -= num_values_used;
             if(a->num_values <= 0)
-                a->next_value = a->attribute.values;
+                a->next_value = a->per_vertex_storage;
             else
                 a->next_value = (void*)(((char*)a->next_value) + bytes_used);
         }
@@ -2791,6 +2836,10 @@ static int BlitBatch(GPU_Renderer* renderer, GPU_Image* src, GPU_Target* dest, u
         CONTEXT_DATA* cdata = (CONTEXT_DATA*)renderer->current_context_target->context->data;
 
         renderer->FlushBlitBuffer(renderer);
+        
+        #ifdef SDL_GPU_USE_GL_TIER3
+        refresh_attribute_data(cdata);
+        #endif
         
         int floats_per_vertex = 8;
         
@@ -3260,6 +3309,10 @@ static void FlushBlitBuffer(GPU_Renderer* renderer)
         #endif
         
         setClipRect(renderer, dest);
+        
+        #ifdef SDL_GPU_USE_GL_TIER3
+        refresh_attribute_data(cdata);
+        #endif
         
         int num_vertices;
         int num_indices;
@@ -3978,10 +4031,42 @@ static void SetAttributeSource(GPU_Renderer* renderer, int num_values, GPU_Attri
     if(source.location < 0 || source.location >= 16)
         return;
     CONTEXT_DATA* cdata = (CONTEXT_DATA*)renderer->current_context_target->context->data;
-    cdata->shader_attributes[source.location].enabled = 0;
-    cdata->shader_attributes[source.location].num_values = num_values;
-    cdata->shader_attributes[source.location].next_value = source.values;
-    cdata->shader_attributes[source.location].attribute = source;
+    GPU_AttributeSource* a = &cdata->shader_attributes[source.location];
+    if(source.format.is_per_sprite)
+    {
+        a->per_vertex_storage_offset_bytes = 0;
+        a->per_vertex_storage_stride_bytes = source.format.num_elems_per_value * sizeof_GPU_type(source.format.type);
+        a->num_values = 4 * num_values;  // 4 vertices now
+        int needed_size = a->num_values * a->per_vertex_storage_stride_bytes;
+        
+        // Make sure we have enough room for converted per-vertex data
+        if(a->per_vertex_storage_size < needed_size)
+        {
+            free(a->per_vertex_storage);
+            a->per_vertex_storage = malloc(needed_size);
+            a->per_vertex_storage_size = needed_size;
+        }
+    }
+    else if(a->per_vertex_storage_size > 0)
+    {
+        free(a->per_vertex_storage);
+        a->per_vertex_storage = NULL;
+        a->per_vertex_storage_size = 0;
+    }
+    
+    a->enabled = 0;
+    a->attribute = source;
+    
+    if(!source.format.is_per_sprite)
+    {
+        a->per_vertex_storage = source.values;
+        a->num_values = num_values;
+        a->per_vertex_storage_stride_bytes = source.format.stride_bytes;
+        a->per_vertex_storage_offset_bytes = source.format.offset_bytes;
+    }
+    
+    a->next_value = a->per_vertex_storage;
+    
     #endif
 }
 
