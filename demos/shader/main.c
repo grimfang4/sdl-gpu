@@ -8,7 +8,7 @@ GPU_ShaderBlock load_shaders(Uint32* v, Uint32* f, Uint32* p)
     GPU_Renderer* renderer = GPU_GetCurrentRenderer();
     const char* vertex_shader_file;
     const char* fragment_shader_file;
-    if(renderer->tier < 3)
+    if(renderer->shader_version < 130)
     {
         vertex_shader_file = "shader/test.vert";
         fragment_shader_file = "shader/test.frag";

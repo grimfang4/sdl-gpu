@@ -11,10 +11,11 @@ void GPU_FreeRenderer_OpenGL_2(GPU_Renderer* renderer) {}
 
 // Most of the code pulled in from here...
 #define SDL_GPU_USE_OPENGL
-#define SDL_GPU_USE_GL_TIER2
-#define SDL_GPU_GL_TIER 2
+#define SDL_GPU_USE_GL_TIER3
+#define SDL_GPU_GL_TIER 3
+#define SDL_GPU_GLSL_VERSION 120
 #define SDL_GPU_GL_MAJOR_VERSION 2
-#define SDL_GPU_APPLY_TRANSFORMS_TO_GL_STACK
+#define SDL_GPU_NO_VAO
 #define CONTEXT_DATA ContextData_OpenGL_2
 #define RENDERER_DATA RendererData_OpenGL_2
 #define IMAGE_DATA ImageData_OpenGL_2
@@ -32,8 +33,9 @@ GPU_Renderer* GPU_CreateRenderer_OpenGL_2(GPU_RendererID request)
     memset(renderer, 0, sizeof(GPU_Renderer));
 
     renderer->id = request;
-	renderer->id.id = GPU_RENDERER_OPENGL_2;
-	renderer->tier = SDL_GPU_GL_TIER;
+    renderer->id.id = GPU_RENDERER_OPENGL_2;
+    renderer->shader_language = GPU_GLSL;
+    renderer->shader_version = SDL_GPU_GLSL_VERSION;
     
     renderer->current_context_target = NULL;
 

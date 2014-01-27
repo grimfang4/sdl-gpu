@@ -116,7 +116,7 @@
 
 
 #define GPU_DEFAULT_TEXTURED_VERTEX_SHADER_SOURCE \
-"#version 120\n\
+"#version 110\n\
 \
 varying vec4 color;\n\
 varying vec2 texCoord;\n\
@@ -129,7 +129,7 @@ void main(void)\n\
 }"
 
 #define GPU_DEFAULT_UNTEXTURED_VERTEX_SHADER_SOURCE \
-"#version 120\n\
+"#version 110\n\
 \
 varying vec4 color;\n\
 \
@@ -141,7 +141,7 @@ void main(void)\n\
 
 
 #define GPU_DEFAULT_TEXTURED_FRAGMENT_SHADER_SOURCE \
-"#version 120\n\
+"#version 110\n\
 \
 varying vec4 color;\n\
 varying vec2 texCoord;\n\
@@ -154,7 +154,7 @@ void main(void)\n\
 }"
 
 #define GPU_DEFAULT_UNTEXTURED_FRAGMENT_SHADER_SOURCE \
-"#version 120\n\
+"#version 110\n\
 \
 varying vec4 color;\n\
 \

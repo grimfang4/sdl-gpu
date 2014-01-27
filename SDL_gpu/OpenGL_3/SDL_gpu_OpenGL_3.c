@@ -14,6 +14,7 @@ void GPU_FreeRenderer_OpenGL_3(GPU_Renderer* renderer) {}
 #define SDL_GPU_USE_OPENGL
 #define SDL_GPU_USE_GL_TIER3
 #define SDL_GPU_GL_TIER 3
+#define SDL_GPU_GLSL_VERSION 130
 #define SDL_GPU_GL_MAJOR_VERSION 3
 #define CONTEXT_DATA ContextData_OpenGL_3
 #define RENDERER_DATA RendererData_OpenGL_3
@@ -32,8 +33,9 @@ GPU_Renderer* GPU_CreateRenderer_OpenGL_3(GPU_RendererID request)
     memset(renderer, 0, sizeof(GPU_Renderer));
 
     renderer->id = request;
-	renderer->id.id = GPU_RENDERER_OPENGL_3;
-	renderer->tier = SDL_GPU_GL_TIER;
+    renderer->id.id = GPU_RENDERER_OPENGL_3;
+    renderer->shader_language = GPU_GLSL;
+    renderer->shader_version = SDL_GPU_GLSL_VERSION;
     
     renderer->current_context_target = NULL;
 

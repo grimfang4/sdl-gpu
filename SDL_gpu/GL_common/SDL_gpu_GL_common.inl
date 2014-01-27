@@ -949,7 +949,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
             GPU_SetShaderBlock(cdata->shader_block[1]);
             
             // Create vertex array container and buffer
-            #if !defined(SDL_GPU_USE_GLES) || SDL_GPU_GLES_MAJOR_VERSION != 2
+            #if !defined(SDL_GPU_NO_VAO)
             glGenVertexArrays(1, &cdata->blit_VAO);
             glBindVertexArray(cdata->blit_VAO);
             #endif
@@ -2255,7 +2255,7 @@ static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
         {
             glDeleteBuffers(2, cdata->blit_VBO);
             glDeleteBuffers(16, cdata->attribute_VBO);
-            #if !defined(SDL_GPU_USE_GLES) || SDL_GPU_GLES_MAJOR_VERSION != 2
+            #if !defined(SDL_GPU_NO_VAO)
             glDeleteVertexArrays(1, &cdata->blit_VAO);
             #endif
         }
@@ -2918,32 +2918,35 @@ static int BlitBatch(GPU_Renderer* renderer, GPU_Image* src, GPU_Target* dest, u
             }
         
             // Update the vertex array object's buffers
-            #if !defined(SDL_GPU_USE_GLES) || SDL_GPU_GLES_MAJOR_VERSION != 2
+            #if !defined(SDL_GPU_NO_VAO)
             glBindVertexArray(cdata->blit_VAO);
             #endif
             
-            // Upload blit buffer to a single buffer object
-            glBindBuffer(GL_ARRAY_BUFFER, cdata->blit_VBO[cdata->blit_VBO_flop]);
-            cdata->blit_VBO_flop = !cdata->blit_VBO_flop;
-            
-            // Copy the whole blit buffer to the GPU
-            glBufferSubData(GL_ARRAY_BUFFER, 0, GPU_BLIT_BUFFER_STRIDE * (partial_num_sprites*4), values);  // Fills GPU buffer with data.
-            
-            // Specify the formatting of the blit buffer
-            if(cdata->current_shader_block.position_loc >= 0)
+            if(values != NULL)
             {
-                glEnableVertexAttribArray(cdata->current_shader_block.position_loc);  // Tell GL to use client-side attribute data
-                glVertexAttribPointer(cdata->current_shader_block.position_loc, 2, GL_FLOAT, GL_FALSE, GPU_BLIT_BUFFER_STRIDE, 0);  // Tell how the data is formatted
-            }
-            if(cdata->current_shader_block.texcoord_loc >= 0)
-            {
-                glEnableVertexAttribArray(cdata->current_shader_block.texcoord_loc);
-                glVertexAttribPointer(cdata->current_shader_block.texcoord_loc, 2, GL_FLOAT, GL_FALSE, GPU_BLIT_BUFFER_STRIDE, (void*)(GPU_BLIT_BUFFER_TEX_COORD_OFFSET * sizeof(float)));
-            }
-            if(cdata->current_shader_block.color_loc >= 0)
-            {
-                glEnableVertexAttribArray(cdata->current_shader_block.color_loc);
-                glVertexAttribPointer(cdata->current_shader_block.color_loc, 4, GL_FLOAT, GL_FALSE, GPU_BLIT_BUFFER_STRIDE, (void*)(GPU_BLIT_BUFFER_COLOR_OFFSET * sizeof(float)));
+                // Upload blit buffer to a single buffer object
+                glBindBuffer(GL_ARRAY_BUFFER, cdata->blit_VBO[cdata->blit_VBO_flop]);
+                cdata->blit_VBO_flop = !cdata->blit_VBO_flop;
+                
+                // Copy the whole blit buffer to the GPU
+                glBufferSubData(GL_ARRAY_BUFFER, 0, GPU_BLIT_BUFFER_STRIDE * (partial_num_sprites*4), values);  // Fills GPU buffer with data.
+                
+                // Specify the formatting of the blit buffer
+                if(cdata->current_shader_block.position_loc >= 0)
+                {
+                    glEnableVertexAttribArray(cdata->current_shader_block.position_loc);  // Tell GL to use client-side attribute data
+                    glVertexAttribPointer(cdata->current_shader_block.position_loc, 2, GL_FLOAT, GL_FALSE, GPU_BLIT_BUFFER_STRIDE, 0);  // Tell how the data is formatted
+                }
+                if(cdata->current_shader_block.texcoord_loc >= 0)
+                {
+                    glEnableVertexAttribArray(cdata->current_shader_block.texcoord_loc);
+                    glVertexAttribPointer(cdata->current_shader_block.texcoord_loc, 2, GL_FLOAT, GL_FALSE, GPU_BLIT_BUFFER_STRIDE, (void*)(GPU_BLIT_BUFFER_TEX_COORD_OFFSET * sizeof(float)));
+                }
+                if(cdata->current_shader_block.color_loc >= 0)
+                {
+                    glEnableVertexAttribArray(cdata->current_shader_block.color_loc);
+                    glVertexAttribPointer(cdata->current_shader_block.color_loc, 4, GL_FLOAT, GL_FALSE, GPU_BLIT_BUFFER_STRIDE, (void*)(GPU_BLIT_BUFFER_COLOR_OFFSET * sizeof(float)));
+                }
             }
             
             upload_attribute_data(cdata, partial_num_sprites*4);
@@ -2960,7 +2963,7 @@ static int BlitBatch(GPU_Renderer* renderer, GPU_Image* src, GPU_Target* dest, u
             
             disable_attribute_data(cdata);
             
-            #if !defined(SDL_GPU_USE_GLES) || SDL_GPU_GLES_MAJOR_VERSION != 2
+            #if !defined(SDL_GPU_NO_VAO)
             glBindVertexArray(0);
             #endif
 
@@ -3222,7 +3225,7 @@ static void DoPartialFlush(CONTEXT_DATA* cdata, int num_vertices, float* blit_bu
         }
     
         // Update the vertex array object's buffers
-        #if !defined(SDL_GPU_USE_GLES) || SDL_GPU_GLES_MAJOR_VERSION != 2
+        #if !defined(SDL_GPU_NO_VAO)
         glBindVertexArray(cdata->blit_VAO);
         #endif
         
@@ -3264,7 +3267,7 @@ static void DoPartialFlush(CONTEXT_DATA* cdata, int num_vertices, float* blit_bu
         
         disable_attribute_data(cdata);
         
-        #if !defined(SDL_GPU_USE_GLES) || SDL_GPU_GLES_MAJOR_VERSION != 2
+        #if !defined(SDL_GPU_NO_VAO)
         glBindVertexArray(0);
         #endif
 
