@@ -908,21 +908,12 @@ int GPU_BlitBatchSeparate(GPU_Image* src, GPU_Target* dest, unsigned int numSpri
 	
 	// Repack the given arrays into an interleaved array for more efficient access
 	// Default values: Each sprite is defined by a position, a rect, and a color.
-	int src_position_floats_per_sprite = 2;
-	int src_rect_floats_per_sprite = 4;
-	int src_color_floats_per_sprite = 4;
 	
 	Uint8 pass_vertices = (flags & GPU_PASSTHROUGH_VERTICES);
 	Uint8 pass_texcoords = (flags & GPU_PASSTHROUGH_TEXCOORDS);
 	Uint8 pass_colors = (flags & GPU_PASSTHROUGH_COLORS);
-	if(pass_vertices)
-        src_position_floats_per_sprite = 8; // 4 vertices of x, y
-	if(pass_texcoords)
-        src_rect_floats_per_sprite = 8; // 4 vertices of s, t
-	if(pass_colors)
-        src_color_floats_per_sprite = 16; // 4 vertices of r, g, b, a
-    
-	int size = numSprites*(8 + 8 + 16);
+	
+	int size = numSprites*(8 + 8 + 16);  // 4 vertices of x, y...  s, t...  r, g, b, a
 	float* values = (float*)malloc(sizeof(float)*size);
 	
 	int n;  // The sprite number iteration variable.
@@ -963,7 +954,7 @@ int GPU_BlitBatchSeparate(GPU_Image* src, GPU_Target* dest, unsigned int numSpri
         {
             if(!pass_texcoords)
             {
-                // TODO: Scale using tex_w instead of w for POT support
+                // FIXME: Scale using tex_w instead of w for POT support
                 float s1 = src_rects[rect_n++]/src->w;
                 float t1 = src_rects[rect_n++]/src->h;
                 float s3 = s1 + src_rects[rect_n++]/src->w;
@@ -1492,9 +1483,9 @@ int GPU_GetAttributeLocation(Uint32 program_object, const char* attrib_name)
 	return current_renderer->GetAttributeLocation(current_renderer, program_object, attrib_name);
 }
 
-GPU_AttributeFormat GPU_MakeAttributeFormat(Uint8 is_per_sprite, int num_elems_per_vertex, GPU_TypeEnum type, Uint8 normalize, int stride_bytes, int offset_bytes)
+GPU_AttributeFormat GPU_MakeAttributeFormat(int num_elems_per_vertex, GPU_TypeEnum type, Uint8 normalize, int stride_bytes, int offset_bytes)
 {
-    GPU_AttributeFormat f = {is_per_sprite, num_elems_per_vertex, type, normalize, stride_bytes, offset_bytes};
+    GPU_AttributeFormat f = {0, num_elems_per_vertex, type, normalize, stride_bytes, offset_bytes};
     return f;
 }
 

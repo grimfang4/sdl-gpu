@@ -985,7 +985,7 @@ const char* GPU_GetShaderMessage(void);
 int GPU_GetAttributeLocation(Uint32 program_object, const char* attrib_name);
 
 /*! Returns a filled GPU_AttributeFormat object. */
-GPU_AttributeFormat GPU_MakeAttributeFormat(Uint8 is_per_sprite, int num_elems_per_vertex, GPU_TypeEnum type, Uint8 normalize, int stride_bytes, int offset_bytes);
+GPU_AttributeFormat GPU_MakeAttributeFormat(int num_elems_per_vertex, GPU_TypeEnum type, Uint8 normalize, int stride_bytes, int offset_bytes);
 
 /*! Returns a filled GPU_Attribute object. */
 GPU_Attribute GPU_MakeAttribute(int location, void* values, GPU_AttributeFormat format);

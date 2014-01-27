@@ -13,8 +13,6 @@ int main(int argc, char* argv[])
 	
 	printCurrentRenderer();
 	
-	float dt = 0.010f;
-	
 	Uint32 startTime = SDL_GetTicks();
 	long frameCount = 0;
 	
