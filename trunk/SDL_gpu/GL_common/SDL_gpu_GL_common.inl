@@ -3375,6 +3375,208 @@ static void Flip(GPU_Renderer* renderer, GPU_Target* target)
 // Shader API
 
 
+#include <string.h>
+
+// On some platforms (e.g. Android), it might not be possible to just create a rwops and get the expected #included files.
+// To do it, I might want to add an optional argument that specifies a base directory to prepend to #include file names.
+
+static Uint32 GetShaderSourceSize(const char* filename);
+static Uint32 GetShaderSource(const char* filename, char* result);
+
+static void read_until_end_of_comment(SDL_RWops* rwops, char multiline)
+{
+    char buffer;
+    while(SDL_RWread(rwops, &buffer, 1, 1) > 0)
+    {
+        if(!multiline)
+        {
+            if(buffer == '\n')
+                break;
+        }
+        else
+        {
+            if(buffer == '*')
+            {
+                // If the stream ends at the next character or it is a '/', then we're done.
+                if(SDL_RWread(rwops, &buffer, 1, 1) <= 0 || buffer == '/')
+                    break;
+            }
+        }
+    }
+}
+
+static Uint32 GetShaderSourceSize_RW(SDL_RWops* shader_source)
+{
+    Uint32 size = 0;
+    
+    // Read 1 byte at a time until we reach the end
+    char last_char = ' ';
+    char buffer[512];
+    long len = 0;
+    while((len = SDL_RWread(shader_source, &buffer, 1, 1)) > 0)
+    {
+        // Follow through an #include directive?
+        if(buffer[0] == '#')
+        {
+            // Get the rest of the line
+            int line_size = 1;
+            int line_len;
+            while((line_len = SDL_RWread(shader_source, buffer+line_size, 1, 1)) > 0)
+            {
+                line_size += line_len;
+                if(buffer[line_size - line_len] == '\n')
+                    break;
+            }
+            buffer[line_size] = '\0';
+            
+            // Is there "include" after '#'?
+            char* token = strtok(buffer, "# \t");
+            
+            if(token != NULL && strcmp(token, "include") == 0)
+            {
+                // Get filename token
+                token = strtok(NULL, "\"");  // Skip the empty token before the quote
+                if(token != NULL)
+                {
+                    // Add the size of the included file and a newline character
+                    size += GetShaderSourceSize(token) + 1;
+                }
+            }
+            else
+                size += line_size;
+            last_char = ' ';
+            continue;
+        }
+        
+        size += len;
+        
+        if(last_char == '/')
+        {
+            if(buffer[0] == '/')
+            {
+                read_until_end_of_comment(shader_source, 0);
+                size++;  // For the end of the comment
+            }
+            else if(buffer[0] == '*')
+            {
+                read_until_end_of_comment(shader_source, 1);
+                size += 2;  // For the end of the comments
+            }
+            last_char = ' ';
+        }
+        else
+            last_char = buffer[0];
+    }
+    
+    // Go back to the beginning of the stream
+    SDL_RWseek(shader_source, 0, SEEK_SET);
+    return size;
+}
+
+
+static Uint32 GetShaderSource_RW(SDL_RWops* shader_source, char* result)
+{
+    Uint32 size = 0;
+    
+    // Read 1 byte at a time until we reach the end
+    char last_char = ' ';
+    char buffer[512];
+    long len = 0;
+    while((len = SDL_RWread(shader_source, &buffer, 1, 1)) > 0)
+    {
+        // Follow through an #include directive?
+        if(buffer[0] == '#')
+        {
+            // Get the rest of the line
+            int line_size = 1;
+            int line_len;
+            while((line_len = SDL_RWread(shader_source, buffer+line_size, 1, 1)) > 0)
+            {
+                line_size += line_len;
+                if(buffer[line_size - line_len] == '\n')
+                    break;
+            }
+            
+            // Is there "include" after '#'?
+            char token_buffer[512];  // strtok() is destructive
+            memcpy(token_buffer, buffer, line_size+1);
+            token_buffer[line_size] = '\0';
+            char* token = strtok(token_buffer, "# \t");
+            
+            if(token != NULL && strcmp(token, "include") == 0)
+            {
+                // Get filename token
+                token = strtok(NULL, "\"");  // Skip the empty token before the quote
+                if(token != NULL)
+                {
+                    // Add the size of the included file and a newline character
+                    size += GetShaderSource(token, result + size);
+                    result[size] = '\n';
+                    size++;
+                }
+            }
+            else
+            {
+                memcpy(result + size, buffer, line_size);
+                size += line_size;
+            }
+            last_char = ' ';
+            continue;
+        }
+        
+        memcpy(result + size, buffer, len);
+        size += len;
+        
+        if(last_char == '/')
+        {
+            if(buffer[0] == '/')
+            {
+                read_until_end_of_comment(shader_source, 0);
+                memcpy(result + size, "\n", 1);
+                size++;
+            }
+            else if(buffer[0] == '*')
+            {
+                read_until_end_of_comment(shader_source, 1);
+                memcpy(result + size, "*/", 2);
+                size += 2;
+            }
+            last_char = ' ';
+        }
+        else
+            last_char = buffer[0];
+    }
+    result[size] = '\0';
+    
+    // Go back to the beginning of the stream
+    SDL_RWseek(shader_source, 0, SEEK_SET);
+    return size;
+}
+
+static Uint32 GetShaderSource(const char* filename, char* result)
+{
+    if(filename == NULL)
+        return 0;
+    SDL_RWops* rwops = SDL_RWFromFile(filename, "r");
+    
+    Uint32 size = GetShaderSource_RW(rwops, result);
+    
+    SDL_RWclose(rwops);
+    return size;
+}
+
+static Uint32 GetShaderSourceSize(const char* filename)
+{
+    if(filename == NULL)
+        return 0;
+    SDL_RWops* rwops = SDL_RWFromFile(filename, "r");
+    
+    Uint32 result = GetShaderSourceSize_RW(rwops);
+    
+    SDL_RWclose(rwops);
+    return result;
+}
+
 static int get_rw_size(SDL_RWops* rwops)
 {
     int size = 0;
@@ -3412,26 +3614,8 @@ static int read_string_rw(SDL_RWops* rwops, char* result)
 
 static char shader_message[256];
 
-static Uint32 CompileShader_RW(GPU_Renderer* renderer, int shader_type, SDL_RWops* shader_source)
-{
-    // Read in the shader source code
-    char* source_string = (char*)malloc(get_rw_size(shader_source) + 1);
-    int result = read_string_rw(shader_source, source_string);
-    if(!result)
-    {
-        GPU_LogError("Failed to read shader source.\n");
-        snprintf(shader_message, 256, "Failed to read shader source.\n");
-        free(source_string);
-        return 0;
-    }
-    
-    Uint32 result2 = renderer->CompileShader(renderer, shader_type, source_string);
-    free(source_string);
-    
-    return result2;
-}
 
-static Uint32 CompileShader(GPU_Renderer* renderer, int shader_type, const char* shader_source)
+static Uint32 compile_shader_source(int shader_type, const char* shader_source)
 {
     // Create the proper new shader object
     GLuint shader_object = 0;
@@ -3479,6 +3663,38 @@ static Uint32 CompileShader(GPU_Renderer* renderer, int shader_type, const char*
     #endif
     
     return shader_object;
+}
+
+
+static Uint32 CompileShader_RW(GPU_Renderer* renderer, int shader_type, SDL_RWops* shader_source)
+{
+    // Read in the shader source code
+    Uint32 size = GetShaderSourceSize_RW(shader_source);
+    char* source_string = (char*)malloc(size+1);
+    int result = GetShaderSource_RW(shader_source, source_string);
+    if(!result)
+    {
+        GPU_LogError("Failed to read shader source.\n");
+        snprintf(shader_message, 256, "Failed to read shader source.\n");
+        free(source_string);
+        return 0;
+    }
+    
+    Uint32 result2 = compile_shader_source(shader_type, source_string);
+    free(source_string);
+    
+    return result2;
+}
+
+static Uint32 CompileShader(GPU_Renderer* renderer, int shader_type, const char* shader_source)
+{
+    Uint32 size = strlen(shader_source);
+    if(size == 0)
+        return 0;
+    SDL_RWops* rwops = SDL_RWFromConstMem(shader_source, size);
+    size = renderer->CompileShader_RW(renderer, shader_type, rwops);
+    SDL_RWclose(rwops);
+    return size;
 }
 
 static Uint32 LinkShaderProgram(GPU_Renderer* renderer, Uint32 program_object)
