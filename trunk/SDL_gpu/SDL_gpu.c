@@ -119,7 +119,7 @@ GPU_InitFlagEnum GPU_GetPreInitFlags(void)
 }
 
 
-GPU_Target* GPU_Init(Uint16 w, Uint16 h, SDL_WindowFlags SDL_flags)
+GPU_Target* GPU_Init(Uint16 w, Uint16 h, GPU_WindowFlagEnum SDL_flags)
 {
 	GPU_InitRendererRegister();
 	
@@ -142,12 +142,12 @@ GPU_Target* GPU_Init(Uint16 w, Uint16 h, SDL_WindowFlags SDL_flags)
     return NULL;
 }
 
-GPU_Target* GPU_InitRenderer(GPU_RendererEnum renderer_enum, Uint16 w, Uint16 h, SDL_WindowFlags SDL_flags)
+GPU_Target* GPU_InitRenderer(GPU_RendererEnum renderer_enum, Uint16 w, Uint16 h, GPU_WindowFlagEnum SDL_flags)
 {
     return GPU_InitRendererByID(GPU_MakeRendererID(renderer_enum, 0, 0), w, h, SDL_flags);
 }
 
-GPU_Target* GPU_InitRendererByID(GPU_RendererID renderer_request, Uint16 w, Uint16 h, SDL_WindowFlags SDL_flags)
+GPU_Target* GPU_InitRendererByID(GPU_RendererID renderer_request, Uint16 w, Uint16 h, GPU_WindowFlagEnum SDL_flags)
 {
 	GPU_InitRendererRegister();
 	

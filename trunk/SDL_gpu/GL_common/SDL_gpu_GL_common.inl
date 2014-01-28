@@ -550,7 +550,7 @@ static Uint8 apply_Intel_attrib_workaround = 0;
 static Uint8 vendor_is_Intel = 0;
 #endif
 
-static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request, Uint16 w, Uint16 h, SDL_WindowFlags SDL_flags)
+static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request, Uint16 w, Uint16 h, GPU_WindowFlagEnum SDL_flags)
 {
     if(renderer_request.major_version < 1)
     {
