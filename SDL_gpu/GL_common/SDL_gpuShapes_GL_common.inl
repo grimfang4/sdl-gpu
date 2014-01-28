@@ -234,6 +234,8 @@ static inline void draw_vertices(GLfloat* glverts, int num_vertices, GLenum prim
 
         CONTEXT_DATA* cdata = ((CONTEXT_DATA*)target->context->data);
         
+        refresh_attribute_data(cdata);
+        
         int floats_per_vertex = 6;  // position (2), color (4)
         int buffer_stride = floats_per_vertex * sizeof(float);
         
@@ -269,7 +271,11 @@ static inline void draw_vertices(GLfloat* glverts, int num_vertices, GLenum prim
             glVertexAttribPointer(cdata->current_shader_block.color_loc, 4, GL_FLOAT, GL_FALSE, buffer_stride, (void*)(2 * sizeof(float)));
         }
         
+        upload_attribute_data(cdata, num_vertices);
+        
         glDrawArrays(prim_type, 0, num_vertices);
+        
+        disable_attribute_data(cdata);
         
         #if !defined(SDL_GPU_NO_VAO)
         glBindVertexArray(0);
@@ -305,6 +311,8 @@ static inline void draw_vertices_textured(GLfloat* glverts, int num_vertices, GL
             return;
 
         CONTEXT_DATA* cdata = ((CONTEXT_DATA*)target->context->data);
+        
+        refresh_attribute_data(cdata);
         
         int floats_per_vertex = 8;  // position (2), color (4), texcoord (2)
         int buffer_stride = floats_per_vertex * sizeof(float);
@@ -346,7 +354,11 @@ static inline void draw_vertices_textured(GLfloat* glverts, int num_vertices, GL
             glVertexAttribPointer(cdata->current_shader_block.texcoord_loc, 2, GL_FLOAT, GL_FALSE, buffer_stride, (void*)(6 * sizeof(float)));
         }
         
+        upload_attribute_data(cdata, num_vertices);
+        
         glDrawArrays(prim_type, 0, num_vertices);
+        
+        disable_attribute_data(cdata);
         
         #if !defined(SDL_GPU_NO_VAO)
         glBindVertexArray(0);
