@@ -368,6 +368,13 @@ static void changeBlendMode(GPU_Renderer* renderer, GPU_BlendEnum mode)
             return;  // TODO: Return false so we can avoid depending on it if it fails
         glBlendEquation(GL_FUNC_ADD);
     }
+    else if(mode == GPU_BLEND_PREMULTIPLIED_ALPHA)
+    {
+        glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+        if(!(renderer->enabled_features & GPU_FEATURE_BLEND_EQUATIONS))
+            return;
+        glBlendEquation(GL_FUNC_ADD);
+    }
     else if(mode == GPU_BLEND_MULTIPLY)
     {
         if(!(renderer->enabled_features & GPU_FEATURE_BLEND_FUNC_SEPARATE))
