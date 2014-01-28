@@ -3375,6 +3375,22 @@ static void Flip(GPU_Renderer* renderer, GPU_Target* target)
 // Shader API
 
 
+static int get_rw_size(SDL_RWops* rwops)
+{
+    int size = 0;
+    
+    // Read 1 byte at a time until we reach the end
+    char buffer;
+    long len = 0;
+    while((len = SDL_RWread(rwops, &buffer, 1, 1)) > 0)
+    {
+        size += len;
+    }
+    
+    // Go back to the beginning of the stream
+    SDL_RWseek(rwops, 0, SEEK_SET);
+    return size;
+}
 
 static int read_string_rw(SDL_RWops* rwops, char* result)
 {
@@ -3399,8 +3415,7 @@ static char shader_message[256];
 static Uint32 CompileShader_RW(GPU_Renderer* renderer, int shader_type, SDL_RWops* shader_source)
 {
     // Read in the shader source code
-    // TODO: It'd be nice to check the file size first...
-    char* source_string = (char*)malloc(2000);
+    char* source_string = (char*)malloc(get_rw_size(shader_source) + 1);
     int result = read_string_rw(shader_source, source_string);
     if(!result)
     {
