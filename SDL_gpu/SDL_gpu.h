@@ -73,17 +73,18 @@ static const GPU_FilterEnum GPU_LINEAR_MIPMAP = 2;
  */
 typedef unsigned int GPU_BlendEnum;
 static const GPU_BlendEnum GPU_BLEND_NORMAL = 0;
-static const GPU_BlendEnum GPU_BLEND_MULTIPLY = 1;
-static const GPU_BlendEnum GPU_BLEND_ADD = 2;
-static const GPU_BlendEnum GPU_BLEND_SUBTRACT = 3;
-static const GPU_BlendEnum GPU_BLEND_ADD_COLOR = 4;
-static const GPU_BlendEnum GPU_BLEND_SUBTRACT_COLOR = 5;
-static const GPU_BlendEnum GPU_BLEND_DARKEN = 6;
-static const GPU_BlendEnum GPU_BLEND_LIGHTEN = 7;
-static const GPU_BlendEnum GPU_BLEND_DIFFERENCE = 8;
-static const GPU_BlendEnum GPU_BLEND_PUNCHOUT = 9;
-static const GPU_BlendEnum GPU_BLEND_CUTOUT = 10;
-static const GPU_BlendEnum GPU_BLEND_OVERRIDE = 11;  // Lets you specify direct GL calls before blitting.  Note: Call GPU_FlushBlitBuffer() before you change blend modes via OpenGL so the new blend mode doesn't affect SDL_gpu's previously buffered blits.
+static const GPU_BlendEnum GPU_BLEND_PREMULTIPLIED_ALPHA = 1;
+static const GPU_BlendEnum GPU_BLEND_MULTIPLY = 2;
+static const GPU_BlendEnum GPU_BLEND_ADD = 3;
+static const GPU_BlendEnum GPU_BLEND_SUBTRACT = 4;
+static const GPU_BlendEnum GPU_BLEND_ADD_COLOR = 5;
+static const GPU_BlendEnum GPU_BLEND_SUBTRACT_COLOR = 6;
+static const GPU_BlendEnum GPU_BLEND_DARKEN = 7;
+static const GPU_BlendEnum GPU_BLEND_LIGHTEN = 8;
+static const GPU_BlendEnum GPU_BLEND_DIFFERENCE = 9;
+static const GPU_BlendEnum GPU_BLEND_PUNCHOUT = 10;
+static const GPU_BlendEnum GPU_BLEND_CUTOUT = 11;
+static const GPU_BlendEnum GPU_BLEND_OVERRIDE = 100;  // Lets you specify direct GL calls before blitting.  Note: You should call GPU_FlushBlitBuffer() before you change blend modes via OpenGL so the new blend mode doesn't affect SDL_gpu's previously buffered blits.
 
 
 /*! Image object for containing pixel/texture data.
