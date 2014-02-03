@@ -32,6 +32,8 @@
 	#undef GL_COMPILE_STATUS
 	#undef glGetShaderInfoLog
 	#undef glDeleteShader
+	#undef glActiveTexture
+	#undef GL_TEXTURE0
 	#define glCreateShader glCreateShaderObjectARB
 	#define GL_VERTEX_SHADER GL_VERTEX_SHADER_ARB
 	#define GL_FRAGMENT_SHADER GL_FRAGMENT_SHADER_ARB
@@ -41,6 +43,8 @@
 	#define GL_COMPILE_STATUS GL_OBJECT_COMPILE_STATUS_ARB
 	#define glGetShaderInfoLog glGetInfoLogARB
 	#define glDeleteShader glDeleteObjectARB
+	#define glActiveTexture glActiveTextureARB
+	#define GL_TEXTURE0 GL_TEXTURE0_ARB
 	
 	#undef glCreateProgram
 	#undef glAttachShader

@@ -97,3 +97,6 @@ target_link_libraries (blit-batch-demo SDL_gpu)
 
 add_executable(viewport-demo viewport/main.c common/common.c common/demo-font.c)
 target_link_libraries (viewport-demo SDL_gpu)
+
+add_executable(multitexture-demo multitexture/main.c common/common.c common/demo-font.c)
+target_link_libraries (multitexture-demo SDL_gpu)

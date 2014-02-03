@@ -511,6 +511,9 @@ struct GPU_Renderer
     /*! \see GPU_SetShaderBlock() */
     void (*SetShaderBlock)(GPU_Renderer* renderer, GPU_ShaderBlock block);
     
+    /*! \see GPU_SetShaderImage() */
+    void (*SetShaderImage)(GPU_Renderer* renderer, GPU_Image* image, int location, int image_unit);
+    
     /*! \see GPU_GetUniformiv() */
     void (*GetUniformiv)(GPU_Renderer* renderer, Uint32 program_object, int location, int* values);
 
@@ -1012,6 +1015,12 @@ GPU_ShaderBlock GPU_LoadShaderBlock(Uint32 program_object, const char* position_
 
 /*! Sets the current shader block to use the given attribute and uniform locations. */
 void GPU_SetShaderBlock(GPU_ShaderBlock block);
+
+/*! Sets the given image unit to the given image so that a custom shader can sample multiple textures.
+    \param image The source image/texture.  Pass NULL to disable the image unit.
+    \param location The uniform location of a texture sampler
+    \param image_unit The index of the texture unit to set.  0 is the first unit, which is used by SDL_gpu's blitting functions.  1 would be the second unit. */
+void GPU_SetShaderImage(GPU_Image* image, int location, int image_unit);
 
 /*! Fills "values" with the value of the uniform shader variable at the given location. */
 void GPU_GetUniformiv(Uint32 program_object, int location, int* values);
