@@ -24,6 +24,14 @@ GPU_Renderer* GPU_GetCurrentRenderer(void)
 	return current_renderer;
 }
 
+Uint32 GPU_GetCurrentShaderProgram(void)
+{
+    if(current_renderer == NULL || current_renderer->current_context_target == NULL)
+        return 0;
+    
+    return current_renderer->current_context_target->context->current_shader_program;
+}
+
 
 
 void GPU_LogInfo(const char* format, ...)

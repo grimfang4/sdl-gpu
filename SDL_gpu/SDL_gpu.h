@@ -731,6 +731,9 @@ void GPU_SetCurrentRenderer(GPU_RendererID id);
 /*! \return The current renderer */
 GPU_Renderer* GPU_GetCurrentRenderer(void);
 
+/*! \return The current shader program */
+Uint32 GPU_GetCurrentShaderProgram(void);
+
 /*! \return A GPU_Rect with the given values. */
 GPU_Rect GPU_MakeRect(float x, float y, float w, float h);
 

@@ -295,17 +295,18 @@ int do_attributes(GPU_Target* screen)
 	float* sprite_values = (float*)malloc(sizeof(float)*maxSprites*floats_per_sprite);
 	
 	// Load attributes for the textured shader
-	GPU_ActivateShaderProgram(screen->context->default_textured_shader_program, NULL);
+	Uint32 program_object = 0;
+	GPU_ActivateShaderProgram(program_object, NULL);
 	// Disable the default shader's attributes (not a typical thing to do...)
-	GPU_ShaderBlock block = {-1,-1,-1,GPU_GetUniformLocation(screen->context->current_shader_program, "gpu_ModelViewProjectionMatrix")};
-	GPU_ActivateShaderProgram(screen->context->default_textured_shader_program, &block);
+	GPU_ShaderBlock block = {-1,-1,-1,GPU_GetUniformLocation(program_object, "gpu_ModelViewProjectionMatrix")};
+	GPU_ActivateShaderProgram(program_object, &block);
 	
 	GPU_Attribute attributes[3] = {
-	    GPU_MakeAttribute(GPU_GetAttributeLocation(screen->context->current_shader_program, "gpu_Vertex"), sprite_values, 
+	    GPU_MakeAttribute(GPU_GetAttributeLocation(program_object, "gpu_Vertex"), sprite_values, 
                                                     GPU_MakeAttributeFormat(2, GPU_FLOAT, 0, floats_per_vertex*sizeof(float), 0)),
-        GPU_MakeAttribute(GPU_GetAttributeLocation(screen->context->current_shader_program, "gpu_TexCoord"), sprite_values, 
+        GPU_MakeAttribute(GPU_GetAttributeLocation(program_object, "gpu_TexCoord"), sprite_values, 
                                                     GPU_MakeAttributeFormat(2, GPU_FLOAT, 0, floats_per_vertex*sizeof(float), 2*sizeof(float))),
-        GPU_MakeAttribute(GPU_GetAttributeLocation(screen->context->current_shader_program, "gpu_Color"), sprite_values, 
+        GPU_MakeAttribute(GPU_GetAttributeLocation(program_object, "gpu_Color"), sprite_values, 
                                                     GPU_MakeAttributeFormat(4, GPU_FLOAT, 0, floats_per_vertex*sizeof(float), 4*sizeof(float)))
     };
 	
