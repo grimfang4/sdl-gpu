@@ -16,10 +16,6 @@ void GPU_FreeRenderer_OpenGL_2(GPU_Renderer* renderer) {}
 #define SDL_GPU_GLSL_VERSION 120
 #define SDL_GPU_GL_MAJOR_VERSION 2
 #define SDL_GPU_NO_VAO
-#define CONTEXT_DATA ContextData_OpenGL_2
-#define RENDERER_DATA RendererData_OpenGL_2
-#define IMAGE_DATA ImageData_OpenGL_2
-#define TARGET_DATA TargetData_OpenGL_2
 #include "../GL_common/SDL_gpu_GL_common.inl"
 #include "../GL_common/SDL_gpuShapes_GL_common.inl"
 

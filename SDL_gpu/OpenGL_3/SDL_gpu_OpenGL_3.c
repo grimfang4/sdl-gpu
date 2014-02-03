@@ -16,10 +16,6 @@ void GPU_FreeRenderer_OpenGL_3(GPU_Renderer* renderer) {}
 #define SDL_GPU_GL_TIER 3
 #define SDL_GPU_GLSL_VERSION 130
 #define SDL_GPU_GL_MAJOR_VERSION 3
-#define CONTEXT_DATA ContextData_OpenGL_3
-#define RENDERER_DATA RendererData_OpenGL_3
-#define IMAGE_DATA ImageData_OpenGL_3
-#define TARGET_DATA TargetData_OpenGL_3
 #include "../GL_common/SDL_gpu_GL_common.inl"
 #include "../GL_common/SDL_gpuShapes_GL_common.inl"
 

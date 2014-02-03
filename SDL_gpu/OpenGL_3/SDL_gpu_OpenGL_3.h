@@ -25,6 +25,12 @@
 #endif
 
 
+#define GPU_CONTEXT_DATA ContextData_OpenGL_3
+#define GPU_RENDERER_DATA RendererData_OpenGL_3
+#define GPU_IMAGE_DATA ImageData_OpenGL_3
+#define GPU_TARGET_DATA TargetData_OpenGL_3
+
+
 #define GPU_DEFAULT_TEXTURED_VERTEX_SHADER_SOURCE \
 "#version 130\n\
 \
