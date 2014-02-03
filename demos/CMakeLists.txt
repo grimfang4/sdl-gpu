@@ -100,3 +100,6 @@ target_link_libraries (viewport-demo SDL_gpu)
 
 add_executable(multitexture-demo multitexture/main.c common/common.c common/demo-font.c)
 target_link_libraries (multitexture-demo SDL_gpu)
+
+add_executable(intermediate-demo intermediate/main.c common/common.c common/demo-font.c)
+target_link_libraries (intermediate-demo SDL_gpu)

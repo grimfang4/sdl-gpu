@@ -521,7 +521,6 @@ static void applyTargetCamera(GPU_Target* target)
 
     GPU_MatrixMode( GPU_MODELVIEW );
     GPU_LoadIdentity();
-    //GPU_Translate(0.375f, 0.375f, 0.0f);
 
 
     float offsetX = target->w/2.0f;
@@ -1061,9 +1060,6 @@ static int SetWindowResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
 
     GPU_MatrixMode( GPU_MODELVIEW );
     GPU_LoadIdentity();
-    
-    // Center the pixels
-    //GPU_Translate(0.375f, 0.375f, 0.0f);
 
     // Update display
     GPU_ClearClip(renderer->current_context_target);
@@ -2309,16 +2305,23 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_T
         
         Uint16 tex_w = src->texture_w;
         Uint16 tex_h = src->texture_h;
+        
+        if(src->filter_mode == GPU_NEAREST)
+        {
+            // Center the texels on the pixels
+            x += 0.375f;
+            y += 0.375f;
+        }
 
         float x1, y1, x2, y2;
         float dx1, dy1, dx2, dy2;
         if(srcrect == NULL)
         {
             // Scale tex coords according to actual texture dims
-            x1 = 0.1f/tex_w;
-            y1 = 0.1f/tex_h;
-            x2 = ((float)src->w - 0.1f)/tex_w;
-            y2 = ((float)src->h - 0.1f)/tex_h;
+            x1 = 0.0f;
+            y1 = 0.0f;
+            x2 = ((float)src->w)/tex_w;
+            y2 = ((float)src->h)/tex_h;
             // Center the image on the given coords
             dx1 = x - src->w/2.0f;
             dy1 = y - src->h/2.0f;
@@ -2328,10 +2331,10 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_T
         else
         {
             // Scale srcrect tex coords according to actual texture dims
-            x1 = (srcrect->x + 0.1f)/(float)tex_w;
-            y1 = (srcrect->y + 0.1f)/(float)tex_h;
-            x2 = (srcrect->x + srcrect->w - 0.1f)/(float)tex_w;
-            y2 = (srcrect->y + srcrect->h - 0.1f)/(float)tex_h;
+            x1 = srcrect->x/(float)tex_w;
+            y1 = srcrect->y/(float)tex_h;
+            x2 = (srcrect->x + srcrect->w)/(float)tex_w;
+            y2 = (srcrect->y + srcrect->h)/(float)tex_h;
             // Center the image on the given coords
             dx1 = x - srcrect->w/2.0f;
             dy1 = y - srcrect->h/2.0f;
@@ -2469,6 +2472,13 @@ static int BlitTransformX(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcr
         
         Uint16 tex_w = src->texture_w;
         Uint16 tex_h = src->texture_h;
+        
+        if(src->filter_mode == GPU_NEAREST)
+        {
+            // Center the texels on the pixels
+            x += 0.375f;
+            y += 0.375f;
+        }
 
         float x1, y1, x2, y2;
         /*
@@ -2481,10 +2491,10 @@ static int BlitTransformX(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcr
         if(srcrect == NULL)
         {
             // Scale tex coords according to actual texture dims
-            x1 = 0.1f/tex_w;
-            y1 = 0.1f/tex_h;
-            x2 = ((float)src->w - 0.1f)/tex_w;
-            y2 = ((float)src->h - 0.1f)/tex_h;
+            x1 = 0.0f;
+            y1 = 0.0f;
+            x2 = ((float)src->w)/tex_w;
+            y2 = ((float)src->h)/tex_h;
             // Center the image on the given coords
             dx1 = -src->w/2.0f;
             dy1 = -src->h/2.0f;
@@ -2494,10 +2504,10 @@ static int BlitTransformX(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcr
         else
         {
             // Scale srcrect tex coords according to actual texture dims
-            x1 = (srcrect->x + 0.1f)/(float)tex_w;
-            y1 = (srcrect->y + 0.1f)/(float)tex_h;
-            x2 = (srcrect->x + srcrect->w - 0.1f)/(float)tex_w;
-            y2 = (srcrect->y + srcrect->h - 0.1f)/(float)tex_h;
+            x1 = srcrect->x/(float)tex_w;
+            y1 = srcrect->y/(float)tex_h;
+            x2 = (srcrect->x + srcrect->w)/(float)tex_w;
+            y2 = (srcrect->y + srcrect->h)/(float)tex_h;
             // Center the image on the given coords
             dx1 = -srcrect->w/2.0f;
             dy1 = -srcrect->h/2.0f;
