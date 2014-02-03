@@ -433,18 +433,17 @@ static void changeBlendMode(GPU_Renderer* renderer, GPU_BlendEnum mode)
 }
 
 
-// Returns 0 if no shader can be set
-static Uint8 make_sure_shader_program_is_current(GPU_Renderer* renderer, Uint32 program_object)
+// If 0 is returned, there is no valid shader.
+static Uint32 get_proper_program_id(GPU_Renderer* renderer, Uint32 program_object)
 {
     GPU_Context* context = renderer->current_context_target->context;
     if(context->default_textured_shader_program == 0)  // No shaders loaded!
         return 0;
     
-    // The best we can do is no (or default) shader block until the user sets it.
-    if(context->current_shader_program != program_object)
-        renderer->ActivateShaderProgram(renderer, program_object, NULL);
+    if(program_object == 0)
+        return context->default_textured_shader_program;
     
-    return 1;
+    return program_object;
 }
 
 #define MIX_COLOR_COMPONENT(a, b) (((a)/255.0f * (b)/255.0f)*255)
@@ -3829,7 +3828,8 @@ static const char* GetShaderMessage(GPU_Renderer* renderer)
 static int GetAttributeLocation(GPU_Renderer* renderer, Uint32 program_object, const char* attrib_name)
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
-    if(!make_sure_shader_program_is_current(renderer, program_object))
+    program_object = get_proper_program_id(renderer, program_object);
+    if(program_object == 0)
         return -1;
     return glGetAttribLocation(program_object, attrib_name);
     #else
@@ -3840,7 +3840,8 @@ static int GetAttributeLocation(GPU_Renderer* renderer, Uint32 program_object, c
 static int GetUniformLocation(GPU_Renderer* renderer, Uint32 program_object, const char* uniform_name)
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
-    if(!make_sure_shader_program_is_current(renderer, program_object))
+    program_object = get_proper_program_id(renderer, program_object);
+    if(program_object == 0)
         return -1;
     return glGetUniformLocation(program_object, uniform_name);
     #else
@@ -3851,7 +3852,8 @@ static int GetUniformLocation(GPU_Renderer* renderer, Uint32 program_object, con
 static GPU_ShaderBlock LoadShaderBlock(GPU_Renderer* renderer, Uint32 program_object, const char* position_name, const char* texcoord_name, const char* color_name, const char* modelViewMatrix_name)
 {
     GPU_ShaderBlock b;
-    if(!make_sure_shader_program_is_current(renderer, program_object))
+    program_object = get_proper_program_id(renderer, program_object);
+    if(program_object == 0)
     {
         b.position_loc = -1;
         b.texcoord_loc = -1;
@@ -3894,7 +3896,8 @@ static void SetShaderBlock(GPU_Renderer* renderer, GPU_ShaderBlock block)
 static void GetUniformiv(GPU_Renderer* renderer, Uint32 program_object, int location, int* values)
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
-    if(make_sure_shader_program_is_current(renderer, program_object))
+    program_object = get_proper_program_id(renderer, program_object);
+    if(program_object != 0)
         glGetUniformiv(program_object, location, values);
     #endif
 }
@@ -3937,7 +3940,8 @@ static void SetUniformiv(GPU_Renderer* renderer, int location, int num_elements_
 static void GetUniformuiv(GPU_Renderer* renderer, Uint32 program_object, int location, unsigned int* values)
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
-    if(make_sure_shader_program_is_current(renderer, program_object))
+    program_object = get_proper_program_id(renderer, program_object);
+    if(program_object != 0)
         #if defined(SDL_GPU_USE_GLES) && SDL_GPU_GLES_MAJOR_VERSION < 3
         glGetUniformiv(program_object, location, (int*)values);
         #else
@@ -4006,7 +4010,8 @@ static void SetUniformuiv(GPU_Renderer* renderer, int location, int num_elements
 static void GetUniformfv(GPU_Renderer* renderer, Uint32 program_object, int location, float* values)
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
-    if(make_sure_shader_program_is_current(renderer, program_object))
+    program_object = get_proper_program_id(renderer, program_object);
+    if(program_object != 0)
         glGetUniformfv(program_object, location, values);
     #endif
 }
