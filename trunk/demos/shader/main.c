@@ -118,14 +118,14 @@ int main(int argc, char* argv[])
 				else if(event.key.keysym.sym == SDLK_SPACE)
 				{
 				    if(GPU_IsDefaultShaderProgram(screen->context->current_shader_program))
+                    {
                         GPU_ActivateShaderProgram(p, &block);
+                        uloc = GPU_GetUniformLocation(p, "tex");
+                        GPU_SetUniformi(uloc, 0);
+                        timeloc = GPU_GetUniformLocation(p, "time");
+                    }
                     else
                         GPU_ActivateShaderProgram(0, NULL);
-                    
-                    
-                    uloc = GPU_GetUniformLocation(p, "tex");
-                    GPU_SetUniformi(uloc, 0);
-                    timeloc = GPU_GetUniformLocation(p, "time");
 				}
 			}
 		}
