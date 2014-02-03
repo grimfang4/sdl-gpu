@@ -37,6 +37,13 @@
 #endif
 
 
+#define GPU_CONTEXT_DATA ContextData_GLES_1
+#define GPU_RENDERER_DATA RendererData_GLES_1
+#define GPU_IMAGE_DATA ImageData_GLES_1
+#define GPU_TARGET_DATA TargetData_GLES_1
+
+
+
 typedef struct ContextData_GLES_1
 {
 	SDL_Color last_color;

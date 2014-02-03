@@ -1,14 +1,5 @@
 /* This is an implementation file to be included after certain #defines have been set.
-These defines determine the code paths:
-SDL_GPU_USE_OPENGL   // "Desktop" OpenGL
-SDL_GPU_USE_GLES // "Embedded" OpenGL
-SDL_GPU_USE_GL_TIER1 // Fixed-function, glBegin, etc.
-SDL_GPU_USE_GL_TIER2 // Fixed-function, glDrawArrays, etc.
-SDL_GPU_USE_GL_TIER3 // Shader pipeline, manual transforms
-CONTEXT_DATA  // Appropriate type for the context data (via pointer)
-IMAGE_DATA  // Appropriate type for the image data (via pointer)
-TARGET_DATA  // Appropriate type for the target data (via pointer)
-*/
+See a particular renderer's *.c file for specifics. */
 
 #ifndef DEGPERRAD
 #define DEGPERRAD 57.2957795f
@@ -232,7 +223,7 @@ static inline void draw_vertices(GLfloat* glverts, int num_vertices, GLenum prim
         if(target == NULL)
             return;
 
-        CONTEXT_DATA* cdata = ((CONTEXT_DATA*)target->context->data);
+        GPU_CONTEXT_DATA* cdata = ((GPU_CONTEXT_DATA*)target->context->data);
         
         refresh_attribute_data(cdata);
         
@@ -310,7 +301,7 @@ static inline void draw_vertices_textured(GLfloat* glverts, int num_vertices, GL
         if(target == NULL)
             return;
 
-        CONTEXT_DATA* cdata = ((CONTEXT_DATA*)target->context->data);
+        GPU_CONTEXT_DATA* cdata = ((GPU_CONTEXT_DATA*)target->context->data);
         
         refresh_attribute_data(cdata);
         
@@ -841,11 +832,11 @@ static void PolygonBlit(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrec
 {
     BEGIN_TEXTURED;
     
-    GLuint handle = ((IMAGE_DATA*)src->data)->handle;
+    GLuint handle = ((GPU_IMAGE_DATA*)src->data)->handle;
     renderer->FlushBlitBuffer(renderer);
     
     glBindTexture( GL_TEXTURE_2D, handle );
-    ((CONTEXT_DATA*)renderer->current_context_target->context->data)->last_image = src;
+    ((GPU_CONTEXT_DATA*)renderer->current_context_target->context->data)->last_image = src;
     
     // Set repeat mode
     // FIXME: Save old mode and reset it later

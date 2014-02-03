@@ -17,10 +17,6 @@ void GPU_FreeRenderer_GLES_2(GPU_Renderer* renderer) {}
 #define SDL_GPU_GLSL_VERSION 100
 #define SDL_GPU_GLES_MAJOR_VERSION 2
 #define SDL_GPU_NO_VAO
-#define CONTEXT_DATA ContextData_GLES_2
-#define RENDERER_DATA RendererData_GLES_2
-#define IMAGE_DATA ImageData_GLES_2
-#define TARGET_DATA TargetData_GLES_2
 #include "../GL_common/SDL_gpu_GL_common.inl"
 #include "../GL_common/SDL_gpuShapes_GL_common.inl"
 

@@ -18,10 +18,6 @@ void GPU_FreeRenderer_OpenGL_1(GPU_Renderer* renderer) {}
 #define SDL_GPU_GL_MAJOR_VERSION 1
 #define SDL_GPU_APPLY_TRANSFORMS_TO_GL_STACK
 #define SDL_GPU_NO_VAO
-#define CONTEXT_DATA ContextData_OpenGL_1
-#define RENDERER_DATA RendererData_OpenGL_1
-#define IMAGE_DATA ImageData_OpenGL_1
-#define TARGET_DATA TargetData_OpenGL_1
 #include "../GL_common/SDL_gpu_GL_common.inl"
 #include "../GL_common/SDL_gpuShapes_GL_common.inl"
 
