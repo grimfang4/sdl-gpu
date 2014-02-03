@@ -117,7 +117,7 @@ int main(int argc, char* argv[])
 				}
 				else if(event.key.keysym.sym == SDLK_SPACE)
 				{
-				    if(GPU_IsDefaultShaderProgram(screen->context->current_shader_program))
+				    if(GPU_IsDefaultShaderProgram(GPU_GetCurrentShaderProgram()))
                     {
                         GPU_ActivateShaderProgram(p, &block);
                         uloc = GPU_GetUniformLocation(p, "tex");
