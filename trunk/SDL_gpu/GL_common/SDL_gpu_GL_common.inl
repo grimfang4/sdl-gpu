@@ -3892,6 +3892,29 @@ static void SetShaderBlock(GPU_Renderer* renderer, GPU_ShaderBlock block)
     #endif
 }
 
+static void SetShaderImage(GPU_Renderer* renderer, GPU_Image* image, int location, int image_unit)
+{
+    // TODO: OpenGL 1 needs to check for ARB_multitexture to use glActiveTexture().
+    #ifndef SDL_GPU_DISABLE_SHADERS
+    renderer->FlushBlitBuffer(renderer);
+    if(renderer->current_context_target->context->current_shader_program == 0 || image_unit < 0)
+        return;
+    
+    Uint32 new_texture = 0;
+    if(image != NULL)
+        new_texture = ((GPU_IMAGE_DATA*)image->data)->handle;
+    
+    // Set the new image unit
+    glUniform1i(location, image_unit);
+    glActiveTexture(GL_TEXTURE0 + image_unit);
+    glBindTexture(GL_TEXTURE_2D, new_texture);
+    
+    if(image_unit != 0)
+        glActiveTexture(GL_TEXTURE0);
+    
+    #endif
+}
+
 
 static void GetUniformiv(GPU_Renderer* renderer, Uint32 program_object, int location, int* values)
 {
@@ -4388,6 +4411,7 @@ static void SetAttributeSource(GPU_Renderer* renderer, int num_values, GPU_Attri
     renderer->GetUniformLocation = &GetUniformLocation; \
     renderer->LoadShaderBlock = &LoadShaderBlock; \
     renderer->SetShaderBlock = &SetShaderBlock; \
+    renderer->SetShaderImage = &SetShaderImage; \
     renderer->GetUniformiv = &GetUniformiv; \
     renderer->SetUniformi = &SetUniformi; \
     renderer->SetUniformiv = &SetUniformiv; \

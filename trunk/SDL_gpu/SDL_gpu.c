@@ -1534,6 +1534,14 @@ void GPU_SetShaderBlock(GPU_ShaderBlock block)
 	current_renderer->SetShaderBlock(current_renderer, block);
 }
 
+void GPU_SetShaderImage(GPU_Image* image, int location, int image_unit)
+{
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->SetShaderImage == NULL)
+		return;
+	
+	current_renderer->SetShaderImage(current_renderer, image, location, image_unit);
+}
+
 void GPU_GetUniformiv(Uint32 program_object, int location, int* values)
 {
 	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->GetUniformiv == NULL)
