@@ -908,77 +908,75 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     target->context->current_shader_program = 0;
     
     #ifndef SDL_GPU_DISABLE_SHADERS
-    // Do we need a default shader?
-    if(renderer->id.major_version >= 2)
-    {
-        // Textured shader
-        Uint32 v = renderer->CompileShader(renderer, GPU_VERTEX_SHADER, GPU_DEFAULT_TEXTURED_VERTEX_SHADER_SOURCE);
-        
-        if(!v)
-            GPU_LogError("Failed to load default textured vertex shader: %s\n", renderer->GetShaderMessage(renderer));
-        
-        Uint32 f = renderer->CompileShader(renderer, GPU_FRAGMENT_SHADER, GPU_DEFAULT_TEXTURED_FRAGMENT_SHADER_SOURCE);
-        
-        if(!f)
-            GPU_LogError("Failed to load default textured fragment shader: %s\n", renderer->GetShaderMessage(renderer));
-        
-        Uint32 p = renderer->LinkShaders(renderer, v, f);
-        
-        if(!p)
-            GPU_LogError("Failed to link default textured shader program: %s\n", renderer->GetShaderMessage(renderer));
-        
-        target->context->default_textured_shader_program = p;
-        
-        #ifdef SDL_GPU_USE_GL_TIER3
+    // Load default shaders
+    
+    // Textured shader
+    Uint32 v = renderer->CompileShader(renderer, GPU_VERTEX_SHADER, GPU_DEFAULT_TEXTURED_VERTEX_SHADER_SOURCE);
+    
+    if(!v)
+        GPU_LogError("Failed to load default textured vertex shader: %s\n", renderer->GetShaderMessage(renderer));
+    
+    Uint32 f = renderer->CompileShader(renderer, GPU_FRAGMENT_SHADER, GPU_DEFAULT_TEXTURED_FRAGMENT_SHADER_SOURCE);
+    
+    if(!f)
+        GPU_LogError("Failed to load default textured fragment shader: %s\n", renderer->GetShaderMessage(renderer));
+    
+    Uint32 p = renderer->LinkShaders(renderer, v, f);
+    
+    if(!p)
+        GPU_LogError("Failed to link default textured shader program: %s\n", renderer->GetShaderMessage(renderer));
+    
+    target->context->default_textured_shader_program = p;
+    
+    #ifdef SDL_GPU_USE_GL_TIER3
+    // Get locations of the attributes in the shader
+    cdata->shader_block[0] = GPU_LoadShaderBlock(p, "gpu_Vertex", "gpu_TexCoord", "gpu_Color", "gpu_ModelViewProjectionMatrix");
+    #endif
+    
+    // Untextured shader
+    v = renderer->CompileShader(renderer, GPU_VERTEX_SHADER, GPU_DEFAULT_UNTEXTURED_VERTEX_SHADER_SOURCE);
+    
+    if(!v)
+        GPU_LogError("Failed to load default untextured vertex shader: %s\n", renderer->GetShaderMessage(renderer));
+    
+    f = renderer->CompileShader(renderer, GPU_FRAGMENT_SHADER, GPU_DEFAULT_UNTEXTURED_FRAGMENT_SHADER_SOURCE);
+    
+    if(!f)
+        GPU_LogError("Failed to load default untextured fragment shader: %s\n", renderer->GetShaderMessage(renderer));
+    
+    p = renderer->LinkShaders(renderer, v, f);
+    
+    if(!p)
+        GPU_LogError("Failed to link default untextured shader program: %s\n", renderer->GetShaderMessage(renderer));
+    
+    glUseProgram(p);
+    
+    target->context->default_untextured_shader_program = target->context->current_shader_program = p;
+    
+    #ifdef SDL_GPU_USE_GL_TIER3
         // Get locations of the attributes in the shader
-        cdata->shader_block[0] = GPU_LoadShaderBlock(p, "gpu_Vertex", "gpu_TexCoord", "gpu_Color", "gpu_ModelViewProjectionMatrix");
+        cdata->shader_block[1] = GPU_LoadShaderBlock(p, "gpu_Vertex", NULL, "gpu_Color", "gpu_ModelViewProjectionMatrix");
+        GPU_SetShaderBlock(cdata->shader_block[1]);
+        
+        // Create vertex array container and buffer
+        #if !defined(SDL_GPU_NO_VAO)
+        glGenVertexArrays(1, &cdata->blit_VAO);
+        glBindVertexArray(cdata->blit_VAO);
         #endif
         
-        // Untextured shader
-        v = renderer->CompileShader(renderer, GPU_VERTEX_SHADER, GPU_DEFAULT_UNTEXTURED_VERTEX_SHADER_SOURCE);
+        glGenBuffers(2, cdata->blit_VBO);
+        // Create space on the GPU
+        glBindBuffer(GL_ARRAY_BUFFER, cdata->blit_VBO[0]);
+        glBufferData(GL_ARRAY_BUFFER, GPU_BLIT_BUFFER_STRIDE * cdata->blit_buffer_max_num_vertices, NULL, GL_STREAM_DRAW);
+        glBindBuffer(GL_ARRAY_BUFFER, cdata->blit_VBO[1]);
+        glBufferData(GL_ARRAY_BUFFER, GPU_BLIT_BUFFER_STRIDE * cdata->blit_buffer_max_num_vertices, NULL, GL_STREAM_DRAW);
+        cdata->blit_VBO_flop = 0;
         
-        if(!v)
-            GPU_LogError("Failed to load default untextured vertex shader: %s\n", renderer->GetShaderMessage(renderer));
+        glGenBuffers(16, cdata->attribute_VBO);
         
-        f = renderer->CompileShader(renderer, GPU_FRAGMENT_SHADER, GPU_DEFAULT_UNTEXTURED_FRAGMENT_SHADER_SOURCE);
-        
-        if(!f)
-            GPU_LogError("Failed to load default untextured fragment shader: %s\n", renderer->GetShaderMessage(renderer));
-        
-        p = renderer->LinkShaders(renderer, v, f);
-        
-        if(!p)
-            GPU_LogError("Failed to link default untextured shader program: %s\n", renderer->GetShaderMessage(renderer));
-        
-        glUseProgram(p);
-        
-        target->context->default_untextured_shader_program = target->context->current_shader_program = p;
-        
-        #ifdef SDL_GPU_USE_GL_TIER3
-            // Get locations of the attributes in the shader
-            cdata->shader_block[1] = GPU_LoadShaderBlock(p, "gpu_Vertex", NULL, "gpu_Color", "gpu_ModelViewProjectionMatrix");
-            GPU_SetShaderBlock(cdata->shader_block[1]);
-            
-            // Create vertex array container and buffer
-            #if !defined(SDL_GPU_NO_VAO)
-            glGenVertexArrays(1, &cdata->blit_VAO);
-            glBindVertexArray(cdata->blit_VAO);
-            #endif
-            
-            glGenBuffers(2, cdata->blit_VBO);
-            // Create space on the GPU
-            glBindBuffer(GL_ARRAY_BUFFER, cdata->blit_VBO[0]);
-            glBufferData(GL_ARRAY_BUFFER, GPU_BLIT_BUFFER_STRIDE * cdata->blit_buffer_max_num_vertices, NULL, GL_STREAM_DRAW);
-            glBindBuffer(GL_ARRAY_BUFFER, cdata->blit_VBO[1]);
-            glBufferData(GL_ARRAY_BUFFER, GPU_BLIT_BUFFER_STRIDE * cdata->blit_buffer_max_num_vertices, NULL, GL_STREAM_DRAW);
-            cdata->blit_VBO_flop = 0;
-            
-            glGenBuffers(16, cdata->attribute_VBO);
-            
-            // Init 16 attributes to 0 / NULL.
-            memset(cdata->shader_attributes, 0, 16*sizeof(GPU_AttributeSource));
-        #endif
-    }
+        // Init 16 attributes to 0 / NULL.
+        memset(cdata->shader_attributes, 0, 16*sizeof(GPU_AttributeSource));
+    #endif
     #endif
     
     
@@ -2874,44 +2872,46 @@ static int BlitBatch(GPU_Renderer* renderer, GPU_Image* src, GPU_Target* dest, u
             cdata->index_buffer_num_vertices += 6*partial_num_sprites;
             
     #ifdef SDL_GPU_USE_GL_TIER1
-
-            float* vertex_pointer = values;
-            float* texcoord_pointer = values + 2;
-            float* color_pointer = values + 4;
-            
-            glBegin(GL_QUADS);
-            int i;
-            for(i = 0; i < numSprites; i++)
+            if(values != NULL)
             {
-                glColor4f( *color_pointer, *(color_pointer+1), *(color_pointer+2), *(color_pointer+3) );
-                glTexCoord2f( *texcoord_pointer, *(texcoord_pointer+1) );
-                glVertex3f( *vertex_pointer, *(vertex_pointer+1), 0.0f );
-                color_pointer += floats_per_vertex;
-                texcoord_pointer += floats_per_vertex;
-                vertex_pointer += floats_per_vertex;
+                float* vertex_pointer = values;
+                float* texcoord_pointer = values + 2;
+                float* color_pointer = values + 4;
+                
+                glBegin(GL_QUADS);
+                int i;
+                for(i = 0; i < numSprites; i++)
+                {
+                    glColor4f( *color_pointer, *(color_pointer+1), *(color_pointer+2), *(color_pointer+3) );
+                    glTexCoord2f( *texcoord_pointer, *(texcoord_pointer+1) );
+                    glVertex3f( *vertex_pointer, *(vertex_pointer+1), 0.0f );
+                    color_pointer += floats_per_vertex;
+                    texcoord_pointer += floats_per_vertex;
+                    vertex_pointer += floats_per_vertex;
 
-                glColor4f( *color_pointer, *(color_pointer+1), *(color_pointer+2), *(color_pointer+3) );
-                glTexCoord2f( *texcoord_pointer, *(texcoord_pointer+1) );
-                glVertex3f( *vertex_pointer, *(vertex_pointer+1), 0.0f );
-                color_pointer += floats_per_vertex;
-                texcoord_pointer += floats_per_vertex;
-                vertex_pointer += floats_per_vertex;
+                    glColor4f( *color_pointer, *(color_pointer+1), *(color_pointer+2), *(color_pointer+3) );
+                    glTexCoord2f( *texcoord_pointer, *(texcoord_pointer+1) );
+                    glVertex3f( *vertex_pointer, *(vertex_pointer+1), 0.0f );
+                    color_pointer += floats_per_vertex;
+                    texcoord_pointer += floats_per_vertex;
+                    vertex_pointer += floats_per_vertex;
 
-                glColor4f( *color_pointer, *(color_pointer+1), *(color_pointer+2), *(color_pointer+3) );
-                glTexCoord2f( *texcoord_pointer, *(texcoord_pointer+1) );
-                glVertex3f( *vertex_pointer, *(vertex_pointer+1), 0.0f );
-                color_pointer += floats_per_vertex;
-                texcoord_pointer += floats_per_vertex;
-                vertex_pointer += floats_per_vertex;
+                    glColor4f( *color_pointer, *(color_pointer+1), *(color_pointer+2), *(color_pointer+3) );
+                    glTexCoord2f( *texcoord_pointer, *(texcoord_pointer+1) );
+                    glVertex3f( *vertex_pointer, *(vertex_pointer+1), 0.0f );
+                    color_pointer += floats_per_vertex;
+                    texcoord_pointer += floats_per_vertex;
+                    vertex_pointer += floats_per_vertex;
 
-                glColor4f( *color_pointer, *(color_pointer+1), *(color_pointer+2), *(color_pointer+3) );
-                glTexCoord2f( *texcoord_pointer, *(texcoord_pointer+1) );
-                glVertex3f( *vertex_pointer, *(vertex_pointer+1), 0.0f );
-                color_pointer += floats_per_vertex;
-                texcoord_pointer += floats_per_vertex;
-                vertex_pointer += floats_per_vertex;
+                    glColor4f( *color_pointer, *(color_pointer+1), *(color_pointer+2), *(color_pointer+3) );
+                    glTexCoord2f( *texcoord_pointer, *(texcoord_pointer+1) );
+                    glVertex3f( *vertex_pointer, *(vertex_pointer+1), 0.0f );
+                    color_pointer += floats_per_vertex;
+                    texcoord_pointer += floats_per_vertex;
+                    vertex_pointer += floats_per_vertex;
+                }
+                glEnd();
             }
-            glEnd();
     #elif defined(SDL_GPU_USE_GL_TIER2)
 
             glEnableClientState(GL_VERTEX_ARRAY);
@@ -3590,41 +3590,6 @@ static Uint32 GetShaderSourceSize(const char* filename)
     
     SDL_RWclose(rwops);
     return result;
-}
-
-static int get_rw_size(SDL_RWops* rwops)
-{
-    int size = 0;
-    
-    // Read 1 byte at a time until we reach the end
-    char buffer;
-    long len = 0;
-    while((len = SDL_RWread(rwops, &buffer, 1, 1)) > 0)
-    {
-        size += len;
-    }
-    
-    // Go back to the beginning of the stream
-    SDL_RWseek(rwops, 0, SEEK_SET);
-    return size;
-}
-
-static int read_string_rw(SDL_RWops* rwops, char* result)
-{
-   if(rwops == NULL)
-        return 0;
-    
-    size_t size = 100;
-    long total = 0;
-    long len = 0;
-    while((len = SDL_RWread(rwops, &result[total], 1, size)) > 0)
-    {
-        total += len;
-    }
-    
-    result[total] = '\0';
-    
-    return total;
 }
 
 static char shader_message[256];

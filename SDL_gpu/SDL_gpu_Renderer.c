@@ -101,6 +101,8 @@ GPU_RendererID GPU_GetRendererID(unsigned int index)
 	return rendererRegister[index].id;
 }
 
+GPU_Renderer* GPU_CreateRenderer_OpenGL_1_BASE(GPU_RendererID request);
+void GPU_FreeRenderer_OpenGL_1_BASE(GPU_Renderer* renderer);
 GPU_Renderer* GPU_CreateRenderer_OpenGL_1(GPU_RendererID request);
 void GPU_FreeRenderer_OpenGL_1(GPU_Renderer* renderer);
 GPU_Renderer* GPU_CreateRenderer_OpenGL_2(GPU_RendererID request);
@@ -120,6 +122,16 @@ void GPU_RegisterRenderers()
 		return;
 	
 	#ifndef SDL_GPU_DISABLE_OPENGL
+        #ifndef SDL_GPU_DISABLE_OPENGL_1_BASE
+        rendererRegister[i].id = makeRendererID(GPU_RENDERER_OPENGL_1_BASE, 1, 1, i);
+        rendererRegister[i].createFn = &GPU_CreateRenderer_OpenGL_1_BASE;
+        rendererRegister[i].freeFn = &GPU_FreeRenderer_OpenGL_1_BASE;
+        
+        i++;
+        if(i >= MAX_REGISTERED_RENDERERS)
+            return;
+        #endif
+        
         #ifndef SDL_GPU_DISABLE_OPENGL_1
         rendererRegister[i].id = makeRendererID(GPU_RENDERER_OPENGL_1, 1, 1, i);
         rendererRegister[i].createFn = &GPU_CreateRenderer_OpenGL_1;
@@ -238,6 +250,8 @@ void GPU_GetDefaultRendererOrder(int* order_size, GPU_RendererID* order)
 
 const char* GPU_GetRendererEnumString(GPU_RendererEnum id)
 {
+    if(id == GPU_RENDERER_OPENGL_1_BASE)
+        return "OpenGL 1 BASE";
     if(id == GPU_RENDERER_OPENGL_1)
         return "OpenGL 1.x";
     if(id == GPU_RENDERER_OPENGL_2)
