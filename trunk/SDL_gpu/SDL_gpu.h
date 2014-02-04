@@ -34,10 +34,11 @@ typedef struct GPU_Rect
 
 typedef Uint32 GPU_RendererEnum;
 static const GPU_RendererEnum GPU_RENDERER_UNKNOWN = 0x0;  // invalid value
-static const GPU_RendererEnum GPU_RENDERER_OPENGL_1 = 0x1;
-static const GPU_RendererEnum GPU_RENDERER_OPENGL_2 = 0x2;
-static const GPU_RendererEnum GPU_RENDERER_OPENGL_3 = 0x4;
-static const GPU_RendererEnum GPU_RENDERER_OPENGL_4 = 0x8;
+static const GPU_RendererEnum GPU_RENDERER_OPENGL_1_BASE = 0x1;
+static const GPU_RendererEnum GPU_RENDERER_OPENGL_1 = 0x2;
+static const GPU_RendererEnum GPU_RENDERER_OPENGL_2 = 0x4;
+static const GPU_RendererEnum GPU_RENDERER_OPENGL_3 = 0x8;
+static const GPU_RendererEnum GPU_RENDERER_OPENGL_4 = 0x10;
 static const GPU_RendererEnum GPU_RENDERER_GLES_1 = 0x100;
 static const GPU_RendererEnum GPU_RENDERER_GLES_2 = 0x200;
 static const GPU_RendererEnum GPU_RENDERER_GLES_3 = 0x400;
