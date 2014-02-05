@@ -103,3 +103,6 @@ target_link_libraries (multitexture-demo SDL_gpu)
 
 add_executable(intermediate-demo intermediate/main.c common/common.c common/demo-font.c)
 target_link_libraries (intermediate-demo SDL_gpu)
+
+add_executable(pixel-perfect-demo pixel-perfect/main.c common/common.c common/demo-font.c)
+target_link_libraries (pixel-perfect-demo SDL_gpu)
