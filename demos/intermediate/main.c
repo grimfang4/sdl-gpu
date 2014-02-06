@@ -39,6 +39,7 @@ int main(int argc, char* argv[])
 	
 	int using_images = 1;
 	GPU_FilterEnum filter_mode = GPU_NEAREST;
+	Uint8 show_original = 0;
 	
 	Uint8 switched = 1;
 	GPU_SetVirtualResolution(screen, 640, 480);
@@ -47,11 +48,13 @@ int main(int argc, char* argv[])
 	int i;
 	for(i = 0; i < max_images; i++)
     {
-        images[i] = GPU_CreateImage(640, 480, 3);
+        images[i] = GPU_CreateImage(640, 480, 4);
         GPU_LoadTarget(images[i]);
         GPU_SetVirtualResolution(images[i]->target, 640, 480);
         GPU_SetImageFilter(images[i], filter_mode);
     }
+    
+    Uint8 virtual_on = 1;
 	
 	Uint8 done = 0;
 	SDL_Event event;
@@ -86,13 +89,32 @@ int main(int argc, char* argv[])
                         }
                     }
 					switched = !switched;
+					virtual_on = 1;
 				}
-				if(event.key.keysym.sym == SDLK_f)
+				else if(event.key.keysym.sym == SDLK_v)
+                {
+                    virtual_on = 0;
+                    GPU_ClearVirtualResolution(screen);
+                    GPU_ClearVirtualResolution(image->target);
+                    for(i = 0; i < max_images; i++)
+                    {
+                        GPU_ClearVirtualResolution(images[i]->target);
+                    }
+                }
+				else if(event.key.keysym.sym == SDLK_RETURN)
+                    show_original = !show_original;
+				else if(event.key.keysym.sym == SDLK_f)
                 {
                     if(filter_mode == GPU_NEAREST)
+                    {
                         filter_mode = GPU_LINEAR;
+                        GPU_LogError("GPU_LINEAR\n");
+                    }
                     else
+                    {
                         filter_mode = GPU_NEAREST;
+                        GPU_LogError("GPU_NEAREST\n");
+                    }
                     
                     
                     GPU_SetImageFilter(image, filter_mode);
@@ -101,28 +123,40 @@ int main(int argc, char* argv[])
                         GPU_SetImageFilter(images[i], filter_mode);
                     }
                 }
-				if(event.key.keysym.sym == SDLK_EQUALS)
+				else if(event.key.keysym.sym == SDLK_EQUALS)
                 {
                     if(using_images < max_images)
                         using_images++;
                     GPU_LogError("using_images: %d\n", using_images);
                 }
-				if(event.key.keysym.sym == SDLK_MINUS)
+				else if(event.key.keysym.sym == SDLK_MINUS)
                 {
                     if(using_images > 0)
                         using_images--;
                     GPU_LogError("using_images: %d\n", using_images);
                 }
 			}
+			else if(event.type == SDL_KEYUP)
+            {
+                if(event.key.keysym.sym == SDLK_w
+                   || event.key.keysym.sym == SDLK_s
+                   || event.key.keysym.sym == SDLK_a
+                   || event.key.keysym.sym == SDLK_d
+                   || event.key.keysym.sym == SDLK_UP
+                   || event.key.keysym.sym == SDLK_DOWN
+                   || event.key.keysym.sym == SDLK_LEFT
+                   || event.key.keysym.sym == SDLK_RIGHT)
+                    GPU_LogError("x, y: (%.2f, %.2f)\n", x, y);
+            }
 		}
 		
-		if(keystates[KEY_UP])
+		if(keystates[KEY_w])
 			y -= 0.1f;
-		else if(keystates[KEY_DOWN])
+		else if(keystates[KEY_s])
 			y += 0.1f;
-		if(keystates[KEY_LEFT])
+		if(keystates[KEY_a])
 			x -= 0.1f;
-		else if(keystates[KEY_RIGHT])
+		else if(keystates[KEY_d])
 			x += 0.1f;
 		
 		GPU_Clear(screen);
@@ -149,6 +183,9 @@ int main(int argc, char* argv[])
             GPU_CircleFilled(screen, x + 70, y + 70, 20, circleColor);
 		
 		GPU_CircleFilled(screen, x + 70, y + 70, 20, circleColor2);
+		
+		if(show_original)
+            GPU_Blit(image, NULL, screen, image->w/2 + x, image->h/2 + y);
 		
 		GPU_Flip(screen);
 		

@@ -370,6 +370,9 @@ struct GPU_Renderer
 	/*! \see GPU_SetVirtualResolution() */
 	void (*SetVirtualResolution)(GPU_Renderer* renderer, GPU_Target* target, Uint16 w, Uint16 h);
 	
+	/*! \see GPU_ClearVirtualResolution() */
+	void (*ClearVirtualResolution)(GPU_Renderer* renderer, GPU_Target* target);
+	
 	/*! Clean up the renderer state. */
 	void (*Quit)(GPU_Renderer* renderer);
 	
@@ -670,6 +673,9 @@ int GPU_SetWindowResolution(Uint16 w, Uint16 h);
 
 /*! Change the logical size of the given target.  Rendering to this target will be scaled as if the dimensions were actually the ones given. */
 void GPU_SetVirtualResolution(GPU_Target* target, Uint16 w, Uint16 h);
+
+/*! Reset the logical size of the given target to its original value. */
+void GPU_ClearVirtualResolution(GPU_Target* target);
 
 /*! Clean up the renderer state. */
 void GPU_CloseCurrentRenderer(void);
