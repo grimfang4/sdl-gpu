@@ -228,6 +228,14 @@ void GPU_SetVirtualResolution(GPU_Target* target, Uint16 w, Uint16 h)
 	current_renderer->SetVirtualResolution(current_renderer, target, w, h);
 }
 
+void GPU_ClearVirtualResolution(GPU_Target* target)
+{
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->ClearVirtualResolution == NULL)
+		return;
+	
+	current_renderer->ClearVirtualResolution(current_renderer, target);
+}
+
 void GPU_CloseCurrentRenderer(void)
 {
 	if(current_renderer == NULL)

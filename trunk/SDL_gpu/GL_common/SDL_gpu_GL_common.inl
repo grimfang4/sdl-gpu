@@ -1069,15 +1069,40 @@ static void SetVirtualResolution(GPU_Renderer* renderer, GPU_Target* target, Uin
 {
     if(target == NULL)
         return;
+    
+    Uint8 isCurrent = isCurrentTarget(renderer, target);
+    if(isCurrent)
+        renderer->FlushBlitBuffer(renderer);
 
     target->w = w;
     target->h = h;
     
-    if(isCurrentTarget(renderer, target))
-    {
-        renderer->FlushBlitBuffer(renderer);
+    if(isCurrent)
         applyTargetCamera(target);
+}
+
+static void ClearVirtualResolution(GPU_Renderer* renderer, GPU_Target* target)
+{
+    if(target == NULL)
+        return;
+    
+    Uint8 isCurrent = isCurrentTarget(renderer, target);
+    if(isCurrent)
+        renderer->FlushBlitBuffer(renderer);
+    
+    if(target->image != NULL)
+    {
+        target->w = target->image->w;
+        target->h = target->image->h;
     }
+    else if(target->context != NULL)
+    {
+        target->w = target->context->window_w;
+        target->h = target->context->window_h;
+    }
+    
+    if(isCurrent)
+        applyTargetCamera(target);
 }
 
 static void Quit(GPU_Renderer* renderer)
@@ -2306,11 +2331,11 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_T
         
         if(src->filter_mode == GPU_NEAREST)
         {
-            // Center the texels on the pixels
-            x += 0.375f;
-            y += 0.375f;
+            // Avoid rounding errors in texture sampling by insisting on integral pixel positions
+            x = floorf(x+0.5f);
+            y = floorf(y+0.5f);
         }
-
+        
         float x1, y1, x2, y2;
         float dx1, dy1, dx2, dy2;
         if(srcrect == NULL)
@@ -2473,9 +2498,9 @@ static int BlitTransformX(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcr
         
         if(src->filter_mode == GPU_NEAREST)
         {
-            // Center the texels on the pixels
-            x += 0.375f;
-            y += 0.375f;
+            // Avoid rounding errors in texture sampling by insisting on integral pixel positions
+            x = floorf(x+0.5f);
+            y = floorf(y+0.5f);
         }
 
         float x1, y1, x2, y2;
@@ -4329,6 +4354,7 @@ static void SetAttributeSource(GPU_Renderer* renderer, int num_values, GPU_Attri
     renderer->SetAsCurrent = &SetAsCurrent; \
     renderer->SetWindowResolution = &SetWindowResolution; \
     renderer->SetVirtualResolution = &SetVirtualResolution; \
+    renderer->ClearVirtualResolution = &ClearVirtualResolution; \
     renderer->Quit = &Quit; \
  \
     renderer->ToggleFullscreen = &ToggleFullscreen; \

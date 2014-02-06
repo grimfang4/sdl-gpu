@@ -4,6 +4,7 @@
 #include "common.h"
 #include "compat.h"
 
+#define MIN(a, b) ((a) < (b)? (a) : (b))
 
 int main(int argc, char* argv[])
 {
@@ -20,7 +21,7 @@ int main(int argc, char* argv[])
 		return -1;
 	
 	int mode = 0;
-	int num_modes = 5;
+	int num_modes = 7;
 	float x = 0.0f;
 	float y = 0.0f;
 	SDL_Color color = {0, 255, 0, 255};
@@ -55,9 +56,15 @@ int main(int argc, char* argv[])
 				else if(event.key.keysym.sym == SDLK_f)
                 {
                     if(image->filter_mode == GPU_NEAREST)
+                    {
                         GPU_SetImageFilter(image, GPU_LINEAR);
+                        GPU_LogError("GPU_LINEAR\n");
+                    }
                     else
+                    {
                         GPU_SetImageFilter(image, GPU_NEAREST);
+                        GPU_LogError("GPU_NEAREST\n");
+                    }
                 }
 				else if(event.key.keysym.sym == SDLK_UP)
 					y -= 1.0f;
@@ -109,6 +116,18 @@ int main(int argc, char* argv[])
         {
             // Filled bounding rect
             GPU_RectangleFilled(screen, x, y, x + screen->w - 1, y + screen->h - 1, color);
+        }
+        else if(mode == 5)
+        {
+            // Pixels
+            int i;
+            for(i = 0; i < 100; i++)
+                GPU_Pixel(screen, x + 2*(i%10), y + 2*(i/10), color);
+        }
+        else if(mode == 6)
+        {
+            // Circle
+            GPU_Circle(screen, x + screen->w/2.0f, y + screen->h/2.0f, MIN(screen->w, screen->h)/2.0f - 1.0f, color);
         }
 		
 		GPU_Flip(screen);

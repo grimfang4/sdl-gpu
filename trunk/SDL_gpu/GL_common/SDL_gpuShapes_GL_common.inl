@@ -9,6 +9,10 @@ See a particular renderer's *.c file for specifics. */
 #define RADPERDEG 0.0174532925f
 #endif
 
+// To make line vertices alias on half-pixel boundaries...  but messes up other shapes.
+// This number is funny, but likely due to the driver's conversion of the values through bytes: 128/255.0 == 0.502.
+//#define PIXEL_OFFSET(x) ((x) + 0.502f)
+#define PIXEL_OFFSET(x) ((x) + 0.375f)
 
 
 static void Circle(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float radius, SDL_Color color);
@@ -21,8 +25,8 @@ static void Circle(GPU_Renderer* renderer, GPU_Target* target, float x, float y,
 
 #define SET_VERTEX(_x, _y) \
 do { \
-    glverts[_vertex_array_index++] = (_x); \
-    glverts[_vertex_array_index++] = (_y); \
+    glverts[_vertex_array_index++] = (PIXEL_OFFSET(_x)); \
+    glverts[_vertex_array_index++] = (PIXEL_OFFSET(_y)); \
     glverts[_vertex_array_index++] = r; \
     glverts[_vertex_array_index++] = g; \
     glverts[_vertex_array_index++] = b; \
@@ -31,8 +35,8 @@ do { \
 
 #define SET_VERTEX_TEXTURED(_x, _y, _s, _t) \
 do { \
-    glverts[_vertex_array_index++] = (_x); \
-    glverts[_vertex_array_index++] = (_y); \
+    glverts[_vertex_array_index++] = (PIXEL_OFFSET(_x)); \
+    glverts[_vertex_array_index++] = (PIXEL_OFFSET(_y)); \
     glverts[_vertex_array_index++] = r; \
     glverts[_vertex_array_index++] = g; \
     glverts[_vertex_array_index++] = b; \
@@ -61,14 +65,14 @@ float a = GET_ALPHA(color)/255.0f;
 
 #define SET_VERTEX(_x, _y) \
 do { \
-    glverts[_vertex_array_index++] = (_x); \
-    glverts[_vertex_array_index++] = (_y); \
+    glverts[_vertex_array_index++] = (PIXEL_OFFSET(_x)); \
+    glverts[_vertex_array_index++] = (PIXEL_OFFSET(_y)); \
 } while(0);
 
 #define SET_VERTEX_TEXTURED(_x, _y, _s, _t) \
 do { \
-    glverts[_vertex_array_index++] = (_x); \
-    glverts[_vertex_array_index++] = (_y); \
+    glverts[_vertex_array_index++] = (PIXEL_OFFSET(_x)); \
+    glverts[_vertex_array_index++] = (PIXEL_OFFSET(_y)); \
     glverts[_vertex_array_index++] = (_s); \
     glverts[_vertex_array_index++] = (_t); \
 } while(0);
