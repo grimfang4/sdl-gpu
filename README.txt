@@ -32,7 +32,7 @@ A rendering backend
 BUILDING
 ========
 
-SDL_gpu uses CMake (www.cmake.org) to coordinate the library compile process.  CMake is available as a GUI program or on the command line.
+SDL_gpu uses CMake (www.cmake.org) to coordinate the library build process.  CMake is available as a GUI program or on the command line.
 
 For Linux/UNIX systems, run CMake in the base directory:
 cmake -G "Unix Makefiles"
@@ -45,9 +45,9 @@ cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX=/usr
 For Windows systems, you can use cmake-gui and select appropriate options in there (warning: cmake-gui is messy!).
 
 
-=========
-INCLUDING
-=========
+===================
+INCLUDING / LINKING
+===================
 
 Add the include for SDL_gpu.h to your sources.  Link to SDL_gpu (libSDL_gpu.a) or SDL2_gpu (if you use SDL2).
 

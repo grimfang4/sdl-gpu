@@ -30,8 +30,8 @@ int main(int argc, char* argv[])
 	long frameCount = 0;
 	
 	Uint8* keystates = SDL_GetKeyState(NULL);
-	float x = 50;
-	float y = 50;
+	float x = 0;
+	float y = 0;
 	
 	// Intermediate image buffers
 	int max_images = 20;
@@ -42,19 +42,20 @@ int main(int argc, char* argv[])
 	Uint8 show_original = 0;
 	
 	Uint8 switched = 1;
-	GPU_SetVirtualResolution(screen, 640, 480);
-	GPU_SetVirtualResolution(image->target, 640, 480);
+	//GPU_SetVirtualResolution(screen, 640, 480);
+	//GPU_SetVirtualResolution(image->target, 640, 480);
 	GPU_SetImageFilter(image, filter_mode);
 	int i;
 	for(i = 0; i < max_images; i++)
     {
         images[i] = GPU_CreateImage(640, 480, 4);
         GPU_LoadTarget(images[i]);
-        GPU_SetVirtualResolution(images[i]->target, 640, 480);
+        //GPU_SetVirtualResolution(images[i]->target, 640, 480);
         GPU_SetImageFilter(images[i], filter_mode);
     }
     
     Uint8 virtual_on = 1;
+    
 	
 	Uint8 done = 0;
 	SDL_Event event;
@@ -135,6 +136,18 @@ int main(int argc, char* argv[])
                         using_images--;
                     GPU_LogError("using_images: %d\n", using_images);
                 }
+				else if(event.key.keysym.sym == SDLK_r)
+                {
+                    x = y = 0.0f;
+                }
+				else if(event.key.keysym.sym == SDLK_UP)
+                    y -= 1.0f;
+				else if(event.key.keysym.sym == SDLK_DOWN)
+                    y += 1.0f;
+				else if(event.key.keysym.sym == SDLK_LEFT)
+                    x -= 1.0f;
+				else if(event.key.keysym.sym == SDLK_RIGHT)
+                    x += 1.0f;
 			}
 			else if(event.type == SDL_KEYUP)
             {
