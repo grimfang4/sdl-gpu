@@ -1228,7 +1228,9 @@ static GPU_Image* CreateUninitializedImage(GPU_Renderer* renderer, Uint16 w, Uin
     #endif
 
     GPU_Image* result = (GPU_Image*)malloc(sizeof(GPU_Image));
+    result->refcount = 1;
     GPU_IMAGE_DATA* data = (GPU_IMAGE_DATA*)malloc(sizeof(GPU_IMAGE_DATA));
+    data->refcount = 1;
     result->target = NULL;
     result->renderer = renderer;
     result->channels = channels;
@@ -1241,7 +1243,6 @@ static GPU_Image* CreateUninitializedImage(GPU_Renderer* renderer, Uint16 w, Uin
     result->filter_mode = GPU_LINEAR;
     
     result->data = data;
-    result->refcount = 1;
     result->is_alias = 0;
     data->handle = handle;
     data->format = format;
@@ -2272,6 +2273,7 @@ static GPU_Target* LoadTarget(GPU_Renderer* renderer, GPU_Image* image)
         return NULL;
 
     GPU_Target* result = (GPU_Target*)malloc(sizeof(GPU_Target));
+    result->refcount = 1;
     GPU_TARGET_DATA* data = (GPU_TARGET_DATA*)malloc(sizeof(GPU_TARGET_DATA));
     data->refcount = 1;
     result->data = data;
