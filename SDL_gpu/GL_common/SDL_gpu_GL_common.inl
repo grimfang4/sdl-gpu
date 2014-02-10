@@ -446,6 +446,7 @@ static Uint32 get_proper_program_id(GPU_Renderer* renderer, Uint32 program_objec
     return program_object;
 }
 
+#define MIX_COLOR_COMPONENT_NORMALIZED_RESULT(a, b) ((a)/255.0f * (b)/255.0f)
 #define MIX_COLOR_COMPONENT(a, b) (((a)/255.0f * (b)/255.0f)*255)
 #define MIX_COLORS(color1, color2) {MIX_COLOR_COMPONENT(color1.r, color2.r), MIX_COLOR_COMPONENT(color1.g, color2.g), MIX_COLOR_COMPONENT(color1.b, color2.b), MIX_COLOR_COMPONENT(GET_ALPHA(color1), GET_ALPHA(color2))}
 
@@ -2442,10 +2443,21 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_T
 
         #ifdef SDL_GPU_USE_GL_TIER3
         int color_index = GPU_BLIT_BUFFER_COLOR_OFFSET + cdata->blit_buffer_num_vertices*GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
-        float r =  src->color.r/255.0f;
-        float g =  src->color.g/255.0f;
-        float b =  src->color.b/255.0f;
-        float a =  GET_ALPHA(src->color)/255.0f;
+        float r, g, b, a;
+        if(dest->use_color)
+        {
+            r = MIX_COLOR_COMPONENT_NORMALIZED_RESULT(dest->color.r, src->color.r);
+            g = MIX_COLOR_COMPONENT_NORMALIZED_RESULT(dest->color.g, src->color.g);
+            b = MIX_COLOR_COMPONENT_NORMALIZED_RESULT(dest->color.b, src->color.b);
+            a = MIX_COLOR_COMPONENT_NORMALIZED_RESULT(GET_ALPHA(dest->color), GET_ALPHA(src->color));
+        }
+        else
+        {
+            r = src->color.r/255.0f;
+            g = src->color.g/255.0f;
+            b = src->color.b/255.0f;
+            a = GET_ALPHA(src->color)/255.0f;
+        }
         #endif
         
         // Sprite quad vertices
@@ -2673,10 +2685,21 @@ static int BlitTransformX(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcr
 
         #ifdef SDL_GPU_USE_GL_TIER3
         int color_index = GPU_BLIT_BUFFER_COLOR_OFFSET + cdata->blit_buffer_num_vertices*GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
-        float r =  src->color.r/255.0f;
-        float g =  src->color.g/255.0f;
-        float b =  src->color.b/255.0f;
-        float a =  GET_ALPHA(src->color)/255.0f;
+        float r, g, b, a;
+        if(dest->use_color)
+        {
+            r = MIX_COLOR_COMPONENT_NORMALIZED_RESULT(dest->color.r, src->color.r);
+            g = MIX_COLOR_COMPONENT_NORMALIZED_RESULT(dest->color.g, src->color.g);
+            b = MIX_COLOR_COMPONENT_NORMALIZED_RESULT(dest->color.b, src->color.b);
+            a = MIX_COLOR_COMPONENT_NORMALIZED_RESULT(GET_ALPHA(dest->color), GET_ALPHA(src->color));
+        }
+        else
+        {
+            r = src->color.r/255.0f;
+            g = src->color.g/255.0f;
+            b = src->color.b/255.0f;
+            a = GET_ALPHA(src->color)/255.0f;
+        }
         #endif
 
         // Sprite quad vertices
