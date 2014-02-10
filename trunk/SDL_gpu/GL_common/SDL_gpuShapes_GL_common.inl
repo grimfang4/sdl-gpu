@@ -46,15 +46,21 @@ do { \
 } while(0);
 
 #define DECLARE_COLOR_RGBA \
+float r, g, b, a; \
 if(target->use_color) \
 { \
-    SDL_Color c = MIX_COLORS(target->color, color); \
-    color = c; \
+    r = MIX_COLOR_COMPONENT_NORMALIZED_RESULT(target->color.r, color.r); \
+    g = MIX_COLOR_COMPONENT_NORMALIZED_RESULT(target->color.g, color.g); \
+    b = MIX_COLOR_COMPONENT_NORMALIZED_RESULT(target->color.b, color.b); \
+    a = MIX_COLOR_COMPONENT_NORMALIZED_RESULT(GET_ALPHA(target->color), GET_ALPHA(color)); \
 } \
-float r = color.r/255.0f; \
-float g = color.g/255.0f; \
-float b = color.b/255.0f; \
-float a = GET_ALPHA(color)/255.0f;
+else \
+{ \
+    r = color.r/255.0f; \
+    g = color.g/255.0f; \
+    b = color.b/255.0f; \
+    a = GET_ALPHA(color)/255.0f; \
+}
 
         
 #define RESET_COLOR
