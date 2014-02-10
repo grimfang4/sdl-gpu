@@ -3447,6 +3447,9 @@ static void read_until_end_of_comment(SDL_RWops* rwops, char multiline)
 
 static Uint32 GetShaderSourceSize_RW(SDL_RWops* shader_source)
 {
+    if(shader_source == NULL)
+        return 0;
+    
     Uint32 size = 0;
     
     // Read 1 byte at a time until we reach the end
@@ -3516,6 +3519,12 @@ static Uint32 GetShaderSourceSize_RW(SDL_RWops* shader_source)
 
 static Uint32 GetShaderSource_RW(SDL_RWops* shader_source, char* result)
 {
+    if(shader_source == NULL)
+    {
+        result[0] = '\0';
+        return 0;
+    }
+    
     Uint32 size = 0;
     
     // Read 1 byte at a time until we reach the end

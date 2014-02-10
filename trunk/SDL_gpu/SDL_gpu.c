@@ -1397,7 +1397,17 @@ Uint32 GPU_CompileShader_RW(int shader_type, SDL_RWops* shader_source)
 
 Uint32 GPU_LoadShader(int shader_type, const char* filename)
 {
+    if(filename == NULL)
+    {
+        GPU_LogError("Failed to load shader: NULL filename.\n");
+        return 0;
+    }
     SDL_RWops* rwops = SDL_RWFromFile(filename, "r");
+    if(rwops == NULL)
+    {
+        GPU_LogError("Failed to load shader: \"%s\" file not found.\n", filename);
+        return 0;
+    }
     Uint32 result = GPU_CompileShader_RW(shader_type, rwops);
     SDL_RWclose(rwops);
     return result;
