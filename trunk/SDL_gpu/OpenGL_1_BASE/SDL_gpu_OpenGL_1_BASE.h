@@ -60,12 +60,14 @@ typedef struct RendererData_OpenGL_1_BASE
 
 typedef struct ImageData_OpenGL_1_BASE
 {
+    int refcount;
 	Uint32 handle;
 	Uint32 format;
 } ImageData_OpenGL_1_BASE;
 
 typedef struct TargetData_OpenGL_1_BASE
 {
+    int refcount;
 	Uint32 handle;
 	Uint32 format;
 } TargetData_OpenGL_1_BASE;

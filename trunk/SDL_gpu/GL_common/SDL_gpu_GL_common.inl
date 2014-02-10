@@ -498,14 +498,15 @@ static void changeViewport(GPU_Target* target)
     if(cdata->last_viewport.x == viewport.x && cdata->last_viewport.y == viewport.y && cdata->last_viewport.w == viewport.w && cdata->last_viewport.h == viewport.h)
         return;
     cdata->last_viewport = viewport;
-    // Need the real height to flip the y-coord (from OpenGL coord system)
-    float h;
-    if(target->image != NULL)
-        h = target->image->h;
-    else if(target->context != NULL)
-        h = target->context->window_h;
     
-    glViewport(viewport.x, h - viewport.h - viewport.y, viewport.w, h);
+    // Need the real height to flip the y-coord (from OpenGL coord system)
+    float y = viewport.y;
+    if(target->image != NULL)
+        y = target->image->h - viewport.h - viewport.y;
+    else if(target->context != NULL)
+        y = target->context->window_h - viewport.h - viewport.y;
+    
+    glViewport(viewport.x, y, viewport.w, viewport.h);
 }
 
 static void applyTargetCamera(GPU_Target* target)
@@ -672,7 +673,10 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     {
         created = 1;
         target = (GPU_Target*)malloc(sizeof(GPU_Target));
+        target->refcount = 1;
+        target->is_alias = 0;
         target->data = (GPU_TARGET_DATA*)malloc(sizeof(GPU_TARGET_DATA));
+        ((GPU_TARGET_DATA*)target->data)->refcount = 1;
         target->image = NULL;
         cdata = (GPU_CONTEXT_DATA*)malloc(sizeof(GPU_CONTEXT_DATA));
         target->context = (GPU_Context*)malloc(sizeof(GPU_Context));
@@ -983,6 +987,27 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     return target;
 }
 
+
+static GPU_Target* CreateAliasTarget(GPU_Renderer* renderer, GPU_Target* target)
+{
+    if(target == NULL)
+        return NULL;
+    
+    GPU_Target* result = (GPU_Target*)malloc(sizeof(GPU_Target));
+    
+    // Copy the members
+    *result = *target;
+    
+    // Alias info
+    if(target->image != NULL)
+        target->image->refcount++;
+    ((GPU_TARGET_DATA*)target->data)->refcount++;
+    result->refcount = 1;
+    result->is_alias = 1;
+
+    return result;
+}
+
 static void MakeCurrent(GPU_Renderer* renderer, GPU_Target* target, Uint32 windowID)
 {
     if(target == NULL)
@@ -1217,6 +1242,7 @@ static GPU_Image* CreateUninitializedImage(GPU_Renderer* renderer, Uint16 w, Uin
     
     result->data = data;
     result->refcount = 1;
+    result->is_alias = 0;
     data->handle = handle;
     data->format = format;
 
@@ -1281,6 +1307,24 @@ static GPU_Image* LoadImage(GPU_Renderer* renderer, const char* filename)
 
     GPU_Image* result = renderer->CopyImageFromSurface(renderer, surface);
     SDL_FreeSurface(surface);
+
+    return result;
+}
+
+
+static GPU_Image* CreateAliasImage(GPU_Renderer* renderer, GPU_Image* image)
+{
+    if(image == NULL)
+        return NULL;
+
+    GPU_Image* result = (GPU_Image*)malloc(sizeof(GPU_Image));
+    // Copy the members
+    *result = *image;
+    
+    // Alias info
+    ((GPU_IMAGE_DATA*)image->data)->refcount++;
+    result->refcount = 1;
+    result->is_alias = 1;
 
     return result;
 }
@@ -2108,9 +2152,19 @@ static void FreeImage(GPU_Renderer* renderer, GPU_Image* image)
         renderer->FreeTarget(renderer, image->target);
 
     flushAndClearBlitBufferIfCurrentTexture(renderer, image);
-    glDeleteTextures( 1, &((GPU_IMAGE_DATA*)image->data)->handle);
-    free(image->data);
+    
     free(image);
+    
+    // Does the renderer data need to be freed too?
+    GPU_IMAGE_DATA* data = (GPU_IMAGE_DATA*)image->data;
+    if(data->refcount > 1)
+    {
+        data->refcount--;
+        return;
+    }
+    
+    glDeleteTextures( 1, &data->handle);
+    free(data);
 }
 
 
@@ -2219,6 +2273,7 @@ static GPU_Target* LoadTarget(GPU_Renderer* renderer, GPU_Image* image)
 
     GPU_Target* result = (GPU_Target*)malloc(sizeof(GPU_Target));
     GPU_TARGET_DATA* data = (GPU_TARGET_DATA*)malloc(sizeof(GPU_TARGET_DATA));
+    data->refcount = 1;
     result->data = data;
     data->handle = handle;
     data->format = ((GPU_IMAGE_DATA*)image->data)->format;
@@ -2250,13 +2305,32 @@ static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
 {
     if(target == NULL)
         return;
+    
+    if(target->refcount > 1)
+    {
+        target->refcount--;
+        return;
+    }
+    
     if(target == renderer->current_context_target)
     {
         renderer->FlushBlitBuffer(renderer);
         renderer->current_context_target = NULL;
     }
+    
+    if(!target->is_alias && target->image != NULL)
+        target->image->target = NULL;  // Remove reference to this object
+    
+    free(target);
+    
 
+    // Does the renderer data need to be freed too?
     GPU_TARGET_DATA* data = ((GPU_TARGET_DATA*)target->data);
+    if(data->refcount > 1)
+    {
+        data->refcount--;
+        return;
+    }
     
     if(renderer->enabled_features & GPU_FEATURE_RENDER_TARGETS)
     {
@@ -2265,9 +2339,6 @@ static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
         if(data->handle != 0)
             glDeleteFramebuffers(1, &data->handle);
     }
-
-    if(target->image != NULL)
-        target->image->target = NULL;  // Remove reference to this object
     
     if(target->context != NULL)
     {
@@ -2297,11 +2368,7 @@ static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
         target->context = NULL;
     }
     
-    // Free specialized data
-    
-    free(target->data);
-    target->data = NULL;
-    free(target);
+    free(data);
 }
 
 
@@ -4359,6 +4426,7 @@ static void SetAttributeSource(GPU_Renderer* renderer, int num_values, GPU_Attri
     renderer->Init = &Init; \
     renderer->IsFeatureEnabled = &IsFeatureEnabled; \
     renderer->CreateTargetFromWindow = &CreateTargetFromWindow; \
+    renderer->CreateAliasTarget = &CreateAliasTarget; \
     renderer->MakeCurrent = &MakeCurrent; \
     renderer->SetAsCurrent = &SetAsCurrent; \
     renderer->SetWindowResolution = &SetWindowResolution; \
@@ -4371,6 +4439,7 @@ static void SetAttributeSource(GPU_Renderer* renderer, int num_values, GPU_Attri
  \
     renderer->CreateImage = &CreateImage; \
     renderer->LoadImage = &LoadImage; \
+    renderer->CreateAliasImage = &CreateAliasImage; \
     renderer->SaveImage = &SaveImage; \
     renderer->CopyImage = &CopyImage; \
     renderer->UpdateImage = &UpdateImage; \

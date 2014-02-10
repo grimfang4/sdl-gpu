@@ -125,15 +125,16 @@ typedef struct RendererData_OpenGL_3
 
 typedef struct ImageData_OpenGL_3
 {
+    int refcount;
 	Uint32 handle;
 	Uint32 format;
 } ImageData_OpenGL_3;
 
 typedef struct TargetData_OpenGL_3
 {
+    int refcount;
 	Uint32 handle;
 	Uint32 format;
-    
 } TargetData_OpenGL_3;
 
 

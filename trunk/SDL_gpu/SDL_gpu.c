@@ -195,6 +195,14 @@ GPU_Target* GPU_CreateTargetFromWindow(Uint32 windowID)
 	return current_renderer->CreateTargetFromWindow(current_renderer, windowID, NULL);
 }
 
+GPU_Target* GPU_CreateAliasTarget(GPU_Target* target)
+{
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->CreateAliasTarget == NULL)
+		return NULL;
+	
+	return current_renderer->CreateAliasTarget(current_renderer, target);
+}
+
 void GPU_MakeCurrent(GPU_Target* target, Uint32 windowID)
 {
 	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->MakeCurrent == NULL)
@@ -354,6 +362,14 @@ GPU_Image* GPU_LoadImage(const char* filename)
 		return NULL;
 	
 	return current_renderer->LoadImage(current_renderer, filename);
+}
+
+GPU_Image* GPU_CreateAliasImage(GPU_Image* image)
+{
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->CreateAliasImage == NULL)
+		return NULL;
+	
+	return current_renderer->CreateAliasImage(current_renderer, image);
 }
 
 Uint8 GPU_SaveImage(GPU_Image* image, const char* filename)
