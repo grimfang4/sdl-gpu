@@ -112,6 +112,7 @@ typedef struct GPU_Image
 	
 	void* data;
 	int refcount;
+	Uint8 is_alias;
 } GPU_Image;
 
 
@@ -214,6 +215,8 @@ struct GPU_Target
 	
 	/*! Renderer context data.  NULL if the target does not represent a window or rendering context. */
 	GPU_Context* context;
+	int refcount;
+	Uint8 is_alias;
 };
 
 /*! Important GPU features which may not be supported depending on a device's extension support.  Can be OR'd together.
@@ -357,6 +360,9 @@ struct GPU_Renderer
     /*! \see GPU_CreateTargetFromWindow
      * The extra parameter is used internally to reuse/reinit a target. */
     GPU_Target* (*CreateTargetFromWindow)(GPU_Renderer* renderer, Uint32 windowID, GPU_Target* target);
+    
+    /*! \see GPU_CreateAliasTarget() */
+    GPU_Target* (*CreateAliasTarget)(GPU_Renderer* renderer, GPU_Target* target);
 
     /*! \see GPU_MakeCurrent */
     void (*MakeCurrent)(GPU_Renderer* renderer, GPU_Target* target, Uint32 windowID);
@@ -387,6 +393,9 @@ struct GPU_Renderer
 	
 	/*! \see GPU_LoadImage() */
 	GPU_Image* (*LoadImage)(GPU_Renderer* renderer, const char* filename);
+	
+    /*! \see GPU_CreateAliasImage() */
+	GPU_Image* (*CreateAliasImage)(GPU_Renderer* renderer, GPU_Image* image);
 	
 	/*! \see GPU_SaveImage() */
 	Uint8 (*SaveImage)(GPU_Renderer* renderer, GPU_Image* image, const char* filename);
@@ -662,6 +671,10 @@ Uint8 GPU_IsFeatureEnabled(GPU_FeatureEnum feature);
 /*! Creates a separate context for the given window using the current renderer and returns a GPU_Target that represents it. */
 GPU_Target* GPU_CreateTargetFromWindow(Uint32 windowID);
 
+/*! Creates a target that aliases the given target.  Aliases can be used to store target settings (e.g. viewports) for easy switching.
+ * GPU_FreeTarget() frees the alias's memory, but does not affect the original. */
+GPU_Target* GPU_CreateAliasTarget(GPU_Target* target);
+
 /*! Makes the given window the current rendering destination for the given target.
  * This also makes the target the current context for image loading and window operations.
  * If the target does not represent a window, this does nothing.
@@ -772,6 +785,10 @@ GPU_Image* GPU_CreateImage(Uint16 w, Uint16 h, Uint8 channels);
 
 /*! Load image from an image file that is supported by this renderer.  Don't forget to GPU_FreeImage() it. */
 GPU_Image* GPU_LoadImage(const char* filename);
+
+/*! Creates an image that aliases the given image.  Aliases can be used to store image settings (e.g. modulation color) for easy switching.
+ * GPU_FreeImage() frees the alias's memory, but does not affect the original. */
+GPU_Image* GPU_CreateAliasImage(GPU_Image* image);
 
 /*! Save image to a file.  The file type is deduced from the extension.  Returns 0 on failure. */
 Uint8 GPU_SaveImage(GPU_Image* image, const char* filename);

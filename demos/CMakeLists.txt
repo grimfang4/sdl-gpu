@@ -106,3 +106,6 @@ target_link_libraries (intermediate-demo SDL_gpu)
 
 add_executable(pixel-perfect-demo pixel-perfect/main.c common/common.c common/demo-font.c)
 target_link_libraries (pixel-perfect-demo SDL_gpu)
+
+add_executable(alias-demo alias/main.c common/common.c common/demo-font.c)
+target_link_libraries (alias-demo SDL_gpu)
