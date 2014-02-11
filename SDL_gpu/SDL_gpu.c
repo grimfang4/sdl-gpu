@@ -590,67 +590,67 @@ void GPU_FreeTarget(GPU_Target* target)
 
 
 
-int GPU_Blit(GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest, float x, float y)
+int GPU_Blit(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y)
 {
 	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->Blit == NULL)
 		return -2;
 	
-	return current_renderer->Blit(current_renderer, src, srcrect, dest, x, y);
+	return current_renderer->Blit(current_renderer, image, src_rect, target, x, y);
 }
 
 
-int GPU_BlitRotate(GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest, float x, float y, float angle)
+int GPU_BlitRotate(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float angle)
 {
 	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->BlitRotate == NULL)
 		return -2;
 	
-	return current_renderer->BlitRotate(current_renderer, src, srcrect, dest, x, y, angle);
+	return current_renderer->BlitRotate(current_renderer, image, src_rect, target, x, y, angle);
 }
 
-int GPU_BlitScale(GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest, float x, float y, float scaleX, float scaleY)
+int GPU_BlitScale(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float scaleX, float scaleY)
 {
 	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->BlitScale == NULL)
 		return -2;
 	
-	return current_renderer->BlitScale(current_renderer, src, srcrect, dest, x, y, scaleX, scaleY);
+	return current_renderer->BlitScale(current_renderer, image, src_rect, target, x, y, scaleX, scaleY);
 }
 
-int GPU_BlitTransform(GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest, float x, float y, float angle, float scaleX, float scaleY)
+int GPU_BlitTransform(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float angle, float scaleX, float scaleY)
 {
 	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->BlitTransform == NULL)
 		return -2;
 	
-	return current_renderer->BlitTransform(current_renderer, src, srcrect, dest, x, y, angle, scaleX, scaleY);
+	return current_renderer->BlitTransform(current_renderer, image, src_rect, target, x, y, angle, scaleX, scaleY);
 }
 
-int GPU_BlitTransformX(GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest, float x, float y, float pivot_x, float pivot_y, float angle, float scaleX, float scaleY)
+int GPU_BlitTransformX(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float pivot_x, float pivot_y, float angle, float scaleX, float scaleY)
 {
 	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->BlitTransformX == NULL)
 		return -2;
 	
-	return current_renderer->BlitTransformX(current_renderer, src, srcrect, dest, x, y, pivot_x, pivot_y, angle, scaleX, scaleY);
+	return current_renderer->BlitTransformX(current_renderer, image, src_rect, target, x, y, pivot_x, pivot_y, angle, scaleX, scaleY);
 }
 
-int GPU_BlitTransformMatrix(GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest, float x, float y, float* matrix3x3)
+int GPU_BlitTransformMatrix(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float* matrix3x3)
 {
 	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->BlitTransformMatrix == NULL || matrix3x3 == NULL)
 		return -2;
 	
-	return current_renderer->BlitTransformMatrix(current_renderer, src, srcrect, dest, x, y, matrix3x3);
+	return current_renderer->BlitTransformMatrix(current_renderer, image, src_rect, target, x, y, matrix3x3);
 }
 
-int GPU_BlitBatch(GPU_Image* src, GPU_Target* dest, unsigned int numSprites, float* values, GPU_BlitFlagEnum flags)
+int GPU_BlitBatch(GPU_Image* image, GPU_Target* target, unsigned int num_sprites, float* values, GPU_BlitFlagEnum flags)
 {
 	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->BlitBatch == NULL)
 		return -2;
-	if(src == NULL || dest == NULL)
+	if(image == NULL || target == NULL)
 		return -1;
-    if(numSprites == 0)
+    if(num_sprites == 0)
         return 0;
     
     // Is it already in the right format?
     if((flags & GPU_PASSTHROUGH_ALL) == GPU_PASSTHROUGH_ALL || values == NULL)
-        return current_renderer->BlitBatch(current_renderer, src, dest, numSprites, values, flags);
+        return current_renderer->BlitBatch(current_renderer, image, target, num_sprites, values, flags);
 	
 	// Conversion time...
 	
@@ -691,7 +691,7 @@ int GPU_BlitBatch(GPU_Image* src, GPU_Target* dest, unsigned int numSprites, flo
     
 	int src_floats_per_sprite = src_position_floats_per_sprite + src_rect_floats_per_sprite + src_color_floats_per_sprite;
 	
-	int size = numSprites*(8 + 8 + 16);
+	int size = num_sprites*(8 + 8 + 16);
 	float* new_values = (float*)malloc(sizeof(float)*size);
     
 	int n;  // The sprite number iteration variable.
@@ -706,10 +706,13 @@ int GPU_BlitBatch(GPU_Image* src, GPU_Target* dest, unsigned int numSprites, flo
 	// Dest float stride
 	int floats_per_vertex = 8;
 	
-	float w2 = 0.5f*src->w;  // texcoord helpers for position expansion
-	float h2 = 0.5f*src->h;
+	float w2 = 0.5f*image->w;  // texcoord helpers for position expansion
+	float h2 = 0.5f*image->h;
 	
-    for(n = 0; n < numSprites; n++)
+	float tex_w = image->texture_w;
+	float tex_h = image->texture_h;
+	
+    for(n = 0; n < num_sprites; n++)
     {
         if(no_rects)
         {
@@ -730,11 +733,10 @@ int GPU_BlitBatch(GPU_Image* src, GPU_Target* dest, unsigned int numSprites, flo
         {
             if(!pass_texcoords)
             {
-                // TODO: Scale using tex_w instead of w for POT support
-                float s1 = values[rect_n]/src->w;
-                float t1 = values[rect_n+1]/src->h;
-                float s3 = s1 + values[rect_n+2]/src->w;
-                float t3 = t1 + values[rect_n+3]/src->h;
+                float s1 = values[rect_n]/tex_w;
+                float t1 = values[rect_n+1]/tex_h;
+                float s3 = s1 + values[rect_n+2]/tex_w;
+                float t3 = t1 + values[rect_n+3]/tex_h;
                 rect_n += src_floats_per_sprite;
                 
                 new_values[texcoord_i] = s1;
@@ -752,8 +754,8 @@ int GPU_BlitBatch(GPU_Image* src, GPU_Target* dest, unsigned int numSprites, flo
             
                 if(!pass_vertices)
                 {
-                    w2 = 0.5f*(s3-s1)*src->w;
-                    h2 = 0.5f*(t3-t1)*src->h;
+                    w2 = 0.5f*(s3-s1)*image->w;
+                    h2 = 0.5f*(t3-t1)*image->h;
                 }
             }
             else
@@ -775,8 +777,8 @@ int GPU_BlitBatch(GPU_Image* src, GPU_Target* dest, unsigned int numSprites, flo
             
                 if(!pass_vertices)
                 {
-                    w2 = 0.5f*(s3-s1)*src->w;
-                    h2 = 0.5f*(t3-t1)*src->h;
+                    w2 = 0.5f*(s3-s1)*image->w;
+                    h2 = 0.5f*(t3-t1)*image->h;
                 }
             }
         }
@@ -919,24 +921,24 @@ int GPU_BlitBatch(GPU_Image* src, GPU_Target* dest, unsigned int numSprites, flo
         }
     }
     
-	int result = current_renderer->BlitBatch(current_renderer, src, dest, numSprites, new_values, flags | GPU_PASSTHROUGH_ALL);
+	int result = current_renderer->BlitBatch(current_renderer, image, target, num_sprites, new_values, flags | GPU_PASSTHROUGH_ALL);
 	
 	free(new_values);
 	return result;
 }
 
-int GPU_BlitBatchSeparate(GPU_Image* src, GPU_Target* dest, unsigned int numSprites, float* positions, float* src_rects, float* colors, GPU_BlitFlagEnum flags)
+int GPU_BlitBatchSeparate(GPU_Image* image, GPU_Target* target, unsigned int num_sprites, float* positions, float* src_rects, float* colors, GPU_BlitFlagEnum flags)
 {
 	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->BlitBatch == NULL)
 		return -2;
-	if(src == NULL || dest == NULL)
+	if(image == NULL || target == NULL)
 		return -1;
-    if(numSprites == 0)
+    if(num_sprites == 0)
         return 0;
     
     // No data to repack?  Skip it.
     if(positions == NULL && src_rects == NULL && colors == NULL)
-        return current_renderer->BlitBatch(current_renderer, src, dest, numSprites, NULL, flags);
+        return current_renderer->BlitBatch(current_renderer, image, target, num_sprites, NULL, flags);
 	
 	// Repack the given arrays into an interleaved array for more efficient access
 	// Default values: Each sprite is defined by a position, a rect, and a color.
@@ -945,7 +947,7 @@ int GPU_BlitBatchSeparate(GPU_Image* src, GPU_Target* dest, unsigned int numSpri
 	Uint8 pass_texcoords = (flags & GPU_PASSTHROUGH_TEXCOORDS);
 	Uint8 pass_colors = (flags & GPU_PASSTHROUGH_COLORS);
 	
-	int size = numSprites*(8 + 8 + 16);  // 4 vertices of x, y...  s, t...  r, g, b, a
+	int size = num_sprites*(8 + 8 + 16);  // 4 vertices of x, y...  s, t...  r, g, b, a
 	float* values = (float*)malloc(sizeof(float)*size);
 	
 	int n;  // The sprite number iteration variable.
@@ -960,10 +962,13 @@ int GPU_BlitBatchSeparate(GPU_Image* src, GPU_Target* dest, unsigned int numSpri
 	// Dest float stride
 	int floats_per_vertex = 8;
 	
-	float w2 = 0.5f*src->w;  // texcoord helpers for position expansion
-	float h2 = 0.5f*src->h;
+	float w2 = 0.5f*image->w;  // texcoord helpers for position expansion
+	float h2 = 0.5f*image->h;
+	
+	float tex_w = image->texture_w;
+	float tex_h = image->texture_h;
     
-	for(n = 0; n < numSprites; n++)
+	for(n = 0; n < num_sprites; n++)
     {
         // Unpack the arrays
         
@@ -986,11 +991,10 @@ int GPU_BlitBatchSeparate(GPU_Image* src, GPU_Target* dest, unsigned int numSpri
         {
             if(!pass_texcoords)
             {
-                // FIXME: Scale using tex_w instead of w for POT support
-                float s1 = src_rects[rect_n++]/src->w;
-                float t1 = src_rects[rect_n++]/src->h;
-                float s3 = s1 + src_rects[rect_n++]/src->w;
-                float t3 = t1 + src_rects[rect_n++]/src->h;
+                float s1 = src_rects[rect_n++]/tex_w;
+                float t1 = src_rects[rect_n++]/tex_h;
+                float s3 = s1 + src_rects[rect_n++]/tex_w;
+                float t3 = t1 + src_rects[rect_n++]/tex_h;
                 
                 values[texcoord_i] = s1;
                 values[texcoord_i+1] = t1;
@@ -1007,8 +1011,8 @@ int GPU_BlitBatchSeparate(GPU_Image* src, GPU_Target* dest, unsigned int numSpri
             
                 if(!pass_vertices)
                 {
-                    w2 = 0.5f*(s3-s1)*src->w;
-                    h2 = 0.5f*(t3-t1)*src->h;
+                    w2 = 0.5f*(s3-s1)*image->w;
+                    h2 = 0.5f*(t3-t1)*image->h;
                 }
             }
             else
@@ -1029,8 +1033,8 @@ int GPU_BlitBatchSeparate(GPU_Image* src, GPU_Target* dest, unsigned int numSpri
             
                 if(!pass_vertices)
                 {
-                    w2 = 0.5f*(s3-s1)*src->w;
-                    h2 = 0.5f*(t3-t1)*src->h;
+                    w2 = 0.5f*(s3-s1)*image->w;
+                    h2 = 0.5f*(t3-t1)*image->h;
                 }
             }
         }
@@ -1168,7 +1172,7 @@ int GPU_BlitBatchSeparate(GPU_Image* src, GPU_Target* dest, unsigned int numSpri
         }
     }
 	
-	int result = current_renderer->BlitBatch(current_renderer, src, dest, numSprites, values, flags | GPU_PASSTHROUGH_ALL);
+	int result = current_renderer->BlitBatch(current_renderer, image, target, num_sprites, values, flags | GPU_PASSTHROUGH_ALL);
 	free(values);
 	
 	return result;

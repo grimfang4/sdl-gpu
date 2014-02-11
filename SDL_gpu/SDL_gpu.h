@@ -431,25 +431,25 @@ struct GPU_Renderer
 	void (*FreeTarget)(GPU_Renderer* renderer, GPU_Target* target);
 
 	/*! \see GPU_Blit() */
-	int (*Blit)(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest, float x, float y);
+	int (*Blit)(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y);
 	
 	/*! \see GPU_BlitRotate() */
-	int (*BlitRotate)(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest, float x, float y, float angle);
+	int (*BlitRotate)(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float degrees);
 	
 	/*! \see GPU_BlitScale() */
-	int (*BlitScale)(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest, float x, float y, float scaleX, float scaleY);
+	int (*BlitScale)(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float scaleX, float scaleY);
 	
 	/*! \see GPU_BlitTransform */
-	int (*BlitTransform)(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest, float x, float y, float angle, float scaleX, float scaleY);
+	int (*BlitTransform)(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float degrees, float scaleX, float scaleY);
 	
 	/*! \see GPU_BlitTransformX() */
-	int (*BlitTransformX)(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest, float x, float y, float pivot_x, float pivot_y, float angle, float scaleX, float scaleY);
+	int (*BlitTransformX)(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float pivot_x, float pivot_y, float degrees, float scaleX, float scaleY);
 	
 	/*! \see GPU_BlitTransformMatrix() */
-	int (*BlitTransformMatrix)(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest, float x, float y, float* matrix3x3);
+	int (*BlitTransformMatrix)(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float* matrix3x3);
 	
 	/*! \see GPU_BlitBatch() */
-	int (*BlitBatch)(GPU_Renderer* renderer, GPU_Image* src, GPU_Target* dest, unsigned int numSprites, float* values, GPU_BlitFlagEnum flags);
+	int (*BlitBatch)(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* target, unsigned int num_sprites, float* values, GPU_BlitFlagEnum flags);
 	
 	/*! \see GPU_TriangleBatch() */
 	int (*TriangleBatch)(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* target, int num_vertices, float* values, int num_indices, unsigned short* indices, GPU_BlitFlagEnum flags);
@@ -834,70 +834,70 @@ GPU_Target* GPU_LoadTarget(GPU_Image* image);
 /*! Deletes a render target in the proper way for this renderer. */
 void GPU_FreeTarget(GPU_Target* target);
 
-/*! Draws the 'src' image to the 'dest' render target.
-    * \param srcrect The region of the source image to use.
+/*! Draws the given image to the given render target.
+    * \param src_rect The region of the source image to use.
     * \param x Destination x-position
     * \param y Destination y-position */
-int GPU_Blit(GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest, float x, float y);
+int GPU_Blit(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y);
 
-/*! Rotates and draws the 'src' image to the 'dest' render target.
-    * \param srcrect The region of the source image to use.
+/*! Rotates and draws the given image to the given render target.
+    * \param src_rect The region of the source image to use.
     * \param x Destination x-position
     * \param y Destination y-position
-    * \param angle Rotation angle (in degrees) */
-int GPU_BlitRotate(GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest, float x, float y, float angle);
+    * \param degrees Rotation angle (in degrees) */
+int GPU_BlitRotate(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float degrees);
 
-/*! Scales and draws the 'src' image to the 'dest' render target.
-    * \param srcrect The region of the source image to use.
+/*! Scales and draws the given image to the given render target.
+    * \param src_rect The region of the source image to use.
     * \param x Destination x-position
     * \param y Destination y-position
     * \param scaleX Horizontal stretch factor
     * \param scaleY Vertical stretch factor */
-int GPU_BlitScale(GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest, float x, float y, float scaleX, float scaleY);
+int GPU_BlitScale(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float scaleX, float scaleY);
 
-/*! Scales, rotates, and draws the 'src' image to the 'dest' render target.
-    * \param srcrect The region of the source image to use.
+/*! Scales, rotates, and draws the given image to the given render target.
+    * \param src_rect The region of the source image to use.
     * \param x Destination x-position
     * \param y Destination y-position
-    * \param angle Rotation angle (in degrees)
+    * \param degrees Rotation angle (in degrees)
     * \param scaleX Horizontal stretch factor
     * \param scaleY Vertical stretch factor */
-int GPU_BlitTransform(GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest, float x, float y, float angle, float scaleX, float scaleY);
+int GPU_BlitTransform(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float degrees, float scaleX, float scaleY);
 
 	
-/*! Scales, rotates around a pivot point, and draws the 'src' image to the 'dest' render target.  The drawing point (x, y) coincides with the pivot point on the src image (pivot_x, pivot_y).
-	* \param srcrect The region of the source image to use.
+/*! Scales, rotates around a pivot point, and draws the given image to the given render target.  The drawing point (x, y) coincides with the pivot point on the src image (pivot_x, pivot_y).
+	* \param src_rect The region of the source image to use.
 	* \param x Destination x-position
 	* \param y Destination y-position
-	* \param pivot_x Pivot x-position (in src image coordinates)
-	* \param pivot_y Pivot y-position (in src image coordinates)
-	* \param angle Rotation angle (in degrees)
+	* \param pivot_x Pivot x-position (in image coordinates)
+	* \param pivot_y Pivot y-position (in image coordinates)
+	* \param degrees Rotation angle (in degrees)
 	* \param scaleX Horizontal stretch factor
 	* \param scaleY Vertical stretch factor */
-int GPU_BlitTransformX(GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest, float x, float y, float pivot_x, float pivot_y, float angle, float scaleX, float scaleY);
+int GPU_BlitTransformX(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float pivot_x, float pivot_y, float degrees, float scaleX, float scaleY);
 
 
-/*! Transforms and draws the 'src' image to the 'dest' render target.
-	* \param srcrect The region of the source image to use.
+/*! Transforms and draws the given image to the given render target.
+	* \param src_rect The region of the source image to use.
 	* \param x Destination x-position
 	* \param y Destination y-position
 	* \param matrix3x3 3x3 matrix in column-major order (index = row + column*numColumns) */
-int GPU_BlitTransformMatrix(GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest, float x, float y, float* matrix3x3);
+int GPU_BlitTransformMatrix(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float* matrix3x3);
 
-/*! Performs 'numSprites' blits of the 'src' image to the 'dest' target.
+/*! Performs 'num_sprites' blits of the given image to the given target.
  * Note: GPU_BlitBatch() cannot interpret a mix of normal values and "passthrough" values due to format ambiguity.
  * \param values A tightly-packed array of position (x,y), src_rect (x,y,w,h) values in image coordinates, and color (r,g,b,a) values with a range from 0-255.  Pass NULL to render with only custom shader attributes.
  * \param flags Bit flags to control the interpretation of the array parameters.  The only passthrough option accepted is GPU_PASSTHROUGH_ALL.
  */
-int GPU_BlitBatch(GPU_Image* src, GPU_Target* dest, unsigned int numSprites, float* values, GPU_BlitFlagEnum flags);
+int GPU_BlitBatch(GPU_Image* image, GPU_Target* target, unsigned int num_sprites, float* values, GPU_BlitFlagEnum flags);
 
-/*! Performs 'numSprites' blits of the 'src' image to the 'dest' target.
+/*! Performs 'num_sprites' blits of the given image to the given target.
  * \param positions A tightly-packed array of (x,y) values
  * \param src_rects A tightly-packed array of (x,y,w,h) values in image coordinates
  * \param colors A tightly-packed array of (r,g,b,a) values with a range from 0-255
  * \param flags Bit flags to control the interpretation of the array parameters
  */
-int GPU_BlitBatchSeparate(GPU_Image* src, GPU_Target* dest, unsigned int numSprites, float* positions, float* src_rects, float* colors, GPU_BlitFlagEnum flags);
+int GPU_BlitBatchSeparate(GPU_Image* image, GPU_Target* target, unsigned int num_sprites, float* positions, float* src_rects, float* colors, GPU_BlitFlagEnum flags);
 
 /*! Renders triangles from the given set of vertices.
  * \param values A tightly-packed array of vertex position (x,y), image coordinates (s,t), and color (r,g,b,a) values with a range from 0-255.  Pass NULL to render with only custom shader attributes.
