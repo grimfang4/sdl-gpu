@@ -451,6 +451,9 @@ struct GPU_Renderer
 	/*! \see GPU_BlitBatch() */
 	int (*BlitBatch)(GPU_Renderer* renderer, GPU_Image* src, GPU_Target* dest, unsigned int numSprites, float* values, GPU_BlitFlagEnum flags);
 	
+	/*! \see GPU_TriangleBatch() */
+	int (*TriangleBatch)(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* target, int num_vertices, float* values, int num_indices, unsigned short* indices, GPU_BlitFlagEnum flags);
+	
 	/*! \see GPU_GenerateMipmaps() */
 	void (*GenerateMipmaps)(GPU_Renderer* renderer, GPU_Image* image);
 
@@ -613,7 +616,6 @@ struct GPU_Renderer
 	void (*PolygonFilled)(GPU_Renderer* renderer, GPU_Target* target, Uint16 n, float* vertices, SDL_Color color);
 
 	void (*PolygonBlit)(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_Target* target, Uint16 n, float* vertices, float textureX, float textureY, float angle, float scaleX, float scaleY);
-	
 };
 
 
@@ -884,18 +886,25 @@ int GPU_BlitTransformMatrix(GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest,
 
 /*! Performs 'numSprites' blits of the 'src' image to the 'dest' target.
  * Note: GPU_BlitBatch() cannot interpret a mix of normal values and "passthrough" values due to format ambiguity.
- * \param values A tightly-packed array of position (x,y), color (r,g,b,a) values with a range from 0-255, and src_rect (x,y,w,h) values in image coordinates.  Pass NULL to render with only custom shader attributes.
+ * \param values A tightly-packed array of position (x,y), src_rect (x,y,w,h) values in image coordinates, and color (r,g,b,a) values with a range from 0-255.  Pass NULL to render with only custom shader attributes.
  * \param flags Bit flags to control the interpretation of the array parameters.  The only passthrough option accepted is GPU_PASSTHROUGH_ALL.
  */
 int GPU_BlitBatch(GPU_Image* src, GPU_Target* dest, unsigned int numSprites, float* values, GPU_BlitFlagEnum flags);
 
 /*! Performs 'numSprites' blits of the 'src' image to the 'dest' target.
  * \param positions A tightly-packed array of (x,y) values
- * \param colors A tightly-packed array of (r,g,b,a) values with a range from 0-255
  * \param src_rects A tightly-packed array of (x,y,w,h) values in image coordinates
+ * \param colors A tightly-packed array of (r,g,b,a) values with a range from 0-255
  * \param flags Bit flags to control the interpretation of the array parameters
  */
 int GPU_BlitBatchSeparate(GPU_Image* src, GPU_Target* dest, unsigned int numSprites, float* positions, float* src_rects, float* colors, GPU_BlitFlagEnum flags);
+
+/*! Renders triangles from the given set of vertices.
+ * \param values A tightly-packed array of vertex position (x,y), image coordinates (s,t), and color (r,g,b,a) values with a range from 0-255.  Pass NULL to render with only custom shader attributes.
+ * \param indices If not NULL, this is used to specify which vertices to use and in what order (i.e. it indexes the vertices in the 'values' array).
+ * \param flags Bit flags to control the interpretation of the array parameters.  Since 'values' contains per-vertex data, GPU_PASSTHROUGH_VERTICES is ignored.  Texture coordinates are scaled down using the image dimensions and color components are normalized to [0.0, 1.0].
+ */
+int GPU_TriangleBatch(GPU_Image* image, GPU_Target* target, int num_vertices, float* values, int num_indices, unsigned short* indices, GPU_BlitFlagEnum flags);
 
 /*! Loads mipmaps for the given image, if supported by the renderer. */
 void GPU_GenerateMipmaps(GPU_Image* image);
@@ -1143,7 +1152,6 @@ void GPU_Polygon(GPU_Target* target, Uint16 n, float* vertices, SDL_Color color)
 void GPU_PolygonFilled(GPU_Target* target, Uint16 n, float* vertices, SDL_Color color);
 
 void GPU_PolygonBlit(GPU_Image* src, GPU_Rect* srcrect, GPU_Target* target, Uint16 n, float* vertices, float textureX, float textureY, float angle, float scaleX, float scaleY);
-
 
 
 #ifdef __cplusplus

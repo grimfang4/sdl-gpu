@@ -2923,7 +2923,7 @@ static int get_lowest_attribute_num_values(GPU_CONTEXT_DATA* cdata, int cap)
 
 
 
-
+// Assumes the right format
 static int BlitBatch(GPU_Renderer* renderer, GPU_Image* src, GPU_Target* dest, unsigned int numSprites, float* values, GPU_BlitFlagEnum flags)
 {
     if(src == NULL || dest == NULL)
@@ -3127,6 +3127,207 @@ static int BlitBatch(GPU_Renderer* renderer, GPU_Image* src, GPU_Target* dest, u
         }
     }
 
+    return 0;
+}
+
+// Assumes the right format
+static int TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* target, int num_vertices, float* values, int num_indices, unsigned short* indices, GPU_BlitFlagEnum flags)
+{
+    if(image == NULL || target == NULL || num_vertices == 0)
+        return -1;
+    if(renderer != image->renderer || renderer != target->renderer)
+        return -2;
+    
+    makeContextCurrent(renderer, target);
+
+    // Bind the texture to which subsequent calls refer
+    bindTexture(renderer, image);
+
+    // Bind the FBO
+    if(bindFramebuffer(renderer, target))
+    {
+        prepareToRenderToTarget(renderer, target);
+        prepareToRenderImage(renderer, target, image);
+        changeViewport(target);
+        
+        glEnable(GL_TEXTURE_2D);
+        Uint8 isRTT = (target->image != NULL);
+        
+        // Modify the projection matrix if rendering to a texture
+        if(isRTT)
+        {
+            GPU_MatrixMode( GPU_PROJECTION );
+            GPU_PushMatrix();
+            GPU_LoadIdentity();
+
+            GPU_Ortho(0.0f, target->w, 0.0f, target->h, -1.0f, 1.0f); // Special inverted orthographic projection because tex coords are inverted already.
+
+            GPU_MatrixMode( GPU_MODELVIEW );
+        }
+
+        setClipRect(renderer, target);
+        
+        #ifdef SDL_GPU_APPLY_TRANSFORMS_TO_GL_STACK
+        //if(!renderer->IsFeatureEnabled(GPU_FEATURE_VERTEX_SHADER))
+            applyTransforms();
+        #endif
+        
+
+        GPU_CONTEXT_DATA* cdata = (GPU_CONTEXT_DATA*)renderer->current_context_target->context->data;
+
+        renderer->FlushBlitBuffer(renderer);
+        
+        #ifdef SDL_GPU_USE_GL_TIER3
+        refresh_attribute_data(cdata);
+        #endif
+        
+        int floats_per_vertex = 2+2+4;
+        int stride = floats_per_vertex*sizeof(float);
+        if(indices == NULL)
+            num_indices = num_vertices;
+        
+        // FIXME: It'd be nice to limit the number of vertices so we don't overrun the VBO...  But you can't limit it when indices are used.
+        // It would be better to use glBufferData() to allocate more memory if there are more vertices than we can fit.
+            
+    #ifdef SDL_GPU_USE_GL_TIER1
+            if(values != NULL)
+            {
+                float* vertex_pointer = values;
+                float* texcoord_pointer = values + 2;
+                float* color_pointer = values + 4;
+                
+                glBegin(GL_QUADS);
+                int i;
+                for(i = 0; i < num_vertices; i+=3)
+                {
+                    glColor4f( *color_pointer, *(color_pointer+1), *(color_pointer+2), *(color_pointer+3) );
+                    glTexCoord2f( *texcoord_pointer, *(texcoord_pointer+1) );
+                    glVertex3f( *vertex_pointer, *(vertex_pointer+1), 0.0f );
+                    color_pointer += floats_per_vertex;
+                    texcoord_pointer += floats_per_vertex;
+                    vertex_pointer += floats_per_vertex;
+
+                    glColor4f( *color_pointer, *(color_pointer+1), *(color_pointer+2), *(color_pointer+3) );
+                    glTexCoord2f( *texcoord_pointer, *(texcoord_pointer+1) );
+                    glVertex3f( *vertex_pointer, *(vertex_pointer+1), 0.0f );
+                    color_pointer += floats_per_vertex;
+                    texcoord_pointer += floats_per_vertex;
+                    vertex_pointer += floats_per_vertex;
+
+                    glColor4f( *color_pointer, *(color_pointer+1), *(color_pointer+2), *(color_pointer+3) );
+                    glTexCoord2f( *texcoord_pointer, *(texcoord_pointer+1) );
+                    glVertex3f( *vertex_pointer, *(vertex_pointer+1), 0.0f );
+                    color_pointer += floats_per_vertex;
+                    texcoord_pointer += floats_per_vertex;
+                    vertex_pointer += floats_per_vertex;
+
+                    glColor4f( *color_pointer, *(color_pointer+1), *(color_pointer+2), *(color_pointer+3) );
+                    glTexCoord2f( *texcoord_pointer, *(texcoord_pointer+1) );
+                    glVertex3f( *vertex_pointer, *(vertex_pointer+1), 0.0f );
+                    color_pointer += floats_per_vertex;
+                    texcoord_pointer += floats_per_vertex;
+                    vertex_pointer += floats_per_vertex;
+                }
+                glEnd();
+            }
+    #elif defined(SDL_GPU_USE_GL_TIER2)
+
+            glEnableClientState(GL_VERTEX_ARRAY);
+            glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+            glEnableClientState(GL_COLOR_ARRAY);
+            
+            glVertexPointer(2, GL_FLOAT, stride, values);
+            glTexCoordPointer(2, GL_FLOAT, stride, values + 2);
+            glColorPointer(4, GL_FLOAT, stride, values + 4);
+
+            if(indices == NULL)
+                glDrawArrays(GL_TRIANGLES, 0, num_indices);
+            else
+                glDrawElements(GL_TRIANGLES, num_indices, GL_UNSIGNED_SHORT, indices);
+
+            glDisableClientState(GL_COLOR_ARRAY);
+            glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+            glDisableClientState(GL_VERTEX_ARRAY);
+
+    #elif defined(SDL_GPU_USE_GL_TIER3)
+            
+            // Upload our modelviewprojection matrix
+            if(cdata->current_shader_block.modelViewProjection_loc >= 0)
+            {
+                float mvp[16];
+                GPU_GetModelViewProjection(mvp);
+                glUniformMatrix4fv(cdata->current_shader_block.modelViewProjection_loc, 1, 0, mvp);
+            }
+        
+            // Update the vertex array object's buffers
+            #if !defined(SDL_GPU_NO_VAO)
+            glBindVertexArray(cdata->blit_VAO);
+            #endif
+            
+            if(values != NULL)
+            {
+                // Upload blit buffer to a single buffer object
+                glBindBuffer(GL_ARRAY_BUFFER, cdata->blit_VBO[cdata->blit_VBO_flop]);
+                cdata->blit_VBO_flop = !cdata->blit_VBO_flop;
+                
+                // Copy the whole blit buffer to the GPU
+                glBufferSubData(GL_ARRAY_BUFFER, 0, stride * num_vertices, values);  // Fills GPU buffer with data.
+                
+                // Specify the formatting of the blit buffer
+                if(cdata->current_shader_block.position_loc >= 0)
+                {
+                    glEnableVertexAttribArray(cdata->current_shader_block.position_loc);  // Tell GL to use client-side attribute data
+                    glVertexAttribPointer(cdata->current_shader_block.position_loc, 2, GL_FLOAT, GL_FALSE, stride, 0);  // Tell how the data is formatted
+                }
+                if(cdata->current_shader_block.texcoord_loc >= 0)
+                {
+                    glEnableVertexAttribArray(cdata->current_shader_block.texcoord_loc);
+                    glVertexAttribPointer(cdata->current_shader_block.texcoord_loc, 2, GL_FLOAT, GL_FALSE, stride, (void*)(2 * sizeof(float)));
+                }
+                if(cdata->current_shader_block.color_loc >= 0)
+                {
+                    glEnableVertexAttribArray(cdata->current_shader_block.color_loc);
+                    glVertexAttribPointer(cdata->current_shader_block.color_loc, 4, GL_FLOAT, GL_FALSE, stride, (void*)(4 * sizeof(float)));
+                }
+            }
+            
+            upload_attribute_data(cdata, num_indices);
+            
+            if(indices == NULL)
+                glDrawArrays(GL_TRIANGLES, 0, num_indices);
+            else
+                glDrawElements(GL_TRIANGLES, num_indices, GL_UNSIGNED_SHORT, indices);
+            
+            // Disable the vertex arrays again
+            if(cdata->current_shader_block.position_loc >= 0)
+                glDisableVertexAttribArray(cdata->current_shader_block.position_loc);
+            if(cdata->current_shader_block.texcoord_loc >= 0)
+                glDisableVertexAttribArray(cdata->current_shader_block.texcoord_loc);
+            if(cdata->current_shader_block.color_loc >= 0)
+                glDisableVertexAttribArray(cdata->current_shader_block.color_loc);
+            
+            disable_attribute_data(cdata);
+            
+            #if !defined(SDL_GPU_NO_VAO)
+            glBindVertexArray(0);
+            #endif
+
+    #endif
+        
+        cdata->blit_buffer_num_vertices = 0;
+        cdata->index_buffer_num_vertices = 0;
+
+        unsetClipRect(renderer, target);
+
+        // restore matrices
+        if(isRTT)
+        {
+            GPU_MatrixMode( GPU_PROJECTION );
+            GPU_PopMatrix();
+            GPU_MatrixMode( GPU_MODELVIEW );
+        }
+    }
+    
     return 0;
 }
 
@@ -4485,6 +4686,7 @@ static void SetAttributeSource(GPU_Renderer* renderer, int num_values, GPU_Attri
     renderer->BlitTransformX = &BlitTransformX; \
     renderer->BlitTransformMatrix = &BlitTransformMatrix; \
     renderer->BlitBatch = &BlitBatch; \
+    renderer->TriangleBatch = &TriangleBatch; \
  \
     renderer->GenerateMipmaps = &GenerateMipmaps; \
  \

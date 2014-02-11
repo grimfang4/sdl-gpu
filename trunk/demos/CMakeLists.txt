@@ -109,3 +109,6 @@ target_link_libraries (pixel-perfect-demo SDL_gpu)
 
 add_executable(alias-demo alias/main.c common/common.c common/demo-font.c)
 target_link_libraries (alias-demo SDL_gpu)
+
+add_executable(triangle-batch-demo triangle-batch/main.c common/common.c common/demo-font.c)
+target_link_libraries (triangle-batch-demo SDL_gpu)
