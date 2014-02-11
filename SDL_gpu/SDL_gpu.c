@@ -1174,6 +1174,137 @@ int GPU_BlitBatchSeparate(GPU_Image* src, GPU_Target* dest, unsigned int numSpri
 	return result;
 }
 
+int GPU_TriangleBatch(GPU_Image* image, GPU_Target* target, int num_vertices, float* values, int num_indices, unsigned short* indices, GPU_BlitFlagEnum flags)
+{
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->TriangleBatch == NULL)
+		return -2;
+	if(image == NULL || target == NULL)
+		return -1;
+    if(num_vertices == 0)
+        return 0;
+    
+    // Is it already in the right format?
+    if((flags & GPU_PASSTHROUGH_ALL) == GPU_PASSTHROUGH_ALL || values == NULL)
+        return current_renderer->TriangleBatch(current_renderer, image, target, num_vertices, values, num_indices, indices, flags);
+	
+	// Conversion time...
+	
+	// Convert texcoords and colors for the renderer to use.
+	// Condensed: Each vertex has 2 pos, 2 texcoords, 4 color components
+	
+	// Default values: Each vertex is defined by a position, texcoords, and a color.
+	int src_position_floats_per_vertex = 2;
+	int src_texcoord_floats_per_vertex = 2;
+	int src_color_floats_per_vertex = 4;
+	
+	Uint8 no_positions = (flags & GPU_USE_DEFAULT_POSITIONS);
+	Uint8 no_texcoords = (flags & GPU_USE_DEFAULT_SRC_RECTS);
+	Uint8 no_colors = (flags & GPU_USE_DEFAULT_COLORS);
+	Uint8 pass_texcoords = (flags & GPU_PASSTHROUGH_TEXCOORDS);
+	Uint8 pass_colors = (flags & GPU_PASSTHROUGH_COLORS);
+	
+	// Vertex position passthrough is ignored (we're not positioning triangles, we're positioning vertices already)
+	src_position_floats_per_vertex = 2; // x, y
+	if(pass_texcoords)
+        src_texcoord_floats_per_vertex = 2; // s, t
+	if(pass_colors)
+        src_color_floats_per_vertex = 4; // r, g, b, a
+	if(no_positions)
+        src_position_floats_per_vertex = 0;
+	if(no_texcoords)
+        src_texcoord_floats_per_vertex = 0;
+	if(no_colors)
+        src_color_floats_per_vertex = 0;
+    
+	int src_floats_per_vertex = src_position_floats_per_vertex + src_texcoord_floats_per_vertex + src_color_floats_per_vertex;
+	
+	int size = num_vertices*(2 + 2 + 4);
+	float* new_values = (float*)malloc(sizeof(float)*size);
+    
+	int n; // Vertex number iteration variable
+	// Source indices
+	int pos_n = 0;
+	int texcoord_n = src_position_floats_per_vertex;
+	int color_n = src_position_floats_per_vertex + src_texcoord_floats_per_vertex;
+	// Dest indices
+	int vert_i = 0;
+	
+	float tex_w = image->texture_w;
+	float tex_h = image->texture_h;
+	
+    for(n = 0; n < num_vertices; n++)
+    {
+        // 2 floats from position
+        if(no_positions)
+        {
+            new_values[vert_i++] = 0.0f;
+            new_values[vert_i++] = 0.0f;
+        }
+        else
+        {
+            new_values[vert_i++] = values[pos_n];
+            new_values[vert_i++] = values[pos_n+1];
+            pos_n += src_floats_per_vertex;
+        }
+        
+        // 2 floats from texcoords
+        if(no_texcoords)
+        {
+            new_values[vert_i++] = 0.0f;
+            new_values[vert_i++] = 0.0f;
+        }
+        else
+        {
+            if(!pass_texcoords)
+            {
+                new_values[vert_i++] = values[texcoord_n]/tex_w;
+                new_values[vert_i++] = values[texcoord_n+1]/tex_h;
+                texcoord_n += src_floats_per_vertex;
+            }
+            else
+            {
+                new_values[vert_i++] = values[texcoord_n];
+                new_values[vert_i++] = values[texcoord_n+1];
+            }
+        }
+        
+        if(no_colors)
+        {
+                new_values[vert_i++] = 1.0f;
+                new_values[vert_i++] = 1.0f;
+                new_values[vert_i++] = 1.0f;
+                new_values[vert_i++] = 1.0f;
+        }
+        else
+        {
+            if(!pass_colors)
+            {
+                new_values[vert_i++] = values[color_n]/255.0f;
+                new_values[vert_i++] = values[color_n+1]/255.0f;
+                new_values[vert_i++] = values[color_n+2]/255.0f;
+                new_values[vert_i++] = values[color_n+3]/255.0f;
+                color_n += src_floats_per_vertex;
+            }
+            else
+            {
+                new_values[vert_i++] = values[color_n];
+                new_values[vert_i++] = values[color_n+1];
+                new_values[vert_i++] = values[color_n+2];
+                new_values[vert_i++] = values[color_n+3];
+                color_n += src_floats_per_vertex;
+            }
+        }
+    }
+    
+	int result = current_renderer->TriangleBatch(current_renderer, image, target, num_vertices, new_values, num_indices, indices, flags | GPU_PASSTHROUGH_ALL);
+	
+	free(new_values);
+	return result;
+}
+
+
+
+
 void GPU_GenerateMipmaps(GPU_Image* image)
 {
 	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->GenerateMipmaps == NULL)
