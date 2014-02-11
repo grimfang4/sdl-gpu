@@ -2376,30 +2376,30 @@ static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
 
 
 
-static int Blit(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest, float x, float y)
+static int Blit(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y)
 {
-    if(src == NULL || dest == NULL)
+    if(image == NULL || target == NULL)
         return -1;
-    if(renderer != src->renderer || renderer != dest->renderer)
+    if(renderer != image->renderer || renderer != target->renderer)
         return -2;
     
-    makeContextCurrent(renderer, dest);
+    makeContextCurrent(renderer, target);
     if(renderer->current_context_target == NULL)
         return -3;
 
     // Bind the texture to which subsequent calls refer
-    bindTexture(renderer, src);
+    bindTexture(renderer, image);
 
     // Bind the FBO
-    if(bindFramebuffer(renderer, dest))
+    if(bindFramebuffer(renderer, target))
     {
-        prepareToRenderToTarget(renderer, dest);
-        prepareToRenderImage(renderer, dest, src);
+        prepareToRenderToTarget(renderer, target);
+        prepareToRenderImage(renderer, target, image);
         
-        Uint16 tex_w = src->texture_w;
-        Uint16 tex_h = src->texture_h;
+        Uint16 tex_w = image->texture_w;
+        Uint16 tex_h = image->texture_h;
         
-        if(src->filter_mode == GPU_NEAREST)
+        if(image->filter_mode == GPU_NEAREST)
         {
             // Avoid rounding errors in texture sampling by insisting on integral pixel positions
             x = floorf(x+0.5f);
@@ -2408,31 +2408,31 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_T
         
         float x1, y1, x2, y2;
         float dx1, dy1, dx2, dy2;
-        if(srcrect == NULL)
+        if(src_rect == NULL)
         {
             // Scale tex coords according to actual texture dims
             x1 = 0.0f;
             y1 = 0.0f;
-            x2 = ((float)src->w)/tex_w;
-            y2 = ((float)src->h)/tex_h;
+            x2 = ((float)image->w)/tex_w;
+            y2 = ((float)image->h)/tex_h;
             // Center the image on the given coords
-            dx1 = x - src->w/2.0f;
-            dy1 = y - src->h/2.0f;
-            dx2 = x + src->w/2.0f;
-            dy2 = y + src->h/2.0f;
+            dx1 = x - image->w/2.0f;
+            dy1 = y - image->h/2.0f;
+            dx2 = x + image->w/2.0f;
+            dy2 = y + image->h/2.0f;
         }
         else
         {
-            // Scale srcrect tex coords according to actual texture dims
-            x1 = srcrect->x/(float)tex_w;
-            y1 = srcrect->y/(float)tex_h;
-            x2 = (srcrect->x + srcrect->w)/(float)tex_w;
-            y2 = (srcrect->y + srcrect->h)/(float)tex_h;
+            // Scale src_rect tex coords according to actual texture dims
+            x1 = src_rect->x/(float)tex_w;
+            y1 = src_rect->y/(float)tex_h;
+            x2 = (src_rect->x + src_rect->w)/(float)tex_w;
+            y2 = (src_rect->y + src_rect->h)/(float)tex_h;
             // Center the image on the given coords
-            dx1 = x - srcrect->w/2.0f;
-            dy1 = y - srcrect->h/2.0f;
-            dx2 = x + srcrect->w/2.0f;
-            dy2 = y + srcrect->h/2.0f;
+            dx1 = x - src_rect->w/2.0f;
+            dy1 = y - src_rect->h/2.0f;
+            dx2 = x + src_rect->w/2.0f;
+            dy2 = y + src_rect->h/2.0f;
         }
 
         GPU_CONTEXT_DATA* cdata = (GPU_CONTEXT_DATA*)renderer->current_context_target->context->data;
@@ -2444,19 +2444,19 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_T
         #ifdef SDL_GPU_USE_GL_TIER3
         int color_index = GPU_BLIT_BUFFER_COLOR_OFFSET + cdata->blit_buffer_num_vertices*GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
         float r, g, b, a;
-        if(dest->use_color)
+        if(target->use_color)
         {
-            r = MIX_COLOR_COMPONENT_NORMALIZED_RESULT(dest->color.r, src->color.r);
-            g = MIX_COLOR_COMPONENT_NORMALIZED_RESULT(dest->color.g, src->color.g);
-            b = MIX_COLOR_COMPONENT_NORMALIZED_RESULT(dest->color.b, src->color.b);
-            a = MIX_COLOR_COMPONENT_NORMALIZED_RESULT(GET_ALPHA(dest->color), GET_ALPHA(src->color));
+            r = MIX_COLOR_COMPONENT_NORMALIZED_RESULT(target->color.r, image->color.r);
+            g = MIX_COLOR_COMPONENT_NORMALIZED_RESULT(target->color.g, image->color.g);
+            b = MIX_COLOR_COMPONENT_NORMALIZED_RESULT(target->color.b, image->color.b);
+            a = MIX_COLOR_COMPONENT_NORMALIZED_RESULT(GET_ALPHA(target->color), GET_ALPHA(image->color));
         }
         else
         {
-            r = src->color.r/255.0f;
-            g = src->color.g/255.0f;
-            b = src->color.b/255.0f;
-            a = GET_ALPHA(src->color)/255.0f;
+            r = image->color.r/255.0f;
+            g = image->color.g/255.0f;
+            b = image->color.b/255.0f;
+            a = GET_ALPHA(image->color)/255.0f;
         }
         #endif
         
@@ -2531,53 +2531,53 @@ static int Blit(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_T
 }
 
 
-static int BlitRotate(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest, float x, float y, float angle)
+static int BlitRotate(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float degrees)
 {
-    if(src == NULL || dest == NULL)
+    if(image == NULL || target == NULL)
         return -1;
 
-    return renderer->BlitTransformX(renderer, src, srcrect, dest, x, y, src->w/2.0f, src->h/2.0f, angle, 1.0f, 1.0f);
+    return renderer->BlitTransformX(renderer, image, src_rect, target, x, y, image->w/2.0f, image->h/2.0f, degrees, 1.0f, 1.0f);
 }
 
-static int BlitScale(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest, float x, float y, float scaleX, float scaleY)
+static int BlitScale(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float scaleX, float scaleY)
 {
-    if(src == NULL || dest == NULL)
+    if(image == NULL || target == NULL)
         return -1;
 
-    return renderer->BlitTransformX(renderer, src, srcrect, dest, x, y, src->w/2.0f, src->h/2.0f, 0.0f, scaleX, scaleY);
+    return renderer->BlitTransformX(renderer, image, src_rect, target, x, y, image->w/2.0f, image->h/2.0f, 0.0f, scaleX, scaleY);
 }
 
-static int BlitTransform(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest, float x, float y, float angle, float scaleX, float scaleY)
+static int BlitTransform(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float degrees, float scaleX, float scaleY)
 {
-    if(src == NULL || dest == NULL)
+    if(image == NULL || target == NULL)
         return -1;
 
-    return renderer->BlitTransformX(renderer, src, srcrect, dest, x, y, src->w/2.0f, src->h/2.0f, angle, scaleX, scaleY);
+    return renderer->BlitTransformX(renderer, image, src_rect, target, x, y, image->w/2.0f, image->h/2.0f, degrees, scaleX, scaleY);
 }
 
-static int BlitTransformX(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest, float x, float y, float pivot_x, float pivot_y, float angle, float scaleX, float scaleY)
+static int BlitTransformX(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float pivot_x, float pivot_y, float degrees, float scaleX, float scaleY)
 {
-    if(src == NULL || dest == NULL)
+    if(image == NULL || target == NULL)
         return -1;
-    if(renderer != src->renderer || renderer != dest->renderer)
+    if(renderer != image->renderer || renderer != target->renderer)
         return -2;
 
 
-    makeContextCurrent(renderer, dest);
+    makeContextCurrent(renderer, target);
     
     // Bind the texture to which subsequent calls refer
-    bindTexture(renderer, src);
+    bindTexture(renderer, image);
 
     // Bind the FBO
-    if(bindFramebuffer(renderer, dest))
+    if(bindFramebuffer(renderer, target))
     {
-        prepareToRenderToTarget(renderer, dest);
-        prepareToRenderImage(renderer, dest, src);
+        prepareToRenderToTarget(renderer, target);
+        prepareToRenderImage(renderer, target, image);
         
-        Uint16 tex_w = src->texture_w;
-        Uint16 tex_h = src->texture_h;
+        Uint16 tex_w = image->texture_w;
+        Uint16 tex_h = image->texture_h;
         
-        if(src->filter_mode == GPU_NEAREST)
+        if(image->filter_mode == GPU_NEAREST)
         {
             // Avoid rounding errors in texture sampling by insisting on integral pixel positions
             x = floorf(x+0.5f);
@@ -2592,31 +2592,31 @@ static int BlitTransformX(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcr
             4,4 --- 2,2
         */
         float dx1, dy1, dx2, dy2, dx3, dy3, dx4, dy4;
-        if(srcrect == NULL)
+        if(src_rect == NULL)
         {
             // Scale tex coords according to actual texture dims
             x1 = 0.0f;
             y1 = 0.0f;
-            x2 = ((float)src->w)/tex_w;
-            y2 = ((float)src->h)/tex_h;
+            x2 = ((float)image->w)/tex_w;
+            y2 = ((float)image->h)/tex_h;
             // Center the image on the given coords
-            dx1 = -src->w/2.0f;
-            dy1 = -src->h/2.0f;
-            dx2 = src->w/2.0f;
-            dy2 = src->h/2.0f;
+            dx1 = -image->w/2.0f;
+            dy1 = -image->h/2.0f;
+            dx2 = image->w/2.0f;
+            dy2 = image->h/2.0f;
         }
         else
         {
-            // Scale srcrect tex coords according to actual texture dims
-            x1 = srcrect->x/(float)tex_w;
-            y1 = srcrect->y/(float)tex_h;
-            x2 = (srcrect->x + srcrect->w)/(float)tex_w;
-            y2 = (srcrect->y + srcrect->h)/(float)tex_h;
+            // Scale src_rect tex coords according to actual texture dims
+            x1 = src_rect->x/(float)tex_w;
+            y1 = src_rect->y/(float)tex_h;
+            x2 = (src_rect->x + src_rect->w)/(float)tex_w;
+            y2 = (src_rect->y + src_rect->h)/(float)tex_h;
             // Center the image on the given coords
-            dx1 = -srcrect->w/2.0f;
-            dy1 = -srcrect->h/2.0f;
-            dx2 = srcrect->w/2.0f;
-            dy2 = srcrect->h/2.0f;
+            dx1 = -src_rect->w/2.0f;
+            dy1 = -src_rect->h/2.0f;
+            dx2 = src_rect->w/2.0f;
+            dy2 = src_rect->h/2.0f;
         }
 
         // Apply transforms
@@ -2633,8 +2633,8 @@ static int BlitTransformX(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcr
         }
 
         // Shift away from the center (these are relative to the image corner)
-        pivot_x -= src->w/2.0f;
-        pivot_y -= src->h/2.0f;
+        pivot_x -= image->w/2.0f;
+        pivot_y -= image->h/2.0f;
 
         // Translate origin to pivot
         dx1 -= pivot_x*scaleX;
@@ -2649,10 +2649,10 @@ static int BlitTransformX(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcr
         dy4 = dy2;
 
         // Rotate about origin (the pivot)
-        if(angle != 0.0f)
+        if(degrees != 0.0f)
         {
-            float cosA = cos(angle*M_PI/180);
-            float sinA = sin(angle*M_PI/180);
+            float cosA = cos(degrees*M_PI/180);
+            float sinA = sin(degrees*M_PI/180);
             float tempX = dx1;
             dx1 = dx1*cosA - dy1*sinA;
             dy1 = tempX*sinA + dy1*cosA;
@@ -2686,19 +2686,19 @@ static int BlitTransformX(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcr
         #ifdef SDL_GPU_USE_GL_TIER3
         int color_index = GPU_BLIT_BUFFER_COLOR_OFFSET + cdata->blit_buffer_num_vertices*GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
         float r, g, b, a;
-        if(dest->use_color)
+        if(target->use_color)
         {
-            r = MIX_COLOR_COMPONENT_NORMALIZED_RESULT(dest->color.r, src->color.r);
-            g = MIX_COLOR_COMPONENT_NORMALIZED_RESULT(dest->color.g, src->color.g);
-            b = MIX_COLOR_COMPONENT_NORMALIZED_RESULT(dest->color.b, src->color.b);
-            a = MIX_COLOR_COMPONENT_NORMALIZED_RESULT(GET_ALPHA(dest->color), GET_ALPHA(src->color));
+            r = MIX_COLOR_COMPONENT_NORMALIZED_RESULT(target->color.r, image->color.r);
+            g = MIX_COLOR_COMPONENT_NORMALIZED_RESULT(target->color.g, image->color.g);
+            b = MIX_COLOR_COMPONENT_NORMALIZED_RESULT(target->color.b, image->color.b);
+            a = MIX_COLOR_COMPONENT_NORMALIZED_RESULT(GET_ALPHA(target->color), GET_ALPHA(image->color));
         }
         else
         {
-            r = src->color.r/255.0f;
-            g = src->color.g/255.0f;
-            b = src->color.b/255.0f;
-            a = GET_ALPHA(src->color)/255.0f;
+            r = image->color.r/255.0f;
+            g = image->color.g/255.0f;
+            b = image->color.b/255.0f;
+            a = GET_ALPHA(image->color)/255.0f;
         }
         #endif
 
@@ -2773,11 +2773,11 @@ static int BlitTransformX(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcr
     return 0;
 }
 
-static int BlitTransformMatrix(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_Target* dest, float x, float y, float* matrix3x3)
+static int BlitTransformMatrix(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float* matrix3x3)
 {
-    if(src == NULL || dest == NULL)
+    if(image == NULL || target == NULL)
         return -1;
-    if(renderer != src->renderer || renderer != dest->renderer)
+    if(renderer != image->renderer || renderer != target->renderer)
         return -2;
     
     // TODO: See below.
@@ -2795,7 +2795,7 @@ static int BlitTransformMatrix(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect*
     GPU_Translate(x, y, 0);
     GPU_MultMatrix(matrix);
 
-    int result = renderer->Blit(renderer, src, srcrect, dest, 0, 0);
+    int result = renderer->Blit(renderer, image, src_rect, target, 0, 0);
     
     // Popping the matrix will revert the transform before it can be used, so we have to flush for now.
     // TODO: Do the matrix math myself on the vertex coords.
@@ -2924,7 +2924,7 @@ static int get_lowest_attribute_num_values(GPU_CONTEXT_DATA* cdata, int cap)
 
 
 // Assumes the right format
-static int BlitBatch(GPU_Renderer* renderer, GPU_Image* src, GPU_Target* dest, unsigned int numSprites, float* values, GPU_BlitFlagEnum flags)
+static int BlitBatch(GPU_Renderer* renderer, GPU_Image* src, GPU_Target* dest, unsigned int num_sprites, float* values, GPU_BlitFlagEnum flags)
 {
     if(src == NULL || dest == NULL)
         return -1;
@@ -2980,8 +2980,8 @@ static int BlitBatch(GPU_Renderer* renderer, GPU_Image* src, GPU_Target* dest, u
         int partial_num_sprites = cdata->blit_buffer_max_num_vertices/4;
         while(1)
         {
-            if(numSprites < partial_num_sprites)
-                partial_num_sprites = numSprites;
+            if(num_sprites < partial_num_sprites)
+                partial_num_sprites = num_sprites;
             if(partial_num_sprites <= 0)
                 break;
 
@@ -2997,7 +2997,7 @@ static int BlitBatch(GPU_Renderer* renderer, GPU_Image* src, GPU_Target* dest, u
                 
                 glBegin(GL_QUADS);
                 int i;
-                for(i = 0; i < numSprites; i++)
+                for(i = 0; i < num_sprites; i++)
                 {
                     glColor4f( *color_pointer, *(color_pointer+1), *(color_pointer+2), *(color_pointer+3) );
                     glTexCoord2f( *texcoord_pointer, *(texcoord_pointer+1) );
@@ -3110,7 +3110,7 @@ static int BlitBatch(GPU_Renderer* renderer, GPU_Image* src, GPU_Target* dest, u
 
             values += partial_num_sprites*4*floats_per_vertex;
             
-            numSprites -= partial_num_sprites;
+            num_sprites -= partial_num_sprites;
             
             cdata->blit_buffer_num_vertices = 0;
             cdata->index_buffer_num_vertices = 0;
