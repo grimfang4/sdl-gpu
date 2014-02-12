@@ -330,6 +330,20 @@ static const GPU_ShaderLanguageEnum GPU_GLSLES = 0x3;
 static const GPU_ShaderLanguageEnum GPU_HLSL = 0x4;
 static const GPU_ShaderLanguageEnum GPU_CG = 0x5;
 
+/*! Type enumeration for error codes.
+ * \see GPU_PushErrorCode()
+ * \see GPU_PopErrorCode()
+ */
+typedef int GPU_ErrorEnum;
+static const GPU_ErrorEnum GPU_ERROR_NONE = 0;
+static const GPU_ErrorEnum GPU_ERROR_NULL_RENDERER = 1;
+static const GPU_ErrorEnum GPU_ERROR_NULL_CONTEXT = 2;
+static const GPU_ErrorEnum GPU_ERROR_UNSUPPORTED_FUNCTION = 3;
+static const GPU_ErrorEnum GPU_ERROR_MISMATCHED_RENDERER = 4;
+static const GPU_ErrorEnum GPU_ERROR_NULL_ARGUMENT = 5;
+static const GPU_ErrorEnum GPU_ERROR_USER_ERROR = 6;
+static const GPU_ErrorEnum GPU_ERROR_BIND_TARGET = 7;
+
 
 /*! Renderer object which specializes the API to a particular backend. */
 struct GPU_Renderer
@@ -371,7 +385,7 @@ struct GPU_Renderer
 	void (*SetAsCurrent)(GPU_Renderer* renderer);
 	
 	/*! \see GPU_SetWindowResolution() */
-	int (*SetWindowResolution)(GPU_Renderer* renderer, Uint16 w, Uint16 h);
+	Uint8 (*SetWindowResolution)(GPU_Renderer* renderer, Uint16 w, Uint16 h);
 	
 	/*! \see GPU_SetVirtualResolution() */
 	void (*SetVirtualResolution)(GPU_Renderer* renderer, GPU_Target* target, Uint16 w, Uint16 h);
@@ -383,7 +397,7 @@ struct GPU_Renderer
 	void (*Quit)(GPU_Renderer* renderer);
 	
 	/*! \see GPU_ToggleFullscreen() */
-	int (*ToggleFullscreen)(GPU_Renderer* renderer);
+	Uint8 (*ToggleFullscreen)(GPU_Renderer* renderer);
 
 	/*! \see GPU_SetCamera() */
 	GPU_Camera (*SetCamera)(GPU_Renderer* renderer, GPU_Target* target, GPU_Camera* cam);
@@ -431,28 +445,28 @@ struct GPU_Renderer
 	void (*FreeTarget)(GPU_Renderer* renderer, GPU_Target* target);
 
 	/*! \see GPU_Blit() */
-	int (*Blit)(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y);
+	void (*Blit)(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y);
 	
 	/*! \see GPU_BlitRotate() */
-	int (*BlitRotate)(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float degrees);
+	void (*BlitRotate)(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float degrees);
 	
 	/*! \see GPU_BlitScale() */
-	int (*BlitScale)(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float scaleX, float scaleY);
+	void (*BlitScale)(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float scaleX, float scaleY);
 	
 	/*! \see GPU_BlitTransform */
-	int (*BlitTransform)(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float degrees, float scaleX, float scaleY);
+	void (*BlitTransform)(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float degrees, float scaleX, float scaleY);
 	
 	/*! \see GPU_BlitTransformX() */
-	int (*BlitTransformX)(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float pivot_x, float pivot_y, float degrees, float scaleX, float scaleY);
+	void (*BlitTransformX)(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float pivot_x, float pivot_y, float degrees, float scaleX, float scaleY);
 	
 	/*! \see GPU_BlitTransformMatrix() */
-	int (*BlitTransformMatrix)(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float* matrix3x3);
+	void (*BlitTransformMatrix)(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float* matrix3x3);
 	
 	/*! \see GPU_BlitBatch() */
-	int (*BlitBatch)(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* target, unsigned int num_sprites, float* values, GPU_BlitFlagEnum flags);
+	void (*BlitBatch)(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* target, unsigned int num_sprites, float* values, GPU_BlitFlagEnum flags);
 	
 	/*! \see GPU_TriangleBatch() */
-	int (*TriangleBatch)(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* target, int num_vertices, float* values, int num_indices, unsigned short* indices, GPU_BlitFlagEnum flags);
+	void (*TriangleBatch)(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* target, int num_vertices, float* values, int num_indices, unsigned short* indices, GPU_BlitFlagEnum flags);
 	
 	/*! \see GPU_GenerateMipmaps() */
 	void (*GenerateMipmaps)(GPU_Renderer* renderer, GPU_Image* image);
@@ -684,7 +698,7 @@ GPU_Target* GPU_CreateAliasTarget(GPU_Target* target);
 void GPU_MakeCurrent(GPU_Target* target, Uint32 windowID);
 
 /*! Change the actual size of the current window. */
-int GPU_SetWindowResolution(Uint16 w, Uint16 h);
+Uint8 GPU_SetWindowResolution(Uint16 w, Uint16 h);
 
 /*! Change the logical size of the given target.  Rendering to this target will be scaled as if the dimensions were actually the ones given. */
 void GPU_SetVirtualResolution(GPU_Target* target, Uint16 w, Uint16 h);
@@ -698,6 +712,12 @@ void GPU_CloseCurrentRenderer(void);
 /*! Clean up the renderer state and shut down SDL_gpu. */
 void GPU_Quit(void);
 
+/*! Pushes a new error code onto the error stack.  If the stack is full, this function does nothing. */
+void GPU_PushErrorCode(GPU_ErrorEnum error);
+
+/*! Pops an error code from the error stack and returns the value.  If the error stack is empty, it returns GPU_ERROR_NONE. */
+GPU_ErrorEnum GPU_PopErrorCode(void);
+
 /*! Sets the current error string. */
 void GPU_SetError(const char* fmt, ...);
 
@@ -708,8 +728,9 @@ const char* GPU_GetErrorString(void);
 void GPU_GetVirtualCoords(GPU_Target* target, float* x, float* y, float displayX, float displayY);
 
 /*! Enable/disable fullscreen mode for the current window.
- * On some platforms, this may destroy the renderer context and require that textures be reloaded. */
-int GPU_ToggleFullscreen(void);
+ * On some platforms, this may destroy the renderer context and require that textures be reloaded.
+ * \return 0 if the new mode is windowed, 1 if the new mode is fullscreen.  */
+Uint8 GPU_ToggleFullscreen(void);
 
 
 // Renderer controls
@@ -838,14 +859,14 @@ void GPU_FreeTarget(GPU_Target* target);
     * \param src_rect The region of the source image to use.
     * \param x Destination x-position
     * \param y Destination y-position */
-int GPU_Blit(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y);
+void GPU_Blit(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y);
 
 /*! Rotates and draws the given image to the given render target.
     * \param src_rect The region of the source image to use.
     * \param x Destination x-position
     * \param y Destination y-position
     * \param degrees Rotation angle (in degrees) */
-int GPU_BlitRotate(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float degrees);
+void GPU_BlitRotate(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float degrees);
 
 /*! Scales and draws the given image to the given render target.
     * \param src_rect The region of the source image to use.
@@ -853,7 +874,7 @@ int GPU_BlitRotate(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, flo
     * \param y Destination y-position
     * \param scaleX Horizontal stretch factor
     * \param scaleY Vertical stretch factor */
-int GPU_BlitScale(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float scaleX, float scaleY);
+void GPU_BlitScale(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float scaleX, float scaleY);
 
 /*! Scales, rotates, and draws the given image to the given render target.
     * \param src_rect The region of the source image to use.
@@ -862,7 +883,7 @@ int GPU_BlitScale(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, floa
     * \param degrees Rotation angle (in degrees)
     * \param scaleX Horizontal stretch factor
     * \param scaleY Vertical stretch factor */
-int GPU_BlitTransform(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float degrees, float scaleX, float scaleY);
+void GPU_BlitTransform(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float degrees, float scaleX, float scaleY);
 
 	
 /*! Scales, rotates around a pivot point, and draws the given image to the given render target.  The drawing point (x, y) coincides with the pivot point on the src image (pivot_x, pivot_y).
@@ -874,7 +895,7 @@ int GPU_BlitTransform(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, 
 	* \param degrees Rotation angle (in degrees)
 	* \param scaleX Horizontal stretch factor
 	* \param scaleY Vertical stretch factor */
-int GPU_BlitTransformX(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float pivot_x, float pivot_y, float degrees, float scaleX, float scaleY);
+void GPU_BlitTransformX(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float pivot_x, float pivot_y, float degrees, float scaleX, float scaleY);
 
 
 /*! Transforms and draws the given image to the given render target.
@@ -882,14 +903,14 @@ int GPU_BlitTransformX(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target,
 	* \param x Destination x-position
 	* \param y Destination y-position
 	* \param matrix3x3 3x3 matrix in column-major order (index = row + column*numColumns) */
-int GPU_BlitTransformMatrix(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float* matrix3x3);
+void GPU_BlitTransformMatrix(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float* matrix3x3);
 
 /*! Performs 'num_sprites' blits of the given image to the given target.
  * Note: GPU_BlitBatch() cannot interpret a mix of normal values and "passthrough" values due to format ambiguity.
  * \param values A tightly-packed array of position (x,y), src_rect (x,y,w,h) values in image coordinates, and color (r,g,b,a) values with a range from 0-255.  Pass NULL to render with only custom shader attributes.
  * \param flags Bit flags to control the interpretation of the array parameters.  The only passthrough option accepted is GPU_PASSTHROUGH_ALL.
  */
-int GPU_BlitBatch(GPU_Image* image, GPU_Target* target, unsigned int num_sprites, float* values, GPU_BlitFlagEnum flags);
+void GPU_BlitBatch(GPU_Image* image, GPU_Target* target, unsigned int num_sprites, float* values, GPU_BlitFlagEnum flags);
 
 /*! Performs 'num_sprites' blits of the given image to the given target.
  * \param positions A tightly-packed array of (x,y) values
@@ -897,14 +918,14 @@ int GPU_BlitBatch(GPU_Image* image, GPU_Target* target, unsigned int num_sprites
  * \param colors A tightly-packed array of (r,g,b,a) values with a range from 0-255
  * \param flags Bit flags to control the interpretation of the array parameters
  */
-int GPU_BlitBatchSeparate(GPU_Image* image, GPU_Target* target, unsigned int num_sprites, float* positions, float* src_rects, float* colors, GPU_BlitFlagEnum flags);
+void GPU_BlitBatchSeparate(GPU_Image* image, GPU_Target* target, unsigned int num_sprites, float* positions, float* src_rects, float* colors, GPU_BlitFlagEnum flags);
 
 /*! Renders triangles from the given set of vertices.
  * \param values A tightly-packed array of vertex position (x,y), image coordinates (s,t), and color (r,g,b,a) values with a range from 0-255.  Pass NULL to render with only custom shader attributes.
  * \param indices If not NULL, this is used to specify which vertices to use and in what order (i.e. it indexes the vertices in the 'values' array).
  * \param flags Bit flags to control the interpretation of the array parameters.  Since 'values' contains per-vertex data, GPU_PASSTHROUGH_VERTICES is ignored.  Texture coordinates are scaled down using the image dimensions and color components are normalized to [0.0, 1.0].
  */
-int GPU_TriangleBatch(GPU_Image* image, GPU_Target* target, int num_vertices, float* values, int num_indices, unsigned short* indices, GPU_BlitFlagEnum flags);
+void GPU_TriangleBatch(GPU_Image* image, GPU_Target* target, int num_vertices, float* values, int num_indices, unsigned short* indices, GPU_BlitFlagEnum flags);
 
 /*! Loads mipmaps for the given image, if supported by the renderer. */
 void GPU_GenerateMipmaps(GPU_Image* image);
