@@ -7,9 +7,19 @@
 
 #include "stb_image.h"
 
+
+#define CHECK_RENDERER (current_renderer != NULL)
+#define CHECK_CONTEXT (current_renderer->current_context_target != NULL)
+#define CHECK_FUNCTION_POINTER(fn) (current_renderer->fn != NULL)
+#define RETURN_ERROR(code) do{ GPU_PushErrorCode(code); return; } while(0)
+
 void GPU_InitRendererRegister(void);
 
 static GPU_Renderer* current_renderer = NULL;
+
+#define GPU_MAX_NUM_ERRORS 30
+static GPU_ErrorEnum error_code_stack[GPU_MAX_NUM_ERRORS];
+static int num_error_codes = 0;
 
 void GPU_SetCurrentRenderer(GPU_RendererID id)
 {
@@ -211,7 +221,7 @@ void GPU_MakeCurrent(GPU_Target* target, Uint32 windowID)
 	current_renderer->MakeCurrent(current_renderer, target, windowID);
 }
 
-int GPU_ToggleFullscreen(void)
+Uint8 GPU_ToggleFullscreen(void)
 {
 	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->ToggleFullscreen == NULL)
 		return 0;
@@ -219,7 +229,7 @@ int GPU_ToggleFullscreen(void)
 	return current_renderer->ToggleFullscreen(current_renderer);
 }
 
-int GPU_SetWindowResolution(Uint16 w, Uint16 h)
+Uint8 GPU_SetWindowResolution(Uint16 w, Uint16 h)
 {
 	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->SetWindowResolution == NULL || w == 0 || h == 0)
 		return 0;
@@ -257,6 +267,9 @@ void GPU_CloseCurrentRenderer(void)
 
 void GPU_Quit(void)
 {
+    if(num_error_codes > 0)
+        GPU_LogError("GPU_Quit: %d uncleared errors.\n", num_error_codes);
+    
 	// FIXME: Remove all renderers
 	if(current_renderer == NULL)
 		return;
@@ -267,6 +280,24 @@ void GPU_Quit(void)
 	
 	if(GPU_GetNumActiveRenderers() == 0)
 		SDL_Quit();
+}
+
+
+void GPU_PushErrorCode(GPU_ErrorEnum error)
+{
+    if(num_error_codes < GPU_MAX_NUM_ERRORS)
+    {
+        error_code_stack[num_error_codes] = error;
+        num_error_codes++;
+    }
+}
+
+GPU_ErrorEnum GPU_PopErrorCode(void)
+{
+    if(num_error_codes <= 0)
+        return GPU_ERROR_NONE;
+    
+    return error_code_stack[--num_error_codes];
 }
 
 void GPU_SetError(const char* fmt, ...)
@@ -590,67 +621,121 @@ void GPU_FreeTarget(GPU_Target* target)
 
 
 
-int GPU_Blit(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y)
+void GPU_Blit(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->Blit == NULL)
-		return -2;
-	
-	return current_renderer->Blit(current_renderer, image, src_rect, target, x, y);
-}
-
-
-int GPU_BlitRotate(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float angle)
-{
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->BlitRotate == NULL)
-		return -2;
-	
-	return current_renderer->BlitRotate(current_renderer, image, src_rect, target, x, y, angle);
-}
-
-int GPU_BlitScale(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float scaleX, float scaleY)
-{
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->BlitScale == NULL)
-		return -2;
-	
-	return current_renderer->BlitScale(current_renderer, image, src_rect, target, x, y, scaleX, scaleY);
-}
-
-int GPU_BlitTransform(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float angle, float scaleX, float scaleY)
-{
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->BlitTransform == NULL)
-		return -2;
-	
-	return current_renderer->BlitTransform(current_renderer, image, src_rect, target, x, y, angle, scaleX, scaleY);
-}
-
-int GPU_BlitTransformX(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float pivot_x, float pivot_y, float angle, float scaleX, float scaleY)
-{
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->BlitTransformX == NULL)
-		return -2;
-	
-	return current_renderer->BlitTransformX(current_renderer, image, src_rect, target, x, y, pivot_x, pivot_y, angle, scaleX, scaleY);
-}
-
-int GPU_BlitTransformMatrix(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float* matrix3x3)
-{
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->BlitTransformMatrix == NULL || matrix3x3 == NULL)
-		return -2;
-	
-	return current_renderer->BlitTransformMatrix(current_renderer, image, src_rect, target, x, y, matrix3x3);
-}
-
-int GPU_BlitBatch(GPU_Image* image, GPU_Target* target, unsigned int num_sprites, float* values, GPU_BlitFlagEnum flags)
-{
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->BlitBatch == NULL)
-		return -2;
+    if(!CHECK_RENDERER)
+        RETURN_ERROR(GPU_ERROR_NULL_RENDERER);
+    if(!CHECK_CONTEXT)
+        RETURN_ERROR(GPU_ERROR_NULL_CONTEXT);
+    if(!CHECK_FUNCTION_POINTER(Blit))
+        RETURN_ERROR(GPU_ERROR_UNSUPPORTED_FUNCTION);
+    
 	if(image == NULL || target == NULL)
-		return -1;
+        RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT);
+	
+	current_renderer->Blit(current_renderer, image, src_rect, target, x, y);
+}
+
+
+void GPU_BlitRotate(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float angle)
+{
+    if(!CHECK_RENDERER)
+        RETURN_ERROR(GPU_ERROR_NULL_RENDERER);
+    if(!CHECK_CONTEXT)
+        RETURN_ERROR(GPU_ERROR_NULL_CONTEXT);
+    if(!CHECK_FUNCTION_POINTER(BlitRotate))
+        RETURN_ERROR(GPU_ERROR_UNSUPPORTED_FUNCTION);
+    
+	if(image == NULL || target == NULL)
+        RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT);
+	
+	current_renderer->BlitRotate(current_renderer, image, src_rect, target, x, y, angle);
+}
+
+void GPU_BlitScale(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float scaleX, float scaleY)
+{
+    if(!CHECK_RENDERER)
+        RETURN_ERROR(GPU_ERROR_NULL_RENDERER);
+    if(!CHECK_CONTEXT)
+        RETURN_ERROR(GPU_ERROR_NULL_CONTEXT);
+    if(!CHECK_FUNCTION_POINTER(BlitScale))
+        RETURN_ERROR(GPU_ERROR_UNSUPPORTED_FUNCTION);
+    
+	if(image == NULL || target == NULL)
+        RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT);
+	
+	current_renderer->BlitScale(current_renderer, image, src_rect, target, x, y, scaleX, scaleY);
+}
+
+void GPU_BlitTransform(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float angle, float scaleX, float scaleY)
+{
+    if(!CHECK_RENDERER)
+        RETURN_ERROR(GPU_ERROR_NULL_RENDERER);
+    if(!CHECK_CONTEXT)
+        RETURN_ERROR(GPU_ERROR_NULL_CONTEXT);
+    if(!CHECK_FUNCTION_POINTER(BlitTransform))
+        RETURN_ERROR(GPU_ERROR_UNSUPPORTED_FUNCTION);
+    
+	if(image == NULL || target == NULL)
+        RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT);
+	
+	current_renderer->BlitTransform(current_renderer, image, src_rect, target, x, y, angle, scaleX, scaleY);
+}
+
+void GPU_BlitTransformX(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float pivot_x, float pivot_y, float angle, float scaleX, float scaleY)
+{
+    if(!CHECK_RENDERER)
+        RETURN_ERROR(GPU_ERROR_NULL_RENDERER);
+    if(!CHECK_CONTEXT)
+        RETURN_ERROR(GPU_ERROR_NULL_CONTEXT);
+    if(!CHECK_FUNCTION_POINTER(BlitTransformX))
+        RETURN_ERROR(GPU_ERROR_UNSUPPORTED_FUNCTION);
+    
+	if(image == NULL || target == NULL)
+        RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT);
+	
+	current_renderer->BlitTransformX(current_renderer, image, src_rect, target, x, y, pivot_x, pivot_y, angle, scaleX, scaleY);
+}
+
+void GPU_BlitTransformMatrix(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float* matrix3x3)
+{
+    if(!CHECK_RENDERER)
+        RETURN_ERROR(GPU_ERROR_NULL_RENDERER);
+    if(!CHECK_CONTEXT)
+        RETURN_ERROR(GPU_ERROR_NULL_CONTEXT);
+    if(!CHECK_FUNCTION_POINTER(BlitTransformMatrix))
+        RETURN_ERROR(GPU_ERROR_UNSUPPORTED_FUNCTION);
+    
+	if(image == NULL || target == NULL)
+        RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT);
+    
+    if(matrix3x3 == NULL)
+		return;
+	
+	current_renderer->BlitTransformMatrix(current_renderer, image, src_rect, target, x, y, matrix3x3);
+}
+
+void GPU_BlitBatch(GPU_Image* image, GPU_Target* target, unsigned int num_sprites, float* values, GPU_BlitFlagEnum flags)
+{
+    if(!CHECK_RENDERER)
+        RETURN_ERROR(GPU_ERROR_NULL_RENDERER);
+    if(!CHECK_CONTEXT)
+        RETURN_ERROR(GPU_ERROR_NULL_CONTEXT);
+    if(!CHECK_FUNCTION_POINTER(BlitBatch))
+        RETURN_ERROR(GPU_ERROR_UNSUPPORTED_FUNCTION);
+    
+	if(image == NULL || target == NULL)
+        RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT);
+    
     if(num_sprites == 0)
-        return 0;
+        return;
     
     // Is it already in the right format?
     if((flags & GPU_PASSTHROUGH_ALL) == GPU_PASSTHROUGH_ALL || values == NULL)
-        return current_renderer->BlitBatch(current_renderer, image, target, num_sprites, values, flags);
+    {
+        current_renderer->BlitBatch(current_renderer, image, target, num_sprites, values, flags);
+        return;
+    }
 	
 	// Conversion time...
 	
@@ -673,7 +758,8 @@ int GPU_BlitBatch(GPU_Image* image, GPU_Target* target, unsigned int num_sprites
 	if(flags & GPU_PASSTHROUGH_ALL && (flags & GPU_PASSTHROUGH_ALL) != GPU_PASSTHROUGH_ALL)
     {
         GPU_LogError("GPU_BlitBatch: Cannot interpret interleaved data using partial passthrough.\n");
-        return -1;
+        GPU_PushErrorCode(GPU_ERROR_USER_ERROR);
+        return;
     }
 	
 	if(pass_vertices)
@@ -921,24 +1007,32 @@ int GPU_BlitBatch(GPU_Image* image, GPU_Target* target, unsigned int num_sprites
         }
     }
     
-	int result = current_renderer->BlitBatch(current_renderer, image, target, num_sprites, new_values, flags | GPU_PASSTHROUGH_ALL);
+	current_renderer->BlitBatch(current_renderer, image, target, num_sprites, new_values, flags | GPU_PASSTHROUGH_ALL);
 	
 	free(new_values);
-	return result;
 }
 
-int GPU_BlitBatchSeparate(GPU_Image* image, GPU_Target* target, unsigned int num_sprites, float* positions, float* src_rects, float* colors, GPU_BlitFlagEnum flags)
+void GPU_BlitBatchSeparate(GPU_Image* image, GPU_Target* target, unsigned int num_sprites, float* positions, float* src_rects, float* colors, GPU_BlitFlagEnum flags)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->BlitBatch == NULL)
-		return -2;
+    if(!CHECK_RENDERER)
+        RETURN_ERROR(GPU_ERROR_NULL_RENDERER);
+    if(!CHECK_CONTEXT)
+        RETURN_ERROR(GPU_ERROR_NULL_CONTEXT);
+    if(!CHECK_FUNCTION_POINTER(BlitBatch))
+        RETURN_ERROR(GPU_ERROR_UNSUPPORTED_FUNCTION);
+    
 	if(image == NULL || target == NULL)
-		return -1;
+        RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT);
+    
     if(num_sprites == 0)
-        return 0;
+        return;
     
     // No data to repack?  Skip it.
     if(positions == NULL && src_rects == NULL && colors == NULL)
-        return current_renderer->BlitBatch(current_renderer, image, target, num_sprites, NULL, flags);
+    {
+        current_renderer->BlitBatch(current_renderer, image, target, num_sprites, NULL, flags);
+        return;
+    }
 	
 	// Repack the given arrays into an interleaved array for more efficient access
 	// Default values: Each sprite is defined by a position, a rect, and a color.
@@ -1172,24 +1266,31 @@ int GPU_BlitBatchSeparate(GPU_Image* image, GPU_Target* target, unsigned int num
         }
     }
 	
-	int result = current_renderer->BlitBatch(current_renderer, image, target, num_sprites, values, flags | GPU_PASSTHROUGH_ALL);
+	current_renderer->BlitBatch(current_renderer, image, target, num_sprites, values, flags | GPU_PASSTHROUGH_ALL);
 	free(values);
-	
-	return result;
 }
 
-int GPU_TriangleBatch(GPU_Image* image, GPU_Target* target, int num_vertices, float* values, int num_indices, unsigned short* indices, GPU_BlitFlagEnum flags)
+void GPU_TriangleBatch(GPU_Image* image, GPU_Target* target, int num_vertices, float* values, int num_indices, unsigned short* indices, GPU_BlitFlagEnum flags)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->TriangleBatch == NULL)
-		return -2;
+    if(!CHECK_RENDERER)
+        RETURN_ERROR(GPU_ERROR_NULL_RENDERER);
+    if(!CHECK_CONTEXT)
+        RETURN_ERROR(GPU_ERROR_NULL_CONTEXT);
+    if(!CHECK_FUNCTION_POINTER(TriangleBatch))
+        RETURN_ERROR(GPU_ERROR_UNSUPPORTED_FUNCTION);
+    
 	if(image == NULL || target == NULL)
-		return -1;
+        RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT);
+    
     if(num_vertices == 0)
-        return 0;
+        return;
     
     // Is it already in the right format?
     if((flags & GPU_PASSTHROUGH_ALL) == GPU_PASSTHROUGH_ALL || values == NULL)
-        return current_renderer->TriangleBatch(current_renderer, image, target, num_vertices, values, num_indices, indices, flags);
+    {
+        current_renderer->TriangleBatch(current_renderer, image, target, num_vertices, values, num_indices, indices, flags);
+        return;
+    }
 	
 	// Conversion time...
 	
@@ -1300,10 +1401,9 @@ int GPU_TriangleBatch(GPU_Image* image, GPU_Target* target, int num_vertices, fl
         }
     }
     
-	int result = current_renderer->TriangleBatch(current_renderer, image, target, num_vertices, new_values, num_indices, indices, flags | GPU_PASSTHROUGH_ALL);
+	current_renderer->TriangleBatch(current_renderer, image, target, num_vertices, new_values, num_indices, indices, flags | GPU_PASSTHROUGH_ALL);
 	
 	free(new_values);
-	return result;
 }
 
 
