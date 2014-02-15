@@ -1139,15 +1139,28 @@ static void Quit(GPU_Renderer* renderer)
 
 
 
-static Uint8 ToggleFullscreen(GPU_Renderer* renderer)
+static Uint8 ToggleFullscreen(GPU_Renderer* renderer, Uint8 use_desktop_resolution)
 {
 #ifdef SDL_GPU_USE_SDL2
-    Uint8 enable = !(SDL_GetWindowFlags(SDL_GetWindowFromID(renderer->current_context_target->context->windowID)) & SDL_WINDOW_FULLSCREEN);
-
-    if(SDL_SetWindowFullscreen(SDL_GetWindowFromID(renderer->current_context_target->context->windowID), enable) < 0)
-        return !enable;
-
-    return enable;
+    Uint8 was_fullscreen = (SDL_GetWindowFlags(SDL_GetWindowFromID(renderer->current_context_target->context->windowID)) & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP));
+    
+    Uint32 flags = 0;
+    if(!was_fullscreen)
+    {
+        if(use_desktop_resolution)
+            flags = SDL_WINDOW_FULLSCREEN_DESKTOP;
+        else
+            flags = SDL_WINDOW_FULLSCREEN;
+    }
+    
+    if(SDL_SetWindowFullscreen(SDL_GetWindowFromID(renderer->current_context_target->context->windowID), flags) >= 0)
+        was_fullscreen = 1;
+    
+    int w, h;
+    SDL_GetWindowSize(SDL_GetWindowFromID(renderer->current_context_target->context->windowID), &w, &h);
+    renderer->SetWindowResolution(renderer, w, h);
+    
+    return was_fullscreen;
 #else
     SDL_Surface* surf = SDL_GetVideoSurface();
 

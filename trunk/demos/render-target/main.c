@@ -73,6 +73,10 @@ int main(int argc, char* argv[])
 					if(mode > 1)
                         mode = 0;
                 }
+				else if(event.key.keysym.sym == SDLK_f)
+                    GPU_ToggleFullscreen(0);
+				else if(event.key.keysym.sym == SDLK_g)
+                    GPU_ToggleFullscreen(1);
 			}
 		}
 		

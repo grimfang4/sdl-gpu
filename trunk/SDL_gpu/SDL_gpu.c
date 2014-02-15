@@ -221,12 +221,12 @@ void GPU_MakeCurrent(GPU_Target* target, Uint32 windowID)
 	current_renderer->MakeCurrent(current_renderer, target, windowID);
 }
 
-Uint8 GPU_ToggleFullscreen(void)
+Uint8 GPU_ToggleFullscreen(Uint8 use_desktop_resolution)
 {
 	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->ToggleFullscreen == NULL)
 		return 0;
 	
-	return current_renderer->ToggleFullscreen(current_renderer);
+	return current_renderer->ToggleFullscreen(current_renderer, use_desktop_resolution);
 }
 
 Uint8 GPU_SetWindowResolution(Uint16 w, Uint16 h)
