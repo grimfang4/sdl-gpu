@@ -397,7 +397,7 @@ struct GPU_Renderer
 	void (*Quit)(GPU_Renderer* renderer);
 	
 	/*! \see GPU_ToggleFullscreen() */
-	Uint8 (*ToggleFullscreen)(GPU_Renderer* renderer);
+	Uint8 (*ToggleFullscreen)(GPU_Renderer* renderer, Uint8 use_desktop_resolution);
 
 	/*! \see GPU_SetCamera() */
 	GPU_Camera (*SetCamera)(GPU_Renderer* renderer, GPU_Target* target, GPU_Camera* cam);
@@ -729,8 +729,9 @@ void GPU_GetVirtualCoords(GPU_Target* target, float* x, float* y, float displayX
 
 /*! Enable/disable fullscreen mode for the current window.
  * On some platforms, this may destroy the renderer context and require that textures be reloaded.
+ * \param use_desktop_resolution If true, lets the window change its resolution when it enters fullscreen mode (via SDL_WINDOW_FULLSCREEN_DESKTOP).
  * \return 0 if the new mode is windowed, 1 if the new mode is fullscreen.  */
-Uint8 GPU_ToggleFullscreen(void);
+Uint8 GPU_ToggleFullscreen(Uint8 use_desktop_resolution);
 
 
 // Renderer controls
