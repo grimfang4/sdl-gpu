@@ -732,6 +732,8 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     
     // Store the window info
     SDL_GetWindowSize(window, &target->context->window_w, &target->context->window_h);
+    target->context->stored_window_w = target->context->window_w;
+    target->context->stored_window_h = target->context->window_h;
     target->context->windowID = SDL_GetWindowID(window);
     
     // Make a new context if needed and make it current
@@ -763,6 +765,8 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     target->context->windowID = 0;
     target->context->window_w = screen->w;
     target->context->window_h = screen->h;
+    target->context->stored_window_w = target->context->window_w;
+    target->context->stored_window_h = target->context->window_h;
     
     renderer->MakeCurrent(renderer, target, target->context->windowID);
     
@@ -1046,9 +1050,12 @@ static void SetAsCurrent(GPU_Renderer* renderer)
 
 static Uint8 SetWindowResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
 {
+    GPU_Target* target = renderer->current_context_target;
 #ifdef SDL_GPU_USE_SDL2
-    SDL_SetWindowSize(SDL_GetWindowFromID(renderer->current_context_target->context->windowID), w, h);
-    SDL_GetWindowSize(SDL_GetWindowFromID(renderer->current_context_target->context->windowID), &renderer->current_context_target->context->window_w, &renderer->current_context_target->context->window_h);
+    
+    SDL_SetWindowSize(SDL_GetWindowFromID(target->context->windowID), w, h);
+    SDL_GetWindowSize(SDL_GetWindowFromID(target->context->windowID), &target->context->window_w, &target->context->window_h);
+    
 #else
     SDL_Surface* surf = SDL_GetVideoSurface();
     Uint32 flags = surf->flags;
@@ -1061,19 +1068,22 @@ static Uint8 SetWindowResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
     if(screen == NULL)
         return 0;
 
-    renderer->current_context_target->context->window_w = screen->w;
-    renderer->current_context_target->context->window_h = screen->h;
+    target->context->window_w = screen->w;
+    target->context->window_h = screen->h;
 #endif
 
-    Uint16 virtualW = renderer->current_context_target->w;
-    Uint16 virtualH = renderer->current_context_target->h;
+    target->context->stored_window_w = target->context->window_w;
+    target->context->stored_window_h = target->context->window_h;
+
+    Uint16 virtualW = target->w;
+    Uint16 virtualH = target->h;
     
     // FIXME: This might interfere with cameras or be ruined by them.
     glEnable( GL_TEXTURE_2D );
     glClearColor( 0.0f, 0.0f, 0.0f, 0.0f );
 
-    renderer->current_context_target->viewport = GPU_MakeRect(0, 0, w, h);
-    changeViewport(renderer->current_context_target);
+    target->viewport = GPU_MakeRect(0, 0, w, h);
+    changeViewport(target);
 
     glClear( GL_COLOR_BUFFER_BIT );
 
@@ -1086,7 +1096,7 @@ static Uint8 SetWindowResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
     GPU_LoadIdentity();
 
     // Update display
-    GPU_ClearClip(renderer->current_context_target);
+    GPU_ClearClip(target);
 
     return 1;
 }
@@ -1142,10 +1152,12 @@ static void Quit(GPU_Renderer* renderer)
 static Uint8 ToggleFullscreen(GPU_Renderer* renderer, Uint8 use_desktop_resolution)
 {
 #ifdef SDL_GPU_USE_SDL2
-    Uint8 was_fullscreen = (SDL_GetWindowFlags(SDL_GetWindowFromID(renderer->current_context_target->context->windowID)) & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP));
+    GPU_Target* target = renderer->current_context_target;
+    Uint32 old_flags = SDL_GetWindowFlags(SDL_GetWindowFromID(target->context->windowID));
+    Uint8 is_fullscreen = (old_flags & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP));
     
     Uint32 flags = 0;
-    if(!was_fullscreen)
+    if(!is_fullscreen)
     {
         if(use_desktop_resolution)
             flags = SDL_WINDOW_FULLSCREEN_DESKTOP;
@@ -1153,14 +1165,42 @@ static Uint8 ToggleFullscreen(GPU_Renderer* renderer, Uint8 use_desktop_resoluti
             flags = SDL_WINDOW_FULLSCREEN;
     }
     
-    if(SDL_SetWindowFullscreen(SDL_GetWindowFromID(renderer->current_context_target->context->windowID), flags) >= 0)
-        was_fullscreen = 1;
+    int w = target->context->window_w;
+    int h = target->context->window_h;
     
-    int w, h;
-    SDL_GetWindowSize(SDL_GetWindowFromID(renderer->current_context_target->context->windowID), &w, &h);
-    renderer->SetWindowResolution(renderer, w, h);
+    if(SDL_SetWindowFullscreen(SDL_GetWindowFromID(target->context->windowID), flags) >= 0)
+    {
+        flags = SDL_GetWindowFlags(SDL_GetWindowFromID(target->context->windowID));
+        is_fullscreen = (flags & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP));
+        
+        // If we just went fullscreen desktop, save the original resolution
+        if(is_fullscreen && (flags & SDL_WINDOW_FULLSCREEN_DESKTOP))
+        {
+            target->context->stored_window_w = w;
+            target->context->stored_window_h = h;
+        }
+        
+        // Save original dimensions
+        int stored_w = target->context->stored_window_w;
+        int stored_h = target->context->stored_window_h;
+        
+        // If we're in windowed mode now and a resolution was stored, restore the original window resolution
+        if(!is_fullscreen && (stored_w != 0 || stored_h != 0))
+        {
+            w = stored_w;
+            h = stored_h;
+        }
+        else
+            SDL_GetWindowSize(SDL_GetWindowFromID(target->context->windowID), &w, &h);
+        
+        renderer->SetWindowResolution(renderer, w, h);
+        
+        // SetWindowResolution() resets the stored dimensions.
+        target->context->stored_window_w = stored_w;
+        target->context->stored_window_h = stored_h;
+    }
     
-    return was_fullscreen;
+    return is_fullscreen;
 #else
     SDL_Surface* surf = SDL_GetVideoSurface();
 

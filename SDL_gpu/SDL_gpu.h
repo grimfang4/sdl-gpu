@@ -171,6 +171,10 @@ typedef struct GPU_Context
 	int window_w;
 	int window_h;
 	
+	/*! Window dimensions for restoring windowed mode after GPU_ToggleFullscreen(1). */
+	int stored_window_w;
+	int stored_window_h;
+	
 	/*! Internal state */
 	Uint32 current_shader_program;
 	Uint32 default_textured_shader_program;
