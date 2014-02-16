@@ -17,6 +17,8 @@ void GPU_InitRendererRegister(void);
 
 static GPU_Renderer* current_renderer = NULL;
 
+static GPU_DebugLevelEnum debug_level = GPU_DEBUG_LEVEL_0;
+
 #define GPU_MAX_NUM_ERRORS 30
 static GPU_ErrorObject error_code_stack[GPU_MAX_NUM_ERRORS];
 static int num_error_codes = 0;
@@ -50,9 +52,9 @@ void GPU_LogInfo(const char* format, ...)
 	va_list args;
 	va_start(args, format);
 	#ifdef __ANDROID__
-		__android_log_vprint(ANDROID_LOG_INFO, "APPLICATION", format, args);
+		__android_log_vprint((GPU_GetDebugLevel() >= GPU_DEBUG_LEVEL_3? ANDROID_LOG_ERROR : ANDROID_LOG_INFO), "APPLICATION", format, args);
 	#else
-		vprintf(format, args);
+		vfprintf((GPU_GetDebugLevel() >= GPU_DEBUG_LEVEL_3? stderr : stdout), format, args);
 	#endif
 	va_end(args);
 #endif
@@ -64,9 +66,9 @@ void GPU_LogWarning(const char* format, ...)
 	va_list args;
 	va_start(args, format);
 	#ifdef __ANDROID__
-		__android_log_vprint(ANDROID_LOG_WARN, "APPLICATION", format, args);
+		__android_log_vprint((GPU_GetDebugLevel() >= GPU_DEBUG_LEVEL_2? ANDROID_LOG_ERROR : ANDROID_LOG_WARN), "APPLICATION", format, args);
 	#else
-		vprintf(format, args);
+		vfprintf((GPU_GetDebugLevel() >= GPU_DEBUG_LEVEL_2? stderr : stdout), format, args);
 	#endif
 	va_end(args);
 #endif
@@ -79,7 +81,7 @@ void GPU_LogError(const char* format, ...)
 	#ifdef __ANDROID__
 		__android_log_vprint(ANDROID_LOG_ERROR, "APPLICATION", format, args);
 	#else
-		vprintf(format, args);
+		vfprintf(stderr, format, args);
 	#endif
 	va_end(args);
 }
@@ -267,9 +269,8 @@ void GPU_CloseCurrentRenderer(void)
 
 void GPU_Quit(void)
 {
-    // TODO: Add debug level to enable this
-    /*if(num_error_codes > 0)
-        GPU_LogError("GPU_Quit: %d uncleared errors.\n", num_error_codes);*/
+    if(num_error_codes > 0 && GPU_GetDebugLevel() >= GPU_DEBUG_LEVEL_1)
+        GPU_LogError("GPU_Quit: %d uncleared errors.\n", num_error_codes);
     
 	// FIXME: Remove all renderers
 	if(current_renderer == NULL)
@@ -283,9 +284,31 @@ void GPU_Quit(void)
 		SDL_Quit();
 }
 
+void GPU_SetDebugLevel(GPU_DebugLevelEnum level)
+{
+    if(level < 0)
+        level = GPU_DEBUG_LEVEL_0;
+    else if(level > GPU_DEBUG_LEVEL_MAX)
+        level = GPU_DEBUG_LEVEL_MAX;
+    debug_level = level;
+}
+
+GPU_DebugLevelEnum GPU_GetDebugLevel(void)
+{
+    return debug_level;
+}
 
 void GPU_PushErrorCode(const char* function, GPU_ErrorEnum error, const char* details)
 {
+    if(GPU_GetDebugLevel() >= GPU_DEBUG_LEVEL_1)
+    {
+        // Print the message
+        if(details != NULL)
+            GPU_LogError("%s: %s - %s\n", (function == NULL? "NULL" : function), GPU_GetErrorString(error), details);
+        else
+            GPU_LogError("%s: %s\n", (function == NULL? "NULL" : function), GPU_GetErrorString(error));
+    }
+    
     if(num_error_codes < GPU_MAX_NUM_ERRORS)
     {
         GPU_ErrorObject e = {function, error, details};
@@ -305,15 +328,26 @@ GPU_ErrorObject GPU_PopErrorCode(void)
     return error_code_stack[--num_error_codes];
 }
 
-void GPU_SetError(const char* fmt, ...)
+const char* GPU_GetErrorString(GPU_ErrorEnum error)
 {
-	// FIXME: Parse varargs here
-	SDL_SetError("%s", fmt);
-}
-
-const char* GPU_GetErrorString(void)
-{
-	return SDL_GetError();
+    switch(error)
+    {
+        case GPU_ERROR_NONE:
+            return "NO ERROR";
+        case GPU_ERROR_BACKEND_ERROR:
+            return "BACKEND ERROR";
+        case GPU_ERROR_DATA_ERROR:
+            return "DATA ERROR";
+        case GPU_ERROR_USER_ERROR:
+            return "USER ERROR";
+        case GPU_ERROR_UNSUPPORTED_FUNCTION:
+            return "UNSUPPORTED FUNCTION";
+        case GPU_ERROR_NULL_ARGUMENT:
+            return "NULL ARGUMENT";
+        case GPU_ERROR_FILE_NOT_FOUND:
+            return "FILE NOT FOUND";
+    }
+    return "UNKNOWN ERROR";
 }
 
 

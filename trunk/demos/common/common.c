@@ -2,6 +2,8 @@
 
 void printRenderers(void)
 {
+    GPU_SetDebugLevel(GPU_DEBUG_LEVEL_MAX);
+    
 	GPU_RendererID renderers[GPU_GetNumRegisteredRenderers()];
 	GPU_GetRegisteredRendererList(renderers);
 	
