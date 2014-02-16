@@ -616,7 +616,7 @@ static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request,
 
         if(window == NULL)
         {
-            GPU_LogError("Window creation failed.\n");
+            GPU_PushErrorCode("GPU_Init", GPU_ERROR_BACKEND_ERROR, "Window creation failed.");
             return NULL;
         }
         
@@ -826,7 +826,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
             renderer->id.minor_version = 0;
         #endif
         
-        GPU_LogError("Failed to parse OpenGL version string: %s\n  Defaulting to version %d.%d.\n", version_string, renderer->id.major_version, renderer->id.minor_version);
+        GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Failed to parse OpenGL version string");
     }
     #else
     // GLES doesn't have GL_MAJOR_VERSION.  Check via version string instead.
@@ -844,7 +844,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
                 renderer->id.minor_version = 0;
             #endif
             
-            GPU_LogError("Failed to parse OpenGLES version string: %s\n  Defaulting to version %d.%d.\n", version_string, renderer->id.major_version, renderer->id.minor_version);
+            GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Failed to parse OpenGL version string");
         }
     }
     #endif
@@ -853,7 +853,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     if(renderer->id.major_version < renderer->requested_id.major_version)
     {
 		#ifdef SDL_GPU_USE_GLES
-			GPU_LogError("GPU_Init failed: Renderer %s can not be run by the version %d.%d library that is linked.\n", GPU_GetRendererEnumString(renderer->requested_id.id), renderer->id.major_version, renderer->id.minor_version);
+            GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Renderer is incompatible with the available OpenGL runtime library.");
 		#endif
         return NULL;
     }
@@ -863,7 +863,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     GPU_FeatureEnum required_features = (renderer->GPU_init_flags & GPU_FEATURE_MASK);
     if(!renderer->IsFeatureEnabled(renderer, required_features))
     {
-        GPU_LogError("Error: Renderer %s does not support required features.\n", GPU_GetRendererEnumString(renderer->id.id));
+        GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Renderer does not support required features.");
         return NULL;
     }
     
@@ -923,17 +923,26 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     Uint32 v = renderer->CompileShader(renderer, GPU_VERTEX_SHADER, GPU_DEFAULT_TEXTURED_VERTEX_SHADER_SOURCE);
     
     if(!v)
-        GPU_LogError("Failed to load default textured vertex shader: %s\n", renderer->GetShaderMessage(renderer));
+    {
+        GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Failed to load default textured vertex shader.");
+        return NULL;
+    }
     
     Uint32 f = renderer->CompileShader(renderer, GPU_FRAGMENT_SHADER, GPU_DEFAULT_TEXTURED_FRAGMENT_SHADER_SOURCE);
     
     if(!f)
-        GPU_LogError("Failed to load default textured fragment shader: %s\n", renderer->GetShaderMessage(renderer));
+    {
+        GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Failed to load default textured fragment shader.");
+        return NULL;
+    }
     
     Uint32 p = renderer->LinkShaders(renderer, v, f);
     
     if(!p)
-        GPU_LogError("Failed to link default textured shader program: %s\n", renderer->GetShaderMessage(renderer));
+    {
+        GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Failed to link default textured shader program.");
+        return NULL;
+    }
     
     target->context->default_textured_shader_program = p;
     
@@ -946,17 +955,26 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     v = renderer->CompileShader(renderer, GPU_VERTEX_SHADER, GPU_DEFAULT_UNTEXTURED_VERTEX_SHADER_SOURCE);
     
     if(!v)
-        GPU_LogError("Failed to load default untextured vertex shader: %s\n", renderer->GetShaderMessage(renderer));
+    {
+        GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Failed to load default untextured vertex shader.");
+        return NULL;
+    }
     
     f = renderer->CompileShader(renderer, GPU_FRAGMENT_SHADER, GPU_DEFAULT_UNTEXTURED_FRAGMENT_SHADER_SOURCE);
     
     if(!f)
-        GPU_LogError("Failed to load default untextured fragment shader: %s\n", renderer->GetShaderMessage(renderer));
+    {
+        GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Failed to load default untextured fragment shader.");
+        return NULL;
+    }
     
     p = renderer->LinkShaders(renderer, v, f);
     
     if(!p)
-        GPU_LogError("Failed to link default untextured shader program: %s\n", renderer->GetShaderMessage(renderer));
+    {
+        GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Failed to link default untextured shader program.");
+        return NULL;
+    }
     
     glUseProgram(p);
     
@@ -1220,7 +1238,7 @@ static GPU_Camera SetCamera(GPU_Renderer* renderer, GPU_Target* target, GPU_Came
 {
     if(target == NULL)
     {
-        GPU_PushErrorCode(GPU_ERROR_NULL_ARGUMENT);
+        GPU_PushErrorCode("GPU_SetCamera", GPU_ERROR_NULL_ARGUMENT, "target");
         return GPU_GetDefaultCamera();
     }
     
@@ -1254,7 +1272,7 @@ static GPU_Image* CreateUninitializedImage(GPU_Renderer* renderer, Uint16 w, Uin
 {
     if(channels < 3 || channels > 4)
     {
-        GPU_LogError("GPU_CreateUninitializedImage() could not create an image with %d color channels.  Try 3 or 4 instead.\n", channels);
+        GPU_PushErrorCode("GPU_CreateUninitializedImage", GPU_ERROR_DATA_ERROR, "Unsupported number of color channels");
         return NULL;
     }
 
@@ -1268,7 +1286,7 @@ static GPU_Image* CreateUninitializedImage(GPU_Renderer* renderer, Uint16 w, Uin
     glGenTextures( 1, &handle );
     if(handle == 0)
     {
-        GPU_LogError("GPU_CreateUninitializedImage() failed to generate a texture handle.\n");
+        GPU_PushErrorCode("GPU_CreateUninitializedImage", GPU_ERROR_BACKEND_ERROR, "Failed to generate a texture handle.");
         return NULL;
     }
 
@@ -1319,7 +1337,7 @@ static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint8 
 {
     if(channels < 3 || channels > 4)
     {
-        GPU_LogError("GPU_CreateImage() could not create an image with %d color channels.  Try 3 or 4 instead.\n", channels);
+        GPU_PushErrorCode("GPU_CreateImage", GPU_ERROR_DATA_ERROR, "Unsupported number of color channels");
         return NULL;
     }
 
@@ -1327,7 +1345,7 @@ static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint8 
 
     if(result == NULL)
     {
-        GPU_LogError("GPU_CreateImage() could not create %ux%ux%u image.\n", w, h, channels);
+        GPU_PushErrorCode("GPU_CreateImage", GPU_ERROR_BACKEND_ERROR, "Could not create image as requested.");
         return NULL;
     }
 
@@ -1360,7 +1378,7 @@ static GPU_Image* LoadImage(GPU_Renderer* renderer, const char* filename)
     SDL_Surface* surface = GPU_LoadSurface(filename);
     if(surface == NULL)
     {
-        GPU_LogError("Failed to load image \"%s\"\n", filename);
+        GPU_PushErrorCode("GPU_LoadImage", GPU_ERROR_DATA_ERROR, "Failed to load image data.");
         return NULL;
     }
 
@@ -1506,7 +1524,7 @@ static Uint8 SaveImage(GPU_Renderer* renderer, GPU_Image* image, const char* fil
 
     if(data == NULL)
     {
-        GPU_LogError("GPU_SaveImage() failed: Could not retrieve image data.\n");
+        GPU_PushErrorCode("GPU_SaveImage", GPU_ERROR_BACKEND_ERROR, "Could not retrieve texture data.");
         return 0;
     }
 
@@ -1516,11 +1534,9 @@ static Uint8 SaveImage(GPU_Renderer* renderer, GPU_Image* image, const char* fil
         result = stbi_write_bmp(filename, image->w, image->h, image->channels, (void*)data);
     else if(SDL_strcasecmp(extension, "tga") == 0)
         result = stbi_write_tga(filename, image->w, image->h, image->channels, (void*)data);
-    //else if(SDL_strcasecmp(extension, "dds") == 0)
-    //    result = stbi_write_dds(filename, image->w, image->h, image->channels, (const unsigned char *const)data);
     else
     {
-        GPU_LogError("GPU_SaveImage() failed: Unsupported format (%s).\n", extension);
+        GPU_PushErrorCode("GPU_SaveImage", GPU_ERROR_DATA_ERROR, "Unsupported output file format");
         result = 0;
     }
 
@@ -1533,14 +1549,22 @@ static SDL_Surface* CopySurfaceFromTarget(GPU_Renderer* renderer, GPU_Target* ta
     unsigned char* data;
     SDL_Surface* result;
 
-    if(target == NULL || target->w < 1 || target->h < 1)
+    if(target == NULL)
+    {
+        GPU_PushErrorCode("GPU_CopySurfaceFromTarget", GPU_ERROR_NULL_ARGUMENT, "target");
         return NULL;
+    }
+    if(target->w < 1 || target->h < 1)
+    {
+        GPU_PushErrorCode("GPU_CopySurfaceFromTarget", GPU_ERROR_DATA_ERROR, "Invalid target dimensions");
+        return NULL;
+    }
 
     data = getRawTargetData(renderer, target);
 
     if(data == NULL)
     {
-        GPU_LogError("GPU_CopySurfaceFromTarget() failed: Could not retrieve target data.\n");
+        GPU_PushErrorCode("GPU_CopySurfaceFromTarget", GPU_ERROR_BACKEND_ERROR, "Could not retrieve target data.");
         return NULL;
     }
     
@@ -1557,14 +1581,22 @@ static SDL_Surface* CopySurfaceFromImage(GPU_Renderer* renderer, GPU_Image* imag
     unsigned char* data;
     SDL_Surface* result;
 
-    if(image == NULL || image->w < 1 || image->h < 1)
+    if(image == NULL)
+    {
+        GPU_PushErrorCode("GPU_CopySurfaceFromImage", GPU_ERROR_NULL_ARGUMENT, "image");
         return NULL;
+    }
+    if(image->w < 1 || image->h < 1)
+    {
+        GPU_PushErrorCode("GPU_CopySurfaceFromImage", GPU_ERROR_DATA_ERROR, "Invalid image dimensions");
+        return NULL;
+    }
 
     data = getRawImageData(renderer, image);
 
     if(data == NULL)
     {
-        GPU_LogError("GPU_CopySurfaceFromImage() failed: Could not retrieve image data.\n");
+        GPU_PushErrorCode("GPU_CopySurfaceFromImage", GPU_ERROR_BACKEND_ERROR, "Could not retrieve target data.");
         return NULL;
     }
     
@@ -1654,7 +1686,7 @@ static int compareFormats(GPU_Renderer* renderer, GLenum glFormat, SDL_Surface* 
 #endif
         return 1;
     default:
-        GPU_LogError("GPU_UpdateImage() was passed an image with an invalid format.\n");
+        GPU_PushErrorCode("GPU_CompareFormats", GPU_ERROR_DATA_ERROR, "Invalid texture format");
         return -1;
     }
 }
@@ -1731,7 +1763,7 @@ static int compareFormats(GPU_Renderer* renderer, GLenum glFormat, SDL_Surface* 
         }
         return 1;
     default:
-        GPU_LogError("GPU_UpdateImage() was passed an image with an invalid format.\n");
+        GPU_PushErrorCode("GPU_CompareFormats", GPU_ERROR_DATA_ERROR, "Invalid texture format");
         return -1;
     }
 }
@@ -1955,7 +1987,7 @@ static int InitImageWithSurface(GPU_Renderer* renderer, GPU_Image* image, SDL_Su
     SDL_Surface* newSurface = copySurfaceIfNeeded(renderer, internal_format, surface, &original_format);
     if(newSurface == NULL)
     {
-        GPU_LogError("GPU_InitImageWithSurface() failed to convert surface to proper pixel format.\n");
+        GPU_PushErrorCode("GPU_InitImageWithSurface", GPU_ERROR_BACKEND_ERROR, "Failed to convert surface to proper pixel format.");
         return 0;
     }
 
@@ -2049,7 +2081,7 @@ static void UpdateImage(GPU_Renderer* renderer, GPU_Image* image, const GPU_Rect
     SDL_Surface* newSurface = copySurfaceIfNeeded(renderer, data->format, surface, &original_format);
     if(newSurface == NULL)
     {
-        GPU_LogError("GPU_UpdateImage() failed to convert surface to proper pixel format.\n");
+        GPU_PushErrorCode("GPU_UpdateImage", GPU_ERROR_BACKEND_ERROR, "Failed to convert surface to proper pixel format.");
         return;
     }
 
@@ -2065,7 +2097,7 @@ static void UpdateImage(GPU_Renderer* renderer, GPU_Image* image, const GPU_Rect
         updateRect.h = newSurface->h;
         if(updateRect.w < 0.0f || updateRect.h < 0.0f)
         {
-            GPU_LogError("GPU_UpdateImage(): Given negative rect: %dx%d\n", (int)updateRect.w, (int)updateRect.h);
+            GPU_PushErrorCode("GPU_UpdateImage", GPU_ERROR_USER_ERROR, "Given negative update rectangle.");
             return;
         }
     }
@@ -2137,8 +2169,9 @@ static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surf
     GPU_Image* image;
     int channels;
 
-    if (!surface) {
-        GPU_LogError("GPU_CopyImageFromSurface() passed NULL surface.\n");
+    if(!surface)
+    {
+        GPU_PushErrorCode("GPU_CopyImageFromSurface", GPU_ERROR_NULL_ARGUMENT, "surface");
         return NULL;
     }
 
@@ -2247,7 +2280,7 @@ static void SubSurfaceCopy(GPU_Renderer* renderer, SDL_Surface* src, GPU_Rect* s
         r.h = src->h;
         if(r.w < 0.0f || r.h < 0.0f)
         {
-            GPU_LogError("GPU_SubSurfaceCopy(): Given negative rectangle: %.2fx%.2f\n", r.w, r.h);
+            GPU_PushErrorCode("GPU_SubSurfaceCopy", GPU_ERROR_USER_ERROR, "Given negative source rectangle.");
             return;
         }
     }
@@ -2260,7 +2293,7 @@ static void SubSurfaceCopy(GPU_Renderer* renderer, SDL_Surface* src, GPU_Rect* s
 
     if(temp == NULL)
     {
-        GPU_LogError("GPU_SubSurfaceCopy(): Failed to create new %dx%d RGB surface.\n", (int)r.w, (int)r.h);
+        GPU_PushErrorCode("GPU_SubSurfaceCopy", GPU_ERROR_BACKEND_ERROR, "Failed to create new surface.");
         return;
     }
 
@@ -2288,7 +2321,7 @@ static void SubSurfaceCopy(GPU_Renderer* renderer, SDL_Surface* src, GPU_Rect* s
     GPU_Image* image = GPU_CopyImageFromSurface(temp);
     if(image == NULL)
     {
-        GPU_LogError("GPU_SubSurfaceCopy(): Failed to create new image texture.\n");
+        GPU_PushErrorCode("GPU_SubSurfaceCopy", GPU_ERROR_BACKEND_ERROR, "Failed to create new image.");
         return;
     }
 
@@ -2435,21 +2468,26 @@ static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
 
 static void Blit(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y)
 {
-    if(image == NULL || target == NULL)
+    if(image == NULL)
     {
-        GPU_PushErrorCode(GPU_ERROR_NULL_ARGUMENT);
+        GPU_PushErrorCode("GPU_Blit", GPU_ERROR_NULL_ARGUMENT, "image");
+        return;
+    }
+    if(target == NULL)
+    {
+        GPU_PushErrorCode("GPU_Blit", GPU_ERROR_NULL_ARGUMENT, "target");
         return;
     }
     if(renderer != image->renderer || renderer != target->renderer)
     {
-        GPU_PushErrorCode(GPU_ERROR_MISMATCHED_RENDERER);
+        GPU_PushErrorCode("GPU_Blit", GPU_ERROR_USER_ERROR, "Mismatched renderer");
         return;
     }
     
     makeContextCurrent(renderer, target);
     if(renderer->current_context_target == NULL)
     {
-        GPU_PushErrorCode(GPU_ERROR_NULL_CONTEXT);
+        GPU_PushErrorCode("GPU_Blit", GPU_ERROR_USER_ERROR, "NULL context");
         return;
     }
 
@@ -2459,7 +2497,7 @@ static void Blit(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, G
     // Bind the FBO
     if(!bindFramebuffer(renderer, target))
     {
-        GPU_PushErrorCode(GPU_ERROR_BIND_TARGET);
+        GPU_PushErrorCode("GPU_Blit", GPU_ERROR_BACKEND_ERROR, "Failed to bind framebuffer.");
         return;
     }
     
@@ -2600,9 +2638,14 @@ static void Blit(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, G
 
 static void BlitRotate(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float degrees)
 {
-    if(image == NULL || target == NULL)
+    if(image == NULL)
     {
-        GPU_PushErrorCode(GPU_ERROR_NULL_ARGUMENT);
+        GPU_PushErrorCode("GPU_BlitRotate", GPU_ERROR_NULL_ARGUMENT, "image");
+        return;
+    }
+    if(target == NULL)
+    {
+        GPU_PushErrorCode("GPU_BlitRotate", GPU_ERROR_NULL_ARGUMENT, "target");
         return;
     }
 
@@ -2611,9 +2654,14 @@ static void BlitRotate(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_r
 
 static void BlitScale(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float scaleX, float scaleY)
 {
-    if(image == NULL || target == NULL)
+    if(image == NULL)
     {
-        GPU_PushErrorCode(GPU_ERROR_NULL_ARGUMENT);
+        GPU_PushErrorCode("GPU_BlitScale", GPU_ERROR_NULL_ARGUMENT, "image");
+        return;
+    }
+    if(target == NULL)
+    {
+        GPU_PushErrorCode("GPU_BlitScale", GPU_ERROR_NULL_ARGUMENT, "target");
         return;
     }
 
@@ -2622,9 +2670,14 @@ static void BlitScale(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_re
 
 static void BlitTransform(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float degrees, float scaleX, float scaleY)
 {
-    if(image == NULL || target == NULL)
+    if(image == NULL)
     {
-        GPU_PushErrorCode(GPU_ERROR_NULL_ARGUMENT);
+        GPU_PushErrorCode("GPU_BlitTransform", GPU_ERROR_NULL_ARGUMENT, "image");
+        return;
+    }
+    if(target == NULL)
+    {
+        GPU_PushErrorCode("GPU_BlitTransform", GPU_ERROR_NULL_ARGUMENT, "target");
         return;
     }
 
@@ -2633,14 +2686,19 @@ static void BlitTransform(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* sr
 
 static void BlitTransformX(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float pivot_x, float pivot_y, float degrees, float scaleX, float scaleY)
 {
-    if(image == NULL || target == NULL)
+    if(image == NULL)
     {
-        GPU_PushErrorCode(GPU_ERROR_NULL_ARGUMENT);
+        GPU_PushErrorCode("GPU_BlitTransformX", GPU_ERROR_NULL_ARGUMENT, "image");
+        return;
+    }
+    if(target == NULL)
+    {
+        GPU_PushErrorCode("GPU_BlitTransformX", GPU_ERROR_NULL_ARGUMENT, "target");
         return;
     }
     if(renderer != image->renderer || renderer != target->renderer)
     {
-        GPU_PushErrorCode(GPU_ERROR_MISMATCHED_RENDERER);
+        GPU_PushErrorCode("GPU_BlitTransformX", GPU_ERROR_USER_ERROR, "Mismatched renderer");
         return;
     }
 
@@ -2653,7 +2711,7 @@ static void BlitTransformX(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* s
     // Bind the FBO
     if(!bindFramebuffer(renderer, target))
     {
-        GPU_PushErrorCode(GPU_ERROR_BIND_TARGET);
+        GPU_PushErrorCode("GPU_BlitTransformX", GPU_ERROR_BACKEND_ERROR, "Failed to bind framebuffer.");
         return;
     }
     
@@ -2858,14 +2916,19 @@ static void BlitTransformX(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* s
 
 static void BlitTransformMatrix(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float* matrix3x3)
 {
-    if(image == NULL || target == NULL)
+    if(image == NULL)
     {
-        GPU_PushErrorCode(GPU_ERROR_NULL_ARGUMENT);
+        GPU_PushErrorCode("GPU_BlitTransformMatrix", GPU_ERROR_NULL_ARGUMENT, "image");
+        return;
+    }
+    if(target == NULL)
+    {
+        GPU_PushErrorCode("GPU_BlitTransformMatrix", GPU_ERROR_NULL_ARGUMENT, "target");
         return;
     }
     if(renderer != image->renderer || renderer != target->renderer)
     {
-        GPU_PushErrorCode(GPU_ERROR_MISMATCHED_RENDERER);
+        GPU_PushErrorCode("GPU_BlitTransformMatrix", GPU_ERROR_USER_ERROR, "Mismatched renderer");
         return;
     }
     
@@ -3013,14 +3076,19 @@ static int get_lowest_attribute_num_values(GPU_CONTEXT_DATA* cdata, int cap)
 // Assumes the right format
 static void BlitBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* target, unsigned int num_sprites, float* values, GPU_BlitFlagEnum flags)
 {
-    if(image == NULL || target == NULL)
+    if(image == NULL)
     {
-        GPU_PushErrorCode(GPU_ERROR_NULL_ARGUMENT);
+        GPU_PushErrorCode("GPU_BlitBatch", GPU_ERROR_NULL_ARGUMENT, "image");
+        return;
+    }
+    if(target == NULL)
+    {
+        GPU_PushErrorCode("GPU_BlitBatch", GPU_ERROR_NULL_ARGUMENT, "target");
         return;
     }
     if(renderer != image->renderer || renderer != target->renderer)
     {
-        GPU_PushErrorCode(GPU_ERROR_MISMATCHED_RENDERER);
+        GPU_PushErrorCode("GPU_BlitBatch", GPU_ERROR_USER_ERROR, "Mismatched renderer");
         return;
     }
     
@@ -3032,7 +3100,7 @@ static void BlitBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* targ
     // Bind the FBO
     if(!bindFramebuffer(renderer, target))
     {
-        GPU_PushErrorCode(GPU_ERROR_BIND_TARGET);
+        GPU_PushErrorCode("GPU_BlitBatch", GPU_ERROR_BACKEND_ERROR, "Failed to bind framebuffer.");
         return;
     }
     
@@ -3230,14 +3298,19 @@ static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* 
     if(num_vertices == 0)
         return;
     
-    if(image == NULL || target == NULL)
+    if(image == NULL)
     {
-        GPU_PushErrorCode(GPU_ERROR_NULL_ARGUMENT);
+        GPU_PushErrorCode("GPU_TriangleBatch", GPU_ERROR_NULL_ARGUMENT, "image");
+        return;
+    }
+    if(target == NULL)
+    {
+        GPU_PushErrorCode("GPU_TriangleBatch", GPU_ERROR_NULL_ARGUMENT, "target");
         return;
     }
     if(renderer != image->renderer || renderer != target->renderer)
     {
-        GPU_PushErrorCode(GPU_ERROR_MISMATCHED_RENDERER);
+        GPU_PushErrorCode("GPU_TriangleBatch", GPU_ERROR_USER_ERROR, "Mismatched renderer");
         return;
     }
     
@@ -3249,7 +3322,7 @@ static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* 
     // Bind the FBO
     if(!bindFramebuffer(renderer, target))
     {
-        GPU_PushErrorCode(GPU_ERROR_BIND_TARGET);
+        GPU_PushErrorCode("GPU_TriangleBatch", GPU_ERROR_BACKEND_ERROR, "Failed to bind framebuffer.");
         return;
     }
     
@@ -4047,7 +4120,7 @@ static Uint32 compile_shader_source(int shader_type, const char* shader_source)
     
     if(shader_object == 0)
     {
-        GPU_LogError("Failed to create new shader object.\n");
+        GPU_PushErrorCode("GPU_CompileShader", GPU_ERROR_BACKEND_ERROR, "Failed to create new shader object");
         snprintf(shader_message, 256, "Failed to create new shader object.\n");
         return 0;
     }
@@ -4062,7 +4135,7 @@ static Uint32 compile_shader_source(int shader_type, const char* shader_source)
     glGetShaderiv(shader_object, GL_COMPILE_STATUS, &compiled);
     if(!compiled)
     {
-        GPU_LogError("Failed to compile shader source.\n");
+        GPU_PushErrorCode("GPU_CompileShader", GPU_ERROR_DATA_ERROR, "Failed to compile shader source");
         glGetShaderInfoLog(shader_object, 256, NULL, shader_message);
         glDeleteShader(shader_object);
         return 0;
@@ -4082,7 +4155,7 @@ static Uint32 CompileShader_RW(GPU_Renderer* renderer, int shader_type, SDL_RWop
     int result = GetShaderSource_RW(shader_source, source_string);
     if(!result)
     {
-        GPU_LogError("Failed to read shader source.\n");
+        GPU_PushErrorCode("GPU_CompileShader", GPU_ERROR_DATA_ERROR, "Failed to read shader source");
         snprintf(shader_message, 256, "Failed to read shader source.\n");
         free(source_string);
         return 0;
@@ -4115,7 +4188,7 @@ static Uint32 LinkShaderProgram(GPU_Renderer* renderer, Uint32 program_object)
 	
 	if(!linked)
     {
-        GPU_LogError("Failed to link shader program.\n");
+        GPU_PushErrorCode("GPU_LinkShaderProgram", GPU_ERROR_BACKEND_ERROR, "Failed to link shader program");
         glGetProgramInfoLog(program_object, 256, NULL, shader_message);
         glDeleteProgram(program_object);
         return 0;
@@ -4484,7 +4557,7 @@ static void SetUniformMatrixfv(GPU_Renderer* renderer, int location, int num_mat
         return;
     if(num_rows < 2 || num_rows > 4 || num_columns < 2 || num_columns > 4)
     {
-        GPU_LogError("GPU_SetUniformMatrixfv(): Given invalid dimensions (%dx%d).\n", num_rows, num_columns);
+        GPU_PushErrorCode("GPU_SetUniformMatrixfv", GPU_ERROR_DATA_ERROR, "Given invalid dimensions");
         return;
     }
     #if defined(SDL_GPU_USE_GLES)
@@ -4497,7 +4570,7 @@ static void SetUniformMatrixfv(GPU_Renderer* renderer, int location, int num_mat
     #define glUniformMatrix4x3fv glUniformMatrix2fv
     if(num_rows != num_columns)
     {
-        GPU_LogError("GPU_SetUniformMatrixfv(): GLES renderers do not accept non-square matrices (%dx%d).\n", num_rows, num_columns);
+        GPU_PushErrorCode("GPU_SetUniformMatrixfv", GPU_ERROR_DATA_ERROR, "GLES renderers do not accept non-square matrices");
         return;
     }
     #endif
