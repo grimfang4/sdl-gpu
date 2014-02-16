@@ -1096,7 +1096,7 @@ static Uint8 SetWindowResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
     GPU_LoadIdentity();
 
     // Update display
-    GPU_ClearClip(target);
+    GPU_UnsetClip(target);
 
     return 1;
 }
@@ -1117,7 +1117,7 @@ static void SetVirtualResolution(GPU_Renderer* renderer, GPU_Target* target, Uin
         applyTargetCamera(target);
 }
 
-static void ClearVirtualResolution(GPU_Renderer* renderer, GPU_Target* target)
+static void UnsetVirtualResolution(GPU_Renderer* renderer, GPU_Target* target)
 {
     if(target == NULL)
         return;
@@ -3479,7 +3479,7 @@ static GPU_Rect SetClip(GPU_Renderer* renderer, GPU_Target* target, Sint16 x, Si
     return r;
 }
 
-static void ClearClip(GPU_Renderer* renderer, GPU_Target* target)
+static void UnsetClip(GPU_Renderer* renderer, GPU_Target* target)
 {
     if(target == NULL)
         return;
@@ -3488,11 +3488,8 @@ static void ClearClip(GPU_Renderer* renderer, GPU_Target* target)
     
     if(isCurrentTarget(renderer, target))
         renderer->FlushBlitBuffer(renderer);
+    // Leave the clip rect values intact so they can still be useful as storage
     target->use_clip_rect = 0;
-    target->clip_rect.x = 0;
-    target->clip_rect.y = 0;
-    target->clip_rect.w = target->w;
-    target->clip_rect.h = target->h;
 }
 
 
@@ -4761,7 +4758,7 @@ static void SetAttributeSource(GPU_Renderer* renderer, int num_values, GPU_Attri
     renderer->SetAsCurrent = &SetAsCurrent; \
     renderer->SetWindowResolution = &SetWindowResolution; \
     renderer->SetVirtualResolution = &SetVirtualResolution; \
-    renderer->ClearVirtualResolution = &ClearVirtualResolution; \
+    renderer->UnsetVirtualResolution = &UnsetVirtualResolution; \
     renderer->Quit = &Quit; \
  \
     renderer->ToggleFullscreen = &ToggleFullscreen; \
@@ -4795,7 +4792,7 @@ static void SetAttributeSource(GPU_Renderer* renderer, int num_values, GPU_Attri
     renderer->GenerateMipmaps = &GenerateMipmaps; \
  \
     renderer->SetClip = &SetClip; \
-    renderer->ClearClip = &ClearClip; \
+    renderer->UnsetClip = &UnsetClip; \
      \
     renderer->GetPixel = &GetPixel; \
     renderer->SetImageFilter = &SetImageFilter; \

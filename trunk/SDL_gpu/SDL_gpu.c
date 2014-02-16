@@ -246,12 +246,12 @@ void GPU_SetVirtualResolution(GPU_Target* target, Uint16 w, Uint16 h)
 	current_renderer->SetVirtualResolution(current_renderer, target, w, h);
 }
 
-void GPU_ClearVirtualResolution(GPU_Target* target)
+void GPU_UnsetVirtualResolution(GPU_Target* target)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->ClearVirtualResolution == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->UnsetVirtualResolution == NULL)
 		return;
 	
-	current_renderer->ClearVirtualResolution(current_renderer, target);
+	current_renderer->UnsetVirtualResolution(current_renderer, target);
 }
 
 void GPU_CloseCurrentRenderer(void)
@@ -1442,12 +1442,12 @@ GPU_Rect GPU_SetClip(GPU_Target* target, Sint16 x, Sint16 y, Uint16 w, Uint16 h)
 	return current_renderer->SetClip(current_renderer, target, x, y, w, h);
 }
 
-void GPU_ClearClip(GPU_Target* target)
+void GPU_UnsetClip(GPU_Target* target)
 {
-	if(target == NULL || current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->ClearClip == NULL)
+	if(target == NULL || current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->UnsetClip == NULL)
         return;
 	
-	current_renderer->ClearClip(current_renderer, target);
+	current_renderer->UnsetClip(current_renderer, target);
 }
 
 
