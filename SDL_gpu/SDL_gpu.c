@@ -11,14 +11,14 @@
 #define CHECK_RENDERER (current_renderer != NULL)
 #define CHECK_CONTEXT (current_renderer->current_context_target != NULL)
 #define CHECK_FUNCTION_POINTER(fn) (current_renderer->fn != NULL)
-#define RETURN_ERROR(code) do{ GPU_PushErrorCode(code); return; } while(0)
+#define RETURN_ERROR(code, details) do{ GPU_PushErrorCode(__func__, code, details); return; } while(0)
 
 void GPU_InitRendererRegister(void);
 
 static GPU_Renderer* current_renderer = NULL;
 
 #define GPU_MAX_NUM_ERRORS 30
-static GPU_ErrorEnum error_code_stack[GPU_MAX_NUM_ERRORS];
+static GPU_ErrorObject error_code_stack[GPU_MAX_NUM_ERRORS];
 static int num_error_codes = 0;
 
 void GPU_SetCurrentRenderer(GPU_RendererID id)
@@ -95,7 +95,7 @@ static Uint8 init_SDL(void)
             // Nothing has been set up, so init SDL and the video subsystem.
             if(SDL_Init(SDL_INIT_VIDEO) < 0)
             {
-                GPU_LogError("GPU_Init() failed to initialize SDL.\n");
+                GPU_PushErrorCode("GPU_Init", GPU_ERROR_BACKEND_ERROR, "Failed to initialize SDL video subsystem");
                 return 0;
             }
         }
@@ -104,7 +104,7 @@ static Uint8 init_SDL(void)
             // Something already set up SDL, so just init video.
             if(SDL_InitSubSystem(SDL_INIT_VIDEO) < 0)
             {
-                GPU_LogError("GPU_Init() failed to initialize SDL video subsystem.\n");
+                GPU_PushErrorCode("GPU_Init", GPU_ERROR_BACKEND_ERROR, "Failed to initialize SDL video subsystem");
                 return 0;
             }
         }
@@ -267,8 +267,9 @@ void GPU_CloseCurrentRenderer(void)
 
 void GPU_Quit(void)
 {
-    if(num_error_codes > 0)
-        GPU_LogError("GPU_Quit: %d uncleared errors.\n", num_error_codes);
+    // TODO: Add debug level to enable this
+    /*if(num_error_codes > 0)
+        GPU_LogError("GPU_Quit: %d uncleared errors.\n", num_error_codes);*/
     
 	// FIXME: Remove all renderers
 	if(current_renderer == NULL)
@@ -283,19 +284,23 @@ void GPU_Quit(void)
 }
 
 
-void GPU_PushErrorCode(GPU_ErrorEnum error)
+void GPU_PushErrorCode(const char* function, GPU_ErrorEnum error, const char* details)
 {
     if(num_error_codes < GPU_MAX_NUM_ERRORS)
     {
-        error_code_stack[num_error_codes] = error;
+        GPU_ErrorObject e = {function, error, details};
+        error_code_stack[num_error_codes] = e;
         num_error_codes++;
     }
 }
 
-GPU_ErrorEnum GPU_PopErrorCode(void)
+GPU_ErrorObject GPU_PopErrorCode(void)
 {
     if(num_error_codes <= 0)
-        return GPU_ERROR_NONE;
+    {
+        GPU_ErrorObject e = {NULL, GPU_ERROR_NONE, NULL};
+        return e;
+    }
     
     return error_code_stack[--num_error_codes];
 }
@@ -433,7 +438,10 @@ SDL_Surface* GPU_LoadSurface(const char* filename)
 	Uint32 Rmask, Gmask, Bmask, Amask = 0;
 	
 	if(filename == NULL)
+    {
+        GPU_PushErrorCode("GPU_LoadSurface", GPU_ERROR_NULL_ARGUMENT, "filename");
         return NULL;
+    }
 	
 	#ifdef __ANDROID__
 	unsigned char* data;
@@ -462,12 +470,12 @@ SDL_Surface* GPU_LoadSurface(const char* filename)
 	
 	if(data == NULL)
 	{
-		GPU_LogError("GPU_LoadSurface() failed: %s\n", stbi_failure_reason());
+		GPU_PushErrorCode(__func__, GPU_ERROR_DATA_ERROR, stbi_failure_reason());
 		return NULL;
 	}
 	if(channels < 3 || channels > 4)
 	{
-		GPU_LogError("GPU_LoadSurface() failed to load an unsupported pixel format.\n");
+		GPU_PushErrorCode(__func__, GPU_ERROR_DATA_ERROR, "Unsupported pixel format");
 		stbi_image_free(data);
 		return NULL;
 	}
@@ -532,11 +540,9 @@ Uint8 GPU_SaveSurface(SDL_Surface* surface, const char* filename)
         result = stbi_write_bmp(filename, surface->w, surface->h, surface->format->BytesPerPixel, (void*)data);
     else if(SDL_strcasecmp(extension, "tga") == 0)
         result = stbi_write_tga(filename, surface->w, surface->h, surface->format->BytesPerPixel, (void*)data);
-    //else if(SDL_strcasecmp(extension, "dds") == 0)
-    //    result = stbi_write_dds(filename, surface->w, surface->h, surface->format->BytesPerPixel, (const unsigned char *const)data);
     else
     {
-        GPU_LogError("GPU_SaveSurface() failed: Unsupported format (%s).\n", extension);
+        GPU_PushErrorCode(__func__, GPU_ERROR_DATA_ERROR, "Unsupported output file format");
         result = 0;
     }
 
@@ -624,14 +630,16 @@ void GPU_FreeTarget(GPU_Target* target)
 void GPU_Blit(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y)
 {
     if(!CHECK_RENDERER)
-        RETURN_ERROR(GPU_ERROR_NULL_RENDERER);
+        RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL renderer");
     if(!CHECK_CONTEXT)
-        RETURN_ERROR(GPU_ERROR_NULL_CONTEXT);
+        RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL context");
     if(!CHECK_FUNCTION_POINTER(Blit))
-        RETURN_ERROR(GPU_ERROR_UNSUPPORTED_FUNCTION);
+        RETURN_ERROR(GPU_ERROR_UNSUPPORTED_FUNCTION, NULL);
     
-	if(image == NULL || target == NULL)
-        RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT);
+	if(image == NULL)
+        RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT, "image");
+	if(target == NULL)
+        RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT, "target");
 	
 	current_renderer->Blit(current_renderer, image, src_rect, target, x, y);
 }
@@ -640,14 +648,16 @@ void GPU_Blit(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x,
 void GPU_BlitRotate(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float angle)
 {
     if(!CHECK_RENDERER)
-        RETURN_ERROR(GPU_ERROR_NULL_RENDERER);
+        RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL renderer");
     if(!CHECK_CONTEXT)
-        RETURN_ERROR(GPU_ERROR_NULL_CONTEXT);
+        RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL context");
     if(!CHECK_FUNCTION_POINTER(BlitRotate))
-        RETURN_ERROR(GPU_ERROR_UNSUPPORTED_FUNCTION);
+        RETURN_ERROR(GPU_ERROR_UNSUPPORTED_FUNCTION, NULL);
     
-	if(image == NULL || target == NULL)
-        RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT);
+	if(image == NULL)
+        RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT, "image");
+	if(target == NULL)
+        RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT, "target");
 	
 	current_renderer->BlitRotate(current_renderer, image, src_rect, target, x, y, angle);
 }
@@ -655,14 +665,16 @@ void GPU_BlitRotate(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, fl
 void GPU_BlitScale(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float scaleX, float scaleY)
 {
     if(!CHECK_RENDERER)
-        RETURN_ERROR(GPU_ERROR_NULL_RENDERER);
+        RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL renderer");
     if(!CHECK_CONTEXT)
-        RETURN_ERROR(GPU_ERROR_NULL_CONTEXT);
+        RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL context");
     if(!CHECK_FUNCTION_POINTER(BlitScale))
-        RETURN_ERROR(GPU_ERROR_UNSUPPORTED_FUNCTION);
+        RETURN_ERROR(GPU_ERROR_UNSUPPORTED_FUNCTION, NULL);
     
-	if(image == NULL || target == NULL)
-        RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT);
+	if(image == NULL)
+        RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT, "image");
+	if(target == NULL)
+        RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT, "target");
 	
 	current_renderer->BlitScale(current_renderer, image, src_rect, target, x, y, scaleX, scaleY);
 }
@@ -670,14 +682,16 @@ void GPU_BlitScale(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, flo
 void GPU_BlitTransform(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float angle, float scaleX, float scaleY)
 {
     if(!CHECK_RENDERER)
-        RETURN_ERROR(GPU_ERROR_NULL_RENDERER);
+        RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL renderer");
     if(!CHECK_CONTEXT)
-        RETURN_ERROR(GPU_ERROR_NULL_CONTEXT);
+        RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL context");
     if(!CHECK_FUNCTION_POINTER(BlitTransform))
-        RETURN_ERROR(GPU_ERROR_UNSUPPORTED_FUNCTION);
+        RETURN_ERROR(GPU_ERROR_UNSUPPORTED_FUNCTION, NULL);
     
-	if(image == NULL || target == NULL)
-        RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT);
+	if(image == NULL)
+        RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT, "image");
+	if(target == NULL)
+        RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT, "target");
 	
 	current_renderer->BlitTransform(current_renderer, image, src_rect, target, x, y, angle, scaleX, scaleY);
 }
@@ -685,14 +699,16 @@ void GPU_BlitTransform(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target,
 void GPU_BlitTransformX(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float pivot_x, float pivot_y, float angle, float scaleX, float scaleY)
 {
     if(!CHECK_RENDERER)
-        RETURN_ERROR(GPU_ERROR_NULL_RENDERER);
+        RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL renderer");
     if(!CHECK_CONTEXT)
-        RETURN_ERROR(GPU_ERROR_NULL_CONTEXT);
+        RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL context");
     if(!CHECK_FUNCTION_POINTER(BlitTransformX))
-        RETURN_ERROR(GPU_ERROR_UNSUPPORTED_FUNCTION);
+        RETURN_ERROR(GPU_ERROR_UNSUPPORTED_FUNCTION, NULL);
     
-	if(image == NULL || target == NULL)
-        RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT);
+	if(image == NULL)
+        RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT, "image");
+	if(target == NULL)
+        RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT, "target");
 	
 	current_renderer->BlitTransformX(current_renderer, image, src_rect, target, x, y, pivot_x, pivot_y, angle, scaleX, scaleY);
 }
@@ -700,14 +716,16 @@ void GPU_BlitTransformX(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target
 void GPU_BlitTransformMatrix(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float* matrix3x3)
 {
     if(!CHECK_RENDERER)
-        RETURN_ERROR(GPU_ERROR_NULL_RENDERER);
+        RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL renderer");
     if(!CHECK_CONTEXT)
-        RETURN_ERROR(GPU_ERROR_NULL_CONTEXT);
+        RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL context");
     if(!CHECK_FUNCTION_POINTER(BlitTransformMatrix))
-        RETURN_ERROR(GPU_ERROR_UNSUPPORTED_FUNCTION);
+        RETURN_ERROR(GPU_ERROR_UNSUPPORTED_FUNCTION, NULL);
     
-	if(image == NULL || target == NULL)
-        RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT);
+	if(image == NULL)
+        RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT, "image");
+	if(target == NULL)
+        RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT, "target");
     
     if(matrix3x3 == NULL)
 		return;
@@ -718,14 +736,16 @@ void GPU_BlitTransformMatrix(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* t
 void GPU_BlitBatch(GPU_Image* image, GPU_Target* target, unsigned int num_sprites, float* values, GPU_BlitFlagEnum flags)
 {
     if(!CHECK_RENDERER)
-        RETURN_ERROR(GPU_ERROR_NULL_RENDERER);
+        RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL renderer");
     if(!CHECK_CONTEXT)
-        RETURN_ERROR(GPU_ERROR_NULL_CONTEXT);
+        RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL context");
     if(!CHECK_FUNCTION_POINTER(BlitBatch))
-        RETURN_ERROR(GPU_ERROR_UNSUPPORTED_FUNCTION);
+        RETURN_ERROR(GPU_ERROR_UNSUPPORTED_FUNCTION, NULL);
     
-	if(image == NULL || target == NULL)
-        RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT);
+	if(image == NULL)
+        RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT, "image");
+	if(target == NULL)
+        RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT, "target");
     
     if(num_sprites == 0)
         return;
@@ -757,8 +777,7 @@ void GPU_BlitBatch(GPU_Image* image, GPU_Target* target, unsigned int num_sprite
 	// Passthrough data is per-vertex.  Non-passthrough is per-sprite.  They can't interleave cleanly.
 	if(flags & GPU_PASSTHROUGH_ALL && (flags & GPU_PASSTHROUGH_ALL) != GPU_PASSTHROUGH_ALL)
     {
-        GPU_LogError("GPU_BlitBatch: Cannot interpret interleaved data using partial passthrough.\n");
-        GPU_PushErrorCode(GPU_ERROR_USER_ERROR);
+        GPU_PushErrorCode(__func__, GPU_ERROR_USER_ERROR, "Cannot interpret interleaved data using partial passthrough");
         return;
     }
 	
@@ -1015,14 +1034,16 @@ void GPU_BlitBatch(GPU_Image* image, GPU_Target* target, unsigned int num_sprite
 void GPU_BlitBatchSeparate(GPU_Image* image, GPU_Target* target, unsigned int num_sprites, float* positions, float* src_rects, float* colors, GPU_BlitFlagEnum flags)
 {
     if(!CHECK_RENDERER)
-        RETURN_ERROR(GPU_ERROR_NULL_RENDERER);
+        RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL renderer");
     if(!CHECK_CONTEXT)
-        RETURN_ERROR(GPU_ERROR_NULL_CONTEXT);
+        RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL context");
     if(!CHECK_FUNCTION_POINTER(BlitBatch))
-        RETURN_ERROR(GPU_ERROR_UNSUPPORTED_FUNCTION);
+        RETURN_ERROR(GPU_ERROR_UNSUPPORTED_FUNCTION, NULL);
     
-	if(image == NULL || target == NULL)
-        RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT);
+	if(image == NULL)
+        RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT, "image");
+	if(target == NULL)
+        RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT, "target");
     
     if(num_sprites == 0)
         return;
@@ -1273,14 +1294,16 @@ void GPU_BlitBatchSeparate(GPU_Image* image, GPU_Target* target, unsigned int nu
 void GPU_TriangleBatch(GPU_Image* image, GPU_Target* target, int num_vertices, float* values, int num_indices, unsigned short* indices, GPU_BlitFlagEnum flags)
 {
     if(!CHECK_RENDERER)
-        RETURN_ERROR(GPU_ERROR_NULL_RENDERER);
+        RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL renderer");
     if(!CHECK_CONTEXT)
-        RETURN_ERROR(GPU_ERROR_NULL_CONTEXT);
+        RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL context");
     if(!CHECK_FUNCTION_POINTER(TriangleBatch))
-        RETURN_ERROR(GPU_ERROR_UNSUPPORTED_FUNCTION);
+        RETURN_ERROR(GPU_ERROR_UNSUPPORTED_FUNCTION, NULL);
     
-	if(image == NULL || target == NULL)
-        RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT);
+	if(image == NULL)
+        RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT, "image");
+	if(target == NULL)
+        RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT, "target");
     
     if(num_vertices == 0)
         return;
@@ -1650,13 +1673,13 @@ Uint32 GPU_LoadShader(int shader_type, const char* filename)
 {
     if(filename == NULL)
     {
-        GPU_LogError("Failed to load shader: NULL filename.\n");
+        GPU_PushErrorCode(__func__, GPU_ERROR_NULL_ARGUMENT, "filename");
         return 0;
     }
     SDL_RWops* rwops = SDL_RWFromFile(filename, "r");
     if(rwops == NULL)
     {
-        GPU_LogError("Failed to load shader: \"%s\" file not found.\n", filename);
+        GPU_PushErrorCode(__func__, GPU_ERROR_FILE_NOT_FOUND, filename);
         return 0;
     }
     Uint32 result = GPU_CompileShader_RW(shader_type, rwops);

@@ -132,7 +132,7 @@ void GPU_PushMatrix()
     GPU_MatrixStack* stack = (target->context->matrix_mode == GPU_MODELVIEW? &target->context->modelview_matrix : &target->context->projection_matrix);
     if(stack->size + 1 >= GPU_MATRIX_STACK_MAX)
     {
-        GPU_LogError("GPU_PushMatrix() failed to push to a full stack!\n");
+        GPU_PushErrorCode(__func__, GPU_ERROR_USER_ERROR, "Matrix stack is full.");
         return;
     }
     GPU_MatrixCopy(stack->matrix[stack->size], stack->matrix[stack->size-1]);
@@ -148,7 +148,7 @@ void GPU_PopMatrix()
     GPU_MatrixStack* stack = (target->context->matrix_mode == GPU_MODELVIEW? &target->context->modelview_matrix : &target->context->projection_matrix);
     if(stack->size == 0)
     {
-        GPU_LogError("GPU_PopMatrix() failed to pop an empty stack!\n");
+        GPU_PushErrorCode(__func__, GPU_ERROR_USER_ERROR, "Matrix stack is empty.");
         return;
     }
     stack->size--;

@@ -297,7 +297,9 @@ GPU_Renderer* GPU_CreateRenderer(GPU_RendererID id)
 	}
 	
 	if(result == NULL)
-		GPU_LogError("Could not create renderer: \"%s %d.%d\" was not found in the renderer registry.\n", GPU_GetRendererEnumString(id.id), id.major_version, id.minor_version);
+    {
+        GPU_PushErrorCode(__func__, GPU_ERROR_DATA_ERROR, "Renderer was not found in the renderer registry.");
+    }
 	return result;
 }
 
@@ -333,8 +335,7 @@ GPU_Renderer* GPU_AddRenderer(GPU_RendererID id)
 			GPU_Renderer* renderer = GPU_CreateRenderer(id);
 			if(renderer == NULL)
             {
-                // TODO: Add more info here
-                GPU_LogError("Failed to create new renderer.\n");
+                GPU_PushErrorCode(__func__, GPU_ERROR_BACKEND_ERROR, "Failed to create new renderer.");
                 return NULL;
             }
             

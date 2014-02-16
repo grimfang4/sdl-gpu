@@ -340,13 +340,19 @@ static const GPU_ShaderLanguageEnum GPU_CG = 0x5;
  */
 typedef int GPU_ErrorEnum;
 static const GPU_ErrorEnum GPU_ERROR_NONE = 0;
-static const GPU_ErrorEnum GPU_ERROR_NULL_RENDERER = 1;
-static const GPU_ErrorEnum GPU_ERROR_NULL_CONTEXT = 2;
-static const GPU_ErrorEnum GPU_ERROR_UNSUPPORTED_FUNCTION = 3;
-static const GPU_ErrorEnum GPU_ERROR_MISMATCHED_RENDERER = 4;
+static const GPU_ErrorEnum GPU_ERROR_BACKEND_ERROR = 1;
+static const GPU_ErrorEnum GPU_ERROR_DATA_ERROR = 2;
+static const GPU_ErrorEnum GPU_ERROR_USER_ERROR = 3;
+static const GPU_ErrorEnum GPU_ERROR_UNSUPPORTED_FUNCTION = 4;
 static const GPU_ErrorEnum GPU_ERROR_NULL_ARGUMENT = 5;
-static const GPU_ErrorEnum GPU_ERROR_USER_ERROR = 6;
-static const GPU_ErrorEnum GPU_ERROR_BIND_TARGET = 7;
+static const GPU_ErrorEnum GPU_ERROR_FILE_NOT_FOUND = 6;
+
+typedef struct GPU_ErrorObject
+{
+    const char* function;
+    GPU_ErrorEnum error;
+    const char* details;
+} GPU_ErrorObject;
 
 
 /*! Renderer object which specializes the API to a particular backend. */
@@ -716,11 +722,15 @@ void GPU_CloseCurrentRenderer(void);
 /*! Clean up the renderer state and shut down SDL_gpu. */
 void GPU_Quit(void);
 
-/*! Pushes a new error code onto the error stack.  If the stack is full, this function does nothing. */
-void GPU_PushErrorCode(GPU_ErrorEnum error);
+/*! Pushes a new error code onto the error stack.  If the stack is full, this function does nothing.
+ * \param function The name of the function that pushed the error
+ * \param error The error code to push on the error stack
+ * \param details Additional information string, can be NULL.
+ */
+void GPU_PushErrorCode(const char* function, GPU_ErrorEnum error, const char* details);
 
-/*! Pops an error code from the error stack and returns the value.  If the error stack is empty, it returns GPU_ERROR_NONE. */
-GPU_ErrorEnum GPU_PopErrorCode(void);
+/*! Pops an error object from the error stack and returns it.  If the error stack is empty, it returns an error object with NULL function and GPU_ERROR_NONE error. */
+GPU_ErrorObject GPU_PopErrorCode(void);
 
 /*! Sets the current error string. */
 void GPU_SetError(const char* fmt, ...);
@@ -818,10 +828,10 @@ GPU_Image* GPU_LoadImage(const char* filename);
  * GPU_FreeImage() frees the alias's memory, but does not affect the original. */
 GPU_Image* GPU_CreateAliasImage(GPU_Image* image);
 
-/*! Save image to a file.  The file type is deduced from the extension.  Returns 0 on failure. */
+/*! Save image to a file.  The file type is deduced from the extension.  Supported formats are: png, bmp, tga.  Returns 0 on failure. */
 Uint8 GPU_SaveImage(GPU_Image* image, const char* filename);
 
-/*! Save surface to a file.  The file type is deduced from the extension.  Returns 0 on failure. */
+/*! Save surface to a file.  The file type is deduced from the extension.  Supported formats are: png, bmp, tga.  Returns 0 on failure. */
 Uint8 GPU_SaveSurface(SDL_Surface* surface, const char* filename);
 
 /*! Copy an image to a new image.  Don't forget to GPU_FreeImage() both. */
