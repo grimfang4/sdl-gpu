@@ -69,12 +69,14 @@ typedef struct RendererData_GLES_1
 
 typedef struct ImageData_GLES_1
 {
+    int refcount;
 	Uint32 handle;
 	Uint32 format;
 } ImageData_GLES_1;
 
 typedef struct TargetData_GLES_1
 {
+    int refcount;
 	Uint32 handle;
 	Uint32 format;
 } TargetData_GLES_1;
