@@ -394,8 +394,8 @@ struct GPU_Renderer
 	/*! \see GPU_SetVirtualResolution() */
 	void (*SetVirtualResolution)(GPU_Renderer* renderer, GPU_Target* target, Uint16 w, Uint16 h);
 	
-	/*! \see GPU_ClearVirtualResolution() */
-	void (*ClearVirtualResolution)(GPU_Renderer* renderer, GPU_Target* target);
+	/*! \see GPU_UnsetVirtualResolution() */
+	void (*UnsetVirtualResolution)(GPU_Renderer* renderer, GPU_Target* target);
 	
 	/*! Clean up the renderer state. */
 	void (*Quit)(GPU_Renderer* renderer);
@@ -478,8 +478,8 @@ struct GPU_Renderer
 	/*! \see GPU_SetClip() */
 	GPU_Rect (*SetClip)(GPU_Renderer* renderer, GPU_Target* target, Sint16 x, Sint16 y, Uint16 w, Uint16 h);
 
-	/*! \see GPU_ClearClip() */
-	void (*ClearClip)(GPU_Renderer* renderer, GPU_Target* target);
+	/*! \see GPU_UnsetClip() */
+	void (*UnsetClip)(GPU_Renderer* renderer, GPU_Target* target);
 	
 	/*! \see GPU_GetPixel() */
 	SDL_Color (*GetPixel)(GPU_Renderer* renderer, GPU_Target* target, Sint16 x, Sint16 y);
@@ -695,20 +695,20 @@ GPU_Target* GPU_CreateTargetFromWindow(Uint32 windowID);
  * GPU_FreeTarget() frees the alias's memory, but does not affect the original. */
 GPU_Target* GPU_CreateAliasTarget(GPU_Target* target);
 
-/*! Makes the given window the current rendering destination for the given target.
+/*! Makes the given window the current rendering destination for the given context target.
  * This also makes the target the current context for image loading and window operations.
  * If the target does not represent a window, this does nothing.
  */
 void GPU_MakeCurrent(GPU_Target* target, Uint32 windowID);
 
-/*! Change the actual size of the current window. */
+/*! Change the actual size of the current context target's window. */
 Uint8 GPU_SetWindowResolution(Uint16 w, Uint16 h);
 
 /*! Change the logical size of the given target.  Rendering to this target will be scaled as if the dimensions were actually the ones given. */
 void GPU_SetVirtualResolution(GPU_Target* target, Uint16 w, Uint16 h);
 
 /*! Reset the logical size of the given target to its original value. */
-void GPU_ClearVirtualResolution(GPU_Target* target);
+void GPU_UnsetVirtualResolution(GPU_Target* target);
 
 /*! Clean up the renderer state. */
 void GPU_CloseCurrentRenderer(void);
@@ -731,8 +731,8 @@ const char* GPU_GetErrorString(void);
 /*! Converts screen space coordinates (such as from mouse input) to logical drawing coordinates. */
 void GPU_GetVirtualCoords(GPU_Target* target, float* x, float* y, float displayX, float displayY);
 
-/*! Enable/disable fullscreen mode for the current window.
- * On some platforms, this may destroy the renderer context and require that textures be reloaded.
+/*! Enable/disable fullscreen mode for the current context target's window.
+ * On some platforms, this may destroy the renderer context and require that textures be reloaded.  Unfortunately, SDL does not provide a notification mechanism for this.
  * \param use_desktop_resolution If true, lets the window change its resolution when it enters fullscreen mode (via SDL_WINDOW_FULLSCREEN_DESKTOP).
  * \return 0 if the new mode is windowed, 1 if the new mode is fullscreen.  */
 Uint8 GPU_ToggleFullscreen(Uint8 use_desktop_resolution);
@@ -941,8 +941,8 @@ GPU_Rect GPU_SetClipRect(GPU_Target* target, GPU_Rect rect);
 /*! Sets the clipping rect for the given render target. */
 GPU_Rect GPU_SetClip(GPU_Target* target, Sint16 x, Sint16 y, Uint16 w, Uint16 h);
 
-/*! Clears (resets) the clipping rect for the given render target. */
-void GPU_ClearClip(GPU_Target* target);
+/*! Turns off clipping for the given target. */
+void GPU_UnsetClip(GPU_Target* target);
 
 /*! Sets the modulation color for subsequent drawing of the given image. */
 void GPU_SetColor(GPU_Image* image, SDL_Color* color);
