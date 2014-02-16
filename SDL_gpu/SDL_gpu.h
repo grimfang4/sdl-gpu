@@ -63,29 +63,30 @@ typedef struct GPU_RendererID
 /*! Texture filtering options.  These affect the quality/interpolation of colors when images are scaled. 
  * \see GPU_SetImageFilter()
  */
-typedef unsigned int GPU_FilterEnum;
-static const GPU_FilterEnum GPU_NEAREST = 0;
-static const GPU_FilterEnum GPU_LINEAR = 1;
-static const GPU_FilterEnum GPU_LINEAR_MIPMAP = 2;
+typedef enum {
+    GPU_NEAREST = 0,
+    GPU_LINEAR = 1,
+    GPU_LINEAR_MIPMAP = 2
+} GPU_FilterEnum;
 
 /*! Blending options 
  * \see GPU_SetBlendMode()
  */
-typedef unsigned int GPU_BlendEnum;
-static const GPU_BlendEnum GPU_BLEND_NORMAL = 0;
-static const GPU_BlendEnum GPU_BLEND_PREMULTIPLIED_ALPHA = 1;
-static const GPU_BlendEnum GPU_BLEND_MULTIPLY = 2;
-static const GPU_BlendEnum GPU_BLEND_ADD = 3;
-static const GPU_BlendEnum GPU_BLEND_SUBTRACT = 4;
-static const GPU_BlendEnum GPU_BLEND_ADD_COLOR = 5;
-static const GPU_BlendEnum GPU_BLEND_SUBTRACT_COLOR = 6;
-static const GPU_BlendEnum GPU_BLEND_DARKEN = 7;
-static const GPU_BlendEnum GPU_BLEND_LIGHTEN = 8;
-static const GPU_BlendEnum GPU_BLEND_DIFFERENCE = 9;
-static const GPU_BlendEnum GPU_BLEND_PUNCHOUT = 10;
-static const GPU_BlendEnum GPU_BLEND_CUTOUT = 11;
-static const GPU_BlendEnum GPU_BLEND_OVERRIDE = 100;  // Lets you specify direct GL calls before blitting.  Note: You should call GPU_FlushBlitBuffer() before you change blend modes via OpenGL so the new blend mode doesn't affect SDL_gpu's previously buffered blits.
-
+typedef enum {
+    GPU_BLEND_NORMAL = 0,
+    GPU_BLEND_PREMULTIPLIED_ALPHA = 1,
+    GPU_BLEND_MULTIPLY = 2,
+    GPU_BLEND_ADD = 3,
+    GPU_BLEND_SUBTRACT = 4,
+    GPU_BLEND_ADD_COLOR = 5,
+    GPU_BLEND_SUBTRACT_COLOR = 6,
+    GPU_BLEND_DARKEN = 7,
+    GPU_BLEND_LIGHTEN = 8,
+    GPU_BLEND_DIFFERENCE = 9,
+    GPU_BLEND_PUNCHOUT = 10,
+    GPU_BLEND_CUTOUT = 11,
+    GPU_BLEND_OVERRIDE = 100  // Lets you specify direct GL calls before blitting.  Note: You should call GPU_FlushBlitBuffer() before you change blend modes via OpenGL so the new blend mode doesn't affect SDL_gpu's previously buffered blits.
+} GPU_BlendEnum;
 
 /*! Image object for containing pixel/texture data.
  * A GPU_Image can be created with GPU_CreateImage(), GPU_LoadImage(), GPU_CopyImage(), or GPU_CopyImageFromSurface().
@@ -284,14 +285,14 @@ static const GPU_BlitFlagEnum GPU_USE_DEFAULT_COLORS = 0x20;
 /*! Type enumeration for GPU_AttributeFormat specifications. */
 typedef Uint32 GPU_TypeEnum;
 // Use OpenGL's values for simpler translation
-static const GPU_BlitFlagEnum GPU_BYTE = 0x1400;
-static const GPU_BlitFlagEnum GPU_UNSIGNED_BYTE = 0x1401;
-static const GPU_BlitFlagEnum GPU_SHORT = 0x1402;
-static const GPU_BlitFlagEnum GPU_UNSIGNED_SHORT = 0x1403;
-static const GPU_BlitFlagEnum GPU_INT = 0x1404;
-static const GPU_BlitFlagEnum GPU_UNSIGNED_INT = 0x1405;
-static const GPU_BlitFlagEnum GPU_FLOAT = 0x1406;
-static const GPU_BlitFlagEnum GPU_DOUBLE = 0x140A;
+static const GPU_TypeEnum GPU_BYTE = 0x1400;
+static const GPU_TypeEnum GPU_UNSIGNED_BYTE = 0x1401;
+static const GPU_TypeEnum GPU_SHORT = 0x1402;
+static const GPU_TypeEnum GPU_UNSIGNED_SHORT = 0x1403;
+static const GPU_TypeEnum GPU_INT = 0x1404;
+static const GPU_TypeEnum GPU_UNSIGNED_INT = 0x1405;
+static const GPU_TypeEnum GPU_FLOAT = 0x1406;
+static const GPU_TypeEnum GPU_DOUBLE = 0x140A;
 
 
 typedef struct GPU_AttributeFormat
@@ -324,28 +325,33 @@ typedef struct GPU_AttributeSource
     GPU_Attribute attribute;
 } GPU_AttributeSource;
 
+
 static const Uint32 GPU_NONE = 0x0;
 
 /*! Type enumeration for the shader language used by the renderer. */
-typedef Uint32 GPU_ShaderLanguageEnum;
-static const GPU_ShaderLanguageEnum GPU_ARB_ASSEMBLY = 0x1;
-static const GPU_ShaderLanguageEnum GPU_GLSL = 0x2;
-static const GPU_ShaderLanguageEnum GPU_GLSLES = 0x3;
-static const GPU_ShaderLanguageEnum GPU_HLSL = 0x4;
-static const GPU_ShaderLanguageEnum GPU_CG = 0x5;
+typedef enum {
+    GPU_NO_SHADERS = 0,
+    GPU_ARB_ASSEMBLY = 1,
+    GPU_GLSL = 2,
+    GPU_GLSLES = 3,
+    GPU_HLSL = 4,
+    GPU_CG = 5
+} GPU_ShaderLanguageEnum;
+
 
 /*! Type enumeration for error codes.
  * \see GPU_PushErrorCode()
  * \see GPU_PopErrorCode()
  */
-typedef int GPU_ErrorEnum;
-static const GPU_ErrorEnum GPU_ERROR_NONE = 0;
-static const GPU_ErrorEnum GPU_ERROR_BACKEND_ERROR = 1;
-static const GPU_ErrorEnum GPU_ERROR_DATA_ERROR = 2;
-static const GPU_ErrorEnum GPU_ERROR_USER_ERROR = 3;
-static const GPU_ErrorEnum GPU_ERROR_UNSUPPORTED_FUNCTION = 4;
-static const GPU_ErrorEnum GPU_ERROR_NULL_ARGUMENT = 5;
-static const GPU_ErrorEnum GPU_ERROR_FILE_NOT_FOUND = 6;
+typedef enum {
+    GPU_ERROR_NONE = 0,
+    GPU_ERROR_BACKEND_ERROR = 1,
+    GPU_ERROR_DATA_ERROR = 2,
+    GPU_ERROR_USER_ERROR = 3,
+    GPU_ERROR_UNSUPPORTED_FUNCTION = 4,
+    GPU_ERROR_NULL_ARGUMENT = 5,
+    GPU_ERROR_FILE_NOT_FOUND = 6
+} GPU_ErrorEnum;
 
 typedef struct GPU_ErrorObject
 {
@@ -353,6 +359,21 @@ typedef struct GPU_ErrorObject
     GPU_ErrorEnum error;
     const char* details;
 } GPU_ErrorObject;
+
+
+/*! Type enumeration for debug levels.
+ * \see GPU_SetDebugLevel()
+ * \see GPU_GetDebugLevel()
+ */
+typedef enum {
+    GPU_DEBUG_LEVEL_0 = 0,
+    GPU_DEBUG_LEVEL_1 = 1,
+    GPU_DEBUG_LEVEL_2 = 2,
+    GPU_DEBUG_LEVEL_3 = 3,
+    GPU_DEBUG_LEVEL_MAX = 3
+    } GPU_DebugLevelEnum;
+
+
 
 
 /*! Renderer object which specializes the API to a particular backend. */
@@ -722,6 +743,17 @@ void GPU_CloseCurrentRenderer(void);
 /*! Clean up the renderer state and shut down SDL_gpu. */
 void GPU_Quit(void);
 
+/*! Sets the global debug level.
+ * GPU_DEBUG_LEVEL_0: Normal
+ * GPU_DEBUG_LEVEL_1: Prints messages when errors are pushed via GPU_PushErrorCode()
+ * GPU_DEBUG_LEVEL_2: Elevates warning logs to error priority
+ * GPU_DEBUG_LEVEL_3: Elevates info logs to error priority
+ */
+void GPU_SetDebugLevel(GPU_DebugLevelEnum level);
+
+/*! Returns the current global debug level. */
+GPU_DebugLevelEnum GPU_GetDebugLevel(void);
+
 /*! Pushes a new error code onto the error stack.  If the stack is full, this function does nothing.
  * \param function The name of the function that pushed the error
  * \param error The error code to push on the error stack
@@ -732,11 +764,8 @@ void GPU_PushErrorCode(const char* function, GPU_ErrorEnum error, const char* de
 /*! Pops an error object from the error stack and returns it.  If the error stack is empty, it returns an error object with NULL function and GPU_ERROR_NONE error. */
 GPU_ErrorObject GPU_PopErrorCode(void);
 
-/*! Sets the current error string. */
-void GPU_SetError(const char* fmt, ...);
-
-/*! Gets the current error string. */
-const char* GPU_GetErrorString(void);
+/*! Gets the string representation of an error code. */
+const char* GPU_GetErrorString(GPU_ErrorEnum error);
 
 /*! Converts screen space coordinates (such as from mouse input) to logical drawing coordinates. */
 void GPU_GetVirtualCoords(GPU_Target* target, float* x, float* y, float displayX, float displayY);
