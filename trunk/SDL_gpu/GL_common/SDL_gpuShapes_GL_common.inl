@@ -235,20 +235,6 @@ int _vertex_array_index = 0;
     unsigned short blit_buffer_starting_index = cdata->blit_buffer_num_vertices; \
     (void)blit_buffer_starting_index;
 
-#define SET_UNTEXTURED_VERTEX(x, y, r, g, b, a) \
-    blit_buffer[vert_index] = x; \
-    blit_buffer[vert_index+1] = y; \
-    blit_buffer[color_index] = r; \
-    blit_buffer[color_index+1] = g; \
-    blit_buffer[color_index+2] = b; \
-    blit_buffer[color_index+3] = a; \
-    index_buffer[cdata->index_buffer_num_vertices++] = cdata->blit_buffer_num_vertices++; \
-    vert_index += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX; \
-    color_index += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
-
-#define SET_INDEXED_VERTEX(offset) \
-    index_buffer[cdata->index_buffer_num_vertices++] = blit_buffer_starting_index + (offset);
-
 
 static inline void draw_vertices(GLfloat* glverts, int num_vertices, GLenum prim_type)
 {
