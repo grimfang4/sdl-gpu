@@ -105,6 +105,7 @@ typedef struct ContextData_GLES_2
 {
 	SDL_Color last_color;
 	Uint8 last_use_texturing;
+	unsigned int last_shape;
 	Uint8 last_use_blending;
 	GPU_BlendEnum last_blend_mode;
 	GPU_Rect last_viewport;

@@ -39,6 +39,7 @@ typedef struct ContextData_OpenGL_1_BASE
 {
 	SDL_Color last_color;
 	Uint8 last_use_texturing;
+	unsigned int last_shape;
 	Uint8 last_use_blending;
 	GPU_BlendEnum last_blend_mode;
 	GPU_Rect last_viewport;
