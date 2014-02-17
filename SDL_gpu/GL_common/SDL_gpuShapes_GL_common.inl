@@ -145,7 +145,7 @@ int _vertex_array_index = 0;
         if(bindFramebuffer(renderer, target)) \
         { \
             prepareToRenderToTarget(renderer, target); \
-            prepareToRenderShapes(renderer); \
+            prepareToRenderShapes(renderer, GL_TRIANGLES); \
             changeViewport(target); \
             changeCamera(target); \
             \
@@ -181,6 +181,73 @@ int _vertex_array_index = 0;
 
 
 
+
+#define BEGIN_UNTEXTURED(function_name, shape) \
+    if(target == NULL) \
+    { \
+        GPU_PushErrorCode(function_name, GPU_ERROR_NULL_ARGUMENT, "target"); \
+        return; \
+    } \
+    if(renderer != target->renderer) \
+    { \
+        GPU_PushErrorCode(function_name, GPU_ERROR_USER_ERROR, "Mismatched renderer"); \
+        return; \
+    } \
+     \
+    makeContextCurrent(renderer, target); \
+    if(renderer->current_context_target == NULL) \
+    { \
+        GPU_PushErrorCode(function_name, GPU_ERROR_USER_ERROR, "NULL context"); \
+        return; \
+    } \
+     \
+    if(!bindFramebuffer(renderer, target)) \
+    { \
+        GPU_PushErrorCode(function_name, GPU_ERROR_BACKEND_ERROR, "Failed to bind framebuffer."); \
+        return; \
+    } \
+     \
+    prepareToRenderToTarget(renderer, target); \
+    prepareToRenderShapes(renderer, shape); \
+     \
+    GPU_CONTEXT_DATA* cdata = (GPU_CONTEXT_DATA*)renderer->current_context_target->context->data; \
+    float* blit_buffer = cdata->blit_buffer; \
+    unsigned short* index_buffer = cdata->index_buffer; \
+     \
+    int vert_index = GPU_BLIT_BUFFER_VERTEX_OFFSET + cdata->blit_buffer_num_vertices*GPU_BLIT_BUFFER_FLOATS_PER_VERTEX; \
+    int color_index = GPU_BLIT_BUFFER_COLOR_OFFSET + cdata->blit_buffer_num_vertices*GPU_BLIT_BUFFER_FLOATS_PER_VERTEX; \
+     \
+    float r, g, b, a; \
+    if(target->use_color) \
+    { \
+        r = MIX_COLOR_COMPONENT_NORMALIZED_RESULT(target->color.r, color.r); \
+        g = MIX_COLOR_COMPONENT_NORMALIZED_RESULT(target->color.g, color.g); \
+        b = MIX_COLOR_COMPONENT_NORMALIZED_RESULT(target->color.b, color.b); \
+        a = MIX_COLOR_COMPONENT_NORMALIZED_RESULT(GET_ALPHA(target->color), GET_ALPHA(color)); \
+    } \
+    else \
+    { \
+        r = color.r/255.0f; \
+        g = color.g/255.0f; \
+        b = color.b/255.0f; \
+        a = GET_ALPHA(color)/255.0f; \
+    } \
+    unsigned short blit_buffer_starting_index = cdata->blit_buffer_num_vertices; \
+    (void)blit_buffer_starting_index;
+
+#define SET_UNTEXTURED_VERTEX(x, y, r, g, b, a) \
+    blit_buffer[vert_index] = x; \
+    blit_buffer[vert_index+1] = y; \
+    blit_buffer[color_index] = r; \
+    blit_buffer[color_index+1] = g; \
+    blit_buffer[color_index+2] = b; \
+    blit_buffer[color_index+3] = a; \
+    index_buffer[cdata->index_buffer_num_vertices++] = cdata->blit_buffer_num_vertices++; \
+    vert_index += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX; \
+    color_index += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
+
+#define SET_INDEXED_VERTEX(offset) \
+    index_buffer[cdata->index_buffer_num_vertices++] = blit_buffer_starting_index + (offset);
 
 
 static inline void draw_vertices(GLfloat* glverts, int num_vertices, GLenum prim_type)
@@ -608,34 +675,25 @@ static void CircleFilled(GPU_Renderer* renderer, GPU_Target* target, float x, fl
 
 static void Tri(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, float x3, float y3, SDL_Color color)
 {
-    BEGIN;
-
-    DECLARE_VERTEX_ARRAY(3);
-    DECLARE_COLOR_RGBA;
-
-    SET_VERTEX(x1, y1);
-    SET_VERTEX(x2, y2);
-    SET_VERTEX(x3, y3);
-
-    DRAW_VERTICES(GL_LINE_LOOP);
-
-    END;
+    BEGIN_UNTEXTURED("GPU_Tri", GL_LINES);
+    
+    SET_UNTEXTURED_VERTEX(x1, y1, r, g, b, a);
+    SET_UNTEXTURED_VERTEX(x2, y2, r, g, b, a);
+    
+    SET_INDEXED_VERTEX(1);
+    SET_UNTEXTURED_VERTEX(x3, y3, r, g, b, a);
+    
+    SET_INDEXED_VERTEX(2);
+    SET_INDEXED_VERTEX(0);
 }
 
 static void TriFilled(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, float x3, float y3, SDL_Color color)
 {
-    BEGIN;
+    BEGIN_UNTEXTURED("GPU_TriFilled", GL_TRIANGLES);
     
-    DECLARE_VERTEX_ARRAY(3);
-    DECLARE_COLOR_RGBA;
-
-    SET_VERTEX(x1, y1);
-    SET_VERTEX(x2, y2);
-    SET_VERTEX(x3, y3);
-
-    DRAW_VERTICES(GL_TRIANGLE_STRIP);
-
-    END;
+    SET_UNTEXTURED_VERTEX(x1, y1, r, g, b, a);
+    SET_UNTEXTURED_VERTEX(x2, y2, r, g, b, a);
+    SET_UNTEXTURED_VERTEX(x3, y3, r, g, b, a);
 }
 
 static void Rectangle(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color)
