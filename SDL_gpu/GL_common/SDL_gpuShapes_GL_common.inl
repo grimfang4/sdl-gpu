@@ -425,31 +425,17 @@ static float GetLineThickness(GPU_Renderer* renderer)
 
 static void Pixel(GPU_Renderer* renderer, GPU_Target* target, float x, float y, SDL_Color color)
 {
-	BEGIN;
-        
-        DECLARE_VERTEX_ARRAY(1);
-		DECLARE_COLOR_RGBA;
-		
-		SET_VERTEX(x, y);
-        
-        DRAW_VERTICES(GL_POINTS);
-
-    END;
+    BEGIN_UNTEXTURED("GPU_Pixel", GL_POINTS);
+    
+    SET_UNTEXTURED_VERTEX(x, y, r, g, b, a);
 }
 
 static void Line(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color)
 {
-    BEGIN;
-
-        DECLARE_VERTEX_ARRAY(2);
-		DECLARE_COLOR_RGBA;
-
-		SET_VERTEX(x1, y1);
-		SET_VERTEX(x2, y2);
-
-        DRAW_VERTICES(GL_LINES);
-
-    END;
+    BEGIN_UNTEXTURED("GPU_Line", GL_LINES);
+    
+    SET_UNTEXTURED_VERTEX(x1, y1, r, g, b, a);
+    SET_UNTEXTURED_VERTEX(x2, y2, r, g, b, a);
 }
 
 

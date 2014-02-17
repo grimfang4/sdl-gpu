@@ -1316,17 +1316,23 @@ static GPU_Camera SetCamera(GPU_Renderer* renderer, GPU_Target* target, GPU_Came
         return GPU_GetDefaultCamera();
     }
     
-    if(isCurrentTarget(renderer, target))
-        renderer->FlushBlitBuffer(renderer);
-    
-    GPU_Camera result = target->camera;
-
+    GPU_Camera new_camera;
     if(cam == NULL)
-        target->camera = GPU_GetDefaultCamera();
+        new_camera = GPU_GetDefaultCamera();
     else
-        target->camera = *cam;
+        new_camera = *cam;
+    
+    GPU_Camera old_camera = target->camera;
+    
+    if(!equal_cameras(new_camera, old_camera))
+    {
+        if(isCurrentTarget(renderer, target))
+            renderer->FlushBlitBuffer(renderer);
+    
+        target->camera = new_camera;
+    }
 
-    return result;
+    return old_camera;
 }
 
 
