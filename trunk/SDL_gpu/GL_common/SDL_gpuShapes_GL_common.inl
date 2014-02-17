@@ -618,7 +618,7 @@ static void Circle(GPU_Renderer* renderer, GPU_Target* target, float x, float y,
 
 static void CircleFilled(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float radius, SDL_Color color)
 {
-    BEGIN;
+    BEGIN_UNTEXTURED("GPU_CircleFilled", GL_TRIANGLES);
 
     float t = 0;
     float dt = 5;  // A segment every 5 degrees of a full circle
@@ -626,23 +626,26 @@ static void CircleFilled(GPU_Renderer* renderer, GPU_Target* target, float x, fl
 
     int numSegments = 360/dt+1;
 
-    DECLARE_VERTEX_ARRAY(numSegments+1);
-    DECLARE_COLOR_RGBA;
-
-    SET_VERTEX(x, y);
+    // First triangle
+    SET_UNTEXTURED_VERTEX(x, y, r, g, b, a);
+    dx = radius;
+    dy = 0.0f;
+    SET_UNTEXTURED_VERTEX(x+dx, y+dy, r, g, b, a); // first point
+    t += dt;
+    dx = radius*cos(t*RADPERDEG);
+    dy = radius*sin(t*RADPERDEG);
+    SET_UNTEXTURED_VERTEX(x+dx, y+dy, r, g, b, a); // new point
     
     int i;
     for(i = 1; i < numSegments+1; i++)
     {
         dx = radius*cos(t*RADPERDEG);
         dy = radius*sin(t*RADPERDEG);
-        SET_VERTEX(x+dx, y+dy);
+        SET_INDEXED_VERTEX(0);  // center
+        SET_INDEXED_VERTEX(i);  // last point
+        SET_UNTEXTURED_VERTEX(x+dx, y+dy, r, g, b, a); // new point
         t += dt;
     }
-
-    DRAW_VERTICES(GL_TRIANGLE_FAN);
-    
-    END;
 }
 
 static void Tri(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, float x3, float y3, SDL_Color color)
