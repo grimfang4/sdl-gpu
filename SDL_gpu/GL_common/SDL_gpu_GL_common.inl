@@ -2300,22 +2300,26 @@ static void FreeImage(GPU_Renderer* renderer, GPU_Image* image)
 
     // Delete the attached target first
     if(image->target != NULL)
+    {
         renderer->FreeTarget(renderer, image->target);
+        image->target = NULL;
+    }
 
     flushAndClearBlitBufferIfCurrentTexture(renderer, image);
-    
-    free(image);
     
     // Does the renderer data need to be freed too?
     GPU_IMAGE_DATA* data = (GPU_IMAGE_DATA*)image->data;
     if(data->refcount > 1)
     {
         data->refcount--;
-        return;
+    }
+    else
+    {
+        glDeleteTextures( 1, &data->handle);
+        free(data);
     }
     
-    glDeleteTextures( 1, &data->handle);
-    free(data);
+    free(image);
 }
 
 
@@ -2405,7 +2409,11 @@ static GPU_Target* LoadTarget(GPU_Renderer* renderer, GPU_Image* image)
         return NULL;
 
     if(image->target != NULL)
+    {
+        image->target->refcount++;
+        ((GPU_TARGET_DATA*)image->target->data)->refcount++;
         return image->target;
+    }
 
     if(!(renderer->enabled_features & GPU_FEATURE_RENDER_TARGETS))
         return NULL;
@@ -2473,7 +2481,6 @@ static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
     if(!target->is_alias && target->image != NULL)
         target->image->target = NULL;  // Remove reference to this object
     
-    free(target);
     
 
     // Does the renderer data need to be freed too?
@@ -2481,6 +2488,7 @@ static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
     if(data->refcount > 1)
     {
         data->refcount--;
+        free(target);
         return;
     }
     
@@ -2521,6 +2529,7 @@ static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
     }
     
     free(data);
+    free(target);
 }
 
 
@@ -2562,6 +2571,16 @@ static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
     blit_buffer[color_index+2] = b; \
     blit_buffer[color_index+3] = a; \
     index_buffer[cdata->index_buffer_num_vertices++] = cdata->blit_buffer_num_vertices++; \
+    vert_index += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX; \
+    color_index += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
+    
+#define SET_UNTEXTURED_VERTEX_UNINDEXED(x, y, r, g, b, a) \
+    blit_buffer[vert_index] = x; \
+    blit_buffer[vert_index+1] = y; \
+    blit_buffer[color_index] = r; \
+    blit_buffer[color_index+1] = g; \
+    blit_buffer[color_index+2] = b; \
+    blit_buffer[color_index+3] = a; \
     vert_index += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX; \
     color_index += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
 
