@@ -147,7 +147,6 @@ int _vertex_array_index = 0;
             prepareToRenderToTarget(renderer, target); \
             prepareToRenderShapes(renderer); \
             changeViewport(target); \
-            /*glPushAttrib(GL_COLOR_BUFFER_BIT);*/ \
             \
             if(target->image != NULL) \
             { \
@@ -177,7 +176,6 @@ int _vertex_array_index = 0;
             prepareToRenderToTarget(renderer, target); \
             prepareToRenderImage(renderer, target, src); \
             changeViewport(target); \
-            /*glPushAttrib(GL_COLOR_BUFFER_BIT);*/ \
             \
             if(target->image != NULL) \
             { \
@@ -192,19 +190,17 @@ int _vertex_array_index = 0;
             APPLY_TRANSFORMS;
 
 #define END \
-    RESET_COLOR; \
-    if(target->image != NULL) \
-    { \
-        GPU_MatrixMode( GPU_PROJECTION ); \
-        GPU_PopMatrix(); \
-        GPU_MatrixMode( GPU_MODELVIEW ); \
-    } \
-	if(target->use_clip_rect) \
-	{ \
-			glDisable(GL_SCISSOR_TEST); \
-	} \
-	/*glPopAttrib();*/ \
-	glEnable( GL_TEXTURE_2D ); \
+        RESET_COLOR; \
+        if(target->image != NULL) \
+        { \
+            GPU_MatrixMode( GPU_PROJECTION ); \
+            GPU_PopMatrix(); \
+            GPU_MatrixMode( GPU_MODELVIEW ); \
+        } \
+        if(target->use_clip_rect) \
+        { \
+                glDisable(GL_SCISSOR_TEST); \
+        } \
     }
 
 
