@@ -184,6 +184,7 @@ typedef struct GPU_Context
 	Uint8 shapes_use_blending;
 	GPU_BlendEnum shapes_blend_mode;
 	float line_thickness;
+	Uint8 use_texturing;
 	
     int matrix_mode;
     GPU_MatrixStack projection_matrix;

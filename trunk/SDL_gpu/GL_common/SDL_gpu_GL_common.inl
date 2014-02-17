@@ -446,6 +446,54 @@ static Uint32 get_proper_program_id(GPU_Renderer* renderer, Uint32 program_objec
     return program_object;
 }
 
+
+
+static void applyTexturing(GPU_Renderer* renderer)
+{
+    GPU_Context* context = renderer->current_context_target->context;
+    if(context->use_texturing != ((GPU_CONTEXT_DATA*)context->data)->last_use_texturing)
+    {
+        ((GPU_CONTEXT_DATA*)context->data)->last_use_texturing = context->use_texturing;
+        if(context->use_texturing)
+            glEnable(GL_TEXTURE_2D);
+        else
+            glDisable(GL_TEXTURE_2D);
+    }
+}
+
+static void changeTexturing(GPU_Renderer* renderer, Uint8 enable)
+{
+    GPU_Context* context = renderer->current_context_target->context;
+    if(enable != ((GPU_CONTEXT_DATA*)context->data)->last_use_texturing)
+    {
+        renderer->FlushBlitBuffer(renderer);
+        
+        ((GPU_CONTEXT_DATA*)context->data)->last_use_texturing = enable;
+        if(enable)
+            glEnable(GL_TEXTURE_2D);
+        else
+            glDisable(GL_TEXTURE_2D);
+    }
+}
+
+static void enableTexturing(GPU_Renderer* renderer)
+{
+    if(!renderer->current_context_target->context->use_texturing)
+    {
+        renderer->FlushBlitBuffer(renderer);
+        renderer->current_context_target->context->use_texturing = 1;
+    }
+}
+
+static void disableTexturing(GPU_Renderer* renderer)
+{
+    if(renderer->current_context_target->context->use_texturing)
+    {
+        renderer->FlushBlitBuffer(renderer);
+        renderer->current_context_target->context->use_texturing = 0;
+    }
+}
+
 #define MIX_COLOR_COMPONENT_NORMALIZED_RESULT(a, b) ((a)/255.0f * (b)/255.0f)
 #define MIX_COLOR_COMPONENT(a, b) (((a)/255.0f * (b)/255.0f)*255)
 #define MIX_COLORS(color1, color2) {MIX_COLOR_COMPONENT(color1.r, color2.r), MIX_COLOR_COMPONENT(color1.g, color2.g), MIX_COLOR_COMPONENT(color1.b, color2.b), MIX_COLOR_COMPONENT(GET_ALPHA(color1), GET_ALPHA(color2))}
@@ -454,8 +502,7 @@ static void prepareToRenderImage(GPU_Renderer* renderer, GPU_Target* target, GPU
 {
     GPU_Context* context = renderer->current_context_target->context;
     
-    // TODO: Store this state and only call it from FlushBlitBuffer()
-    glEnable(GL_TEXTURE_2D);
+    enableTexturing(renderer);
     
     // Blitting
     if(target->use_color)
@@ -477,8 +524,7 @@ static void prepareToRenderShapes(GPU_Renderer* renderer)
 {
     GPU_Context* context = renderer->current_context_target->context;
     
-    // TODO: Store this state and only call it from FlushBlitBuffer()
-    glDisable(GL_TEXTURE_2D);
+    disableTexturing(renderer);
     
     // Shape rendering
     // Color is set elsewhere for shapes
@@ -792,13 +838,20 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     target->camera = GPU_GetDefaultCamera();
     
     target->context->line_thickness = 1.0f;
+    target->context->use_texturing = 1;
     target->context->shapes_use_blending = 1;
     target->context->shapes_blend_mode = GPU_BLEND_NORMAL;
     
+    
     SDL_Color white = {255, 255, 255, 255};
     cdata->last_color = white;
+    
+    cdata->last_use_texturing = 1;
+    glEnable(GL_TEXTURE_2D);
+    
     cdata->last_use_blending = 0;
     cdata->last_blend_mode = GPU_BLEND_NORMAL;
+    
     cdata->last_viewport = target->viewport;
     cdata->last_camera = target->camera;  // Redundant due to applyTargetCamera()
     
@@ -1349,7 +1402,7 @@ static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint8 
         return NULL;
     }
 
-    glEnable(GL_TEXTURE_2D);
+    changeTexturing(renderer, 1);
     bindTexture(renderer, result);
 
     GLenum internal_format = ((GPU_IMAGE_DATA*)(result->data))->format;
@@ -2008,8 +2061,9 @@ static int InitImageWithSurface(GPU_Renderer* renderer, GPU_Image* image, SDL_Su
         }
     }
 
-    glEnable(GL_TEXTURE_2D);
+    changeTexturing(renderer, 1);
     bindTexture(renderer, image);
+    
     int alignment = 1;
     if(newSurface->format->BytesPerPixel == 4)
         alignment = 4;
@@ -2103,7 +2157,7 @@ static void UpdateImage(GPU_Renderer* renderer, GPU_Image* image, const GPU_Rect
     }
 
 
-    glEnable(GL_TEXTURE_2D);
+    changeTexturing(renderer, 1);
     if(image->target != NULL && isCurrentTarget(renderer, image->target))
         renderer->FlushBlitBuffer(renderer);
     bindTexture(renderer, image);
@@ -3108,7 +3162,7 @@ static void BlitBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* targ
     prepareToRenderImage(renderer, target, image);
     changeViewport(target);
     
-    glEnable(GL_TEXTURE_2D);
+    changeTexturing(renderer, 1);
     Uint8 isRTT = (target->image != NULL);
     
     // Modify the projection matrix if rendering to a texture
@@ -3330,7 +3384,7 @@ static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* 
     prepareToRenderImage(renderer, target, image);
     changeViewport(target);
     
-    glEnable(GL_TEXTURE_2D);
+    changeTexturing(renderer, 1);
     Uint8 isRTT = (target->image != NULL);
     
     // Modify the projection matrix if rendering to a texture
@@ -3799,7 +3853,7 @@ static void FlushBlitBuffer(GPU_Renderer* renderer)
         
         changeViewport(dest);
         
-        glEnable(GL_TEXTURE_2D);
+        applyTexturing(renderer);
         Uint8 isRTT = (dest->image != NULL);
 
         // Modify the projection matrix if rendering to a texture
