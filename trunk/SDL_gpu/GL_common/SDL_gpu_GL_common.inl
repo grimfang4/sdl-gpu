@@ -558,28 +558,49 @@ static void changeViewport(GPU_Target* target)
 
 static void applyTargetCamera(GPU_Target* target)
 {
-    ((GPU_CONTEXT_DATA*)(GPU_GetContextTarget()->context->data))->last_camera = target->camera;
+    GPU_CONTEXT_DATA* cdata = (GPU_CONTEXT_DATA*)GPU_GetContextTarget()->context->data;
+    cdata->last_camera = target->camera;
+    
+    Uint8 invert = (target->image != NULL);
+    cdata->last_camera_inverted = invert;
     
     GPU_MatrixMode( GPU_PROJECTION );
     GPU_LoadIdentity();
-
-    // The default z for objects is 0
     
-    GPU_Ortho(target->camera.x, target->w + target->camera.x, target->h + target->camera.y, target->camera.y, -1.0f, 1.0f);
-
+    if(!invert)
+        GPU_Ortho(target->camera.x, target->w + target->camera.x, target->h + target->camera.y, target->camera.y, -1.0f, 1.0f);
+    else
+        GPU_Ortho(target->camera.x, target->w + target->camera.x, target->camera.y, target->h + target->camera.y, -1.0f, 1.0f);  // Special inverted orthographic projection because tex coords are inverted already for render-to-texture
+    
     GPU_MatrixMode( GPU_MODELVIEW );
     GPU_LoadIdentity();
 
 
     float offsetX = target->w/2.0f;
     float offsetY = target->h/2.0f;
-    GPU_Translate(offsetX, offsetY, -0.01);
+    GPU_Translate(offsetX, offsetY, 0);
     GPU_Rotate(target->camera.angle, 0, 0, 1);
     GPU_Translate(-offsetX, -offsetY, 0);
 
     GPU_Translate(target->camera.x + offsetX, target->camera.y + offsetY, 0);
     GPU_Scale(target->camera.zoom, target->camera.zoom, 1.0f);
     GPU_Translate(-target->camera.x - offsetX, -target->camera.y - offsetY, 0);
+}
+
+static Uint8 equal_cameras(GPU_Camera a, GPU_Camera b)
+{
+    return (a.x == b.x && a.y == b.y && a.z == b.z && a.angle == b.angle && a.zoom == b.zoom);
+}
+
+static void changeCamera(GPU_Target* target)
+{
+    GPU_CONTEXT_DATA* cdata = (GPU_CONTEXT_DATA*)GPU_GetContextTarget()->context->data;
+    
+    if(!equal_cameras(cdata->last_camera, target->camera)
+       || ((target->image != NULL) != cdata->last_camera_inverted))  // Switching between RTT and non-RTT
+    {
+        applyTargetCamera(target);
+    }
 }
 
 #ifdef SDL_GPU_APPLY_TRANSFORMS_TO_GL_STACK
@@ -853,8 +874,8 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     cdata->last_blend_mode = GPU_BLEND_NORMAL;
     
     cdata->last_viewport = target->viewport;
-    cdata->last_camera = target->camera;  // Redundant due to applyTargetCamera()
-    
+    cdata->last_camera = target->camera;  // Redundant due to applyTargetCamera(), below
+    cdata->last_camera_inverted = 0;
 
     #ifdef SDL_GPU_USE_OPENGL
     GLenum err = glewInit();
@@ -1122,6 +1143,11 @@ static void SetAsCurrent(GPU_Renderer* renderer)
 static Uint8 SetWindowResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
 {
     GPU_Target* target = renderer->current_context_target;
+    
+    Uint8 isCurrent = isCurrentTarget(renderer, target);
+    if(isCurrent)
+        renderer->FlushBlitBuffer(renderer);
+    
 #ifdef SDL_GPU_USE_SDL2
     
     SDL_SetWindowSize(SDL_GetWindowFromID(target->context->windowID), w, h);
@@ -1141,33 +1167,26 @@ static Uint8 SetWindowResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
 
     target->context->window_w = screen->w;
     target->context->window_h = screen->h;
+    
+    // FIXME: Does the entire GL state need to be reset because the screen was recreated?
+    // FIXME: This interferes with context state
+    glEnable( GL_TEXTURE_2D );
+    glClearColor( 0.0f, 0.0f, 0.0f, 0.0f );
+
+    glClear( GL_COLOR_BUFFER_BIT );
 #endif
 
     target->context->stored_window_w = target->context->window_w;
     target->context->stored_window_h = target->context->window_h;
 
-    Uint16 virtualW = target->w;
-    Uint16 virtualH = target->h;
-    
-    // FIXME: This might interfere with cameras or be ruined by them.
-    glEnable( GL_TEXTURE_2D );
-    glClearColor( 0.0f, 0.0f, 0.0f, 0.0f );
-
-    target->viewport = GPU_MakeRect(0, 0, w, h);
+    // Update display
+    target->viewport = GPU_MakeRect(0, 0, target->w, target->h);
     changeViewport(target);
 
-    glClear( GL_COLOR_BUFFER_BIT );
-
-    GPU_MatrixMode( GPU_PROJECTION );
-    GPU_LoadIdentity();
-
-    GPU_Ortho(0.0f, virtualW, virtualH, 0.0f, -1.0f, 1.0f);
-
-    GPU_MatrixMode( GPU_MODELVIEW );
-    GPU_LoadIdentity();
-
-    // Update display
     GPU_UnsetClip(target);
+    
+    if(isCurrent)
+        applyTargetCamera(target);
 
     return 1;
 }
@@ -1295,6 +1314,8 @@ static GPU_Camera SetCamera(GPU_Renderer* renderer, GPU_Target* target, GPU_Came
         return GPU_GetDefaultCamera();
     }
     
+    if(isCurrentTarget(renderer, target))
+        renderer->FlushBlitBuffer(renderer);
     
     GPU_Camera result = target->camera;
 
@@ -1302,20 +1323,6 @@ static GPU_Camera SetCamera(GPU_Renderer* renderer, GPU_Target* target, GPU_Came
         target->camera = GPU_GetDefaultCamera();
     else
         target->camera = *cam;
-    
-    if(isCurrentTarget(renderer, target))
-    {
-        // Change the active camera
-        
-        // Skip change if the camera is already the same.
-        GPU_CONTEXT_DATA* cdata = (GPU_CONTEXT_DATA*)renderer->current_context_target->context->data;
-        if(result.x == cdata->last_camera.x && result.y == cdata->last_camera.y && result.z == cdata->last_camera.z
-           && result.angle == cdata->last_camera.angle && result.zoom == cdata->last_camera.zoom)
-            return result;
-
-        renderer->FlushBlitBuffer(renderer);
-        applyTargetCamera(target);
-    }
 
     return result;
 }
@@ -3161,21 +3168,9 @@ static void BlitBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* targ
     prepareToRenderToTarget(renderer, target);
     prepareToRenderImage(renderer, target, image);
     changeViewport(target);
+    changeCamera(target);
     
     changeTexturing(renderer, 1);
-    Uint8 isRTT = (target->image != NULL);
-    
-    // Modify the projection matrix if rendering to a texture
-    if(isRTT)
-    {
-        GPU_MatrixMode( GPU_PROJECTION );
-        GPU_PushMatrix();
-        GPU_LoadIdentity();
-
-        GPU_Ortho(0.0f, target->w, 0.0f, target->h, -1.0f, 1.0f); // Special inverted orthographic projection because tex coords are inverted already.
-
-        GPU_MatrixMode( GPU_MODELVIEW );
-    }
 
     setClipRect(renderer, target);
     
@@ -3336,14 +3331,6 @@ static void BlitBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* targ
     }
 
     unsetClipRect(renderer, target);
-
-    // restore matrices
-    if(isRTT)
-    {
-        GPU_MatrixMode( GPU_PROJECTION );
-        GPU_PopMatrix();
-        GPU_MatrixMode( GPU_MODELVIEW );
-    }
 }
 
 // Assumes the right format
@@ -3383,21 +3370,9 @@ static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* 
     prepareToRenderToTarget(renderer, target);
     prepareToRenderImage(renderer, target, image);
     changeViewport(target);
+    changeCamera(target);
     
     changeTexturing(renderer, 1);
-    Uint8 isRTT = (target->image != NULL);
-    
-    // Modify the projection matrix if rendering to a texture
-    if(isRTT)
-    {
-        GPU_MatrixMode( GPU_PROJECTION );
-        GPU_PushMatrix();
-        GPU_LoadIdentity();
-
-        GPU_Ortho(0.0f, target->w, 0.0f, target->h, -1.0f, 1.0f); // Special inverted orthographic projection because tex coords are inverted already.
-
-        GPU_MatrixMode( GPU_MODELVIEW );
-    }
 
     setClipRect(renderer, target);
     
@@ -3552,14 +3527,6 @@ static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* 
     cdata->index_buffer_num_vertices = 0;
 
     unsetClipRect(renderer, target);
-
-    // restore matrices
-    if(isRTT)
-    {
-        GPU_MatrixMode( GPU_PROJECTION );
-        GPU_PopMatrix();
-        GPU_MatrixMode( GPU_MODELVIEW );
-    }
 }
 
 static void GenerateMipmaps(GPU_Renderer* renderer, GPU_Image* image)
@@ -3852,21 +3819,9 @@ static void FlushBlitBuffer(GPU_Renderer* renderer)
         GPU_Target* dest = cdata->last_target;
         
         changeViewport(dest);
+        changeCamera(dest);
         
         applyTexturing(renderer);
-        Uint8 isRTT = (dest->image != NULL);
-
-        // Modify the projection matrix if rendering to a texture
-        if(isRTT)
-        {
-            GPU_MatrixMode( GPU_PROJECTION );
-            GPU_PushMatrix();
-            GPU_LoadIdentity();
-
-            GPU_Ortho(0.0f, dest->w, 0.0f, dest->h, -1.0f, 1.0f); // Special inverted orthographic projection because tex coords are inverted already.
-
-            GPU_MatrixMode( GPU_MODELVIEW );
-        }
         
         #ifdef SDL_GPU_APPLY_TRANSFORMS_TO_GL_STACK
         //if(!renderer->IsFeatureEnabled(GPU_FEATURE_VERTEX_SHADER))
@@ -3900,15 +3855,6 @@ static void FlushBlitBuffer(GPU_Renderer* renderer)
         cdata->index_buffer_num_vertices = 0;
 
         unsetClipRect(renderer, dest);
-
-        // restore matrices
-        if(isRTT)
-        {
-            GPU_MatrixMode( GPU_PROJECTION );
-            GPU_PopMatrix();
-            GPU_MatrixMode( GPU_MODELVIEW );
-        }
-
     }
 }
 

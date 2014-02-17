@@ -85,9 +85,14 @@ int main(int argc, char* argv[])
 	long frameCount = 0;
 	
 	
+	SDL_Color red = {255, 0, 0, 255};
 	SDL_Color black = {0, 0, 0, 255};
 	
 	GPU_Image* img = GPU_LoadImage("data/test3.png");
+	GPU_Image* buffer = GPU_CreateImage(800, 600, 4);
+	GPU_LoadTarget(buffer);
+	
+	GPU_Target* target = screen;
 	
 	Uint8* keystates = SDL_GetKeyState(NULL);
 	
@@ -114,6 +119,13 @@ int main(int argc, char* argv[])
 					camera.zoom = 1.0f;
 					camera.angle = 0.0f;
 				}
+				else if(event.key.keysym.sym == SDLK_RETURN)
+                {
+                    if(target == screen)
+                        target = buffer->target;
+                    else
+                        target = screen;
+                }
 				else if(event.key.keysym.sym == SDLK_SPACE)
 				{
 					int mx, my;
@@ -186,14 +198,22 @@ int main(int argc, char* argv[])
 		}
 		
 		GPU_ClearRGBA(screen, 255, 255, 255, 255);
+		GPU_SetCamera(screen, NULL);
 		
-		GPU_SetCamera(screen, &camera);
+		GPU_ClearRGBA(target, 255, 255, 255, 255);
 		
-		GPU_Rectangle(screen, 0, 0, 800, 600, black);
-		GPU_Blit(img, NULL, screen, 50, 50);
-		GPU_Blit(img, NULL, screen, 320, 50);
-		GPU_Blit(img, NULL, screen, 50, 500);
+		GPU_SetCamera(target, &camera);
 		
+		GPU_Rectangle(target, 0, 0, 800, 600, black);
+		GPU_Blit(img, NULL, target, 50, 50);
+		GPU_Blit(img, NULL, target, 320, 50);
+		GPU_Blit(img, NULL, target, 50, 500);
+		
+		if(target != screen)
+        {
+            GPU_Blit(buffer, NULL, screen, buffer->w/2, buffer->h/2);
+            GPU_CircleFilled(screen, 0, 0, 20, red);
+        }
 		
 		GPU_Flip(screen);
 		

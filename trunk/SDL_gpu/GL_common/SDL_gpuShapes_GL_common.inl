@@ -147,17 +147,8 @@ int _vertex_array_index = 0;
             prepareToRenderToTarget(renderer, target); \
             prepareToRenderShapes(renderer); \
             changeViewport(target); \
+            changeCamera(target); \
             \
-            if(target->image != NULL) \
-            { \
-                GPU_MatrixMode( GPU_PROJECTION ); \
-                GPU_PushMatrix(); \
-                GPU_LoadIdentity(); \
-                \
-                GPU_Ortho(0.0f, target->viewport.w, 0.0f, target->viewport.h, -1.0f, 1.0f); /* Special inverted orthographic projection because tex coords are inverted already. */ \
-                \
-                GPU_MatrixMode( GPU_MODELVIEW ); \
-            } \
             APPLY_TRANSFORMS;
 
 
@@ -176,27 +167,12 @@ int _vertex_array_index = 0;
             prepareToRenderToTarget(renderer, target); \
             prepareToRenderImage(renderer, target, src); \
             changeViewport(target); \
+            changeCamera(target); \
             \
-            if(target->image != NULL) \
-            { \
-                GPU_MatrixMode( GPU_PROJECTION ); \
-                GPU_PushMatrix(); \
-                GPU_LoadIdentity(); \
-                \
-                GPU_Ortho(0.0f, target->viewport.w, 0.0f, target->viewport.h, -1.0f, 1.0f); /* Special inverted orthographic projection because tex coords are inverted already. */ \
-                \
-                GPU_MatrixMode( GPU_MODELVIEW ); \
-            } \
             APPLY_TRANSFORMS;
 
 #define END \
         RESET_COLOR; \
-        if(target->image != NULL) \
-        { \
-            GPU_MatrixMode( GPU_PROJECTION ); \
-            GPU_PopMatrix(); \
-            GPU_MatrixMode( GPU_MODELVIEW ); \
-        } \
         if(target->use_clip_rect) \
         { \
                 glDisable(GL_SCISSOR_TEST); \

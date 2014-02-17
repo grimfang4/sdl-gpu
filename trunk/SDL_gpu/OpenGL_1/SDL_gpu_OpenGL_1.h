@@ -220,6 +220,7 @@ typedef struct ContextData_OpenGL_1
 	GPU_BlendEnum last_blend_mode;
 	GPU_Rect last_viewport;
 	GPU_Camera last_camera;
+	Uint8 last_camera_inverted;
 	
 	GPU_Image* last_image;
 	GPU_Target* last_target;
