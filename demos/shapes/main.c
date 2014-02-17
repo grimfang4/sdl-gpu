@@ -158,6 +158,12 @@ int main(int argc, char* argv[])
 					if(shapeType >= numShapeTypes)
 						shapeType = 0;
 				}
+				else if(event.key.keysym.sym == SDLK_BACKSPACE)
+				{
+					shapeType--;
+					if(shapeType < 0)
+                        shapeType = numShapeTypes-1;
+				}
 				else if(event.key.keysym.sym == SDLK_b)
 				{
 					blend = !blend;
