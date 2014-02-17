@@ -477,33 +477,35 @@ static void Arc(GPU_Renderer* renderer, GPU_Target* target, float x, float y, fl
     }
 
 
-    BEGIN;
-
     float t = startAngle;
     float dt = (1 - (endAngle - startAngle)/360) * 5;  // A segment every 5 degrees of a full circle
     float dx, dy;
 
     int numSegments = fabs(endAngle - startAngle)/dt;
-
-    DECLARE_VERTEX_ARRAY(numSegments+2); // Extra vertex for endpoint
-    DECLARE_COLOR_RGBA;
+    if(numSegments == 0)
+        return;
+    
+    BEGIN_UNTEXTURED("GPU_Arc", GL_LINES);
+    
+    dx = radius*cos(t*RADPERDEG);
+    dy = radius*sin(t*RADPERDEG);
+    SET_UNTEXTURED_VERTEX(x+dx, y+dy, r, g, b, a); // first point
+    t += dt;
 
     int i;
-    for(i = 0; i < numSegments+1; i++)
+    for(i = 1; i < numSegments; i++)
     {
         dx = radius*cos(t*RADPERDEG);
         dy = radius*sin(t*RADPERDEG);
-        SET_VERTEX(x+dx, y+dy);
+        SET_UNTEXTURED_VERTEX(x+dx, y+dy, r, g, b, a);
+        SET_INDEXED_VERTEX(i);  // Double that vertex
         t += dt;
     }
     
+    // Last point
     dx = radius*cos(endAngle*RADPERDEG);
     dy = radius*sin(endAngle*RADPERDEG);
-    SET_VERTEX(x+dx, y+dy);
-
-    DRAW_VERTICES(GL_LINE_STRIP);
-
-    END;
+    SET_UNTEXTURED_VERTEX(x+dx, y+dy, r, g, b, a);
 }
 
 
@@ -558,62 +560,72 @@ static void ArcFilled(GPU_Renderer* renderer, GPU_Target* target, float x, float
         while(endAngle >= 360)
             endAngle -= 360;
     }
-
-
-    BEGIN;
-
+    
     float t = startAngle;
     float dt = (1 - (endAngle - startAngle)/360) * 5;  // A segment every 5 degrees of a full circle
     float dx, dy;
 
     int numSegments = fabs(endAngle - startAngle)/dt;
+    if(numSegments == 0)
+        return;
 
-    DECLARE_VERTEX_ARRAY(numSegments+3);  // Extra vertex for the center and endpoint
-    DECLARE_COLOR_RGBA;
 
-    SET_VERTEX(x, y);
+    BEGIN_UNTEXTURED("GPU_ArcFilled", GL_TRIANGLES);
+
+    // First triangle
+    SET_UNTEXTURED_VERTEX(x, y, r, g, b, a);
+    dx = radius*cos(t*RADPERDEG);
+    dy = radius*sin(t*RADPERDEG);
+    SET_UNTEXTURED_VERTEX(x+dx, y+dy, r, g, b, a); // first point
+    t += dt;
+    dx = radius*cos(t*RADPERDEG);
+    dy = radius*sin(t*RADPERDEG);
+    SET_UNTEXTURED_VERTEX(x+dx, y+dy, r, g, b, a); // new point
+    t += dt;
+    
     int i;
-    for(i = 1; i < numSegments+2; i++)
+    for(i = 2; i < numSegments+1; i++)
     {
         dx = radius*cos(t*RADPERDEG);
         dy = radius*sin(t*RADPERDEG);
-        SET_VERTEX(x+dx, y+dy);
+        SET_INDEXED_VERTEX(0);  // center
+        SET_INDEXED_VERTEX(i);  // last point
+        SET_UNTEXTURED_VERTEX(x+dx, y+dy, r, g, b, a); // new point
         t += dt;
     }
-
+    
+    // Last triangle
     dx = radius*cos(endAngle*RADPERDEG);
     dy = radius*sin(endAngle*RADPERDEG);
-    SET_VERTEX(x+dx, y+dy);
-    
-    DRAW_VERTICES(GL_TRIANGLE_FAN);
-    
-    END;
+    SET_INDEXED_VERTEX(0);  // center
+    SET_INDEXED_VERTEX(i);  // last point
+    SET_UNTEXTURED_VERTEX(x+dx, y+dy, r, g, b, a); // new point
 }
 
 static void Circle(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float radius, SDL_Color color)
 {
-    BEGIN;
+    BEGIN_UNTEXTURED("GPU_Circle", GL_LINES);
 
     float t = 0;
     float dt = 5;  // A segment every 5 degrees of a full circle
     float dx, dy;
     int numSegments = 360/dt+1;
 
-    DECLARE_VERTEX_ARRAY(numSegments);
-    DECLARE_COLOR_RGBA;
-
+    dx = radius;
+    dy = 0.0f;
+    SET_UNTEXTURED_VERTEX(x+dx, y+dy, r, g, b, a); // first point
+    
     int i;
-    for(i = 0; i < numSegments; i++)
+    for(i = 1; i < numSegments; i++)
     {
         dx = radius*cos(t*RADPERDEG);
         dy = radius*sin(t*RADPERDEG);
-        SET_VERTEX(x+dx, y+dy);
+        SET_UNTEXTURED_VERTEX(x+dx, y+dy, r, g, b, a);
+        SET_INDEXED_VERTEX(i);  // Double that vertex
         t += dt;
     }
-
-    DRAW_VERTICES(GL_LINE_LOOP);
-
-    END;
+    
+    SET_INDEXED_VERTEX(0);  // back to the beginning
 }
 
 static void CircleFilled(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float radius, SDL_Color color)
@@ -635,9 +647,10 @@ static void CircleFilled(GPU_Renderer* renderer, GPU_Target* target, float x, fl
     dx = radius*cos(t*RADPERDEG);
     dy = radius*sin(t*RADPERDEG);
     SET_UNTEXTURED_VERTEX(x+dx, y+dy, r, g, b, a); // new point
+    t += dt;
     
     int i;
-    for(i = 1; i < numSegments+1; i++)
+    for(i = 2; i < numSegments; i++)
     {
         dx = radius*cos(t*RADPERDEG);
         dy = radius*sin(t*RADPERDEG);
