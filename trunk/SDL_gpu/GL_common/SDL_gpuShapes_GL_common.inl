@@ -692,8 +692,6 @@ static void TriFilled(GPU_Renderer* renderer, GPU_Target* target, float x1, floa
 
 static void Rectangle(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color)
 {
-    BEGIN;
-    
     if(y2 < y1)
     {
         float y = y1;
@@ -712,40 +710,54 @@ static void Rectangle(GPU_Renderer* renderer, GPU_Target* target, float x1, floa
     float t = thickness/2;
     
     // Thick lines via filled triangles
-    DECLARE_VERTEX_ARRAY(10);
-    DECLARE_COLOR_RGBA;
     
-    SET_VERTEX(x1 - t, y1 - t);
-    SET_VERTEX(x1 + t, y1 + t);
-    SET_VERTEX(x2 + t, y1 - t);
-    SET_VERTEX(x2 - t, y1 + t);
-    SET_VERTEX(x2 + t, y2 + t);
-    SET_VERTEX(x2 - t, y2 - t);
-    SET_VERTEX(x1 - t, y2 + t);
-    SET_VERTEX(x1 + t, y2 - t);
-    SET_VERTEX(x1 - t, y1 - t);
-    SET_VERTEX(x1 + t, y1 + t);
+    BEGIN_UNTEXTURED("GPU_Rectangle", GL_TRIANGLES, 24);
     
-    DRAW_VERTICES(GL_TRIANGLE_STRIP);
-
-    END;
+    // First triangle
+    SET_UNTEXTURED_VERTEX(x1 - t, y1 - t, r, g, b, a);
+    SET_UNTEXTURED_VERTEX(x1 + t, y1 + t, r, g, b, a);
+    SET_UNTEXTURED_VERTEX(x2 + t, y1 - t, r, g, b, a);
+    
+    SET_INDEXED_VERTEX(1);
+    SET_INDEXED_VERTEX(2);
+    SET_UNTEXTURED_VERTEX(x2 - t, y1 + t, r, g, b, a);
+    
+    SET_INDEXED_VERTEX(2);
+    SET_INDEXED_VERTEX(3);
+    SET_UNTEXTURED_VERTEX(x2 + t, y2 + t, r, g, b, a);
+    
+    SET_INDEXED_VERTEX(3);
+    SET_INDEXED_VERTEX(4);
+    SET_UNTEXTURED_VERTEX(x2 - t, y2 - t, r, g, b, a);
+    
+    SET_INDEXED_VERTEX(4);
+    SET_INDEXED_VERTEX(5);
+    SET_UNTEXTURED_VERTEX(x1 - t, y2 + t, r, g, b, a);
+    
+    SET_INDEXED_VERTEX(5);
+    SET_INDEXED_VERTEX(6);
+    SET_UNTEXTURED_VERTEX(x1 + t, y2 - t, r, g, b, a);
+    
+    SET_INDEXED_VERTEX(6);
+    SET_INDEXED_VERTEX(7);
+    SET_UNTEXTURED_VERTEX(x1 - t, y1 - t, r, g, b, a);
+    
+    SET_INDEXED_VERTEX(7);
+    SET_INDEXED_VERTEX(8);
+    SET_UNTEXTURED_VERTEX(x1 + t, y1 + t, r, g, b, a);
 }
 
 static void RectangleFilled(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color)
 {
-    BEGIN;
+    BEGIN_UNTEXTURED("GPU_Rectangle", GL_TRIANGLES, 6);
+
+    SET_UNTEXTURED_VERTEX(x1, y1, r, g, b, a);
+    SET_UNTEXTURED_VERTEX(x1, y2, r, g, b, a);
+    SET_UNTEXTURED_VERTEX(x2, y1, r, g, b, a);
     
-    DECLARE_VERTEX_ARRAY(4);
-    DECLARE_COLOR_RGBA;
-
-    SET_VERTEX(x1, y1);
-    SET_VERTEX(x1, y2);
-    SET_VERTEX(x2, y1);
-    SET_VERTEX(x2, y2);
-
-    DRAW_VERTICES(GL_TRIANGLE_STRIP);
-
-    END;
+    SET_INDEXED_VERTEX(1);
+    SET_INDEXED_VERTEX(2);
+    SET_UNTEXTURED_VERTEX(x2, y2, r, g, b, a);
 }
 
 static void RectangleRound(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, float radius, SDL_Color color)
