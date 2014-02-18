@@ -182,7 +182,7 @@ int _vertex_array_index = 0;
 
 
 
-#define BEGIN_UNTEXTURED(function_name, shape) \
+#define BEGIN_UNTEXTURED(function_name, shape, num_additional_indices) \
     if(target == NULL) \
     { \
         GPU_PushErrorCode(function_name, GPU_ERROR_NULL_ARGUMENT, "target"); \
@@ -211,6 +211,12 @@ int _vertex_array_index = 0;
     prepareToRenderShapes(renderer, shape); \
      \
     GPU_CONTEXT_DATA* cdata = (GPU_CONTEXT_DATA*)renderer->current_context_target->context->data; \
+     \
+    if(cdata->index_buffer_num_vertices + (num_additional_indices) >= cdata->index_buffer_max_num_vertices) \
+    { \
+        growBlitBuffer(cdata, cdata->index_buffer_num_vertices + (num_additional_indices)); \
+    } \
+     \
     float* blit_buffer = cdata->blit_buffer; \
     unsigned short* index_buffer = cdata->index_buffer; \
      \
@@ -411,14 +417,14 @@ static float GetLineThickness(GPU_Renderer* renderer)
 
 static void Pixel(GPU_Renderer* renderer, GPU_Target* target, float x, float y, SDL_Color color)
 {
-    BEGIN_UNTEXTURED("GPU_Pixel", GL_POINTS);
+    BEGIN_UNTEXTURED("GPU_Pixel", GL_POINTS, 1);
     
     SET_UNTEXTURED_VERTEX(x, y, r, g, b, a);
 }
 
 static void Line(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color)
 {
-    BEGIN_UNTEXTURED("GPU_Line", GL_LINES);
+    BEGIN_UNTEXTURED("GPU_Line", GL_LINES, 2);
     
     SET_UNTEXTURED_VERTEX(x1, y1, r, g, b, a);
     SET_UNTEXTURED_VERTEX(x2, y2, r, g, b, a);
@@ -485,7 +491,7 @@ static void Arc(GPU_Renderer* renderer, GPU_Target* target, float x, float y, fl
     if(numSegments == 0)
         return;
     
-    BEGIN_UNTEXTURED("GPU_Arc", GL_LINES);
+    BEGIN_UNTEXTURED("GPU_Arc", GL_LINES, 1 + (numSegments-1)*2 + 1);
     
     dx = radius*cos(t*RADPERDEG);
     dy = radius*sin(t*RADPERDEG);
@@ -570,7 +576,7 @@ static void ArcFilled(GPU_Renderer* renderer, GPU_Target* target, float x, float
         return;
 
 
-    BEGIN_UNTEXTURED("GPU_ArcFilled", GL_TRIANGLES);
+    BEGIN_UNTEXTURED("GPU_ArcFilled", GL_TRIANGLES, 3 + (numSegments-1)*3 + 3);
 
     // First triangle
     SET_UNTEXTURED_VERTEX(x, y, r, g, b, a);
@@ -604,12 +610,12 @@ static void ArcFilled(GPU_Renderer* renderer, GPU_Target* target, float x, float
 
 static void Circle(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float radius, SDL_Color color)
 {
-    BEGIN_UNTEXTURED("GPU_Circle", GL_LINES);
-
     float t = 0;
     float dt = 5;  // A segment every 5 degrees of a full circle
     float dx, dy;
     int numSegments = 360/dt+1;
+    
+    BEGIN_UNTEXTURED("GPU_Circle", GL_LINES, 1 + (numSegments-1)*2 + 1);
 
     dx = radius;
     dy = 0.0f;
@@ -630,13 +636,13 @@ static void Circle(GPU_Renderer* renderer, GPU_Target* target, float x, float y,
 
 static void CircleFilled(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float radius, SDL_Color color)
 {
-    BEGIN_UNTEXTURED("GPU_CircleFilled", GL_TRIANGLES);
-
     float t = 0;
     float dt = 5;  // A segment every 5 degrees of a full circle
     float dx, dy;
 
     int numSegments = 360/dt+1;
+    
+    BEGIN_UNTEXTURED("GPU_CircleFilled", GL_TRIANGLES, 3 + (numSegments-2)*3 + 3);
 
     // First triangle
     SET_UNTEXTURED_VERTEX(x, y, r, g, b, a);
@@ -663,7 +669,7 @@ static void CircleFilled(GPU_Renderer* renderer, GPU_Target* target, float x, fl
 
 static void Tri(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, float x3, float y3, SDL_Color color)
 {
-    BEGIN_UNTEXTURED("GPU_Tri", GL_LINES);
+    BEGIN_UNTEXTURED("GPU_Tri", GL_LINES, 6);
     
     SET_UNTEXTURED_VERTEX(x1, y1, r, g, b, a);
     SET_UNTEXTURED_VERTEX(x2, y2, r, g, b, a);
@@ -677,7 +683,7 @@ static void Tri(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, 
 
 static void TriFilled(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, float x3, float y3, SDL_Color color)
 {
-    BEGIN_UNTEXTURED("GPU_TriFilled", GL_TRIANGLES);
+    BEGIN_UNTEXTURED("GPU_TriFilled", GL_TRIANGLES, 3);
     
     SET_UNTEXTURED_VERTEX(x1, y1, r, g, b, a);
     SET_UNTEXTURED_VERTEX(x2, y2, r, g, b, a);
