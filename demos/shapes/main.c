@@ -4,6 +4,9 @@
 #include "compat.h"
 #include "common.h"
 
+#ifndef M_PI
+#define M_PI 3.14159f
+#endif
 
 int main(int argc, char* argv[])
 {
@@ -125,13 +128,18 @@ int main(int argc, char* argv[])
 	float* pv[numPolys];
 	for(i = 0; i < numPolys; i++)
 	{
-		pn[i] = rand()%8;
+		pn[i] = rand()%8 + 3;
 		pv[i] = (float*)malloc(2*pn[i]*sizeof(float));
+		
+		float cx = rand()%screen->w;
+		float cy = rand()%screen->h;
+		float radius = 20 + rand()%(screen->w/8);
+		
 		int j;
 		for(j = 0; j < pn[i]*2; j+=2)
 		{
-			pv[i][j] = rand()%screen->w;
-			pv[i][j+1] = rand()%screen->h;
+			pv[i][j] = cx + radius*cos(2*M_PI*(((float)j)/(pn[i]*2))) + rand()%((int)radius/2);
+			pv[i][j+1] = cy + radius*sin(2*M_PI*(((float)j)/(pn[i]*2))) + rand()%((int)radius/2);
 		}
 	}
 	
