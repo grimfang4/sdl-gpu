@@ -749,7 +749,7 @@ static void Rectangle(GPU_Renderer* renderer, GPU_Target* target, float x1, floa
 
 static void RectangleFilled(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color)
 {
-    BEGIN_UNTEXTURED("GPU_Rectangle", GL_TRIANGLES, 6);
+    BEGIN_UNTEXTURED("GPU_RectangleFilled", GL_TRIANGLES, 6);
 
     SET_UNTEXTURED_VERTEX(x1, y1, r, g, b, a);
     SET_UNTEXTURED_VERTEX(x1, y2, r, g, b, a);
@@ -842,36 +842,54 @@ static void RectangleRoundFilled(GPU_Renderer* renderer, GPU_Target* target, flo
 
 static void Polygon(GPU_Renderer* renderer, GPU_Target* target, Uint16 n, float* vertices, SDL_Color color)
 {
-    BEGIN;
+    if(n < 3)
+        return;
     
     int numIndices = 2*n;
-    DECLARE_VERTEX_ARRAY(n);
-    DECLARE_COLOR_RGBA;
+    
+    BEGIN_UNTEXTURED("GPU_Polygon", GL_LINES, numIndices);
+    
+    SET_UNTEXTURED_VERTEX(vertices[0], vertices[1], r, g, b, a);
+    int last_index = 0;
     
     int i;
-    for(i = 0; i < numIndices; i+=2)
-        SET_VERTEX(vertices[i], vertices[i+1]);
-    
-    DRAW_VERTICES(GL_LINE_LOOP);
-
-    END;
+    for(i = 2; i < numIndices; i+=2)
+    {
+        SET_UNTEXTURED_VERTEX(vertices[i], vertices[i+1], r, g, b, a);
+        last_index++;
+        SET_INDEXED_VERTEX(last_index);  // Double the last one for the next line
+    }
+    SET_UNTEXTURED_VERTEX(vertices[0], vertices[1], r, g, b, a);
 }
 
 static void PolygonFilled(GPU_Renderer* renderer, GPU_Target* target, Uint16 n, float* vertices, SDL_Color color)
 {
-    BEGIN;
+    if(n < 3)
+        return;
     
     int numIndices = 2*n;
-    DECLARE_VERTEX_ARRAY(n);
-    DECLARE_COLOR_RGBA;
     
-    int i;
-    for(i = 0; i < numIndices; i+=2)
-        SET_VERTEX(vertices[i], vertices[i+1]);
+    // Using a fan of triangles assumes that the polygon is convex
+    BEGIN_UNTEXTURED("GPU_PolygonFilled", GL_TRIANGLES, numIndices);
     
-    DRAW_VERTICES(GL_TRIANGLE_FAN);
-
-    END;
+    // First triangle
+    SET_UNTEXTURED_VERTEX(vertices[0], vertices[1], r, g, b, a);
+    SET_UNTEXTURED_VERTEX(vertices[2], vertices[3], r, g, b, a);
+    SET_UNTEXTURED_VERTEX(vertices[4], vertices[5], r, g, b, a);
+    
+    if(n > 3)
+    {
+        int last_index = 2;
+        
+        int i;
+        for(i = 6; i < numIndices; i+=2)
+        {
+            SET_INDEXED_VERTEX(0);  // Start from the first vertex
+            SET_INDEXED_VERTEX(last_index);  // Double the last one
+            SET_UNTEXTURED_VERTEX(vertices[i], vertices[i+1], r, g, b, a);
+            last_index++;
+        }
+    }
 }
 
 static void PolygonBlit(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_Target* target, Uint16 n, float* vertices, float textureX, float textureY, float angle, float scaleX, float scaleY)
