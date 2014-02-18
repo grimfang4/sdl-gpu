@@ -126,7 +126,7 @@ int main(int argc, char* argv[])
 		}
 		
 		
-		GPU_ClearClip(screen);
+		GPU_UnsetClip(screen);
 		GPU_Clear(screen);
 		
 		// Draw on buffer

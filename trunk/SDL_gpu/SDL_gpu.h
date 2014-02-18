@@ -8,8 +8,6 @@
 /* Auto-detect if we're using the SDL2 API by the headers available. */
 #if SDL_VERSION_ATLEAST(2,0,0)
     #define SDL_GPU_USE_SDL2
-#else
-    #define SDL_Window SDL_Surface
 #endif
 
 

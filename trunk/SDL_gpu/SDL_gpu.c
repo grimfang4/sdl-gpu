@@ -286,9 +286,7 @@ void GPU_Quit(void)
 
 void GPU_SetDebugLevel(GPU_DebugLevelEnum level)
 {
-    if(level < 0)
-        level = GPU_DEBUG_LEVEL_0;
-    else if(level > GPU_DEBUG_LEVEL_MAX)
+    if(level > GPU_DEBUG_LEVEL_MAX)
         level = GPU_DEBUG_LEVEL_MAX;
     debug_level = level;
 }
