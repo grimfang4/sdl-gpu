@@ -27,7 +27,7 @@ int main(int argc, char* argv[])
 	
 	int i;
 	
-	int numColors = 20;
+	int numColors = 20; //855;
 	SDL_Color colors[numColors];
 	for(i = 0; i < numColors; i++)
 	{

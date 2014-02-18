@@ -95,11 +95,11 @@ int main(int argc, char* argv[])
 				else if(event.key.keysym.sym == SDLK_v)
                 {
                     virtual_on = 0;
-                    GPU_ClearVirtualResolution(screen);
-                    GPU_ClearVirtualResolution(image->target);
+                    GPU_UnsetVirtualResolution(screen);
+                    GPU_UnsetVirtualResolution(image->target);
                     for(i = 0; i < max_images; i++)
                     {
-                        GPU_ClearVirtualResolution(images[i]->target);
+                        GPU_UnsetVirtualResolution(images[i]->target);
                     }
                 }
 				else if(event.key.keysym.sym == SDLK_RETURN)

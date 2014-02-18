@@ -3732,7 +3732,7 @@ static void ClearRGBA(GPU_Renderer* renderer, GPU_Target* target, Uint8 r, Uint8
     }
 }
 
-static void DoPartialFlush(GPU_CONTEXT_DATA* cdata, int num_vertices, float* blit_buffer, int num_indices, unsigned short* index_buffer)
+static void DoPartialFlush(GPU_CONTEXT_DATA* cdata, unsigned int num_vertices, float* blit_buffer, unsigned short num_indices, unsigned short* index_buffer)
 {
 #ifdef SDL_GPU_USE_GL_TIER1
 
@@ -3821,7 +3821,7 @@ static void DoPartialFlush(GPU_CONTEXT_DATA* cdata, int num_vertices, float* bli
 #endif
 }
 
-static void DoUntexturedFlush(GPU_CONTEXT_DATA* cdata, int num_vertices, float* blit_buffer, int num_indices, unsigned short* index_buffer)
+static void DoUntexturedFlush(GPU_CONTEXT_DATA* cdata, unsigned int num_vertices, float* blit_buffer, unsigned short num_indices, unsigned short* index_buffer)
 {
 #ifdef SDL_GPU_USE_GL_TIER1
 
