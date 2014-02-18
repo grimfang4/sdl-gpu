@@ -23,16 +23,6 @@ static void Circle(GPU_Renderer* renderer, GPU_Target* target, float x, float y,
 
 #define SDL_GPU_SHAPE_FLOATS_PER_VERTEX 6
 
-#define SET_VERTEX(_x, _y) \
-do { \
-    glverts[_vertex_array_index++] = (PIXEL_OFFSET(_x)); \
-    glverts[_vertex_array_index++] = (PIXEL_OFFSET(_y)); \
-    glverts[_vertex_array_index++] = r; \
-    glverts[_vertex_array_index++] = g; \
-    glverts[_vertex_array_index++] = b; \
-    glverts[_vertex_array_index++] = a; \
-} while(0);
-
 #define SET_VERTEX_TEXTURED(_x, _y, _s, _t) \
 do { \
     glverts[_vertex_array_index++] = (PIXEL_OFFSET(_x)); \
@@ -69,12 +59,6 @@ else \
 
 #define SDL_GPU_SHAPE_FLOATS_PER_VERTEX 2
 
-#define SET_VERTEX(_x, _y) \
-do { \
-    glverts[_vertex_array_index++] = (PIXEL_OFFSET(_x)); \
-    glverts[_vertex_array_index++] = (PIXEL_OFFSET(_y)); \
-} while(0);
-
 #define SET_VERTEX_TEXTURED(_x, _y, _s, _t) \
 do { \
     glverts[_vertex_array_index++] = (PIXEL_OFFSET(_x)); \
@@ -107,20 +91,12 @@ glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 #endif
 
 
-#define DECLARE_VERTEX_ARRAY(num_vertices) \
-const int _num_vertices = (num_vertices); \
-const int _vertex_array_size = _num_vertices*SDL_GPU_SHAPE_FLOATS_PER_VERTEX; \
-GLfloat glverts[_vertex_array_size]; \
-int _vertex_array_index = 0;
-
 #define DECLARE_TEXTURED_VERTEX_ARRAY(num_vertices) \
 const int _num_vertices = (num_vertices); \
 const int _vertex_array_size = _num_vertices*(SDL_GPU_SHAPE_FLOATS_PER_VERTEX + 2); \
 GLfloat glverts[_vertex_array_size]; \
 int _vertex_array_index = 0;
 
-#define DRAW_VERTICES(_prim_type) draw_vertices(glverts, _num_vertices, _prim_type);
-#define DRAW_COUNTED_VERTICES(_prim_type) draw_vertices(glverts, _vertex_array_index/SDL_GPU_SHAPE_FLOATS_PER_VERTEX, _prim_type);
 #define DRAW_VERTICES_TEXTURED(_prim_type) draw_vertices_textured(glverts, _num_vertices, _prim_type);
 
 
@@ -131,54 +107,6 @@ int _vertex_array_index = 0;
 #else
     #define APPLY_TRANSFORMS
 #endif
-
-#define BEGIN \
-	if(target == NULL) \
-                return; \
-        if(renderer != target->renderer) \
-                return; \
-         \
-        renderer->FlushBlitBuffer(renderer); \
-        makeContextCurrent(renderer, target); \
-        if(renderer->current_context_target == NULL) \
-            return; \
-        if(bindFramebuffer(renderer, target)) \
-        { \
-            prepareToRenderToTarget(renderer, target); \
-            prepareToRenderShapes(renderer, GL_TRIANGLES); \
-            changeViewport(target); \
-            changeCamera(target); \
-            \
-            APPLY_TRANSFORMS;
-
-
-#define BEGIN_TEXTURED \
-	if(target == NULL) \
-                return; \
-        if(renderer != target->renderer) \
-                return; \
-         \
-        renderer->FlushBlitBuffer(renderer); \
-        makeContextCurrent(renderer, target); \
-        if(renderer->current_context_target == NULL) \
-            return; \
-        if(bindFramebuffer(renderer, target)) \
-        { \
-            prepareToRenderToTarget(renderer, target); \
-            prepareToRenderImage(renderer, target, src); \
-            changeViewport(target); \
-            changeCamera(target); \
-            \
-            APPLY_TRANSFORMS;
-
-#define END \
-        RESET_COLOR; \
-        if(target->use_clip_rect) \
-        { \
-                glDisable(GL_SCISSOR_TEST); \
-        } \
-    }
-
 
 
 
@@ -241,79 +169,6 @@ int _vertex_array_index = 0;
     unsigned short blit_buffer_starting_index = cdata->blit_buffer_num_vertices; \
     (void)blit_buffer_starting_index;
 
-
-static inline void draw_vertices(GLfloat* glverts, int num_vertices, GLenum prim_type)
-{
-    #ifdef SDL_GPU_USE_GL_TIER1
-        glBegin(prim_type);
-        int size = 2*num_vertices;
-        int i;
-        for(i = 0; i < size; i += 2)
-        {
-            glVertex3f(glverts[i], glverts[i+1], 0.0f);
-        }
-        glEnd();
-    #elif defined(SDL_GPU_USE_GL_TIER2)
-        glVertexPointer(2, GL_FLOAT, 0, glverts);
-        glEnableClientState(GL_VERTEX_ARRAY);
-        glDrawArrays(prim_type, 0, num_vertices);
-        glDisableClientState(GL_VERTEX_ARRAY);
-    #elif defined(SDL_GPU_USE_GL_TIER3)
-    
-        GPU_Target* target = GPU_GetContextTarget();
-        if(target == NULL)
-            return;
-
-        GPU_CONTEXT_DATA* cdata = ((GPU_CONTEXT_DATA*)target->context->data);
-        
-        refresh_attribute_data(cdata);
-        
-        int floats_per_vertex = 6;  // position (2), color (4)
-        int buffer_stride = floats_per_vertex * sizeof(float);
-        
-        // Upload our modelviewprojection matrix
-        if(cdata->current_shader_block.modelViewProjection_loc >= 0)
-        {
-            float mvp[16];
-            GPU_GetModelViewProjection(mvp);
-            GPU_SetUniformMatrixfv(cdata->current_shader_block.modelViewProjection_loc, 1, 4, 4, 0, mvp);
-        }
-    
-        // Update the vertex array object's buffers
-        #if !defined(SDL_GPU_NO_VAO)
-        glBindVertexArray(cdata->blit_VAO);
-        #endif
-        
-        // Upload blit buffer to a single buffer object
-        glBindBuffer(GL_ARRAY_BUFFER, cdata->blit_VBO[cdata->blit_VBO_flop]);
-        cdata->blit_VBO_flop = !cdata->blit_VBO_flop;
-        
-        // Copy the whole blit buffer to the GPU
-        glBufferSubData(GL_ARRAY_BUFFER, 0, buffer_stride * num_vertices, glverts);
-        
-        // Specify the formatting of the blit buffer
-        if(cdata->current_shader_block.position_loc >= 0)
-        {
-            glEnableVertexAttribArray(cdata->current_shader_block.position_loc);  // Tell GL to use client-side attribute data
-            glVertexAttribPointer(cdata->current_shader_block.position_loc, 2, GL_FLOAT, GL_FALSE, buffer_stride, 0);  // Tell how the data is formatted
-        }
-        if(cdata->current_shader_block.color_loc >= 0)
-        {
-            glEnableVertexAttribArray(cdata->current_shader_block.color_loc);
-            glVertexAttribPointer(cdata->current_shader_block.color_loc, 4, GL_FLOAT, GL_FALSE, buffer_stride, (void*)(2 * sizeof(float)));
-        }
-        
-        upload_attribute_data(cdata, num_vertices);
-        
-        glDrawArrays(prim_type, 0, num_vertices);
-        
-        disable_attribute_data(cdata);
-        
-        #if !defined(SDL_GPU_NO_VAO)
-        glBindVertexArray(0);
-        #endif
-    #endif
-}
 
 
 static inline void draw_vertices_textured(GLfloat* glverts, int num_vertices, GLenum prim_type)
@@ -405,6 +260,9 @@ static float SetLineThickness(GPU_Renderer* renderer, float thickness)
         return 1.0f;
     
 	float old = renderer->current_context_target->context->line_thickness;
+	if(old != thickness)
+        renderer->FlushBlitBuffer(renderer);
+    
 	renderer->current_context_target->context->line_thickness = thickness;
 	glLineWidth(thickness);
 	return old;
@@ -774,26 +632,63 @@ static void RectangleRound(GPU_Renderer* renderer, GPU_Target* target, float x1,
         x2 = x1;
         x1 = temp;
     }
-
-    BEGIN;
     
-    //int numVerts = 8 + (int(M_PI*5)+1)*4;  // 8 + (15.7 + 1)*4
-    DECLARE_VERTEX_ARRAY(120);
-    DECLARE_COLOR_RGBA;
+    if(radius > (x2-x1)/2)
+        radius = (x2-x1)/2;
+    if(radius > (y2-y1)/2)
+        radius = (y2-y1)/2;
     
-    float i;
-    for(i=(float)M_PI*1.5f;i<M_PI*2;i+=0.1f)
-        SET_VERTEX(x2-radius+cos(i)*radius, y1+radius+sin(i)*radius);
-    for(i=0;i<(float)M_PI*0.5f;i+=0.1f)
-        SET_VERTEX(x2-radius+cos(i)*radius, y2-radius+sin(i)*radius);
-    for(i=(float)M_PI*0.5f;i<M_PI;i+=0.1f)
-        SET_VERTEX(x1+radius+cos(i)*radius, y2-radius+sin(i)*radius);
-    for(i=(float)M_PI;i<M_PI*1.5f;i+=0.1f)
-        SET_VERTEX(x1+radius+cos(i)*radius, y1+radius+sin(i)*radius);
-
-    DRAW_COUNTED_VERTICES(GL_LINE_LOOP);
-
-    END;
+    float tau = 2*M_PI;
+    
+    int verts_per_corner = 7;
+    float corner_angle_increment = (tau/4)/(verts_per_corner-1);  // 0, 15, 30, 45, 60, 75, 90
+    
+    BEGIN_UNTEXTURED("GPU_RectangleRound", GL_LINES, 8+4*(verts_per_corner-1)*2);
+    
+    // Starting angle
+    float angle = tau*0.75f;
+    
+    // First point
+    SET_UNTEXTURED_VERTEX(x2-radius+cos(angle)*radius, y1+radius+sin(angle)*radius, r, g, b, a);
+    
+    int last_index = 1;
+    int i;
+    for(i = 1; i < verts_per_corner; i++)
+    {
+        SET_UNTEXTURED_VERTEX(x2-radius+cos(angle)*radius, y1+radius+sin(angle)*radius, r, g, b, a);
+        SET_INDEXED_VERTEX(last_index++);
+        angle += corner_angle_increment;
+    }
+    
+    SET_UNTEXTURED_VERTEX(x2-radius+cos(angle)*radius, y2-radius+sin(angle)*radius, r, g, b, a);
+    SET_INDEXED_VERTEX(last_index++);
+    for(i = 1; i < verts_per_corner; i++)
+    {
+        SET_UNTEXTURED_VERTEX(x2-radius+cos(angle)*radius, y2-radius+sin(angle)*radius, r, g, b, a);
+        SET_INDEXED_VERTEX(last_index++);
+        angle += corner_angle_increment;
+    }
+    
+    SET_UNTEXTURED_VERTEX(x1+radius+cos(angle)*radius, y2-radius+sin(angle)*radius, r, g, b, a);
+    SET_INDEXED_VERTEX(last_index++);
+    for(i = 1; i < verts_per_corner; i++)
+    {
+        SET_UNTEXTURED_VERTEX(x1+radius+cos(angle)*radius, y2-radius+sin(angle)*radius, r, g, b, a);
+        SET_INDEXED_VERTEX(last_index++);
+        angle += corner_angle_increment;
+    }
+    
+    SET_UNTEXTURED_VERTEX(x1+radius+cos(angle)*radius, y1+radius+sin(angle)*radius, r, g, b, a);
+    SET_INDEXED_VERTEX(last_index++);
+    for(i = 1; i < verts_per_corner; i++)
+    {
+        SET_UNTEXTURED_VERTEX(x1+radius+cos(angle)*radius, y1+radius+sin(angle)*radius, r, g, b, a);
+        SET_INDEXED_VERTEX(last_index++);
+        angle += corner_angle_increment;
+    }
+    
+    // Last point
+    SET_INDEXED_VERTEX(0);
 }
 
 static void RectangleRoundFilled(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, float radius, SDL_Color color)
@@ -810,34 +705,76 @@ static void RectangleRoundFilled(GPU_Renderer* renderer, GPU_Target* target, flo
         x2 = x1;
         x1 = temp;
     }
-
-    BEGIN;
     
-    //int numVerts = 8 + (int(M_PI*5)+1)*4;  // 8 + (15.7 + 1)*4
-    DECLARE_VERTEX_ARRAY(120);
-    DECLARE_COLOR_RGBA;
+    if(radius > (x2-x1)/2)
+        radius = (x2-x1)/2;
+    if(radius > (y2-y1)/2)
+        radius = (y2-y1)/2;
     
-    float i;
-    SET_VERTEX(x1+radius,y1);
-    SET_VERTEX(x2-radius,y1);
-    for(i=(float)M_PI*1.5f;i<M_PI*2;i+=0.1f)
-        SET_VERTEX(x2-radius+cos(i)*radius,y1+radius+sin(i)*radius);
-    SET_VERTEX(x2,y1+radius);
-    SET_VERTEX(x2,y2-radius);
-    for(i=0;i<(float)M_PI*0.5f;i+=0.1f)
-        SET_VERTEX(x2-radius+cos(i)*radius,y2-radius+sin(i)*radius);
-    SET_VERTEX(x2-radius,y2);
-    SET_VERTEX(x1+radius,y2);
-    for(i=(float)M_PI*0.5f;i<M_PI;i+=0.1f)
-        SET_VERTEX(x1+radius+cos(i)*radius,y2-radius+sin(i)*radius);
-    SET_VERTEX(x1,y2-radius);
-    SET_VERTEX(x1,y1+radius);
-    for(i=(float)M_PI;i<M_PI*1.5f;i+=0.1f)
-        SET_VERTEX(x1+radius+cos(i)*radius,y1+radius+sin(i)*radius);
-
-    DRAW_COUNTED_VERTICES(GL_TRIANGLE_FAN);
+    float tau = 2*M_PI;
     
-    END;
+    int verts_per_corner = 7;
+    float corner_angle_increment = (tau/4)/(verts_per_corner-1);  // 0, 15, 30, 45, 60, 75, 90
+    
+    BEGIN_UNTEXTURED("GPU_RectangleRoundFilled", GL_TRIANGLES, 15+4*(verts_per_corner-1)*3 - 3);
+    
+    // Starting angle
+    float angle = tau*0.75f;
+    
+    // First triangle
+    SET_UNTEXTURED_VERTEX((x2+x1)/2, (y2+y1)/2, r, g, b, a);  // Center
+    SET_UNTEXTURED_VERTEX(x2-radius+cos(angle)*radius, y1+radius+sin(angle)*radius, r, g, b, a);
+    angle += corner_angle_increment;
+    SET_UNTEXTURED_VERTEX(x2-radius+cos(angle)*radius, y1+radius+sin(angle)*radius, r, g, b, a);
+    angle += corner_angle_increment;
+    
+    int last_index = 2;
+    int i;
+    for(i = 2; i < verts_per_corner; i++)
+    {
+        SET_INDEXED_VERTEX(0);
+        SET_INDEXED_VERTEX(last_index++);
+        SET_UNTEXTURED_VERTEX(x2-radius+cos(angle)*radius, y1+radius+sin(angle)*radius, r, g, b, a);
+        angle += corner_angle_increment;
+    }
+    
+    SET_INDEXED_VERTEX(0);
+    SET_INDEXED_VERTEX(last_index++);
+    SET_UNTEXTURED_VERTEX(x2-radius+cos(angle)*radius, y2-radius+sin(angle)*radius, r, g, b, a);
+    for(i = 1; i < verts_per_corner; i++)
+    {
+        SET_INDEXED_VERTEX(0);
+        SET_INDEXED_VERTEX(last_index++);
+        SET_UNTEXTURED_VERTEX(x2-radius+cos(angle)*radius, y2-radius+sin(angle)*radius, r, g, b, a);
+        angle += corner_angle_increment;
+    }
+    
+    SET_INDEXED_VERTEX(0);
+    SET_INDEXED_VERTEX(last_index++);
+    SET_UNTEXTURED_VERTEX(x1+radius+cos(angle)*radius, y2-radius+sin(angle)*radius, r, g, b, a);
+    for(i = 1; i < verts_per_corner; i++)
+    {
+        SET_INDEXED_VERTEX(0);
+        SET_INDEXED_VERTEX(last_index++);
+        SET_UNTEXTURED_VERTEX(x1+radius+cos(angle)*radius, y2-radius+sin(angle)*radius, r, g, b, a);
+        angle += corner_angle_increment;
+    }
+    
+    SET_INDEXED_VERTEX(0);
+    SET_INDEXED_VERTEX(last_index++);
+    SET_UNTEXTURED_VERTEX(x1+radius+cos(angle)*radius, y1+radius+sin(angle)*radius, r, g, b, a);
+    for(i = 1; i < verts_per_corner; i++)
+    {
+        SET_INDEXED_VERTEX(0);
+        SET_INDEXED_VERTEX(last_index++);
+        SET_UNTEXTURED_VERTEX(x1+radius+cos(angle)*radius, y1+radius+sin(angle)*radius, r, g, b, a);
+        angle += corner_angle_increment;
+    }
+    
+    // Last triangle
+    SET_INDEXED_VERTEX(0);
+    SET_INDEXED_VERTEX(last_index++);
+    SET_INDEXED_VERTEX(1);
 }
 
 static void Polygon(GPU_Renderer* renderer, GPU_Target* target, Uint16 n, float* vertices, SDL_Color color)
@@ -894,42 +831,63 @@ static void PolygonFilled(GPU_Renderer* renderer, GPU_Target* target, Uint16 n, 
 
 static void PolygonBlit(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_Target* target, Uint16 n, float* vertices, float textureX, float textureY, float angle, float scaleX, float scaleY)
 {
-    BEGIN_TEXTURED;
+	if(target == NULL)
+        return;
+    if(renderer != target->renderer)
+        return;
     
-    GLuint handle = ((GPU_IMAGE_DATA*)src->data)->handle;
     renderer->FlushBlitBuffer(renderer);
-    
-    glBindTexture( GL_TEXTURE_2D, handle );
-    ((GPU_CONTEXT_DATA*)renderer->current_context_target->context->data)->last_image = src;
-    
-    // Set repeat mode
-    // FIXME: Save old mode and reset it later
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
-    
-    // TODO: Add rotation of texture using 'angle'
-    // TODO: Use 'srcrect'
-    
-    int numIndices = 2*n;
-    DECLARE_TEXTURED_VERTEX_ARRAY(n);
-    
-    SDL_Color color = src->color;
-    DECLARE_COLOR_RGBA;
-    
-    int i;
-    for(i = 0; i < numIndices; i+=2)
+    makeContextCurrent(renderer, target);
+    if(renderer->current_context_target == NULL)
+        return;
+    if(bindFramebuffer(renderer, target))
     {
-        float x = vertices[i];
-    	float y = vertices[i+1];
-    	
-        SET_VERTEX_TEXTURED(x, y, (x - textureX)*scaleX/src->w, (y - textureY)*scaleY/src->h);
+        prepareToRenderToTarget(renderer, target);
+        prepareToRenderImage(renderer, target, src);
+        changeViewport(target);
+        changeCamera(target);
+        
+        APPLY_TRANSFORMS;
+    
+        GLuint handle = ((GPU_IMAGE_DATA*)src->data)->handle;
+        renderer->FlushBlitBuffer(renderer);
+        
+        glBindTexture( GL_TEXTURE_2D, handle );
+        ((GPU_CONTEXT_DATA*)renderer->current_context_target->context->data)->last_image = src;
+        
+        // Set repeat mode
+        // FIXME: Save old mode and reset it later
+        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
+        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
+        
+        // TODO: Add rotation of texture using 'angle'
+        // TODO: Use 'srcrect'
+        
+        int numIndices = 2*n;
+        DECLARE_TEXTURED_VERTEX_ARRAY(n);
+        
+        SDL_Color color = src->color;
+        DECLARE_COLOR_RGBA;
+        
+        int i;
+        for(i = 0; i < numIndices; i+=2)
+        {
+            float x = vertices[i];
+            float y = vertices[i+1];
+            
+            SET_VERTEX_TEXTURED(x, y, (x - textureX)*scaleX/src->w, (y - textureY)*scaleY/src->h);
+        }
+        
+        DRAW_VERTICES_TEXTURED(GL_TRIANGLE_FAN);
+        
+        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+        
+        RESET_COLOR;
+        if(target->use_clip_rect)
+        {
+                glDisable(GL_SCISSOR_TEST);
+        }
     }
-    
-    DRAW_VERTICES_TEXTURED(GL_TRIANGLE_FAN);
-    
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
-    
-    END;
 }
 
