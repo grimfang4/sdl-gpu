@@ -112,3 +112,6 @@ target_link_libraries (alias-demo SDL_gpu)
 
 add_executable(triangle-batch-demo triangle-batch/main.c common/common.c common/demo-font.c)
 target_link_libraries (triangle-batch-demo SDL_gpu)
+
+add_executable(wrap-demo wrap/main.c common/common.c common/demo-font.c)
+target_link_libraries (wrap-demo SDL_gpu)

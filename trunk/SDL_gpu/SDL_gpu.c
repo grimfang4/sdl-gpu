@@ -1632,8 +1632,17 @@ void GPU_SetImageFilter(GPU_Image* image, GPU_FilterEnum filter)
 	if(image == NULL)
 		return;
 	
-	image->filter_mode = filter;
 	current_renderer->SetImageFilter(current_renderer, image, filter);
+}
+
+void GPU_SetWrapMode(GPU_Image* image, GPU_WrapEnum wrap_mode_x, GPU_WrapEnum wrap_mode_y)
+{
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->SetWrapMode == NULL)
+		return;
+	if(image == NULL)
+		return;
+	
+	current_renderer->SetWrapMode(current_renderer, image, wrap_mode_x, wrap_mode_y);
 }
 
 

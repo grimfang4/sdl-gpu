@@ -58,7 +58,7 @@ typedef struct GPU_RendererID
 } GPU_RendererID;
 
 
-/*! Texture filtering options.  These affect the quality/interpolation of colors when images are scaled. 
+/*! Image filtering options.  These affect the quality/interpolation of colors when images are scaled. 
  * \see GPU_SetImageFilter()
  */
 typedef enum {
@@ -66,6 +66,15 @@ typedef enum {
     GPU_LINEAR = 1,
     GPU_LINEAR_MIPMAP = 2
 } GPU_FilterEnum;
+
+/*! Image wrapping options.  These affect how images handle src_rect coordinates beyond their dimensions when blitted.
+ * \see GPU_SetWrapMode()
+ */
+typedef enum {
+    GPU_CLAMP_TO_EDGE = 0,
+    GPU_REPEAT = 1,
+    GPU_REPEAT_MIRRORED = 2
+} GPU_WrapEnum;
 
 /*! Blending options 
  * \see GPU_SetBlendMode()
@@ -108,6 +117,8 @@ typedef struct GPU_Image
 	Uint8 use_blending;
 	GPU_BlendEnum blend_mode;
 	GPU_FilterEnum filter_mode;
+	GPU_WrapEnum wrap_mode_x;
+	GPU_WrapEnum wrap_mode_y;
 	
 	void* data;
 	int refcount;
@@ -240,6 +251,7 @@ static const GPU_FeatureEnum GPU_FEATURE_VERTEX_SHADER = 0x100;
 static const GPU_FeatureEnum GPU_FEATURE_FRAGMENT_SHADER = 0x200;
 static const GPU_FeatureEnum GPU_FEATURE_PIXEL_SHADER = 0x200;
 static const GPU_FeatureEnum GPU_FEATURE_GEOMETRY_SHADER = 0x400;
+static const GPU_FeatureEnum GPU_FEATURE_WRAP_REPEAT_MIRRORED = 0x800;
 
 /*! Combined feature flags */
 #define GPU_FEATURE_ALL_BASE GPU_FEATURE_RENDER_TARGETS
@@ -512,6 +524,9 @@ struct GPU_Renderer
 	
 	/*! \see GPU_SetImageFilter() */
 	void (*SetImageFilter)(GPU_Renderer* renderer, GPU_Image* image, GPU_FilterEnum filter);
+	
+	/*! \see GPU_SetWrapMode() */
+	void (*SetWrapMode)(GPU_Renderer* renderer, GPU_Image* image, GPU_WrapEnum wrap_mode_x, GPU_WrapEnum wrap_mode_y);
 
 	/*! \see GPU_Clear() */
 	void (*Clear)(GPU_Renderer* renderer, GPU_Target* target);
@@ -1029,6 +1044,9 @@ void GPU_SetShapeBlendMode(GPU_BlendEnum mode);
 
 /*! Sets the image filtering mode, if supported by the renderer. */
 void GPU_SetImageFilter(GPU_Image* image, GPU_FilterEnum filter);
+
+/*! Sets the image wrapping mode, if supported by the renderer. */
+void GPU_SetWrapMode(GPU_Image* image, GPU_WrapEnum wrap_mode_x, GPU_WrapEnum wrap_mode_y);
 
 /*! \return The RGBA color of a pixel. */
 SDL_Color GPU_GetPixel(GPU_Target* target, Sint16 x, Sint16 y);

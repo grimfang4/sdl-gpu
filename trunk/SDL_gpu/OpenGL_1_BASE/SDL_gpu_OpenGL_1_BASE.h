@@ -23,6 +23,8 @@
 		#define GL_ABGR GL_ABGR_EXT
 	#endif
 	
+	#undef GL_MIRRORED_REPEAT
+    #define GL_MIRRORED_REPEAT GL_MIRRORED_REPEAT_ARB
 #endif
 
 
