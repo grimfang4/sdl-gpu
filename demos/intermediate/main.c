@@ -54,7 +54,6 @@ int main(int argc, char* argv[])
         GPU_SetImageFilter(images[i], filter_mode);
     }
     
-    Uint8 virtual_on = 1;
     
 	
 	Uint8 done = 0;
@@ -90,11 +89,9 @@ int main(int argc, char* argv[])
                         }
                     }
 					switched = !switched;
-					virtual_on = 1;
 				}
 				else if(event.key.keysym.sym == SDLK_v)
                 {
-                    virtual_on = 0;
                     GPU_UnsetVirtualResolution(screen);
                     GPU_UnsetVirtualResolution(image->target);
                     for(i = 0; i < max_images; i++)

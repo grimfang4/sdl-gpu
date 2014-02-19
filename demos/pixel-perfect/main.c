@@ -26,7 +26,7 @@ int main(int argc, char* argv[])
 	float y = 0.0f;
 	SDL_Color color = {0, 255, 0, 255};
 	
-	Uint8* keystates = SDL_GetKeyboardState(NULL);
+	Uint8* keystates = SDL_GetKeyState(NULL);
 	
 	Uint32 startTime = SDL_GetTicks();
 	long frameCount = 0;

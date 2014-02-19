@@ -4,7 +4,6 @@
 
 GPU_ShaderBlock load_shaders(Uint32* v, Uint32* f, Uint32* p)
 {
-    GPU_Renderer* renderer = GPU_GetCurrentRenderer();
     const char* vertex_shader_file;
     const char* fragment_shader_file;
 	
