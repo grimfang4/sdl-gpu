@@ -135,6 +135,27 @@ static void init_features(GPU_Renderer* renderer)
         renderer->enabled_features &= ~GPU_FEATURE_BLEND_FUNC_SEPARATE;
 #endif
 
+    // Wrap modes
+#ifdef SDL_GPU_USE_OPENGL
+    #if SDL_GPU_GL_MAJOR_VERSION > 1
+        renderer->enabled_features |= GPU_FEATURE_WRAP_REPEAT_MIRRORED;
+    #else
+        if(isExtensionSupported("GL_ARB_texture_mirrored_repeat"))
+            renderer->enabled_features |= GPU_FEATURE_WRAP_REPEAT_MIRRORED;
+        else
+            renderer->enabled_features &= ~GPU_FEATURE_WRAP_REPEAT_MIRRORED;
+    #endif
+#elif defined(SDL_GPU_USE_GLES)
+    #if SDL_GPU_GLES_MAJOR_VERSION > 1
+        renderer->enabled_features |= GPU_FEATURE_WRAP_REPEAT_MIRRORED;
+    #else
+        if(isExtensionSupported("GL_OES_texture_mirrored_repeat"))
+            renderer->enabled_features |= GPU_FEATURE_WRAP_REPEAT_MIRRORED;
+        else
+            renderer->enabled_features &= ~GPU_FEATURE_WRAP_REPEAT_MIRRORED;
+    #endif
+#endif
+
     // GL texture formats
     if(isExtensionSupported("GL_EXT_bgr"))
         renderer->enabled_features |= GPU_FEATURE_GL_BGR;
@@ -1450,6 +1471,8 @@ static GPU_Image* CreateUninitializedImage(GPU_Renderer* renderer, Uint16 w, Uin
     result->use_blending = (channels > 3? 1 : 0);
     result->blend_mode = GPU_BLEND_NORMAL;
     result->filter_mode = GPU_LINEAR;
+    result->wrap_mode_x = GPU_CLAMP_TO_EDGE;
+    result->wrap_mode_y = GPU_CLAMP_TO_EDGE;
     
     result->data = data;
     result->is_alias = 0;
@@ -3724,38 +3747,122 @@ static SDL_Color GetPixel(GPU_Renderer* renderer, GPU_Target* target, Sint16 x, 
 static void SetImageFilter(GPU_Renderer* renderer, GPU_Image* image, GPU_FilterEnum filter)
 {
     if(image == NULL)
+    {
+        GPU_PushErrorCode("GPU_SetImageFilter", GPU_ERROR_NULL_ARGUMENT, "image");
         return;
+    }
     if(renderer != image->renderer)
+    {
+        GPU_PushErrorCode("GPU_SetImageFilter", GPU_ERROR_USER_ERROR, "Mismatched renderer");
         return;
+    }
 
+    GLenum minFilter, magFilter;
+
+    switch(filter)
+    {
+        case GL_NEAREST:
+            minFilter = GL_NEAREST;
+            magFilter = GL_NEAREST;
+            break;
+        case GPU_LINEAR:
+            if(image->has_mipmaps)
+                minFilter = GL_LINEAR_MIPMAP_NEAREST;
+            else
+                minFilter = GL_LINEAR;
+
+            magFilter = GL_LINEAR;
+            break;
+        case GPU_LINEAR_MIPMAP:
+            if(image->has_mipmaps)
+                minFilter = GL_LINEAR_MIPMAP_LINEAR;
+            else
+                minFilter = GL_LINEAR;
+
+            magFilter = GL_LINEAR;
+            break;
+        default:
+            GPU_PushErrorCode("GPU_SetImageFilter", GPU_ERROR_USER_ERROR, "Unsupported value for filter");
+            return;
+    }
+
+    flushAndClearBlitBufferIfCurrentTexture(renderer, image);
     bindTexture(renderer, image);
-
-    GLenum minFilter = GL_NEAREST;
-    GLenum magFilter = GL_NEAREST;
-
-    if(filter == GPU_LINEAR)
-    {
-        if(image->has_mipmaps)
-            minFilter = GL_LINEAR_MIPMAP_NEAREST;
-        else
-            minFilter = GL_LINEAR;
-
-        magFilter = GL_LINEAR;
-    }
-    else if(filter == GPU_LINEAR_MIPMAP)
-    {
-        if(image->has_mipmaps)
-            minFilter = GL_LINEAR_MIPMAP_LINEAR;
-        else
-            minFilter = GL_LINEAR;
-
-        magFilter = GL_LINEAR;
-    }
+    
+	image->filter_mode = filter;
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magFilter);
 }
 
+static void SetWrapMode(GPU_Renderer* renderer, GPU_Image* image, GPU_WrapEnum wrap_mode_x, GPU_WrapEnum wrap_mode_y)
+{
+    if(image == NULL)
+    {
+        GPU_PushErrorCode("GPU_SetWrapMode", GPU_ERROR_NULL_ARGUMENT, "image");
+        return;
+    }
+    if(renderer != image->renderer)
+    {
+        GPU_PushErrorCode("GPU_SetWrapMode", GPU_ERROR_USER_ERROR, "Mismatched renderer");
+        return;
+    }
+	
+	GLenum wrap_x, wrap_y;
+	
+	switch(wrap_mode_x)
+	{
+    case GPU_CLAMP_TO_EDGE:
+        wrap_x = GL_CLAMP_TO_EDGE;
+        break;
+    case GPU_REPEAT:
+        wrap_x = GL_REPEAT;
+        break;
+    case GPU_REPEAT_MIRRORED:
+        if(renderer->enabled_features & GPU_FEATURE_WRAP_REPEAT_MIRRORED)
+            wrap_x = GL_MIRRORED_REPEAT;
+        else
+        {
+            GPU_PushErrorCode("GPU_SetWrapMode", GPU_ERROR_BACKEND_ERROR, "This renderer does not support GPU_REPEAT_MIRRORED.");
+            return;
+        }
+        break;
+    default:
+        GPU_PushErrorCode("GPU_SetWrapMode", GPU_ERROR_USER_ERROR, "Unsupported value for wrap_mode_x");
+        return;
+	}
+	
+	switch(wrap_mode_y)
+	{
+    case GPU_CLAMP_TO_EDGE:
+        wrap_y = GL_CLAMP_TO_EDGE;
+        break;
+    case GPU_REPEAT:
+        wrap_y = GL_REPEAT;
+        break;
+    case GPU_REPEAT_MIRRORED:
+        if(renderer->enabled_features & GPU_FEATURE_WRAP_REPEAT_MIRRORED)
+            wrap_y = GL_MIRRORED_REPEAT;
+        else
+        {
+            GPU_PushErrorCode("GPU_SetWrapMode", GPU_ERROR_BACKEND_ERROR, "This renderer does not support GPU_REPEAT_MIRRORED.");
+            return;
+        }
+        break;
+    default:
+        GPU_PushErrorCode("GPU_SetWrapMode", GPU_ERROR_USER_ERROR, "Unsupported value for wrap_mode_y");
+        return;
+	}
+    
+    flushAndClearBlitBufferIfCurrentTexture(renderer, image);
+    bindTexture(renderer, image);
+	
+	image->wrap_mode_x = wrap_mode_x;
+	image->wrap_mode_y = wrap_mode_y;
+	
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap_x );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap_y );
+}
 
 
 
@@ -5049,6 +5156,7 @@ static void SetAttributeSource(GPU_Renderer* renderer, int num_values, GPU_Attri
      \
     renderer->GetPixel = &GetPixel; \
     renderer->SetImageFilter = &SetImageFilter; \
+    renderer->SetWrapMode = &SetWrapMode; \
  \
     renderer->Clear = &Clear; \
     renderer->ClearRGBA = &ClearRGBA; \

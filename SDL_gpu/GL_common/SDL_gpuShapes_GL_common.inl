@@ -861,8 +861,7 @@ static void PolygonBlit(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrec
         glBindTexture( GL_TEXTURE_2D, handle );
         ((GPU_CONTEXT_DATA*)renderer->current_context_target->context->data)->last_image = src;
         
-        // Set repeat mode
-        // FIXME: Save old mode and reset it later
+        // Set wrap mode
         glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
         glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
         
@@ -889,10 +888,13 @@ static void PolygonBlit(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrec
         glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
         glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
         
+        // Restore wrap mode
+        GPU_SetWrapMode(src, src->wrap_mode_x, src->wrap_mode_y);
+        
         RESET_COLOR;
         if(target->use_clip_rect)
         {
-                glDisable(GL_SCISSOR_TEST);
+            glDisable(GL_SCISSOR_TEST);
         }
     }
 }

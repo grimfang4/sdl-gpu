@@ -23,6 +23,9 @@
 		#define GL_ABGR GL_ABGR_EXT
 	#endif
 	
+	#undef GL_MIRRORED_REPEAT
+    #define GL_MIRRORED_REPEAT GL_MIRRORED_REPEAT_ARB
+	
 	#undef glCreateShader
 	#undef GL_VERTEX_SHADER
 	#undef GL_FRAGMENT_SHADER

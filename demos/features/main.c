@@ -34,6 +34,8 @@ int main(int argc, char* argv[])
 	GPU_LogError("Supports GPU_FEATURE_FRAGMENT_SHADER: %s\n", bool_string(GPU_IsFeatureEnabled(GPU_FEATURE_FRAGMENT_SHADER)));
 	GPU_LogError("Supports GPU_FEATURE_GEOMETRY_SHADER: %s\n", bool_string(GPU_IsFeatureEnabled(GPU_FEATURE_GEOMETRY_SHADER)));
 	
+	GPU_LogError("Supports GPU_FEATURE_WRAP_REPEAT_MIRRORED: %s\n", bool_string(GPU_IsFeatureEnabled(GPU_FEATURE_WRAP_REPEAT_MIRRORED)));
+	
 	GPU_Quit();
 	
 	return 0;
