@@ -13,6 +13,13 @@ See a particular renderer's *.c file for specifics. */
 #define GPU_BLIT_BUFFER_VERTICES_PER_SPRITE 4
 #define GPU_BLIT_BUFFER_INIT_MAX_NUM_VERTICES (GPU_BLIT_BUFFER_VERTICES_PER_SPRITE*1000)
 
+
+// Near the unsigned short limit (65535)
+#define GPU_BLIT_BUFFER_ABSOLUTE_MAX_VERTICES 60000
+// Near the unsigned int limit (4294967295)
+#define GPU_INDEX_BUFFER_ABSOLUTE_MAX_VERTICES 4000000000
+
+
 // x, y, s, t, r, g, b, a
 #define GPU_BLIT_BUFFER_FLOATS_PER_VERTEX 8
 
@@ -254,12 +261,20 @@ static inline void flushAndClearBlitBufferIfCurrentFramebuffer(GPU_Renderer* ren
     }
 }
 
-static void growBlitBuffer(GPU_CONTEXT_DATA* cdata, int minimum_vertices_needed)
+static Uint8 growBlitBuffer(GPU_CONTEXT_DATA* cdata, unsigned int minimum_vertices_needed)
 {
+    if(minimum_vertices_needed <= cdata->blit_buffer_max_num_vertices)
+        return 1;
+    if(cdata->blit_buffer_max_num_vertices == GPU_BLIT_BUFFER_ABSOLUTE_MAX_VERTICES)
+        return 0;
+
     // Calculate new size (in vertices)
-    int new_max_num_vertices = cdata->blit_buffer_max_num_vertices * 2;
+    unsigned int new_max_num_vertices = ((unsigned int)cdata->blit_buffer_max_num_vertices) * 2;
     while(new_max_num_vertices <= minimum_vertices_needed)
         new_max_num_vertices *= 2;
+    
+    if(new_max_num_vertices > GPU_BLIT_BUFFER_ABSOLUTE_MAX_VERTICES)
+        new_max_num_vertices = GPU_BLIT_BUFFER_ABSOLUTE_MAX_VERTICES;
     
     //GPU_LogError("Growing to %d vertices\n", new_max_num_vertices);
     // Resize the blit buffer
@@ -268,13 +283,6 @@ static void growBlitBuffer(GPU_CONTEXT_DATA* cdata, int minimum_vertices_needed)
     free(cdata->blit_buffer);
     cdata->blit_buffer = new_buffer;
     cdata->blit_buffer_max_num_vertices = new_max_num_vertices;
-    
-    // Resize the index buffer
-    unsigned short* new_indices = (unsigned short*)malloc(new_max_num_vertices * sizeof(unsigned short));
-    memcpy(new_indices, cdata->index_buffer, cdata->index_buffer_num_vertices * sizeof(unsigned short));
-    free(cdata->index_buffer);
-    cdata->index_buffer = new_indices;
-    cdata->index_buffer_max_num_vertices = new_max_num_vertices;
     
     #ifdef SDL_GPU_USE_GL_TIER3
         // Resize the VBOs
@@ -291,6 +299,34 @@ static void growBlitBuffer(GPU_CONTEXT_DATA* cdata, int minimum_vertices_needed)
         glBindVertexArray(0);
         #endif
     #endif
+    
+    return 1;
+}
+
+static Uint8 growIndexBuffer(GPU_CONTEXT_DATA* cdata, unsigned int minimum_vertices_needed)
+{
+    if(minimum_vertices_needed <= cdata->index_buffer_max_num_vertices)
+        return 1;
+    if(cdata->index_buffer_max_num_vertices == GPU_INDEX_BUFFER_ABSOLUTE_MAX_VERTICES)
+        return 0;
+
+    // Calculate new size (in vertices)
+    unsigned int new_max_num_vertices = cdata->index_buffer_max_num_vertices * 2;
+    while(new_max_num_vertices <= minimum_vertices_needed)
+        new_max_num_vertices *= 2;
+    
+    if(new_max_num_vertices > GPU_INDEX_BUFFER_ABSOLUTE_MAX_VERTICES)
+        new_max_num_vertices = GPU_INDEX_BUFFER_ABSOLUTE_MAX_VERTICES;
+    
+    //GPU_LogError("Growing to %d indices\n", new_max_num_vertices);
+    // Resize the index buffer
+    unsigned short* new_indices = (unsigned short*)malloc(new_max_num_vertices * sizeof(unsigned short));
+    memcpy(new_indices, cdata->index_buffer, cdata->index_buffer_num_vertices * sizeof(unsigned short));
+    free(cdata->index_buffer);
+    cdata->index_buffer = new_indices;
+    cdata->index_buffer_max_num_vertices = new_max_num_vertices;
+    
+    return 1;
 }
 
 
@@ -2707,10 +2743,15 @@ static void Blit(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, G
 
     GPU_CONTEXT_DATA* cdata = (GPU_CONTEXT_DATA*)renderer->current_context_target->context->data;
 
+    if(cdata->blit_buffer_num_vertices + 4 >= cdata->blit_buffer_max_num_vertices)
+    {
+        if(!growBlitBuffer(cdata, cdata->blit_buffer_num_vertices + 4))
+            renderer->FlushBlitBuffer(renderer);
+    }
     if(cdata->index_buffer_num_vertices + 6 >= cdata->index_buffer_max_num_vertices)
     {
-        renderer->FlushBlitBuffer(renderer);
-        growBlitBuffer(cdata, cdata->index_buffer_num_vertices + 6);
+        if(!growIndexBuffer(cdata, cdata->index_buffer_num_vertices + 6))
+            renderer->FlushBlitBuffer(renderer);
     }
     
     float* blit_buffer = cdata->blit_buffer;
@@ -2943,10 +2984,15 @@ static void BlitTransformX(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* s
 
     GPU_CONTEXT_DATA* cdata = (GPU_CONTEXT_DATA*)renderer->current_context_target->context->data;
 
+    if(cdata->blit_buffer_num_vertices + 4 >= cdata->blit_buffer_max_num_vertices)
+    {
+        if(!growBlitBuffer(cdata, cdata->blit_buffer_num_vertices + 4))
+            renderer->FlushBlitBuffer(renderer);
+    }
     if(cdata->index_buffer_num_vertices + 6 >= cdata->index_buffer_max_num_vertices)
     {
-        renderer->FlushBlitBuffer(renderer);
-        growBlitBuffer(cdata, cdata->index_buffer_num_vertices + 6);
+        if(!growIndexBuffer(cdata, cdata->index_buffer_num_vertices + 6))
+            renderer->FlushBlitBuffer(renderer);
     }
     
     float* blit_buffer = cdata->blit_buffer;
@@ -3200,9 +3246,22 @@ static void BlitBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* targ
     GPU_CONTEXT_DATA* cdata = (GPU_CONTEXT_DATA*)renderer->current_context_target->context->data;
 
     renderer->FlushBlitBuffer(renderer);
+    // Only need to check the blit buffer because of the VBO storage
+    if(cdata->blit_buffer_num_vertices + num_sprites*4 >= cdata->blit_buffer_max_num_vertices)
+    {
+        if(!growBlitBuffer(cdata, cdata->blit_buffer_num_vertices + num_sprites*4))
+        {
+            // Can't do all of these sprites!  Only do some of them...
+            num_sprites = (cdata->blit_buffer_max_num_vertices - cdata->blit_buffer_num_vertices)/4;
+        }
+    }
     if(cdata->index_buffer_num_vertices + num_sprites*6 >= cdata->index_buffer_max_num_vertices)
     {
-        growBlitBuffer(cdata, cdata->index_buffer_num_vertices + num_sprites*6);
+        if(!growIndexBuffer(cdata, cdata->index_buffer_num_vertices + num_sprites*6))
+        {
+            // Can't do all of these sprites!  Only do some of them...
+            num_sprites = (cdata->index_buffer_max_num_vertices - cdata->index_buffer_num_vertices)/6;
+        }
     }
     
     unsigned short* index_buffer = cdata->index_buffer;
@@ -3211,7 +3270,7 @@ static void BlitBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* targ
     refresh_attribute_data(cdata);
     #endif
     
-    int i;
+    unsigned int i;
     // Triangle indices
     for(i = 0; i < num_sprites; i++)
     {
@@ -3235,7 +3294,7 @@ static void BlitBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* targ
         float* color_pointer = values + GPU_BLIT_BUFFER_COLOR_OFFSET;
         
         glBegin(GL_QUADS);
-        int i;
+        unsigned int i;
         for(i = 0; i < num_sprites; i++)
         {
             glColor4f( *color_pointer, *(color_pointer+1), *(color_pointer+2), *(color_pointer+3) );
@@ -3354,7 +3413,7 @@ static void BlitBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* targ
 }
 
 // Assumes the right format
-static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* target, int num_vertices, float* values, int num_indices, unsigned short* indices, GPU_BlitFlagEnum flags)
+static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* target, unsigned short num_vertices, float* values, unsigned int num_indices, unsigned short* indices, GPU_BlitFlagEnum flags)
 {
     if(num_vertices == 0)
         return;
@@ -3413,6 +3472,24 @@ static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* 
     if(cdata->blit_buffer_num_vertices + num_vertices >= cdata->blit_buffer_max_num_vertices)
     {
         growBlitBuffer(cdata, cdata->blit_buffer_num_vertices + num_vertices);
+    }
+    
+    // Only need to check the blit buffer because of the VBO storage
+    if(cdata->blit_buffer_num_vertices + num_vertices >= cdata->blit_buffer_max_num_vertices)
+    {
+        if(!growBlitBuffer(cdata, cdata->blit_buffer_num_vertices + num_vertices))
+        {
+            // Can't do all of these sprites!  Only do some of them...
+            num_vertices = (cdata->blit_buffer_max_num_vertices - cdata->blit_buffer_num_vertices);
+        }
+    }
+    if(cdata->index_buffer_num_vertices + num_indices >= cdata->index_buffer_max_num_vertices)
+    {
+        if(!growIndexBuffer(cdata, cdata->index_buffer_num_vertices + num_indices))
+        {
+            // Can't do all of these sprites!  Only do some of them...
+            num_indices = (cdata->index_buffer_max_num_vertices - cdata->index_buffer_num_vertices);
+        }
     }
     
     #ifdef SDL_GPU_USE_GL_TIER3
@@ -3732,7 +3809,7 @@ static void ClearRGBA(GPU_Renderer* renderer, GPU_Target* target, Uint8 r, Uint8
     }
 }
 
-static void DoPartialFlush(GPU_CONTEXT_DATA* cdata, unsigned int num_vertices, float* blit_buffer, unsigned short num_indices, unsigned short* index_buffer)
+static void DoPartialFlush(GPU_CONTEXT_DATA* cdata, unsigned short num_vertices, float* blit_buffer, unsigned int num_indices, unsigned short* index_buffer)
 {
 #ifdef SDL_GPU_USE_GL_TIER1
 
@@ -3740,7 +3817,7 @@ static void DoPartialFlush(GPU_CONTEXT_DATA* cdata, unsigned int num_vertices, f
         float* texcoord_pointer = blit_buffer + GPU_BLIT_BUFFER_TEX_COORD_OFFSET;
         
         glBegin(cdata->last_shape);
-        int i;
+        unsigned short i;
         for(i = 0; i < num_vertices; i++)
         {
             glTexCoord2f( *texcoord_pointer, *(texcoord_pointer+1) );
@@ -3821,7 +3898,7 @@ static void DoPartialFlush(GPU_CONTEXT_DATA* cdata, unsigned int num_vertices, f
 #endif
 }
 
-static void DoUntexturedFlush(GPU_CONTEXT_DATA* cdata, unsigned int num_vertices, float* blit_buffer, unsigned short num_indices, unsigned short* index_buffer)
+static void DoUntexturedFlush(GPU_CONTEXT_DATA* cdata, unsigned short num_vertices, float* blit_buffer, unsigned int num_indices, unsigned short* index_buffer)
 {
 #ifdef SDL_GPU_USE_GL_TIER1
 
@@ -3829,7 +3906,7 @@ static void DoUntexturedFlush(GPU_CONTEXT_DATA* cdata, unsigned int num_vertices
         float* color_pointer = blit_buffer + GPU_BLIT_BUFFER_COLOR_OFFSET;
         
         glBegin(cdata->last_shape);
-        int i;
+        unsigned short i;
         for(i = 0; i < num_vertices; i++)
         {
             glColor4f( *color_pointer, *(color_pointer+1), *(color_pointer+2), *(color_pointer+3) );

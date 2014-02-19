@@ -496,7 +496,7 @@ struct GPU_Renderer
 	void (*BlitBatch)(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* target, unsigned int num_sprites, float* values, GPU_BlitFlagEnum flags);
 	
 	/*! \see GPU_TriangleBatch() */
-	void (*TriangleBatch)(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* target, int num_vertices, float* values, int num_indices, unsigned short* indices, GPU_BlitFlagEnum flags);
+	void (*TriangleBatch)(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* target, unsigned short num_vertices, float* values, unsigned int num_indices, unsigned short* indices, GPU_BlitFlagEnum flags);
 	
 	/*! \see GPU_GenerateMipmaps() */
 	void (*GenerateMipmaps)(GPU_Renderer* renderer, GPU_Image* image);
@@ -968,7 +968,7 @@ void GPU_BlitBatchSeparate(GPU_Image* image, GPU_Target* target, unsigned int nu
  * \param indices If not NULL, this is used to specify which vertices to use and in what order (i.e. it indexes the vertices in the 'values' array).
  * \param flags Bit flags to control the interpretation of the array parameters.  Since 'values' contains per-vertex data, GPU_PASSTHROUGH_VERTICES is ignored.  Texture coordinates are scaled down using the image dimensions and color components are normalized to [0.0, 1.0].
  */
-void GPU_TriangleBatch(GPU_Image* image, GPU_Target* target, int num_vertices, float* values, int num_indices, unsigned short* indices, GPU_BlitFlagEnum flags);
+void GPU_TriangleBatch(GPU_Image* image, GPU_Target* target, unsigned short num_vertices, float* values, unsigned int num_indices, unsigned short* indices, GPU_BlitFlagEnum flags);
 
 /*! Loads mipmaps for the given image, if supported by the renderer. */
 void GPU_GenerateMipmaps(GPU_Image* image);

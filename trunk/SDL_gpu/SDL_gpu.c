@@ -1323,7 +1323,7 @@ void GPU_BlitBatchSeparate(GPU_Image* image, GPU_Target* target, unsigned int nu
 	free(values);
 }
 
-void GPU_TriangleBatch(GPU_Image* image, GPU_Target* target, int num_vertices, float* values, int num_indices, unsigned short* indices, GPU_BlitFlagEnum flags)
+void GPU_TriangleBatch(GPU_Image* image, GPU_Target* target, unsigned short num_vertices, float* values, unsigned int num_indices, unsigned short* indices, GPU_BlitFlagEnum flags)
 {
     if(!CHECK_RENDERER)
         RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL renderer");
