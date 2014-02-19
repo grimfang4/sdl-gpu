@@ -110,7 +110,7 @@ int _vertex_array_index = 0;
 
 
 
-#define BEGIN_UNTEXTURED(function_name, shape, num_additional_indices) \
+#define BEGIN_UNTEXTURED(function_name, shape, num_additional_vertices, num_additional_indices) \
     if(target == NULL) \
     { \
         GPU_PushErrorCode(function_name, GPU_ERROR_NULL_ARGUMENT, "target"); \
@@ -140,9 +140,15 @@ int _vertex_array_index = 0;
      \
     GPU_CONTEXT_DATA* cdata = (GPU_CONTEXT_DATA*)renderer->current_context_target->context->data; \
      \
+    if(cdata->blit_buffer_num_vertices + (num_additional_vertices) >= cdata->blit_buffer_max_num_vertices) \
+    { \
+        if(!growBlitBuffer(cdata, cdata->blit_buffer_num_vertices + (num_additional_vertices))) \
+            renderer->FlushBlitBuffer(renderer); \
+    } \
     if(cdata->index_buffer_num_vertices + (num_additional_indices) >= cdata->index_buffer_max_num_vertices) \
     { \
-        growBlitBuffer(cdata, cdata->index_buffer_num_vertices + (num_additional_indices)); \
+        if(!growIndexBuffer(cdata, cdata->index_buffer_num_vertices + (num_additional_indices))) \
+            renderer->FlushBlitBuffer(renderer); \
     } \
      \
     float* blit_buffer = cdata->blit_buffer; \
@@ -275,14 +281,14 @@ static float GetLineThickness(GPU_Renderer* renderer)
 
 static void Pixel(GPU_Renderer* renderer, GPU_Target* target, float x, float y, SDL_Color color)
 {
-    BEGIN_UNTEXTURED("GPU_Pixel", GL_POINTS, 1);
+    BEGIN_UNTEXTURED("GPU_Pixel", GL_POINTS, 1, 1);
     
     SET_UNTEXTURED_VERTEX(x, y, r, g, b, a);
 }
 
 static void Line(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color)
 {
-    BEGIN_UNTEXTURED("GPU_Line", GL_LINES, 2);
+    BEGIN_UNTEXTURED("GPU_Line", GL_LINES, 2, 2);
     
     SET_UNTEXTURED_VERTEX(x1, y1, r, g, b, a);
     SET_UNTEXTURED_VERTEX(x2, y2, r, g, b, a);
@@ -349,7 +355,7 @@ static void Arc(GPU_Renderer* renderer, GPU_Target* target, float x, float y, fl
     if(numSegments == 0)
         return;
     
-    BEGIN_UNTEXTURED("GPU_Arc", GL_LINES, 1 + (numSegments-1)*2 + 1);
+    BEGIN_UNTEXTURED("GPU_Arc", GL_LINES, 1 + (numSegments-1) + 1, 1 + (numSegments-1)*2 + 1);
     
     dx = radius*cos(t*RADPERDEG);
     dy = radius*sin(t*RADPERDEG);
@@ -434,7 +440,7 @@ static void ArcFilled(GPU_Renderer* renderer, GPU_Target* target, float x, float
         return;
 
 
-    BEGIN_UNTEXTURED("GPU_ArcFilled", GL_TRIANGLES, 3 + (numSegments-1)*3 + 3);
+    BEGIN_UNTEXTURED("GPU_ArcFilled", GL_TRIANGLES, 3 + (numSegments-1) + 1, 3 + (numSegments-1)*3 + 3);
 
     // First triangle
     SET_UNTEXTURED_VERTEX(x, y, r, g, b, a);
@@ -473,7 +479,7 @@ static void Circle(GPU_Renderer* renderer, GPU_Target* target, float x, float y,
     float dx, dy;
     int numSegments = 360/dt+1;
     
-    BEGIN_UNTEXTURED("GPU_Circle", GL_LINES, 1 + (numSegments-1)*2 + 1);
+    BEGIN_UNTEXTURED("GPU_Circle", GL_LINES, 1 + (numSegments-1), 1 + (numSegments-1)*2 + 1);
 
     dx = radius;
     dy = 0.0f;
@@ -500,7 +506,7 @@ static void CircleFilled(GPU_Renderer* renderer, GPU_Target* target, float x, fl
 
     int numSegments = 360/dt+1;
     
-    BEGIN_UNTEXTURED("GPU_CircleFilled", GL_TRIANGLES, 3 + (numSegments-2)*3 + 3);
+    BEGIN_UNTEXTURED("GPU_CircleFilled", GL_TRIANGLES, 3 + (numSegments-2), 3 + (numSegments-2)*3 + 3);
 
     // First triangle
     SET_UNTEXTURED_VERTEX(x, y, r, g, b, a);
@@ -527,7 +533,7 @@ static void CircleFilled(GPU_Renderer* renderer, GPU_Target* target, float x, fl
 
 static void Tri(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, float x3, float y3, SDL_Color color)
 {
-    BEGIN_UNTEXTURED("GPU_Tri", GL_LINES, 6);
+    BEGIN_UNTEXTURED("GPU_Tri", GL_LINES, 3, 6);
     
     SET_UNTEXTURED_VERTEX(x1, y1, r, g, b, a);
     SET_UNTEXTURED_VERTEX(x2, y2, r, g, b, a);
@@ -541,7 +547,7 @@ static void Tri(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, 
 
 static void TriFilled(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, float x3, float y3, SDL_Color color)
 {
-    BEGIN_UNTEXTURED("GPU_TriFilled", GL_TRIANGLES, 3);
+    BEGIN_UNTEXTURED("GPU_TriFilled", GL_TRIANGLES, 3, 3);
     
     SET_UNTEXTURED_VERTEX(x1, y1, r, g, b, a);
     SET_UNTEXTURED_VERTEX(x2, y2, r, g, b, a);
@@ -569,7 +575,7 @@ static void Rectangle(GPU_Renderer* renderer, GPU_Target* target, float x1, floa
     
     // Thick lines via filled triangles
     
-    BEGIN_UNTEXTURED("GPU_Rectangle", GL_TRIANGLES, 24);
+    BEGIN_UNTEXTURED("GPU_Rectangle", GL_TRIANGLES, 10, 24);
     
     // First triangle
     SET_UNTEXTURED_VERTEX(x1 - t, y1 - t, r, g, b, a);
@@ -607,7 +613,7 @@ static void Rectangle(GPU_Renderer* renderer, GPU_Target* target, float x1, floa
 
 static void RectangleFilled(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color)
 {
-    BEGIN_UNTEXTURED("GPU_RectangleFilled", GL_TRIANGLES, 6);
+    BEGIN_UNTEXTURED("GPU_RectangleFilled", GL_TRIANGLES, 4, 6);
 
     SET_UNTEXTURED_VERTEX(x1, y1, r, g, b, a);
     SET_UNTEXTURED_VERTEX(x1, y2, r, g, b, a);
@@ -643,7 +649,7 @@ static void RectangleRound(GPU_Renderer* renderer, GPU_Target* target, float x1,
     int verts_per_corner = 7;
     float corner_angle_increment = (tau/4)/(verts_per_corner-1);  // 0, 15, 30, 45, 60, 75, 90
     
-    BEGIN_UNTEXTURED("GPU_RectangleRound", GL_LINES, 8+4*(verts_per_corner-1)*2);
+    BEGIN_UNTEXTURED("GPU_RectangleRound", GL_LINES, 4 + 4*(verts_per_corner-1), 8 + 4*(verts_per_corner-1)*2);
     
     // Starting angle
     float angle = tau*0.75f;
@@ -716,7 +722,7 @@ static void RectangleRoundFilled(GPU_Renderer* renderer, GPU_Target* target, flo
     int verts_per_corner = 7;
     float corner_angle_increment = (tau/4)/(verts_per_corner-1);  // 0, 15, 30, 45, 60, 75, 90
     
-    BEGIN_UNTEXTURED("GPU_RectangleRoundFilled", GL_TRIANGLES, 15+4*(verts_per_corner-1)*3 - 3);
+    BEGIN_UNTEXTURED("GPU_RectangleRoundFilled", GL_TRIANGLES, 6 + 4*(verts_per_corner-1) - 1, 15 + 4*(verts_per_corner-1)*3 - 3);
     
     // Starting angle
     float angle = tau*0.75f;
@@ -782,21 +788,21 @@ static void Polygon(GPU_Renderer* renderer, GPU_Target* target, Uint16 n, float*
     if(n < 3)
         return;
     
-    int numIndices = 2*n;
+    int numSegments = 2*n;
     
-    BEGIN_UNTEXTURED("GPU_Polygon", GL_LINES, numIndices);
+    BEGIN_UNTEXTURED("GPU_Polygon", GL_LINES, n, numSegments);
     
     SET_UNTEXTURED_VERTEX(vertices[0], vertices[1], r, g, b, a);
     int last_index = 0;
     
     int i;
-    for(i = 2; i < numIndices; i+=2)
+    for(i = 2; i < numSegments; i+=2)
     {
         SET_UNTEXTURED_VERTEX(vertices[i], vertices[i+1], r, g, b, a);
         last_index++;
         SET_INDEXED_VERTEX(last_index);  // Double the last one for the next line
     }
-    SET_UNTEXTURED_VERTEX(vertices[0], vertices[1], r, g, b, a);
+    SET_INDEXED_VERTEX(0);
 }
 
 static void PolygonFilled(GPU_Renderer* renderer, GPU_Target* target, Uint16 n, float* vertices, SDL_Color color)
@@ -804,10 +810,10 @@ static void PolygonFilled(GPU_Renderer* renderer, GPU_Target* target, Uint16 n, 
     if(n < 3)
         return;
     
-    int numIndices = 2*n;
+    int numSegments = 2*n;
     
     // Using a fan of triangles assumes that the polygon is convex
-    BEGIN_UNTEXTURED("GPU_PolygonFilled", GL_TRIANGLES, numIndices);
+    BEGIN_UNTEXTURED("GPU_PolygonFilled", GL_TRIANGLES, n, 3 + (n-3)*3);
     
     // First triangle
     SET_UNTEXTURED_VERTEX(vertices[0], vertices[1], r, g, b, a);
@@ -819,7 +825,7 @@ static void PolygonFilled(GPU_Renderer* renderer, GPU_Target* target, Uint16 n, 
         int last_index = 2;
         
         int i;
-        for(i = 6; i < numIndices; i+=2)
+        for(i = 6; i < numSegments; i+=2)
         {
             SET_INDEXED_VERTEX(0);  // Start from the first vertex
             SET_INDEXED_VERTEX(last_index);  // Double the last one

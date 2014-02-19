@@ -104,11 +104,11 @@ typedef struct ContextData_OpenGL_3
 	GPU_Image* last_image;
 	GPU_Target* last_target;
 	float* blit_buffer;  // Holds sets of 4 vertices, each with interleaved position, tex coords, and colors (e.g. [x0, y0, z0, s0, t0, r0, g0, b0, a0, ...]).
-	unsigned int blit_buffer_num_vertices;
-	unsigned int blit_buffer_max_num_vertices;
+	unsigned short blit_buffer_num_vertices;
+	unsigned short blit_buffer_max_num_vertices;
 	unsigned short* index_buffer;  // Indexes into the blit buffer so we can use 4 vertices for every 2 triangles (1 quad)
-	int index_buffer_num_vertices;
-	int index_buffer_max_num_vertices;
+	unsigned int index_buffer_num_vertices;
+	unsigned int index_buffer_max_num_vertices;
 	
     // Tier 3 rendering
     unsigned int blit_VAO;
