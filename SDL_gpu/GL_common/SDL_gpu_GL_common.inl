@@ -3761,7 +3761,7 @@ static void SetImageFilter(GPU_Renderer* renderer, GPU_Image* image, GPU_FilterE
 
     switch(filter)
     {
-        case GL_NEAREST:
+        case GPU_NEAREST:
             minFilter = GL_NEAREST;
             magFilter = GL_NEAREST;
             break;
@@ -5216,6 +5216,5 @@ static void SetAttributeSource(GPU_Renderer* renderer, int num_values, GPU_Attri
     renderer->RectangleRound = &RectangleRound; \
     renderer->RectangleRoundFilled = &RectangleRoundFilled; \
     renderer->Polygon = &Polygon; \
-    renderer->PolygonFilled = &PolygonFilled; \
-    renderer->PolygonBlit = &PolygonBlit;
+    renderer->PolygonFilled = &PolygonFilled;
 
