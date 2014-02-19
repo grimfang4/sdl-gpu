@@ -9,107 +9,13 @@ See a particular renderer's *.c file for specifics. */
 #define RADPERDEG 0.0174532925f
 #endif
 
-// To make line vertices alias on half-pixel boundaries...  but messes up other shapes.
-// This number is funny, but likely due to the driver's conversion of the values through bytes: 128/255.0 == 0.502.
-//#define PIXEL_OFFSET(x) ((x) + 0.502f)
-#define PIXEL_OFFSET(x) ((x) + 0.375f)
-
-
-static void Circle(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float radius, SDL_Color color);
 
 
 
-#ifdef SDL_GPU_USE_GL_TIER3
-
-#define SDL_GPU_SHAPE_FLOATS_PER_VERTEX 6
-
-#define SET_VERTEX_TEXTURED(_x, _y, _s, _t) \
-do { \
-    glverts[_vertex_array_index++] = (PIXEL_OFFSET(_x)); \
-    glverts[_vertex_array_index++] = (PIXEL_OFFSET(_y)); \
-    glverts[_vertex_array_index++] = r; \
-    glverts[_vertex_array_index++] = g; \
-    glverts[_vertex_array_index++] = b; \
-    glverts[_vertex_array_index++] = a; \
-    glverts[_vertex_array_index++] = (_s); \
-    glverts[_vertex_array_index++] = (_t); \
-} while(0);
-
-#define DECLARE_COLOR_RGBA \
-float r, g, b, a; \
-if(target->use_color) \
-{ \
-    r = MIX_COLOR_COMPONENT_NORMALIZED_RESULT(target->color.r, color.r); \
-    g = MIX_COLOR_COMPONENT_NORMALIZED_RESULT(target->color.g, color.g); \
-    b = MIX_COLOR_COMPONENT_NORMALIZED_RESULT(target->color.b, color.b); \
-    a = MIX_COLOR_COMPONENT_NORMALIZED_RESULT(GET_ALPHA(target->color), GET_ALPHA(color)); \
-} \
-else \
-{ \
-    r = color.r/255.0f; \
-    g = color.g/255.0f; \
-    b = color.b/255.0f; \
-    a = GET_ALPHA(color)/255.0f; \
-}
-
-        
-#define RESET_COLOR
-
-#else
-
-#define SDL_GPU_SHAPE_FLOATS_PER_VERTEX 2
-
-#define SET_VERTEX_TEXTURED(_x, _y, _s, _t) \
-do { \
-    glverts[_vertex_array_index++] = (PIXEL_OFFSET(_x)); \
-    glverts[_vertex_array_index++] = (PIXEL_OFFSET(_y)); \
-    glverts[_vertex_array_index++] = (_s); \
-    glverts[_vertex_array_index++] = (_t); \
-} while(0);
-
-#ifdef SDL_GPU_USE_GLES
-#define DECLARE_COLOR_RGBA \
-if(target->use_color) \
-{ \
-    SDL_Color c = MIX_COLORS(target->color, color); \
-    color = c; \
-} \
-glColor4f(color.r/255.01f, color.g/255.01f, color.b/255.01f, GET_ALPHA(color)/255.01f);
-#else
-#define DECLARE_COLOR_RGBA \
-if(target->use_color) \
-{ \
-    SDL_Color c = MIX_COLORS(target->color, color); \
-    color = c; \
-} \
-glColor4ub(color.r, color.g, color.b, GET_ALPHA(color));
-#endif
-
-#define RESET_COLOR \
-glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-
-#endif
-
-
-#define DECLARE_TEXTURED_VERTEX_ARRAY(num_vertices) \
-const int _num_vertices = (num_vertices); \
-const int _vertex_array_size = _num_vertices*(SDL_GPU_SHAPE_FLOATS_PER_VERTEX + 2); \
-GLfloat glverts[_vertex_array_size]; \
-int _vertex_array_index = 0;
-
-#define DRAW_VERTICES_TEXTURED(_prim_type) draw_vertices_textured(glverts, _num_vertices, _prim_type);
-
-
-#ifdef SDL_GPU_APPLY_TRANSFORMS_TO_GL_STACK
-    #define APPLY_TRANSFORMS \
-    /*if(!renderer->IsFeatureEnabled(GPU_FEATURE_VERTEX_SHADER))*/ \
-        applyTransforms();
-#else
-    #define APPLY_TRANSFORMS
-#endif
 
 
 
+// All shapes start this way for setup and so they can access the blit buffer properly
 #define BEGIN_UNTEXTURED(function_name, shape, num_additional_vertices, num_additional_indices) \
     if(target == NULL) \
     { \
@@ -177,87 +83,6 @@ int _vertex_array_index = 0;
 
 
 
-static inline void draw_vertices_textured(GLfloat* glverts, int num_vertices, GLenum prim_type)
-{
-    #ifdef SDL_GPU_USE_GL_TIER1
-        glBegin(prim_type);
-        int size = 4*num_vertices;
-        int i;
-        for(i = 0; i < size; i += 5)
-        {
-            glTexCoord2f(glverts[i+2], glverts[i+3]);
-            glVertex3f(glverts[i], glverts[i+1], 0.0f);
-        }
-        glEnd();
-    #elif defined(SDL_GPU_USE_GL_TIER2)
-        glVertexPointer(2, GL_FLOAT, 5*sizeof(float), glverts);
-        glTexCoordPointer(2, GL_FLOAT, 5*sizeof(float), (glverts + 2));
-        glEnableClientState(GL_VERTEX_ARRAY);
-        glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-        glDrawArrays(prim_type, 0, num_vertices);
-        glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-        glDisableClientState(GL_VERTEX_ARRAY);
-    #elif defined(SDL_GPU_USE_GL_TIER3)
-    
-        GPU_Target* target = GPU_GetContextTarget();
-        if(target == NULL)
-            return;
-
-        GPU_CONTEXT_DATA* cdata = ((GPU_CONTEXT_DATA*)target->context->data);
-        
-        refresh_attribute_data(cdata);
-        
-        int floats_per_vertex = 8;  // position (2), color (4), texcoord (2)
-        int buffer_stride = floats_per_vertex * sizeof(float);
-        
-        // Upload our modelviewprojection matrix
-        if(cdata->current_shader_block.modelViewProjection_loc >= 0)
-        {
-            float mvp[16];
-            GPU_GetModelViewProjection(mvp);
-            GPU_SetUniformMatrixfv(cdata->current_shader_block.modelViewProjection_loc, 1, 4, 4, 0, mvp);
-        }
-    
-        // Update the vertex array object's buffers
-        #if !defined(SDL_GPU_NO_VAO)
-        glBindVertexArray(cdata->blit_VAO);
-        #endif
-        
-        // Upload blit buffer to a single buffer object
-        glBindBuffer(GL_ARRAY_BUFFER, cdata->blit_VBO[cdata->blit_VBO_flop]);
-        cdata->blit_VBO_flop = !cdata->blit_VBO_flop;
-        
-        // Copy the whole blit buffer to the GPU
-        glBufferSubData(GL_ARRAY_BUFFER, 0, buffer_stride * num_vertices, glverts);
-        
-        // Specify the formatting of the blit buffer
-        if(cdata->current_shader_block.position_loc >= 0)
-        {
-            glEnableVertexAttribArray(cdata->current_shader_block.position_loc);  // Tell GL to use client-side attribute data
-            glVertexAttribPointer(cdata->current_shader_block.position_loc, 2, GL_FLOAT, GL_FALSE, buffer_stride, 0);  // Tell how the data is formatted
-        }
-        if(cdata->current_shader_block.color_loc >= 0)
-        {
-            glEnableVertexAttribArray(cdata->current_shader_block.color_loc);
-            glVertexAttribPointer(cdata->current_shader_block.color_loc, 4, GL_FLOAT, GL_FALSE, buffer_stride, (void*)(2 * sizeof(float)));
-        }
-        if(cdata->current_shader_block.texcoord_loc >= 0)
-        {
-            glEnableVertexAttribArray(cdata->current_shader_block.texcoord_loc);
-            glVertexAttribPointer(cdata->current_shader_block.texcoord_loc, 2, GL_FLOAT, GL_FALSE, buffer_stride, (void*)(6 * sizeof(float)));
-        }
-        
-        upload_attribute_data(cdata, num_vertices);
-        
-        glDrawArrays(prim_type, 0, num_vertices);
-        
-        disable_attribute_data(cdata);
-        
-        #if !defined(SDL_GPU_NO_VAO)
-        glBindVertexArray(0);
-        #endif
-    #endif
-}
 
 
 static float SetLineThickness(GPU_Renderer* renderer, float thickness)
@@ -294,6 +119,8 @@ static void Line(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1,
     SET_UNTEXTURED_VERTEX(x2, y2, r, g, b, a);
 }
 
+// Arc() might call Circle()
+static void Circle(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float radius, SDL_Color color);
 
 static void Arc(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float radius, float startAngle, float endAngle, SDL_Color color)
 {
@@ -378,6 +205,8 @@ static void Arc(GPU_Renderer* renderer, GPU_Target* target, float x, float y, fl
     SET_UNTEXTURED_VERTEX(x+dx, y+dy, r, g, b, a);
 }
 
+// ArcFilled() might call CircleFilled()
+static void CircleFilled(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float radius, SDL_Color color);
 
 static void ArcFilled(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float radius, float startAngle, float endAngle, SDL_Color color)
 {
@@ -395,7 +224,7 @@ static void ArcFilled(GPU_Renderer* renderer, GPU_Target* target, float x, float
     // Big angle
     if(endAngle - startAngle >= 360)
     {
-        Circle(renderer, target, x, y, radius, color);
+        CircleFilled(renderer, target, x, y, radius, color);
         return;
     }
 
@@ -831,70 +660,6 @@ static void PolygonFilled(GPU_Renderer* renderer, GPU_Target* target, Uint16 n, 
             SET_INDEXED_VERTEX(last_index);  // Double the last one
             SET_UNTEXTURED_VERTEX(vertices[i], vertices[i+1], r, g, b, a);
             last_index++;
-        }
-    }
-}
-
-static void PolygonBlit(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_Target* target, Uint16 n, float* vertices, float textureX, float textureY, float angle, float scaleX, float scaleY)
-{
-	if(target == NULL)
-        return;
-    if(renderer != target->renderer)
-        return;
-    
-    renderer->FlushBlitBuffer(renderer);
-    makeContextCurrent(renderer, target);
-    if(renderer->current_context_target == NULL)
-        return;
-    if(bindFramebuffer(renderer, target))
-    {
-        prepareToRenderToTarget(renderer, target);
-        prepareToRenderImage(renderer, target, src);
-        changeViewport(target);
-        changeCamera(target);
-        
-        APPLY_TRANSFORMS;
-    
-        GLuint handle = ((GPU_IMAGE_DATA*)src->data)->handle;
-        renderer->FlushBlitBuffer(renderer);
-        
-        glBindTexture( GL_TEXTURE_2D, handle );
-        ((GPU_CONTEXT_DATA*)renderer->current_context_target->context->data)->last_image = src;
-        
-        // Set wrap mode
-        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
-        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
-        
-        // TODO: Add rotation of texture using 'angle'
-        // TODO: Use 'srcrect'
-        
-        int numIndices = 2*n;
-        DECLARE_TEXTURED_VERTEX_ARRAY(n);
-        
-        SDL_Color color = src->color;
-        DECLARE_COLOR_RGBA;
-        
-        int i;
-        for(i = 0; i < numIndices; i+=2)
-        {
-            float x = vertices[i];
-            float y = vertices[i+1];
-            
-            SET_VERTEX_TEXTURED(x, y, (x - textureX)*scaleX/src->w, (y - textureY)*scaleY/src->h);
-        }
-        
-        DRAW_VERTICES_TEXTURED(GL_TRIANGLE_FAN);
-        
-        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
-        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
-        
-        // Restore wrap mode
-        GPU_SetWrapMode(src, src->wrap_mode_x, src->wrap_mode_y);
-        
-        RESET_COLOR;
-        if(target->use_clip_rect)
-        {
-            glDisable(GL_SCISSOR_TEST);
         }
     }
 }

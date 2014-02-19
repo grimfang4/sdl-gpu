@@ -673,8 +673,6 @@ struct GPU_Renderer
 	void (*Polygon)(GPU_Renderer* renderer, GPU_Target* target, Uint16 n, float* vertices, SDL_Color color);
 
 	void (*PolygonFilled)(GPU_Renderer* renderer, GPU_Target* target, Uint16 n, float* vertices, SDL_Color color);
-
-	void (*PolygonBlit)(GPU_Renderer* renderer, GPU_Image* src, GPU_Rect* srcrect, GPU_Target* target, Uint16 n, float* vertices, float textureX, float textureY, float angle, float scaleX, float scaleY);
 };
 
 
@@ -1232,8 +1230,6 @@ void GPU_RectangleRoundFilled(GPU_Target* target, float x1, float y1, float x2, 
 void GPU_Polygon(GPU_Target* target, Uint16 n, float* vertices, SDL_Color color);
 
 void GPU_PolygonFilled(GPU_Target* target, Uint16 n, float* vertices, SDL_Color color);
-
-void GPU_PolygonBlit(GPU_Image* src, GPU_Rect* srcrect, GPU_Target* target, Uint16 n, float* vertices, float textureX, float textureY, float angle, float scaleX, float scaleY);
 
 
 #ifdef __cplusplus
