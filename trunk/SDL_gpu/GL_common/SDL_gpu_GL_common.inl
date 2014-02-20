@@ -40,9 +40,9 @@ See a particular renderer's *.c file for specifics. */
 
 
 #ifdef SDL_GPU_USE_SDL2
-    #define GET_ALPHA(sdl_color) (sdl_color.a)
+    #define GET_ALPHA(sdl_color) ((sdl_color).a)
 #else
-    #define GET_ALPHA(sdl_color) (sdl_color.unused)
+    #define GET_ALPHA(sdl_color) ((sdl_color).unused)
 #endif
 
 
@@ -3883,11 +3883,8 @@ static void Clear(GPU_Renderer* renderer, GPU_Target* target)
     {
         setClipRect(renderer, target);
 
-        //glPushAttrib(GL_COLOR_BUFFER_BIT);
-
         glClearColor(0,0,0,0);
         glClear(GL_COLOR_BUFFER_BIT);
-        //glPopAttrib();
 
         unsetClipRect(renderer, target);
     }

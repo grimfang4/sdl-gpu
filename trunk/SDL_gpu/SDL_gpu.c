@@ -7,6 +7,11 @@
 
 #include "stb_image.h"
 
+#ifdef SDL_GPU_USE_SDL2
+    #define GET_ALPHA(sdl_color) ((sdl_color).a)
+#else
+    #define GET_ALPHA(sdl_color) ((sdl_color).unused)
+#endif
 
 #define CHECK_RENDERER (current_renderer != NULL)
 #define CHECK_CONTEXT (current_renderer->current_context_target != NULL)
@@ -401,11 +406,11 @@ GPU_Camera GPU_GetDefaultCamera(void)
 	return cam;
 }
 
-GPU_Camera GPU_GetCamera(void)
+GPU_Camera GPU_GetCamera(GPU_Target* target)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
+	if(target == NULL)
 		return GPU_GetDefaultCamera();
-	return current_renderer->current_context_target->camera;
+	return target->camera;
 }
 
 GPU_Camera GPU_SetCamera(GPU_Target* target, GPU_Camera* cam)
@@ -1669,6 +1674,17 @@ void GPU_Clear(GPU_Target* target)
 		return;
 	
 	current_renderer->Clear(current_renderer, target);
+}
+
+void GPU_ClearColor(GPU_Target* target, SDL_Color* color)
+{
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->ClearRGBA == NULL)
+		return;
+	
+	if(color == NULL)
+        current_renderer->ClearRGBA(current_renderer, target, 0, 0, 0, 0);
+    else
+        current_renderer->ClearRGBA(current_renderer, target, color->r, color->g, color->b, GET_ALPHA(*color));
 }
 
 void GPU_ClearRGBA(GPU_Target* target, Uint8 r, Uint8 g, Uint8 b, Uint8 a)
