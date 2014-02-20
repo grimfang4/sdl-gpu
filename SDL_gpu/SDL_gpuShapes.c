@@ -135,21 +135,21 @@ void GPU_RectangleRoundFilled(GPU_Target* target, float x1, float y1, float x2, 
 	renderer->RectangleRoundFilled(renderer, target, x1, y1, x2, y2, radius, color);
 }
 
-void GPU_Polygon(GPU_Target* target, Uint16 n, float* vertices, SDL_Color color)
+void GPU_Polygon(GPU_Target* target, unsigned int num_vertices, float* vertices, SDL_Color color)
 {
 	CHECK_RENDERER();
 	if(renderer->Polygon == NULL)
 		return;
 	
-	renderer->Polygon(renderer, target, n, vertices, color);
+	renderer->Polygon(renderer, target, num_vertices, vertices, color);
 }
 
-void GPU_PolygonFilled(GPU_Target* target, Uint16 n, float* vertices, SDL_Color color)
+void GPU_PolygonFilled(GPU_Target* target, unsigned int num_vertices, float* vertices, SDL_Color color)
 {
 	CHECK_RENDERER();
 	if(renderer->PolygonFilled == NULL)
 		return;
 	
-	renderer->PolygonFilled(renderer, target, n, vertices, color);
+	renderer->PolygonFilled(renderer, target, num_vertices, vertices, color);
 }
 
