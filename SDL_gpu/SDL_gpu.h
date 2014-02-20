@@ -714,6 +714,7 @@ struct GPU_Renderer
 
 
 // Setup calls
+
 /*! The window corresponding to 'windowID' will be used to create the rendering context instead of creating a new window. */
 void GPU_SetInitWindow(Uint32 windowID);
 
@@ -726,6 +727,12 @@ void GPU_SetPreInitFlags(GPU_InitFlagEnum GPU_flags);
 
 /*! Returns the current special flags to use for initialization. */
 GPU_InitFlagEnum GPU_GetPreInitFlags(void);
+
+/*! Gets the current renderer ID order for initialization.  Pass NULL for 'order' to just get the size of the renderer order array. */
+void GPU_GetRendererOrder(int* order_size, GPU_RendererID* order);
+
+/*! Gets the default renderer IDs for the current platform.  Pass NULL for 'order' to just get the size of the renderer order array. */
+void GPU_GetDefaultRendererOrder(int* order_size, GPU_RendererID* order);
 
 /*! Initializes SDL and SDL_gpu.  Creates a window and goes through the renderer order to create a renderer context.
  * \see GPU_SetRendererOrder()
@@ -740,12 +747,6 @@ GPU_Target* GPU_InitRenderer(GPU_RendererEnum renderer_enum, Uint16 w, Uint16 h,
  * \see GPU_MakeRendererID
  */
 GPU_Target* GPU_InitRendererByID(GPU_RendererID renderer_request, Uint16 w, Uint16 h, GPU_WindowFlagEnum SDL_flags);
-
-/*! Gets the current renderer ID order for initialization.  Pass NULL for 'order' to just get the size of the renderer order array. */
-void GPU_GetRendererOrder(int* order_size, GPU_RendererID* order);
-
-/*! Gets the default renderer IDs for the current platform.  Pass NULL for 'order' to just get the size of the renderer order array. */
-void GPU_GetDefaultRendererOrder(int* order_size, GPU_RendererID* order);
 
 /*! Checks for important GPU features which may not be supported depending on a device's extension support.  Feature flags (GPU_FEATURE_*) can be bitwise OR'd together. 
  * \return 1 if all of the passed features are enabled/supported
@@ -807,9 +808,6 @@ const char* GPU_GetErrorString(GPU_ErrorEnum error);
 
 
 // Renderer setup controls
-
-/*! Returns the default GPU_RendererID for the current platform. */
-GPU_RendererID GPU_GetDefaultRendererID(void);
 
 /*! Translates a GPU_RendererEnum into a string. */
 const char* GPU_GetRendererEnumString(GPU_RendererEnum id);
