@@ -1199,36 +1199,153 @@ void GPU_SetAttributeSource(int num_values, GPU_Attribute source);
 
 // Shapes
 
+/*! Sets the thickness of lines for the current context. 
+ * \param thickness New line thickness in pixels.  Default is 1.0f.
+ * \return The old thickness value
+ */
 float GPU_SetLineThickness(float thickness);
 
+/*! Returns the current line thickness value. */
 float GPU_GetLineThickness(void);
 
+/*! Renders a colored point.
+ * \param target The destination render target
+ * \param x x-coord of the point
+ * \param y y-coord of the point
+ * \param color The color of the shape to render
+ */
 void GPU_Pixel(GPU_Target* target, float x, float y, SDL_Color color);
 
+/*! Renders a colored line.
+ * \param target The destination render target
+ * \param x1 x-coord of starting point
+ * \param y1 y-coord of starting point
+ * \param x2 x-coord of ending point
+ * \param y2 y-coord of ending point
+ * \param color The color of the shape to render
+ */
 void GPU_Line(GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color);
 
+/*! Renders a colored arc curve (circle segment).
+ * \param target The destination render target
+ * \param x x-coord of center point
+ * \param y y-coord of center point
+ * \param radius The radius of the circle / distance from the center point that rendering will occur
+ * \param startAngle The angle to start from, in degrees.  Measured clockwise from the positive x-axis.
+ * \param endAngle The angle to end at, in degrees.  Measured clockwise from the positive x-axis.
+ * \param color The color of the shape to render
+ */
 void GPU_Arc(GPU_Target* target, float x, float y, float radius, float startAngle, float endAngle, SDL_Color color);
 
+/*! Renders a colored filled arc (circle segment / pie piece).
+ * \param target The destination render target
+ * \param x x-coord of center point
+ * \param y y-coord of center point
+ * \param radius The radius of the circle / distance from the center point that rendering will occur
+ * \param startAngle The angle to start from, in degrees.  Measured clockwise from the positive x-axis.
+ * \param endAngle The angle to end at, in degrees.  Measured clockwise from the positive x-axis.
+ * \param color The color of the shape to render
+ */
 void GPU_ArcFilled(GPU_Target* target, float x, float y, float radius, float startAngle, float endAngle, SDL_Color color);
 
+/*! Renders a colored circle outline.
+ * \param target The destination render target
+ * \param x x-coord of center point
+ * \param y y-coord of center point
+ * \param radius The radius of the circle / distance from the center point that rendering will occur
+ * \param color The color of the shape to render
+ */
 void GPU_Circle(GPU_Target* target, float x, float y, float radius, SDL_Color color);
 
+/*! Renders a colored filled circle.
+ * \param target The destination render target
+ * \param x x-coord of center point
+ * \param y y-coord of center point
+ * \param radius The radius of the circle / distance from the center point that rendering will occur
+ * \param color The color of the shape to render
+ */
 void GPU_CircleFilled(GPU_Target* target, float x, float y, float radius, SDL_Color color);
 
+/*! Renders a colored triangle outline.
+ * \param target The destination render target
+ * \param x1 x-coord of first point
+ * \param y1 y-coord of first point
+ * \param x2 x-coord of second point
+ * \param y2 y-coord of second point
+ * \param x3 x-coord of third point
+ * \param y3 y-coord of third point
+ * \param color The color of the shape to render
+ */
 void GPU_Tri(GPU_Target* target, float x1, float y1, float x2, float y2, float x3, float y3, SDL_Color color);
 
+/*! Renders a colored filled triangle.
+ * \param target The destination render target
+ * \param x1 x-coord of first point
+ * \param y1 y-coord of first point
+ * \param x2 x-coord of second point
+ * \param y2 y-coord of second point
+ * \param x3 x-coord of third point
+ * \param y3 y-coord of third point
+ * \param color The color of the shape to render
+ */
 void GPU_TriFilled(GPU_Target* target, float x1, float y1, float x2, float y2, float x3, float y3, SDL_Color color);
 
+/*! Renders a colored rectangle outline.
+ * \param target The destination render target
+ * \param x1 x-coord of top-left corner
+ * \param y1 y-coord of top-left corner
+ * \param x2 x-coord of bottom-right corner
+ * \param y2 y-coord of bottom-right corner
+ * \param color The color of the shape to render
+ */
 void GPU_Rectangle(GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color);
 
+/*! Renders a colored filled rectangle.
+ * \param target The destination render target
+ * \param x1 x-coord of top-left corner
+ * \param y1 y-coord of top-left corner
+ * \param x2 x-coord of bottom-right corner
+ * \param y2 y-coord of bottom-right corner
+ * \param color The color of the shape to render
+ */
 void GPU_RectangleFilled(GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color);
 
+/*! Renders a colored rounded (filleted) rectangle outline.
+ * \param target The destination render target
+ * \param x1 x-coord of top-left corner
+ * \param y1 y-coord of top-left corner
+ * \param x2 x-coord of bottom-right corner
+ * \param y2 y-coord of bottom-right corner
+ * \param radius The radius of the corners
+ * \param color The color of the shape to render
+ */
 void GPU_RectangleRound(GPU_Target* target, float x1, float y1, float x2, float y2, float radius, SDL_Color color);
 
+/*! Renders a colored filled rounded (filleted) rectangle.
+ * \param target The destination render target
+ * \param x1 x-coord of top-left corner
+ * \param y1 y-coord of top-left corner
+ * \param x2 x-coord of bottom-right corner
+ * \param y2 y-coord of bottom-right corner
+ * \param radius The radius of the corners
+ * \param color The color of the shape to render
+ */
 void GPU_RectangleRoundFilled(GPU_Target* target, float x1, float y1, float x2, float y2, float radius, SDL_Color color);
 
+/*! Renders a colored polygon outline.  The vertices are expected to define a convex polygon.
+ * \param target The destination render target
+ * \param n Number of vertices (x and y pairs)
+ * \param vertices An array of vertex positions stored as interlaced x and y coords, e.g. {x1, y1, x2, y2, ...}
+ * \param color The color of the shape to render
+ */
 void GPU_Polygon(GPU_Target* target, Uint16 n, float* vertices, SDL_Color color);
 
+/*! Renders a colored filled polygon.  The vertices are expected to define a convex polygon.
+ * \param target The destination render target
+ * \param n Number of vertices (x and y pairs)
+ * \param vertices An array of vertex positions stored as interlaced x and y coords, e.g. {x1, y1, x2, y2, ...}
+ * \param color The color of the shape to render
+ */
 void GPU_PolygonFilled(GPU_Target* target, Uint16 n, float* vertices, SDL_Color color);
 
 
