@@ -17,7 +17,7 @@ See a particular renderer's *.c file for specifics. */
 // Near the unsigned short limit (65535)
 #define GPU_BLIT_BUFFER_ABSOLUTE_MAX_VERTICES 60000
 // Near the unsigned int limit (4294967295)
-#define GPU_INDEX_BUFFER_ABSOLUTE_MAX_VERTICES 4000000000
+#define GPU_INDEX_BUFFER_ABSOLUTE_MAX_VERTICES 4000000000u
 
 
 // x, y, s, t, r, g, b, a
@@ -813,6 +813,10 @@ static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request,
     if(renderer->CreateTargetFromWindow(renderer, 0, renderer->current_context_target) == NULL)
         return NULL;
     #endif
+    
+    // If the dimensions of the window don't match what we asked for, then set up a virtual resolution to pretend like they are.
+    if(w != 0 && h != 0 && (w != renderer->current_context_target->w || h != renderer->current_context_target->h))
+        renderer->SetVirtualResolution(renderer, renderer->current_context_target, w, h);
     
     // Init glVertexAttrib workaround
     #ifdef SDL_GPU_USE_OPENGL
