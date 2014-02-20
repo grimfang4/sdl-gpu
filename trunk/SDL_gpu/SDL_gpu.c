@@ -1718,7 +1718,7 @@ void GPU_Flip(GPU_Target* target)
 // Shader API
 
 
-Uint32 GPU_CompileShader_RW(int shader_type, SDL_RWops* shader_source)
+Uint32 GPU_CompileShader_RW(GPU_ShaderEnum shader_type, SDL_RWops* shader_source)
 {
 	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->CompileShader_RW == NULL)
 		return 0;
@@ -1726,7 +1726,7 @@ Uint32 GPU_CompileShader_RW(int shader_type, SDL_RWops* shader_source)
 	return current_renderer->CompileShader_RW(current_renderer, shader_type, shader_source);
 }
 
-Uint32 GPU_LoadShader(int shader_type, const char* filename)
+Uint32 GPU_LoadShader(GPU_ShaderEnum shader_type, const char* filename)
 {
     if(filename == NULL)
     {
@@ -1744,7 +1744,7 @@ Uint32 GPU_LoadShader(int shader_type, const char* filename)
     return result;
 }
 
-Uint32 GPU_CompileShader(int shader_type, const char* shader_source)
+Uint32 GPU_CompileShader(GPU_ShaderEnum shader_type, const char* shader_source)
 {
 	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->CompileShader == NULL)
 		return 0;

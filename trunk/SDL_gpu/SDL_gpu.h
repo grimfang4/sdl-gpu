@@ -279,6 +279,8 @@ static const GPU_InitFlagEnum GPU_INIT_DISABLE_DOUBLE_BUFFER = 0x40000;
 #define GPU_DEFAULT_INIT_FLAGS 0
 
 
+static const Uint32 GPU_NONE = 0x0;
+
 /*! Bit flags for the blit batch functions.
  * \see GPU_BlitBatch()
  * \see GPU_BlitBatchSeparate()
@@ -305,6 +307,32 @@ static const GPU_TypeEnum GPU_UNSIGNED_INT = 0x1405;
 static const GPU_TypeEnum GPU_FLOAT = 0x1406;
 static const GPU_TypeEnum GPU_DOUBLE = 0x140A;
 
+
+
+
+/*! Shader type enum.
+ * \see GPU_LoadShader()
+ * \see GPU_CompileShader()
+ * \see GPU_CompileShader_RW()
+ */
+typedef enum {
+    GPU_VERTEX_SHADER = 0,
+    GPU_FRAGMENT_SHADER = 1,
+    GPU_PIXEL_SHADER = 1,
+    GPU_GEOMETRY_SHADER = 2
+} GPU_ShaderEnum;
+
+
+
+/*! Type enumeration for the shader language used by the renderer. */
+typedef enum {
+    GPU_NO_SHADERS = 0,
+    GPU_ARB_ASSEMBLY = 1,
+    GPU_GLSL = 2,
+    GPU_GLSLES = 3,
+    GPU_HLSL = 4,
+    GPU_CG = 5
+} GPU_ShaderLanguageEnum;
 
 typedef struct GPU_AttributeFormat
 {
@@ -337,19 +365,6 @@ typedef struct GPU_AttributeSource
 } GPU_AttributeSource;
 
 
-static const Uint32 GPU_NONE = 0x0;
-
-/*! Type enumeration for the shader language used by the renderer. */
-typedef enum {
-    GPU_NO_SHADERS = 0,
-    GPU_ARB_ASSEMBLY = 1,
-    GPU_GLSL = 2,
-    GPU_GLSLES = 3,
-    GPU_HLSL = 4,
-    GPU_CG = 5
-} GPU_ShaderLanguageEnum;
-
-
 /*! Type enumeration for error codes.
  * \see GPU_PushErrorCode()
  * \see GPU_PopErrorCode()
@@ -363,6 +378,7 @@ typedef enum {
     GPU_ERROR_NULL_ARGUMENT = 5,
     GPU_ERROR_FILE_NOT_FOUND = 6
 } GPU_ErrorEnum;
+
 
 typedef struct GPU_ErrorObject
 {
@@ -539,10 +555,10 @@ struct GPU_Renderer
 	
 	
     /*! \see GPU_CompileShader_RW() */
-	Uint32 (*CompileShader_RW)(GPU_Renderer* renderer, int shader_type, SDL_RWops* shader_source);
+	Uint32 (*CompileShader_RW)(GPU_Renderer* renderer, GPU_ShaderEnum shader_type, SDL_RWops* shader_source);
 	
     /*! \see GPU_CompileShader() */
-    Uint32 (*CompileShader)(GPU_Renderer* renderer, int shader_type, const char* shader_source);
+    Uint32 (*CompileShader)(GPU_Renderer* renderer, GPU_ShaderEnum shader_type, const char* shader_source);
 
     /*! \see GPU_LinkShaderProgram() */
     Uint32 (*LinkShaderProgram)(GPU_Renderer* renderer, Uint32 program_object);
@@ -693,17 +709,8 @@ struct GPU_Renderer
 };
 
 
-// System calls
-/*! Prints an informational log message. */
-void GPU_LogInfo(const char* format, ...);
 
-/*! Prints a warning log message. */
-void GPU_LogWarning(const char* format, ...);
 
-/*! Prints an error log message. */
-void GPU_LogError(const char* format, ...);
-
-#define GPU_Log GPU_LogInfo
 
 
 // Setup calls
@@ -746,33 +753,16 @@ void GPU_GetDefaultRendererOrder(int* order_size, GPU_RendererID* order);
  */
 Uint8 GPU_IsFeatureEnabled(GPU_FeatureEnum feature);
 
-/*! Creates a separate context for the given window using the current renderer and returns a GPU_Target that represents it. */
-GPU_Target* GPU_CreateTargetFromWindow(Uint32 windowID);
-
-/*! Creates a target that aliases the given target.  Aliases can be used to store target settings (e.g. viewports) for easy switching.
- * GPU_FreeTarget() frees the alias's memory, but does not affect the original. */
-GPU_Target* GPU_CreateAliasTarget(GPU_Target* target);
-
-/*! Makes the given window the current rendering destination for the given context target.
- * This also makes the target the current context for image loading and window operations.
- * If the target does not represent a window, this does nothing.
- */
-void GPU_MakeCurrent(GPU_Target* target, Uint32 windowID);
-
-/*! Change the actual size of the current context target's window. */
-Uint8 GPU_SetWindowResolution(Uint16 w, Uint16 h);
-
-/*! Change the logical size of the given target.  Rendering to this target will be scaled as if the dimensions were actually the ones given. */
-void GPU_SetVirtualResolution(GPU_Target* target, Uint16 w, Uint16 h);
-
-/*! Reset the logical size of the given target to its original value. */
-void GPU_UnsetVirtualResolution(GPU_Target* target);
-
 /*! Clean up the renderer state. */
 void GPU_CloseCurrentRenderer(void);
 
 /*! Clean up the renderer state and shut down SDL_gpu. */
 void GPU_Quit(void);
+
+
+
+
+// Debugging, logging, and error handling
 
 /*! Sets the global debug level.
  * GPU_DEBUG_LEVEL_0: Normal
@@ -784,6 +774,17 @@ void GPU_SetDebugLevel(GPU_DebugLevelEnum level);
 
 /*! Returns the current global debug level. */
 GPU_DebugLevelEnum GPU_GetDebugLevel(void);
+
+/*! Prints an informational log message. */
+void GPU_LogInfo(const char* format, ...);
+
+/*! Prints a warning log message. */
+void GPU_LogWarning(const char* format, ...);
+
+/*! Prints an error log message. */
+void GPU_LogError(const char* format, ...);
+
+#define GPU_Log GPU_LogInfo
 
 /*! Pushes a new error code onto the error stack.  If the stack is full, this function does nothing.
  * \param function The name of the function that pushed the error
@@ -798,17 +799,14 @@ GPU_ErrorObject GPU_PopErrorCode(void);
 /*! Gets the string representation of an error code. */
 const char* GPU_GetErrorString(GPU_ErrorEnum error);
 
-/*! Converts screen space coordinates (such as from mouse input) to logical drawing coordinates. */
-void GPU_GetVirtualCoords(GPU_Target* target, float* x, float* y, float displayX, float displayY);
-
-/*! Enable/disable fullscreen mode for the current context target's window.
- * On some platforms, this may destroy the renderer context and require that textures be reloaded.  Unfortunately, SDL does not provide a notification mechanism for this.
- * \param use_desktop_resolution If true, lets the window change its resolution when it enters fullscreen mode (via SDL_WINDOW_FULLSCREEN_DESKTOP).
- * \return 0 if the new mode is windowed, 1 if the new mode is fullscreen.  */
-Uint8 GPU_ToggleFullscreen(Uint8 use_desktop_resolution);
 
 
-// Renderer controls
+
+
+
+
+
+// Renderer setup controls
 
 /*! Returns the default GPU_RendererID for the current platform. */
 GPU_RendererID GPU_GetDefaultRendererID(void);
@@ -822,12 +820,6 @@ GPU_RendererID GPU_MakeRendererID(GPU_RendererEnum id, int major_version, int mi
 /*! Gets the renderer identifier for the given registration index. */
 GPU_RendererID GPU_GetRendererID(unsigned int index);
 
-/*! Gets the number of active (created) renderers. */
-int GPU_GetNumActiveRenderers(void);
-
-/*! Gets an array of identifiers for the active renderers. */
-void GPU_GetActiveRendererList(GPU_RendererID* renderers_array);
-
 /*! Gets the number of registered (available) renderers. */
 int GPU_GetNumRegisteredRenderers(void);
 
@@ -840,20 +832,94 @@ GPU_Renderer* GPU_AddRenderer(GPU_RendererID id);
 /*! Deletes the renderer matching the given identifier. */
 void GPU_RemoveRenderer(GPU_RendererID id);
 
+
+
+// Renderer controls
+
+/*! Gets the number of active (created) renderers. */
+int GPU_GetNumActiveRenderers(void);
+
+/*! Gets an array of identifiers for the active renderers. */
+void GPU_GetActiveRendererList(GPU_RendererID* renderers_array);
+
 /*! Gets the renderer for the given renderer index. */
 GPU_Renderer* GPU_GetRenderer(unsigned int index);
 
 /*! \return The renderer matching the given identifier. */
 GPU_Renderer* GPU_GetRendererByID(GPU_RendererID id);
 
-/*! Switches the current renderer to the renderer matching the given identifier. */
-void GPU_SetCurrentRenderer(GPU_RendererID id);
-
 /*! \return The current renderer */
 GPU_Renderer* GPU_GetCurrentRenderer(void);
 
-/*! \return The current shader program */
-Uint32 GPU_GetCurrentShaderProgram(void);
+/*! Switches the current renderer to the renderer matching the given identifier. */
+void GPU_SetCurrentRenderer(GPU_RendererID id);
+
+
+
+
+
+// Context / window controls
+
+/*! \return The renderer's current context target. */
+GPU_Target* GPU_GetContextTarget(void);
+
+/*! Creates a separate context for the given window using the current renderer and returns a GPU_Target that represents it. */
+GPU_Target* GPU_CreateTargetFromWindow(Uint32 windowID);
+
+/*! Makes the given window the current rendering destination for the given context target.
+ * This also makes the target the current context for image loading and window operations.
+ * If the target does not represent a window, this does nothing.
+ */
+void GPU_MakeCurrent(GPU_Target* target, Uint32 windowID);
+
+/*! Change the actual size of the current context target's window. */
+Uint8 GPU_SetWindowResolution(Uint16 w, Uint16 h);
+
+/*! Enable/disable fullscreen mode for the current context target's window.
+ * On some platforms, this may destroy the renderer context and require that textures be reloaded.  Unfortunately, SDL does not provide a notification mechanism for this.
+ * \param use_desktop_resolution If true, lets the window change its resolution when it enters fullscreen mode (via SDL_WINDOW_FULLSCREEN_DESKTOP).
+ * \return 0 if the new mode is windowed, 1 if the new mode is fullscreen.  */
+Uint8 GPU_ToggleFullscreen(Uint8 use_desktop_resolution);
+
+/*! Enables/disables alpha blending for shape rendering on the current window. */
+void GPU_SetShapeBlending(Uint8 enable);
+	
+/*! Sets the blending mode for shape rendering on the current window, if supported by the renderer. */
+void GPU_SetShapeBlendMode(GPU_BlendEnum mode);
+
+/*! Sets the thickness of lines for the current context. 
+ * \param thickness New line thickness in pixels.  Default is 1.0f.
+ * \return The old thickness value
+ */
+float GPU_SetLineThickness(float thickness);
+
+/*! Returns the current line thickness value. */
+float GPU_GetLineThickness(void);
+
+
+
+
+
+// Target controls
+
+/*! Creates a target that aliases the given target.  Aliases can be used to store target settings (e.g. viewports) for easy switching.
+ * GPU_FreeTarget() frees the alias's memory, but does not affect the original. */
+GPU_Target* GPU_CreateAliasTarget(GPU_Target* target);
+
+/*! Creates a new render target from the given image.  It can then be accessed from image->target. */
+GPU_Target* GPU_LoadTarget(GPU_Image* image);
+
+/*! Deletes a render target in the proper way for this renderer. */
+void GPU_FreeTarget(GPU_Target* target);
+
+/*! Change the logical size of the given target.  Rendering to this target will be scaled as if the dimensions were actually the ones given. */
+void GPU_SetVirtualResolution(GPU_Target* target, Uint16 w, Uint16 h);
+
+/*! Converts screen space coordinates (such as from mouse input) to logical drawing coordinates. */
+void GPU_GetVirtualCoords(GPU_Target* target, float* x, float* y, float displayX, float displayY);
+
+/*! Reset the logical size of the given target to its original value. */
+void GPU_UnsetVirtualResolution(GPU_Target* target);
 
 /*! \return A GPU_Rect with the given values. */
 GPU_Rect GPU_MakeRect(float x, float y, float w, float h);
@@ -867,12 +933,61 @@ GPU_Camera GPU_GetDefaultCamera(void);
 /*! \return The camera of the given render target.  If target is NULL, returns the default camera. */
 GPU_Camera GPU_GetCamera(GPU_Target* target);
 
-
 /*! Sets the current render target's current camera.
  * \param target A pointer to the target that will copy this camera.
  * \param cam A pointer to the camera data to use or NULL to use the default camera.
  * \return The old camera. */
 GPU_Camera GPU_SetCamera(GPU_Target* target, GPU_Camera* cam);
+
+/*! \return The RGBA color of a pixel. */
+SDL_Color GPU_GetPixel(GPU_Target* target, Sint16 x, Sint16 y);
+
+/*! Sets the clipping rect for the given render target. */
+GPU_Rect GPU_SetClipRect(GPU_Target* target, GPU_Rect rect);
+
+/*! Sets the clipping rect for the given render target. */
+GPU_Rect GPU_SetClip(GPU_Target* target, Sint16 x, Sint16 y, Uint16 w, Uint16 h);
+
+/*! Turns off clipping for the given target. */
+void GPU_UnsetClip(GPU_Target* target);
+
+/*! Sets the modulation color for subsequent drawing of images and shapes on the given target. 
+ *  This has a cumulative effect with the image coloring functions.
+ *  e.g. GPU_SetRGB(image, 255, 128, 0); GPU_SetTargetRGB(target, 128, 128, 128);
+ *  Would make the image draw with color of roughly (128, 64, 0).
+ */
+void GPU_SetTargetColor(GPU_Target* target, SDL_Color* color);
+
+/*! Sets the modulation color for subsequent drawing of images and shapes on the given target. 
+ *  This has a cumulative effect with the image coloring functions.
+ *  e.g. GPU_SetRGB(image, 255, 128, 0); GPU_SetTargetRGB(target, 128, 128, 128);
+ *  Would make the image draw with color of roughly (128, 64, 0).
+ */
+void GPU_SetTargetRGB(GPU_Target* target, Uint8 r, Uint8 g, Uint8 b);
+
+/*! Sets the modulation color for subsequent drawing of images and shapes on the given target. 
+ *  This has a cumulative effect with the image coloring functions.
+ *  e.g. GPU_SetRGB(image, 255, 128, 0); GPU_SetTargetRGB(target, 128, 128, 128);
+ *  Would make the image draw with color of roughly (128, 64, 0).
+ */
+void GPU_SetTargetRGBA(GPU_Target* target, Uint8 r, Uint8 g, Uint8 b, Uint8 a);
+
+
+
+
+// Surface controls
+
+/*! Load surface from an image file that is supported by this renderer.  Don't forget to SDL_FreeSurface() it. */
+SDL_Surface* GPU_LoadSurface(const char* filename);
+
+/*! Save surface to a file.  The file type is deduced from the extension.  Supported formats are: png, bmp, tga.  Returns 0 on failure. */
+Uint8 GPU_SaveSurface(SDL_Surface* surface, const char* filename);
+
+
+
+
+
+// Image controls
 
 /*! Create a new, blank image with a format determined by the number of channels requested.  Don't forget to GPU_FreeImage() it. 
 	 * \param w Image width in pixels
@@ -888,20 +1003,51 @@ GPU_Image* GPU_LoadImage(const char* filename);
  * GPU_FreeImage() frees the alias's memory, but does not affect the original. */
 GPU_Image* GPU_CreateAliasImage(GPU_Image* image);
 
-/*! Save image to a file.  The file type is deduced from the extension.  Supported formats are: png, bmp, tga.  Returns 0 on failure. */
-Uint8 GPU_SaveImage(GPU_Image* image, const char* filename);
-
-/*! Save surface to a file.  The file type is deduced from the extension.  Supported formats are: png, bmp, tga.  Returns 0 on failure. */
-Uint8 GPU_SaveSurface(SDL_Surface* surface, const char* filename);
-
 /*! Copy an image to a new image.  Don't forget to GPU_FreeImage() both. */
 GPU_Image* GPU_CopyImage(GPU_Image* image);
+
+/*! Deletes an image in the proper way for this renderer.  Also deletes the corresponding GPU_Target if applicable.  Be careful not to use that target afterward! */
+void GPU_FreeImage(GPU_Image* image);
 
 /*! Update an image from surface data. */
 void GPU_UpdateImage(GPU_Image* image, const GPU_Rect* rect, SDL_Surface* surface);
 
-/*! Load surface from an image file that is supported by this renderer.  Don't forget to SDL_FreeSurface() it. */
-SDL_Surface* GPU_LoadSurface(const char* filename);
+/*! Copies software surface data to a hardware texture.  Draws data with the upper left corner being (x,y).  */
+void GPU_SubSurfaceCopy(SDL_Surface* src, GPU_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y);
+
+/*! Save image to a file.  The file type is deduced from the extension.  Supported formats are: png, bmp, tga.  Returns 0 on failure. */
+Uint8 GPU_SaveImage(GPU_Image* image, const char* filename);
+
+/*! Loads mipmaps for the given image, if supported by the renderer. */
+void GPU_GenerateMipmaps(GPU_Image* image);
+
+/*! Sets the modulation color for subsequent drawing of the given image. */
+void GPU_SetColor(GPU_Image* image, SDL_Color* color);
+
+/*! Sets the modulation color for subsequent drawing of the given image. */
+void GPU_SetRGB(GPU_Image* image, Uint8 r, Uint8 g, Uint8 b);
+
+/*! Sets the modulation color for subsequent drawing of the given image. */
+void GPU_SetRGBA(GPU_Image* image, Uint8 r, Uint8 g, Uint8 b, Uint8 a);
+
+/*! Gets the current alpha blending setting. */
+Uint8 GPU_GetBlending(GPU_Image* image);
+
+/*! Enables/disables alpha blending for the given image. */
+void GPU_SetBlending(GPU_Image* image, Uint8 enable);
+	
+/*! Sets the blending mode, if supported by the renderer. */
+void GPU_SetBlendMode(GPU_Image* image, GPU_BlendEnum mode);
+
+/*! Sets the image filtering mode, if supported by the renderer. */
+void GPU_SetImageFilter(GPU_Image* image, GPU_FilterEnum filter);
+
+/*! Sets the image wrapping mode, if supported by the renderer. */
+void GPU_SetWrapMode(GPU_Image* image, GPU_WrapEnum wrap_mode_x, GPU_WrapEnum wrap_mode_y);
+
+
+
+// Surface / Image / Target conversions
 
 /*! Copy SDL_Surface data into a new GPU_Image.  Don't forget to SDL_FreeSurface() the surface and GPU_FreeImage() the image.*/
 GPU_Image* GPU_CopyImageFromSurface(SDL_Surface* surface);
@@ -915,20 +1061,18 @@ SDL_Surface* GPU_CopySurfaceFromTarget(GPU_Target* target);
 /*! Copy GPU_Image data into a new SDL_Surface.  Don't forget to SDL_FreeSurface() the surface and GPU_FreeImage() the image.*/
 SDL_Surface* GPU_CopySurfaceFromImage(GPU_Image* image);
 
-/*! Deletes an image in the proper way for this renderer.  Also deletes the corresponding GPU_Target if applicable.  Be careful not to use that target afterward! */
-void GPU_FreeImage(GPU_Image* image);
 
-/*! Copies software surface data to a hardware texture.  Draws data with the upper left corner being (x,y).  */
-void GPU_SubSurfaceCopy(SDL_Surface* src, GPU_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y);
 
-/*! \return The renderer's current output surface/framebuffer. */
-GPU_Target* GPU_GetContextTarget(void);
+// Rendering
 
-/*! Creates a new render target from the given image.  It can then be accessed from image->target. */
-GPU_Target* GPU_LoadTarget(GPU_Image* image);
+/*! Clears the contents of the given render target.  Fills the target with color {0, 0, 0, 0}. */
+void GPU_Clear(GPU_Target* target);
 
-/*! Deletes a render target in the proper way for this renderer. */
-void GPU_FreeTarget(GPU_Target* target);
+/*! Fills the given render target with a color.  If 'color' is NULL, {0, 0, 0, 0} is used. */
+void GPU_ClearColor(GPU_Target* target, SDL_Color* color);
+
+/*! Fills the given render target with a color. */
+void GPU_ClearRGBA(GPU_Target* target, Uint8 r, Uint8 g, Uint8 b, Uint8 a);
 
 /*! Draws the given image to the given render target.
     * \param src_rect The region of the source image to use.
@@ -960,7 +1104,6 @@ void GPU_BlitScale(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, flo
     * \param scaleY Vertical stretch factor */
 void GPU_BlitTransform(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float degrees, float scaleX, float scaleY);
 
-	
 /*! Scales, rotates around a pivot point, and draws the given image to the given render target.  The drawing point (x, y) coincides with the pivot point on the src image (pivot_x, pivot_y).
 	* \param src_rect The region of the source image to use.
 	* \param x Destination x-position
@@ -971,7 +1114,6 @@ void GPU_BlitTransform(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target,
 	* \param scaleX Horizontal stretch factor
 	* \param scaleY Vertical stretch factor */
 void GPU_BlitTransformX(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float pivot_x, float pivot_y, float degrees, float scaleX, float scaleY);
-
 
 /*! Transforms and draws the given image to the given render target.
 	* \param src_rect The region of the source image to use.
@@ -995,87 +1137,12 @@ void GPU_BlitBatch(GPU_Image* image, GPU_Target* target, unsigned int num_sprite
  */
 void GPU_BlitBatchSeparate(GPU_Image* image, GPU_Target* target, unsigned int num_sprites, float* positions, float* src_rects, float* colors, GPU_BlitFlagEnum flags);
 
-/*! Renders triangles from the given set of vertices.
+/*! Renders triangles from the given set of vertices.  This lets you render arbitrary 2D geometry.
  * \param values A tightly-packed array of vertex position (x,y), image coordinates (s,t), and color (r,g,b,a) values with a range from 0-255.  Pass NULL to render with only custom shader attributes.
  * \param indices If not NULL, this is used to specify which vertices to use and in what order (i.e. it indexes the vertices in the 'values' array).
  * \param flags Bit flags to control the interpretation of the array parameters.  Since 'values' contains per-vertex data, GPU_PASSTHROUGH_VERTICES is ignored.  Texture coordinates are scaled down using the image dimensions and color components are normalized to [0.0, 1.0].
  */
 void GPU_TriangleBatch(GPU_Image* image, GPU_Target* target, unsigned short num_vertices, float* values, unsigned int num_indices, unsigned short* indices, GPU_BlitFlagEnum flags);
-
-/*! Loads mipmaps for the given image, if supported by the renderer. */
-void GPU_GenerateMipmaps(GPU_Image* image);
-
-/*! Sets the clipping rect for the given render target. */
-GPU_Rect GPU_SetClipRect(GPU_Target* target, GPU_Rect rect);
-
-/*! Sets the clipping rect for the given render target. */
-GPU_Rect GPU_SetClip(GPU_Target* target, Sint16 x, Sint16 y, Uint16 w, Uint16 h);
-
-/*! Turns off clipping for the given target. */
-void GPU_UnsetClip(GPU_Target* target);
-
-/*! Sets the modulation color for subsequent drawing of the given image. */
-void GPU_SetColor(GPU_Image* image, SDL_Color* color);
-
-/*! Sets the modulation color for subsequent drawing of the given image. */
-void GPU_SetRGB(GPU_Image* image, Uint8 r, Uint8 g, Uint8 b);
-
-/*! Sets the modulation color for subsequent drawing of the given image. */
-void GPU_SetRGBA(GPU_Image* image, Uint8 r, Uint8 g, Uint8 b, Uint8 a);
-
-/*! Sets the modulation color for subsequent drawing of images and shapes on the given target. 
- *  This has a cumulative effect with the image coloring functions.
- *  e.g. GPU_SetRGB(image, 255, 128, 0); GPU_SetTargetRGB(target, 128, 128, 128);
- *  Would make the image draw with color of roughly (128, 64, 0).
- */
-void GPU_SetTargetColor(GPU_Target* target, SDL_Color* color);
-
-/*! Sets the modulation color for subsequent drawing of images and shapes on the given target. 
- *  This has a cumulative effect with the image coloring functions.
- *  e.g. GPU_SetRGB(image, 255, 128, 0); GPU_SetTargetRGB(target, 128, 128, 128);
- *  Would make the image draw with color of roughly (128, 64, 0).
- */
-void GPU_SetTargetRGB(GPU_Target* target, Uint8 r, Uint8 g, Uint8 b);
-
-/*! Sets the modulation color for subsequent drawing of images and shapes on the given target. 
- *  This has a cumulative effect with the image coloring functions.
- *  e.g. GPU_SetRGB(image, 255, 128, 0); GPU_SetTargetRGB(target, 128, 128, 128);
- *  Would make the image draw with color of roughly (128, 64, 0).
- */
-void GPU_SetTargetRGBA(GPU_Target* target, Uint8 r, Uint8 g, Uint8 b, Uint8 a);
-
-/*! Gets the current alpha blending setting. */
-Uint8 GPU_GetBlending(GPU_Image* image);
-
-/*! Enables/disables alpha blending for the given image. */
-void GPU_SetBlending(GPU_Image* image, Uint8 enable);
-
-/*! Enables/disables alpha blending for shape rendering on the current window. */
-void GPU_SetShapeBlending(Uint8 enable);
-	
-/*! Sets the blending mode, if supported by the renderer. */
-void GPU_SetBlendMode(GPU_Image* image, GPU_BlendEnum mode);
-	
-/*! Sets the blending mode for shape rendering on the current window, if supported by the renderer. */
-void GPU_SetShapeBlendMode(GPU_BlendEnum mode);
-
-/*! Sets the image filtering mode, if supported by the renderer. */
-void GPU_SetImageFilter(GPU_Image* image, GPU_FilterEnum filter);
-
-/*! Sets the image wrapping mode, if supported by the renderer. */
-void GPU_SetWrapMode(GPU_Image* image, GPU_WrapEnum wrap_mode_x, GPU_WrapEnum wrap_mode_y);
-
-/*! \return The RGBA color of a pixel. */
-SDL_Color GPU_GetPixel(GPU_Target* target, Sint16 x, Sint16 y);
-
-/*! Clears the contents of the given render target.  Fills the target with color {0, 0, 0, 0}. */
-void GPU_Clear(GPU_Target* target);
-
-/*! Fills the given render target with a color.  If 'color' is NULL, {0, 0, 0, 0} is used. */
-void GPU_ClearColor(GPU_Target* target, SDL_Color* color);
-
-/*! Fills the given render target with a color. */
-void GPU_ClearRGBA(GPU_Target* target, Uint8 r, Uint8 g, Uint8 b, Uint8 a);
 
 /*! Send all buffered blitting data to the current context target. */
 void GPU_FlushBlitBuffer(void);
@@ -1087,148 +1154,8 @@ void GPU_Flip(GPU_Target* target);
 
 
 
-// Shaders
-
-#define GPU_VERTEX_SHADER 0
-#define GPU_FRAGMENT_SHADER 1
-#define GPU_PIXEL_SHADER 1
-#define GPU_GEOMETRY_SHADER 2
-
-/*! Loads shader source from an SDL_RWops, compiles it, and returns the new shader object. */
-Uint32 GPU_CompileShader_RW(int shader_type, SDL_RWops* shader_source);
-
-/*! Loads shader source from a file, compiles it, and returns the new shader object. */
-Uint32 GPU_LoadShader(int shader_type, const char* filename);
-
-/*! Compiles shader source and returns the new shader object. */
-Uint32 GPU_CompileShader(int shader_type, const char* shader_source);
-
-/*! Links a shader program with any attached shader objects. */
-Uint32 GPU_LinkShaderProgram(Uint32 program_object);
-
-/*! Creates and links a shader program with the given shader objects. */
-Uint32 GPU_LinkShaders(Uint32 shader_object1, Uint32 shader_object2);
-
-/*! Deletes a shader object. */
-void GPU_FreeShader(Uint32 shader_object);
-
-/*! Deletes a shader program. */
-void GPU_FreeShaderProgram(Uint32 program_object);
-
-/*! Attaches a shader object to a shader program for future linking. */
-void GPU_AttachShader(Uint32 program_object, Uint32 shader_object);
-
-/*! Detaches a shader object from a shader program. */
-void GPU_DetachShader(Uint32 program_object, Uint32 shader_object);
-
-/*! Returns 1 if the given shader program is a default shader for the current context, 0 otherwise. */
-Uint8 GPU_IsDefaultShaderProgram(Uint32 program_object);
-
-/*! Activates the given shader program.  Passing NULL for 'block' will disable the built-in shader variables for custom shaders until a GPU_ShaderBlock is set again. */
-void GPU_ActivateShaderProgram(Uint32 program_object, GPU_ShaderBlock* block);
-
-/*! Deactivates the current shader program (activates program 0). */
-void GPU_DeactivateShaderProgram(void);
-
-/*! Returns the last shader log message. */
-const char* GPU_GetShaderMessage(void);
-
-/*! Returns an integer representing the location of the specified attribute shader variable. */
-int GPU_GetAttributeLocation(Uint32 program_object, const char* attrib_name);
-
-/*! Returns a filled GPU_AttributeFormat object. */
-GPU_AttributeFormat GPU_MakeAttributeFormat(int num_elems_per_vertex, GPU_TypeEnum type, Uint8 normalize, int stride_bytes, int offset_bytes);
-
-/*! Returns a filled GPU_Attribute object. */
-GPU_Attribute GPU_MakeAttribute(int location, void* values, GPU_AttributeFormat format);
-
-/*! Returns an integer representing the location of the specified uniform shader variable. */
-int GPU_GetUniformLocation(Uint32 program_object, const char* uniform_name);
-
-/*! Loads the given shader program's built-in attribute and uniform locations. */
-GPU_ShaderBlock GPU_LoadShaderBlock(Uint32 program_object, const char* position_name, const char* texcoord_name, const char* color_name, const char* modelViewMatrix_name);
-
-/*! Sets the current shader block to use the given attribute and uniform locations. */
-void GPU_SetShaderBlock(GPU_ShaderBlock block);
-
-/*! Sets the given image unit to the given image so that a custom shader can sample multiple textures.
-    \param image The source image/texture.  Pass NULL to disable the image unit.
-    \param location The uniform location of a texture sampler
-    \param image_unit The index of the texture unit to set.  0 is the first unit, which is used by SDL_gpu's blitting functions.  1 would be the second unit. */
-void GPU_SetShaderImage(GPU_Image* image, int location, int image_unit);
-
-/*! Fills "values" with the value of the uniform shader variable at the given location. */
-void GPU_GetUniformiv(Uint32 program_object, int location, int* values);
-
-/*! Sets the value of the integer uniform shader variable at the given location.
-    This is equivalent to calling GPU_SetUniformiv(location, 1, 1, &value). */
-void GPU_SetUniformi(int location, int value);
-
-/*! Sets the value of the integer uniform shader variable at the given location. */
-void GPU_SetUniformiv(int location, int num_elements_per_value, int num_values, int* values);
-
-/*! Fills "values" with the value of the uniform shader variable at the given location. */
-void GPU_GetUniformuiv(Uint32 program_object, int location, unsigned int* values);
-
-/*! Sets the value of the unsigned integer uniform shader variable at the given location.
-    This is equivalent to calling GPU_SetUniformuiv(location, 1, 1, &value). */
-void GPU_SetUniformui(int location, unsigned int value);
-
-/*! Sets the value of the unsigned integer uniform shader variable at the given location. */
-void GPU_SetUniformuiv(int location, int num_elements_per_value, int num_values, unsigned int* values);
-
-/*! Fills "values" with the value of the uniform shader variable at the given location. */
-void GPU_GetUniformfv(Uint32 program_object, int location, float* values);
-
-/*! Sets the value of the floating point uniform shader variable at the given location.
-    This is equivalent to calling GPU_SetUniformfv(location, 1, 1, &value). */
-void GPU_SetUniformf(int location, float value);
-
-/*! Sets the value of the floating point uniform shader variable at the given location. */
-void GPU_SetUniformfv(int location, int num_elements_per_value, int num_values, float* values);
-
-/*! Fills "values" with the value of the uniform shader variable at the given location.  The results are identical to calling GPU_GetUniformfv().  Matrices are gotten in column-major order. */
-void GPU_GetUniformMatrixfv(Uint32 program_object, int location, float* values);
-
-/*! Sets the value of the matrix uniform shader variable at the given location.  The size of the matrices sent is specified by num_rows and num_columns.  Rows and columns must be between 2 and 4. */
-void GPU_SetUniformMatrixfv(int location, int num_matrices, int num_rows, int num_columns, Uint8 transpose, float* values);
-
-/*! Sets a constant-value shader attribute that will be used for each rendered vertex. */
-void GPU_SetAttributef(int location, float value);
-
-/*! Sets a constant-value shader attribute that will be used for each rendered vertex. */
-void GPU_SetAttributei(int location, int value);
-
-/*! Sets a constant-value shader attribute that will be used for each rendered vertex. */
-void GPU_SetAttributeui(int location, unsigned int value);
-
-/*! Sets a constant-value shader attribute that will be used for each rendered vertex. */
-void GPU_SetAttributefv(int location, int num_elements, float* value);
-
-/*! Sets a constant-value shader attribute that will be used for each rendered vertex. */
-void GPU_SetAttributeiv(int location, int num_elements, int* value);
-
-/*! Sets a constant-value shader attribute that will be used for each rendered vertex. */
-void GPU_SetAttributeuiv(int location, int num_elements, unsigned int* value);
-
-/*! Enables a shader attribute and sets its source data. */
-void GPU_SetAttributeSource(int num_values, GPU_Attribute source);
-
-
-
-
-
 
 // Shapes
-
-/*! Sets the thickness of lines for the current context. 
- * \param thickness New line thickness in pixels.  Default is 1.0f.
- * \return The old thickness value
- */
-float GPU_SetLineThickness(float thickness);
-
-/*! Returns the current line thickness value. */
-float GPU_GetLineThickness(void);
 
 /*! Renders a colored point.
  * \param target The destination render target
@@ -1369,6 +1296,138 @@ void GPU_Polygon(GPU_Target* target, unsigned int num_vertices, float* vertices,
  * \param color The color of the shape to render
  */
 void GPU_PolygonFilled(GPU_Target* target, unsigned int num_vertices, float* vertices, SDL_Color color);
+
+
+
+
+
+
+// Shaders
+
+/*! Loads shader source from an SDL_RWops, compiles it, and returns the new shader object. */
+Uint32 GPU_CompileShader_RW(GPU_ShaderEnum shader_type, SDL_RWops* shader_source);
+
+/*! Loads shader source from a file, compiles it, and returns the new shader object. */
+Uint32 GPU_LoadShader(GPU_ShaderEnum shader_type, const char* filename);
+
+/*! Compiles shader source and returns the new shader object. */
+Uint32 GPU_CompileShader(GPU_ShaderEnum shader_type, const char* shader_source);
+
+/*! Links a shader program with any attached shader objects. */
+Uint32 GPU_LinkShaderProgram(Uint32 program_object);
+
+/*! Creates and links a shader program with the given shader objects. */
+Uint32 GPU_LinkShaders(Uint32 shader_object1, Uint32 shader_object2);
+
+/*! Deletes a shader object. */
+void GPU_FreeShader(Uint32 shader_object);
+
+/*! Deletes a shader program. */
+void GPU_FreeShaderProgram(Uint32 program_object);
+
+/*! Attaches a shader object to a shader program for future linking. */
+void GPU_AttachShader(Uint32 program_object, Uint32 shader_object);
+
+/*! Detaches a shader object from a shader program. */
+void GPU_DetachShader(Uint32 program_object, Uint32 shader_object);
+
+/*! \return The current shader program */
+Uint32 GPU_GetCurrentShaderProgram(void);
+
+/*! Returns 1 if the given shader program is a default shader for the current context, 0 otherwise. */
+Uint8 GPU_IsDefaultShaderProgram(Uint32 program_object);
+
+/*! Activates the given shader program.  Passing NULL for 'block' will disable the built-in shader variables for custom shaders until a GPU_ShaderBlock is set again. */
+void GPU_ActivateShaderProgram(Uint32 program_object, GPU_ShaderBlock* block);
+
+/*! Deactivates the current shader program (activates program 0). */
+void GPU_DeactivateShaderProgram(void);
+
+/*! Returns the last shader log message. */
+const char* GPU_GetShaderMessage(void);
+
+/*! Returns an integer representing the location of the specified attribute shader variable. */
+int GPU_GetAttributeLocation(Uint32 program_object, const char* attrib_name);
+
+/*! Returns a filled GPU_AttributeFormat object. */
+GPU_AttributeFormat GPU_MakeAttributeFormat(int num_elems_per_vertex, GPU_TypeEnum type, Uint8 normalize, int stride_bytes, int offset_bytes);
+
+/*! Returns a filled GPU_Attribute object. */
+GPU_Attribute GPU_MakeAttribute(int location, void* values, GPU_AttributeFormat format);
+
+/*! Returns an integer representing the location of the specified uniform shader variable. */
+int GPU_GetUniformLocation(Uint32 program_object, const char* uniform_name);
+
+/*! Loads the given shader program's built-in attribute and uniform locations. */
+GPU_ShaderBlock GPU_LoadShaderBlock(Uint32 program_object, const char* position_name, const char* texcoord_name, const char* color_name, const char* modelViewMatrix_name);
+
+/*! Sets the current shader block to use the given attribute and uniform locations. */
+void GPU_SetShaderBlock(GPU_ShaderBlock block);
+
+/*! Sets the given image unit to the given image so that a custom shader can sample multiple textures.
+    \param image The source image/texture.  Pass NULL to disable the image unit.
+    \param location The uniform location of a texture sampler
+    \param image_unit The index of the texture unit to set.  0 is the first unit, which is used by SDL_gpu's blitting functions.  1 would be the second unit. */
+void GPU_SetShaderImage(GPU_Image* image, int location, int image_unit);
+
+/*! Fills "values" with the value of the uniform shader variable at the given location. */
+void GPU_GetUniformiv(Uint32 program_object, int location, int* values);
+
+/*! Sets the value of the integer uniform shader variable at the given location.
+    This is equivalent to calling GPU_SetUniformiv(location, 1, 1, &value). */
+void GPU_SetUniformi(int location, int value);
+
+/*! Sets the value of the integer uniform shader variable at the given location. */
+void GPU_SetUniformiv(int location, int num_elements_per_value, int num_values, int* values);
+
+/*! Fills "values" with the value of the uniform shader variable at the given location. */
+void GPU_GetUniformuiv(Uint32 program_object, int location, unsigned int* values);
+
+/*! Sets the value of the unsigned integer uniform shader variable at the given location.
+    This is equivalent to calling GPU_SetUniformuiv(location, 1, 1, &value). */
+void GPU_SetUniformui(int location, unsigned int value);
+
+/*! Sets the value of the unsigned integer uniform shader variable at the given location. */
+void GPU_SetUniformuiv(int location, int num_elements_per_value, int num_values, unsigned int* values);
+
+/*! Fills "values" with the value of the uniform shader variable at the given location. */
+void GPU_GetUniformfv(Uint32 program_object, int location, float* values);
+
+/*! Sets the value of the floating point uniform shader variable at the given location.
+    This is equivalent to calling GPU_SetUniformfv(location, 1, 1, &value). */
+void GPU_SetUniformf(int location, float value);
+
+/*! Sets the value of the floating point uniform shader variable at the given location. */
+void GPU_SetUniformfv(int location, int num_elements_per_value, int num_values, float* values);
+
+/*! Fills "values" with the value of the uniform shader variable at the given location.  The results are identical to calling GPU_GetUniformfv().  Matrices are gotten in column-major order. */
+void GPU_GetUniformMatrixfv(Uint32 program_object, int location, float* values);
+
+/*! Sets the value of the matrix uniform shader variable at the given location.  The size of the matrices sent is specified by num_rows and num_columns.  Rows and columns must be between 2 and 4. */
+void GPU_SetUniformMatrixfv(int location, int num_matrices, int num_rows, int num_columns, Uint8 transpose, float* values);
+
+/*! Sets a constant-value shader attribute that will be used for each rendered vertex. */
+void GPU_SetAttributef(int location, float value);
+
+/*! Sets a constant-value shader attribute that will be used for each rendered vertex. */
+void GPU_SetAttributei(int location, int value);
+
+/*! Sets a constant-value shader attribute that will be used for each rendered vertex. */
+void GPU_SetAttributeui(int location, unsigned int value);
+
+/*! Sets a constant-value shader attribute that will be used for each rendered vertex. */
+void GPU_SetAttributefv(int location, int num_elements, float* value);
+
+/*! Sets a constant-value shader attribute that will be used for each rendered vertex. */
+void GPU_SetAttributeiv(int location, int num_elements, int* value);
+
+/*! Sets a constant-value shader attribute that will be used for each rendered vertex. */
+void GPU_SetAttributeuiv(int location, int num_elements, unsigned int* value);
+
+/*! Enables a shader attribute and sets its source data. */
+void GPU_SetAttributeSource(int num_values, GPU_Attribute source);
+
+
 
 
 #ifdef __cplusplus

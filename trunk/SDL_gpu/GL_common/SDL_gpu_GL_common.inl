@@ -4380,7 +4380,7 @@ static Uint32 GetShaderSourceSize(const char* filename)
 static char shader_message[256];
 
 
-static Uint32 compile_shader_source(int shader_type, const char* shader_source)
+static Uint32 compile_shader_source(GPU_ShaderEnum shader_type, const char* shader_source)
 {
     // Create the proper new shader object
     GLuint shader_object = 0;
@@ -4431,7 +4431,7 @@ static Uint32 compile_shader_source(int shader_type, const char* shader_source)
 }
 
 
-static Uint32 CompileShader_RW(GPU_Renderer* renderer, int shader_type, SDL_RWops* shader_source)
+static Uint32 CompileShader_RW(GPU_Renderer* renderer, GPU_ShaderEnum shader_type, SDL_RWops* shader_source)
 {
     // Read in the shader source code
     Uint32 size = GetShaderSourceSize_RW(shader_source);
@@ -4451,7 +4451,7 @@ static Uint32 CompileShader_RW(GPU_Renderer* renderer, int shader_type, SDL_RWop
     return result2;
 }
 
-static Uint32 CompileShader(GPU_Renderer* renderer, int shader_type, const char* shader_source)
+static Uint32 CompileShader(GPU_Renderer* renderer, GPU_ShaderEnum shader_type, const char* shader_source)
 {
     Uint32 size = strlen(shader_source);
     if(size == 0)
