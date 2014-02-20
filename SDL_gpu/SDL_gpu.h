@@ -5,14 +5,19 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-/* Auto-detect if we're using the SDL2 API by the headers available. */
-#if SDL_VERSION_ATLEAST(2,0,0)
-    #define SDL_GPU_USE_SDL2
-#endif
-
 
 #ifdef __cplusplus
 extern "C" {
+#endif
+
+// Compile-time versions
+#define SDL_GPU_VERSION_MAJOR 0
+#define SDL_GPU_VERSION_MINOR 6
+#define SDL_GPU_VERSION_PATCH 0
+
+/* Auto-detect if we're using the SDL2 API by the headers available. */
+#if SDL_VERSION_ATLEAST(2,0,0)
+    #define SDL_GPU_USE_SDL2
 #endif
 
 
@@ -714,6 +719,14 @@ struct GPU_Renderer
 
 
 // Setup calls
+
+static inline SDL_version GPU_GetCompiledVersion(void)
+{
+    SDL_version v = {SDL_GPU_VERSION_MAJOR, SDL_GPU_VERSION_MINOR, SDL_GPU_VERSION_PATCH};
+    return v;
+}
+
+SDL_version GPU_GetLinkedVersion(void);
 
 /*! The window corresponding to 'windowID' will be used to create the rendering context instead of creating a new window. */
 void GPU_SetInitWindow(Uint32 windowID);
