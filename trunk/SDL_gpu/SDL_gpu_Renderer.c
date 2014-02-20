@@ -225,6 +225,31 @@ void GPU_GetRendererOrder(int* order_size, GPU_RendererID* order)
         memcpy(order, renderer_order, renderer_order_size*sizeof(GPU_RendererID));
 }
 
+void GPU_SetRendererOrder(int order_size, GPU_RendererID* order)
+{
+    if(order == NULL)
+    {
+        // Restore the default order
+        int count = 0;
+        GPU_RendererID default_order[GPU_RENDERER_ORDER_MAX];
+        GPU_GetDefaultRendererOrder(&count, default_order);
+        GPU_SetRendererOrder(count, default_order);  // Call us again with the default order
+        return;
+    }
+    
+    if(order_size <= 0)
+        return;
+    
+    if(order_size > GPU_RENDERER_ORDER_MAX)
+    {
+        GPU_PushErrorCode(__func__, GPU_ERROR_USER_ERROR, "Given order_size is greater than GPU_RENDERER_ORDER_MAX.");
+        order_size = GPU_RENDERER_ORDER_MAX;
+    }
+    
+    memcpy(renderer_order, order, order_size*sizeof(GPU_RendererID));
+    renderer_order_size = order_size;
+}
+
 
 
 void GPU_GetDefaultRendererOrder(int* order_size, GPU_RendererID* order)

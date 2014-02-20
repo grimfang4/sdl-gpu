@@ -728,11 +728,14 @@ void GPU_SetPreInitFlags(GPU_InitFlagEnum GPU_flags);
 /*! Returns the current special flags to use for initialization. */
 GPU_InitFlagEnum GPU_GetPreInitFlags(void);
 
-/*! Gets the current renderer ID order for initialization.  Pass NULL for 'order' to just get the size of the renderer order array. */
+/*! Gets the default initialization renderer IDs for the current platform copied into the 'order' array and the number of renderer IDs into 'order_size'.  Pass NULL for 'order' to just get the size of the renderer order array.  Will return at most GPU_RENDERER_ORDER_MAX renderers. */
+void GPU_GetDefaultRendererOrder(int* order_size, GPU_RendererID* order);
+
+/*! Gets the current renderer ID order for initialization copied into the 'order' array and the number of renderer IDs into 'order_size'.  Pass NULL for 'order' to just get the size of the renderer order array. */
 void GPU_GetRendererOrder(int* order_size, GPU_RendererID* order);
 
-/*! Gets the default renderer IDs for the current platform.  Pass NULL for 'order' to just get the size of the renderer order array. */
-void GPU_GetDefaultRendererOrder(int* order_size, GPU_RendererID* order);
+/*! Sets the renderer ID order to use for initialization.  If 'order' is NULL, it will restore the default order. */
+void GPU_SetRendererOrder(int order_size, GPU_RendererID* order);
 
 /*! Initializes SDL and SDL_gpu.  Creates a window and goes through the renderer order to create a renderer context.
  * \see GPU_SetRendererOrder()
