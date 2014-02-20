@@ -616,14 +616,14 @@ static void RectangleRoundFilled(GPU_Renderer* renderer, GPU_Target* target, flo
     SET_INDEXED_VERTEX(1);
 }
 
-static void Polygon(GPU_Renderer* renderer, GPU_Target* target, Uint16 n, float* vertices, SDL_Color color)
+static void Polygon(GPU_Renderer* renderer, GPU_Target* target, unsigned int num_vertices, float* vertices, SDL_Color color)
 {
-    if(n < 3)
+    if(num_vertices < 3)
         return;
     
-    int numSegments = 2*n;
+    int numSegments = 2*num_vertices;
     
-    BEGIN_UNTEXTURED("GPU_Polygon", GL_LINES, n, numSegments);
+    BEGIN_UNTEXTURED("GPU_Polygon", GL_LINES, num_vertices, numSegments);
     
     SET_UNTEXTURED_VERTEX(vertices[0], vertices[1], r, g, b, a);
     int last_index = 0;
@@ -638,22 +638,22 @@ static void Polygon(GPU_Renderer* renderer, GPU_Target* target, Uint16 n, float*
     SET_INDEXED_VERTEX(0);
 }
 
-static void PolygonFilled(GPU_Renderer* renderer, GPU_Target* target, Uint16 n, float* vertices, SDL_Color color)
+static void PolygonFilled(GPU_Renderer* renderer, GPU_Target* target, unsigned int num_vertices, float* vertices, SDL_Color color)
 {
-    if(n < 3)
+    if(num_vertices < 3)
         return;
     
-    int numSegments = 2*n;
+    int numSegments = 2*num_vertices;
     
     // Using a fan of triangles assumes that the polygon is convex
-    BEGIN_UNTEXTURED("GPU_PolygonFilled", GL_TRIANGLES, n, 3 + (n-3)*3);
+    BEGIN_UNTEXTURED("GPU_PolygonFilled", GL_TRIANGLES, num_vertices, 3 + (num_vertices-3)*3);
     
     // First triangle
     SET_UNTEXTURED_VERTEX(vertices[0], vertices[1], r, g, b, a);
     SET_UNTEXTURED_VERTEX(vertices[2], vertices[3], r, g, b, a);
     SET_UNTEXTURED_VERTEX(vertices[4], vertices[5], r, g, b, a);
     
-    if(n > 3)
+    if(num_vertices > 3)
     {
         int last_index = 2;
         

@@ -643,36 +643,53 @@ struct GPU_Renderer
     
     // Shapes
     
+    /*! \see GPU_SetLineThickness() */
 	float (*SetLineThickness)(GPU_Renderer* renderer, float thickness);
+	
+    /*! \see GPU_GetLineThickness() */
 	float (*GetLineThickness)(GPU_Renderer* renderer);
 	
+    /*! \see GPU_Pixel() */
 	void (*Pixel)(GPU_Renderer* renderer, GPU_Target* target, float x, float y, SDL_Color color);
 
+    /*! \see GPU_Line() */
 	void (*Line)(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color);
 
+    /*! \see GPU_Arc() */
 	void (*Arc)(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float radius, float startAngle, float endAngle, SDL_Color color);
 	
+    /*! \see GPU_ArcFilled() */
 	void (*ArcFilled)(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float radius, float startAngle, float endAngle, SDL_Color color);
 
+    /*! \see GPU_Circle() */
 	void (*Circle)(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float radius, SDL_Color color);
 
+    /*! \see GPU_CircleFilled() */
 	void (*CircleFilled)(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float radius, SDL_Color color);
 
+    /*! \see GPU_Tri() */
 	void (*Tri)(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, float x3, float y3, SDL_Color color);
 
+    /*! \see GPU_TriFilled() */
 	void (*TriFilled)(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, float x3, float y3, SDL_Color color);
 
+    /*! \see GPU_Rectangle() */
 	void (*Rectangle)(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color);
 
+    /*! \see GPU_RectangleFilled() */
 	void (*RectangleFilled)(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color);
 
+    /*! \see GPU_RectangleRound() */
 	void (*RectangleRound)(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, float radius, SDL_Color color);
 
+    /*! \see GPU_RectangleRoundFilled() */
 	void (*RectangleRoundFilled)(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, float radius, SDL_Color color);
 
-	void (*Polygon)(GPU_Renderer* renderer, GPU_Target* target, Uint16 n, float* vertices, SDL_Color color);
+    /*! \see GPU_Polygon() */
+	void (*Polygon)(GPU_Renderer* renderer, GPU_Target* target, unsigned int num_vertices, float* vertices, SDL_Color color);
 
-	void (*PolygonFilled)(GPU_Renderer* renderer, GPU_Target* target, Uint16 n, float* vertices, SDL_Color color);
+    /*! \see GPU_PolygonFilled() */
+	void (*PolygonFilled)(GPU_Renderer* renderer, GPU_Target* target, unsigned int num_vertices, float* vertices, SDL_Color color);
 };
 
 
@@ -690,13 +707,14 @@ void GPU_LogError(const char* format, ...);
 
 
 // Setup calls
-/*! The window corresponding to 'windowID' will be used to create the rendering context. */
+/*! The window corresponding to 'windowID' will be used to create the rendering context instead of creating a new window. */
 void GPU_SetInitWindow(Uint32 windowID);
 
 /*! Returns the window ID that has been set via GPU_SetInitWindow(). */
 Uint32 GPU_GetInitWindow(void);
 
-/*! Set special flags to use for initialization. */
+/*! Set special flags to use for initialization. Set these before calling GPU_Init().
+ * \param GPU_flags An OR'ed combination of GPU_InitFlagEnum flags and GPU_FeatureEnum flags.  GPU_FeatureEnum flags will force GPU_Init() to create a renderer that supports all of the given flags or else fail.  Default flags (0) enable late swap vsync and double buffering. */
 void GPU_SetPreInitFlags(GPU_InitFlagEnum GPU_flags);
 
 /*! Returns the current special flags to use for initialization. */
@@ -712,6 +730,7 @@ GPU_Target* GPU_InitRenderer(GPU_RendererEnum renderer_enum, Uint16 w, Uint16 h,
 
 /*! Initializes SDL and SDL_gpu.  Creates a window and the requested renderer context.
  * By requesting a renderer via ID, you can specify the major and minor versions of an individual renderer backend.
+ * \see GPU_MakeRendererID
  */
 GPU_Target* GPU_InitRendererByID(GPU_RendererID renderer_request, Uint16 w, Uint16 h, GPU_WindowFlagEnum SDL_flags);
 
@@ -773,7 +792,7 @@ GPU_DebugLevelEnum GPU_GetDebugLevel(void);
  */
 void GPU_PushErrorCode(const char* function, GPU_ErrorEnum error, const char* details);
 
-/*! Pops an error object from the error stack and returns it.  If the error stack is empty, it returns an error object with NULL function and GPU_ERROR_NONE error. */
+/*! Pops an error object from the error stack and returns it.  If the error stack is empty, it returns an error object with NULL function, GPU_ERROR_NONE error, and NULL details. */
 GPU_ErrorObject GPU_PopErrorCode(void);
 
 /*! Gets the string representation of an error code. */
@@ -1334,19 +1353,19 @@ void GPU_RectangleRoundFilled(GPU_Target* target, float x1, float y1, float x2, 
 
 /*! Renders a colored polygon outline.  The vertices are expected to define a convex polygon.
  * \param target The destination render target
- * \param n Number of vertices (x and y pairs)
+ * \param num_vertices Number of vertices (x and y pairs)
  * \param vertices An array of vertex positions stored as interlaced x and y coords, e.g. {x1, y1, x2, y2, ...}
  * \param color The color of the shape to render
  */
-void GPU_Polygon(GPU_Target* target, Uint16 n, float* vertices, SDL_Color color);
+void GPU_Polygon(GPU_Target* target, unsigned int num_vertices, float* vertices, SDL_Color color);
 
 /*! Renders a colored filled polygon.  The vertices are expected to define a convex polygon.
  * \param target The destination render target
- * \param n Number of vertices (x and y pairs)
+ * \param num_vertices Number of vertices (x and y pairs)
  * \param vertices An array of vertex positions stored as interlaced x and y coords, e.g. {x1, y1, x2, y2, ...}
  * \param color The color of the shape to render
  */
-void GPU_PolygonFilled(GPU_Target* target, Uint16 n, float* vertices, SDL_Color color);
+void GPU_PolygonFilled(GPU_Target* target, unsigned int num_vertices, float* vertices, SDL_Color color);
 
 
 #ifdef __cplusplus
