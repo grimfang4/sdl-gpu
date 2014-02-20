@@ -28,6 +28,12 @@ static GPU_DebugLevelEnum debug_level = GPU_DEBUG_LEVEL_0;
 static GPU_ErrorObject error_code_stack[GPU_MAX_NUM_ERRORS];
 static int num_error_codes = 0;
 
+
+SDL_version GPU_GetLinkedVersion(void)
+{
+    return GPU_GetCompiledVersion();
+}
+
 void GPU_SetCurrentRenderer(GPU_RendererID id)
 {
 	current_renderer = GPU_GetRendererByID(id);
@@ -53,7 +59,6 @@ Uint32 GPU_GetCurrentShaderProgram(void)
 
 void GPU_LogInfo(const char* format, ...)
 {
-#ifdef SDL_GPU_ENABLE_LOG
 	va_list args;
 	va_start(args, format);
 	#ifdef __ANDROID__
@@ -62,12 +67,10 @@ void GPU_LogInfo(const char* format, ...)
 		vfprintf((GPU_GetDebugLevel() >= GPU_DEBUG_LEVEL_3? stderr : stdout), format, args);
 	#endif
 	va_end(args);
-#endif
 }
 
 void GPU_LogWarning(const char* format, ...)
 {
-#ifdef SDL_GPU_ENABLE_LOG
 	va_list args;
 	va_start(args, format);
 	#ifdef __ANDROID__
@@ -76,7 +79,6 @@ void GPU_LogWarning(const char* format, ...)
 		vfprintf((GPU_GetDebugLevel() >= GPU_DEBUG_LEVEL_2? stderr : stdout), format, args);
 	#endif
 	va_end(args);
-#endif
 }
 
 void GPU_LogError(const char* format, ...)
