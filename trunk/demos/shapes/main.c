@@ -112,17 +112,6 @@ int main(int argc, char* argv[])
 		aa2[i] = rand()%360;
 	}
 	
-	int numCircles = numColors;
-	int cx[numCircles];
-	int cy[numCircles];
-	float cr[numCircles];
-	for(i = 0; i < numCircles; i++)
-	{
-		cx[i] = rand()%screen->w;
-		cy[i] = rand()%screen->h;
-		cr[i] = (rand()%screen->h)/10.0f;
-	}
-	
 	int numPolys = numColors;
 	int pn[numPolys];
 	float* pv[numPolys];
@@ -234,39 +223,39 @@ int main(int argc, char* argv[])
 				}
 				break;
 			case 6:
-				for(i = 0; i < numArcs; i++)
-				{
-					GPU_Arc(screen, ax[i], ay[i], ar[i], aa1[i], aa2[i], colors[i]);
-				}
-				break;
-			case 7:
-				for(i = 0; i < numArcs; i++)
-				{
-					GPU_ArcFilled(screen, ax[i], ay[i], ar[i], aa1[i], aa2[i], colors[i]);
-				}
-				break;
-			case 8:
-				for(i = 0; i < numCircles; i++)
-				{
-					GPU_Circle(screen, cx[i], cy[i], cr[i], colors[i]);
-				}
-				break;
-			case 9:
-				for(i = 0; i < numCircles; i++)
-				{
-					GPU_CircleFilled(screen, cx[i], cy[i], cr[i], colors[i]);
-				}
-				break;
-			case 10:
 				for(i = 0; i < numRects; i++)
 				{
 					GPU_RectangleRound(screen, rx1[i], ry1[i], rx2[i], ry2[i], rr[i], colors[i]);
 				}
 				break;
-			case 11:
+			case 7:
 				for(i = 0; i < numRects; i++)
 				{
 					GPU_RectangleRoundFilled(screen, rx1[i], ry1[i], rx2[i], ry2[i], rr[i], colors[i]);
+				}
+				break;
+			case 8:
+				for(i = 0; i < numArcs; i++)
+				{
+					GPU_Arc(screen, ax[i], ay[i], ar[i], aa1[i], aa2[i], colors[i]);
+				}
+				break;
+			case 9:
+				for(i = 0; i < numArcs; i++)
+				{
+					GPU_ArcFilled(screen, ax[i], ay[i], ar[i], aa1[i], aa2[i], colors[i]);
+				}
+				break;
+			case 10:
+				for(i = 0; i < numArcs; i++)
+				{
+					GPU_Circle(screen, ax[i], ay[i], ar[i], colors[i]);
+				}
+				break;
+			case 11:
+				for(i = 0; i < numArcs; i++)
+				{
+					GPU_CircleFilled(screen, ax[i], ay[i], ar[i], colors[i]);
 				}
 				break;
 			case 12:

@@ -175,7 +175,7 @@ static void Arc(GPU_Renderer* renderer, GPU_Target* target, float x, float y, fl
 
 
     float t = startAngle;
-    float dt = (1 - (endAngle - startAngle)/360) * 5;  // A segment every 5 degrees of a full circle
+    float dt = ((endAngle - startAngle)/360)*(1.25f/sqrtf(radius)) * DEGPERRAD;  // s = rA, so dA = ds/r.  ds of 1.25*sqrt(radius) is good, use A in degrees.
     float dx, dy;
 
     int numSegments = fabs(endAngle - startAngle)/dt;
@@ -261,7 +261,7 @@ static void ArcFilled(GPU_Renderer* renderer, GPU_Target* target, float x, float
     }
     
     float t = startAngle;
-    float dt = (1 - (endAngle - startAngle)/360) * 5;  // A segment every 5 degrees of a full circle
+    float dt = ((endAngle - startAngle)/360)*(1.25f/sqrtf(radius)) * DEGPERRAD;  // s = rA, so dA = ds/r.  ds of 1.25*sqrt(radius) is good, use A in degrees.
     float dx, dy;
 
     int numSegments = fabs(endAngle - startAngle)/dt;
@@ -304,7 +304,7 @@ static void ArcFilled(GPU_Renderer* renderer, GPU_Target* target, float x, float
 static void Circle(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float radius, SDL_Color color)
 {
     float t = 0;
-    float dt = 5;  // A segment every 5 degrees of a full circle
+    float dt = (1.25f/sqrtf(radius)) * DEGPERRAD;  // s = rA, so dA = ds/r.  ds of 1.25*sqrt(radius) is good, use A in degrees.
     float dx, dy;
     int numSegments = 360/dt+1;
     
@@ -330,7 +330,7 @@ static void Circle(GPU_Renderer* renderer, GPU_Target* target, float x, float y,
 static void CircleFilled(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float radius, SDL_Color color)
 {
     float t = 0;
-    float dt = 5;  // A segment every 5 degrees of a full circle
+    float dt = (1.25f/sqrtf(radius)) * DEGPERRAD;  // s = rA, so dA = ds/r.  ds of 1.25*sqrt(radius) is good, use A in degrees.
     float dx, dy;
 
     int numSegments = 360/dt+1;
@@ -358,6 +358,10 @@ static void CircleFilled(GPU_Renderer* renderer, GPU_Target* target, float x, fl
         SET_UNTEXTURED_VERTEX(x+dx, y+dy, r, g, b, a); // new point
         t += dt;
     }
+    
+    SET_INDEXED_VERTEX(0);  // center
+    SET_INDEXED_VERTEX(i);  // last point
+    SET_INDEXED_VERTEX(1);  // first point
 }
 
 static void Tri(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, float x3, float y3, SDL_Color color)

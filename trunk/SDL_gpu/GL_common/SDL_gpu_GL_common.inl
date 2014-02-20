@@ -3786,7 +3786,7 @@ static void SetImageFilter(GPU_Renderer* renderer, GPU_Image* image, GPU_FilterE
             return;
     }
 
-    flushAndClearBlitBufferIfCurrentTexture(renderer, image);
+    flushBlitBufferIfCurrentTexture(renderer, image);
     bindTexture(renderer, image);
     
 	image->filter_mode = filter;
@@ -3854,7 +3854,7 @@ static void SetWrapMode(GPU_Renderer* renderer, GPU_Image* image, GPU_WrapEnum w
         return;
 	}
     
-    flushAndClearBlitBufferIfCurrentTexture(renderer, image);
+    flushBlitBufferIfCurrentTexture(renderer, image);
     bindTexture(renderer, image);
 	
 	image->wrap_mode_x = wrap_mode_x;
