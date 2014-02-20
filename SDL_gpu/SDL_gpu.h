@@ -864,8 +864,8 @@ void GPU_SetViewport(GPU_Target* target, GPU_Rect viewport);
 /*! \return A GPU_Camera with position (0, 0, -10), angle of 0, and zoom of 1. */
 GPU_Camera GPU_GetDefaultCamera(void);
 
-/*! \return The current camera of the current render target. */
-GPU_Camera GPU_GetCamera(void);
+/*! \return The camera of the given render target.  If target is NULL, returns the default camera. */
+GPU_Camera GPU_GetCamera(GPU_Target* target);
 
 
 /*! Sets the current render target's current camera.
@@ -1068,8 +1068,11 @@ void GPU_SetWrapMode(GPU_Image* image, GPU_WrapEnum wrap_mode_x, GPU_WrapEnum wr
 /*! \return The RGBA color of a pixel. */
 SDL_Color GPU_GetPixel(GPU_Target* target, Sint16 x, Sint16 y);
 
-/*! Clears the contents of the given render target. */
+/*! Clears the contents of the given render target.  Fills the target with color {0, 0, 0, 0}. */
 void GPU_Clear(GPU_Target* target);
+
+/*! Fills the given render target with a color.  If 'color' is NULL, {0, 0, 0, 0} is used. */
+void GPU_ClearColor(GPU_Target* target, SDL_Color* color);
 
 /*! Fills the given render target with a color. */
 void GPU_ClearRGBA(GPU_Target* target, Uint8 r, Uint8 g, Uint8 b, Uint8 a);

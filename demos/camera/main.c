@@ -9,8 +9,8 @@
 
 void getScreenToWorld(float screenX, float screenY, float* worldX, float* worldY)
 {
-	GPU_Camera camera = GPU_GetCamera();
 	GPU_Target* screen = GPU_GetContextTarget();
+	GPU_Camera camera = GPU_GetCamera(screen);
 	if(screen == NULL)
 		return;
 	
@@ -32,8 +32,8 @@ void getScreenToWorld(float screenX, float screenY, float* worldX, float* worldY
 
 void getWorldToScreen(float worldX, float worldY, float* screenX, float* screenY)
 {
-	GPU_Camera camera = GPU_GetCamera();
 	GPU_Target* screen = GPU_GetContextTarget();
+	GPU_Camera camera = GPU_GetCamera(screen);
 	if(screen == NULL)
 		return;
 	
