@@ -697,8 +697,7 @@ static void changeCamera(GPU_Target* target)
 {
     GPU_CONTEXT_DATA* cdata = (GPU_CONTEXT_DATA*)GPU_GetContextTarget()->context->data;
     
-    if(!equal_cameras(cdata->last_camera, target->camera)
-       || ((target->image != NULL) != cdata->last_camera_inverted))  // Switching between RTT and non-RTT
+    //if(cdata->last_camera_target != target || !equal_cameras(cdata->last_camera, target->camera))
     {
         applyTargetCamera(target);
     }
