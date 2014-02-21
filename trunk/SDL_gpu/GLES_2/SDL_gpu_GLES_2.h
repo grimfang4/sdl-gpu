@@ -27,7 +27,6 @@
 
 
 #define GPU_CONTEXT_DATA ContextData_GLES_2
-#define GPU_RENDERER_DATA RendererData_GLES_2
 #define GPU_IMAGE_DATA ImageData_GLES_2
 #define GPU_TARGET_DATA TargetData_GLES_2
 
@@ -130,11 +129,6 @@ typedef struct ContextData_GLES_2
 	GPU_AttributeSource shader_attributes[16];
 	unsigned int attribute_VBO[16];
 } ContextData_GLES_2;
-
-typedef struct RendererData_GLES_2
-{
-	Uint32 handle;
-} RendererData_GLES_2;
 
 typedef struct ImageData_GLES_2
 {

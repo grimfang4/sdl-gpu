@@ -40,7 +40,6 @@
 
 
 #define GPU_CONTEXT_DATA ContextData_GLES_1
-#define GPU_RENDERER_DATA RendererData_GLES_1
 #define GPU_IMAGE_DATA ImageData_GLES_1
 #define GPU_TARGET_DATA TargetData_GLES_1
 
@@ -66,11 +65,6 @@ typedef struct ContextData_GLES_1
 	unsigned int index_buffer_num_vertices;
 	unsigned int index_buffer_max_num_vertices;
 } ContextData_GLES_1;
-
-typedef struct RendererData_GLES_1
-{
-	Uint32 handle;
-} RendererData_GLES_1;
 
 typedef struct ImageData_GLES_1
 {

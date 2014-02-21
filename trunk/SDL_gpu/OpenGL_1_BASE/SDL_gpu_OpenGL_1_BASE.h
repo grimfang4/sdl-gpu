@@ -30,7 +30,6 @@
 
 
 #define GPU_CONTEXT_DATA ContextData_OpenGL_1_BASE
-#define GPU_RENDERER_DATA RendererData_OpenGL_1_BASE
 #define GPU_IMAGE_DATA ImageData_OpenGL_1_BASE
 #define GPU_TARGET_DATA TargetData_OpenGL_1_BASE
 
@@ -57,11 +56,6 @@ typedef struct ContextData_OpenGL_1_BASE
 	unsigned int index_buffer_num_vertices;
 	unsigned int index_buffer_max_num_vertices;
 } ContextData_OpenGL_1_BASE;
-
-typedef struct RendererData_OpenGL_1_BASE
-{
-	Uint32 handle;
-} RendererData_OpenGL_1_BASE;
 
 typedef struct ImageData_OpenGL_1_BASE
 {

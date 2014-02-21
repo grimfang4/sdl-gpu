@@ -146,7 +146,6 @@
 
 
 #define GPU_CONTEXT_DATA ContextData_OpenGL_1
-#define GPU_RENDERER_DATA RendererData_OpenGL_1
 #define GPU_IMAGE_DATA ImageData_OpenGL_1
 #define GPU_TARGET_DATA TargetData_OpenGL_1
 
@@ -244,11 +243,6 @@ typedef struct ContextData_OpenGL_1
 	GPU_AttributeSource shader_attributes[16];
 	unsigned int attribute_VBO[16];
 } ContextData_OpenGL_1;
-
-typedef struct RendererData_OpenGL_1
-{
-	Uint32 handle;
-} RendererData_OpenGL_1;
 
 typedef struct ImageData_OpenGL_1
 {
