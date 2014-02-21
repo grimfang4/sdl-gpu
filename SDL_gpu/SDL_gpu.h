@@ -688,6 +688,12 @@ struct GPU_Renderer
     /*! \see GPU_CircleFilled() */
 	void (*CircleFilled)(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float radius, SDL_Color color);
 
+    /*! \see GPU_Sector() */
+    void (*Sector)(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float inner_radius, float outer_radius, float startAngle, float endAngle, SDL_Color color);
+
+    /*! \see GPU_SectorFilled() */
+    void (*SectorFilled)(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float inner_radius, float outer_radius, float startAngle, float endAngle, SDL_Color color);
+    
     /*! \see GPU_Tri() */
 	void (*Tri)(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, float x3, float y3, SDL_Color color);
 
@@ -1228,6 +1234,30 @@ void GPU_Circle(GPU_Target* target, float x, float y, float radius, SDL_Color co
  * \param color The color of the shape to render
  */
 void GPU_CircleFilled(GPU_Target* target, float x, float y, float radius, SDL_Color color);
+
+/*! Renders a colored annular sector outline (ring segment).
+ * \param target The destination render target
+ * \param x x-coord of center point
+ * \param y y-coord of center point
+ * \param inner_radius The inner radius of the ring
+ * \param outer_radius The outer radius of the ring
+ * \param startAngle The angle to start from, in degrees.  Measured clockwise from the positive x-axis.
+ * \param endAngle The angle to end at, in degrees.  Measured clockwise from the positive x-axis.
+ * \param color The color of the shape to render
+ */
+void GPU_Sector(GPU_Target* target, float x, float y, float inner_radius, float outer_radius, float startAngle, float endAngle, SDL_Color color);
+
+/*! Renders a colored filled annular sector (ring segment).
+ * \param target The destination render target
+ * \param x x-coord of center point
+ * \param y y-coord of center point
+ * \param inner_radius The inner radius of the ring
+ * \param outer_radius The outer radius of the ring
+ * \param startAngle The angle to start from, in degrees.  Measured clockwise from the positive x-axis.
+ * \param endAngle The angle to end at, in degrees.  Measured clockwise from the positive x-axis.
+ * \param color The color of the shape to render
+ */
+void GPU_SectorFilled(GPU_Target* target, float x, float y, float inner_radius, float outer_radius, float startAngle, float endAngle, SDL_Color color);
 
 /*! Renders a colored triangle outline.
  * \param target The destination render target

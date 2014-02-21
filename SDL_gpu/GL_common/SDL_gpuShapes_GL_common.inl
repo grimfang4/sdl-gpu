@@ -364,6 +364,159 @@ static void CircleFilled(GPU_Renderer* renderer, GPU_Target* target, float x, fl
     SET_INDEXED_VERTEX(1);  // first point
 }
 
+static void Sector(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float inner_radius, float outer_radius, float startAngle, float endAngle, SDL_Color color)
+{
+    if(inner_radius < 0.0f)
+        inner_radius = 0.0f;
+    if(outer_radius < 0.0f)
+        outer_radius = 0.0f;
+    
+    if(inner_radius > outer_radius)
+    {
+        float s = inner_radius;
+        inner_radius = outer_radius;
+        outer_radius = s;
+    }
+    
+    if(inner_radius == outer_radius)
+    {
+        Arc(renderer, target, x, y, inner_radius, startAngle, endAngle, color);
+        return;
+    }
+    
+    // Composited shape...  But that means error codes may be confusing. :-/
+    float dx1, dy1, dx2, dy2, dx3, dy3, dx4, dy4;
+    Arc(renderer, target, x, y, inner_radius, startAngle, endAngle, color);
+    
+    dx1 = inner_radius*cos(endAngle*RADPERDEG);
+    dy1 = inner_radius*sin(endAngle*RADPERDEG);
+    dx2 = outer_radius*cos(endAngle*RADPERDEG);
+    dy2 = outer_radius*sin(endAngle*RADPERDEG);
+    Line(renderer, target, x+dx1, y+dy1, x+dx2, y+dy2, color);
+    
+    Arc(renderer, target, x, y, outer_radius, startAngle, endAngle, color);
+    
+    dx3 = inner_radius*cos(startAngle*RADPERDEG);
+    dy3 = inner_radius*sin(startAngle*RADPERDEG);
+    dx4 = outer_radius*cos(startAngle*RADPERDEG);
+    dy4 = outer_radius*sin(startAngle*RADPERDEG);
+    Line(renderer, target, x+dx3, y+dy3, x+dx4, y+dy4, color);
+}
+
+static void SectorFilled(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float inner_radius, float outer_radius, float startAngle, float endAngle, SDL_Color color)
+{
+    if(inner_radius < 0.0f)
+        inner_radius = 0.0f;
+    if(outer_radius < 0.0f)
+        outer_radius = 0.0f;
+    
+    if(inner_radius > outer_radius)
+    {
+        float s = inner_radius;
+        inner_radius = outer_radius;
+        outer_radius = s;
+    }
+    
+    if(inner_radius == outer_radius)
+    {
+        Arc(renderer, target, x, y, inner_radius, startAngle, endAngle, color);
+        return;
+    }
+    
+    
+    if(startAngle > endAngle)
+    {
+        float swapa = endAngle;
+        endAngle = startAngle;
+        startAngle = swapa;
+    }
+    if(startAngle == endAngle)
+        return;
+
+    if(endAngle - startAngle >= 360)
+        endAngle = startAngle + 360;
+    
+    
+    float t = startAngle;
+    float dt = ((endAngle - startAngle)/360)*(1.25f/sqrtf(outer_radius)) * DEGPERRAD;  // s = rA, so dA = ds/r.  ds of 1.25*sqrt(radius) is good, use A in degrees.
+    float dx, dy;
+
+    int numSegments = fabs(endAngle - startAngle)/dt;
+    if(numSegments == 0)
+        return;
+
+
+    BEGIN_UNTEXTURED("GPU_SectorFilled", GL_TRIANGLES, 3 + (numSegments-1) + 1, 3 + (numSegments-1)*3 + 3);
+    
+    Uint8 use_inner = 0;  // Switches between the radii for the next point
+    
+    // First triangle
+    dx = inner_radius*cos(t*RADPERDEG);
+    dy = inner_radius*sin(t*RADPERDEG);
+    SET_UNTEXTURED_VERTEX(x+dx, y+dy, r, g, b, a);
+    
+    dx = outer_radius*cos(t*RADPERDEG);
+    dy = outer_radius*sin(t*RADPERDEG);
+    SET_UNTEXTURED_VERTEX(x+dx, y+dy, r, g, b, a);
+    t += dt;
+    dx = inner_radius*cos(t*RADPERDEG);
+    dy = inner_radius*sin(t*RADPERDEG);
+    SET_UNTEXTURED_VERTEX(x+dx, y+dy, r, g, b, a);
+    t += dt;
+    
+    int i;
+    for(i = 2; i < numSegments+1; i++)
+    {
+        SET_INDEXED_VERTEX(i-1);
+        SET_INDEXED_VERTEX(i);
+        if(use_inner)
+        {
+            dx = inner_radius*cos(t*RADPERDEG);
+            dy = inner_radius*sin(t*RADPERDEG);
+        }
+        else
+        {
+            dx = outer_radius*cos(t*RADPERDEG);
+            dy = outer_radius*sin(t*RADPERDEG);
+        }
+        SET_UNTEXTURED_VERTEX(x+dx, y+dy, r, g, b, a); // new point
+        t += dt;
+        use_inner = !use_inner;
+    }
+    
+    // Last quad
+    t = endAngle;
+    if(use_inner)
+    {
+        dx = inner_radius*cos(t*RADPERDEG);
+        dy = inner_radius*sin(t*RADPERDEG);
+    }
+    else
+    {
+        dx = outer_radius*cos(t*RADPERDEG);
+        dy = outer_radius*sin(t*RADPERDEG);
+    }
+    SET_INDEXED_VERTEX(i-1);
+    SET_INDEXED_VERTEX(i);
+    SET_UNTEXTURED_VERTEX(x+dx, y+dy, r, g, b, a); // new point
+    use_inner = !use_inner;
+    i++;
+    
+    if(use_inner)
+    {
+        dx = inner_radius*cos(t*RADPERDEG);
+        dy = inner_radius*sin(t*RADPERDEG);
+    }
+    else
+    {
+        dx = outer_radius*cos(t*RADPERDEG);
+        dy = outer_radius*sin(t*RADPERDEG);
+    }
+    SET_INDEXED_VERTEX(i-1);
+    SET_INDEXED_VERTEX(i);
+    SET_UNTEXTURED_VERTEX(x+dx, y+dy, r, g, b, a); // new point
+}
+
 static void Tri(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, float x3, float y3, SDL_Color color)
 {
     BEGIN_UNTEXTURED("GPU_Tri", GL_LINES, 3, 6);

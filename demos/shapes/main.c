@@ -23,7 +23,7 @@ int main(int argc, char* argv[])
 	long frameCount = 0;
 	
 	int shapeType = 0;
-	int numShapeTypes = 14;
+	int numShapeTypes = 16;
 	
 	int i;
 	
@@ -101,6 +101,7 @@ int main(int argc, char* argv[])
 	int ax[numArcs];
 	int ay[numArcs];
 	float ar[numArcs];
+	float ar2[numArcs];
 	float aa1[numArcs];
 	float aa2[numArcs];
 	for(i = 0; i < numArcs; i++)
@@ -108,6 +109,7 @@ int main(int argc, char* argv[])
 		ax[i] = rand()%screen->w;
 		ay[i] = rand()%screen->h;
 		ar[i] = (rand()%screen->h)/10.0f;
+		ar2[i] = ((rand()%101)/100.0f)*ar[i];
 		aa1[i] = rand()%360;
 		aa2[i] = rand()%360;
 	}
@@ -259,12 +261,24 @@ int main(int argc, char* argv[])
 				}
 				break;
 			case 12:
+				for(i = 0; i < numArcs; i++)
+				{
+					GPU_Sector(screen, ax[i], ay[i], ar[i], ar2[i], aa1[i], aa2[i], colors[i]);
+				}
+				break;
+			case 13:
+				for(i = 0; i < numArcs; i++)
+				{
+					GPU_SectorFilled(screen, ax[i], ay[i], ar[i], ar2[i], aa1[i], aa2[i], colors[i]);
+				}
+				break;
+			case 14:
 				for(i = 0; i < numPolys; i++)
 				{
 					GPU_Polygon(screen, pn[i], pv[i], colors[i]);
 				}
 				break;
-			case 13:
+			case 15:
 				for(i = 0; i < numPolys; i++)
 				{
 					GPU_PolygonFilled(screen, pn[i], pv[i], colors[i]);

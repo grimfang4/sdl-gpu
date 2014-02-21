@@ -5210,6 +5210,8 @@ static void SetAttributeSource(GPU_Renderer* renderer, int num_values, GPU_Attri
     renderer->ArcFilled = &ArcFilled; \
     renderer->Circle = &Circle; \
     renderer->CircleFilled = &CircleFilled; \
+    renderer->Sector = &Sector; \
+    renderer->SectorFilled = &SectorFilled; \
     renderer->Tri = &Tri; \
     renderer->TriFilled = &TriFilled; \
     renderer->Rectangle = &Rectangle; \

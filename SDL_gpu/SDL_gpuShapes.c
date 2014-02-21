@@ -81,6 +81,24 @@ void GPU_CircleFilled(GPU_Target* target, float x, float y, float radius, SDL_Co
 	renderer->CircleFilled(renderer, target, x, y, radius, color);
 }
 
+void GPU_Sector(GPU_Target* target, float x, float y, float inner_radius, float outer_radius, float startAngle, float endAngle, SDL_Color color)
+{
+	CHECK_RENDERER();
+	if(renderer->Sector == NULL)
+		return;
+	
+	renderer->Sector(renderer, target, x, y, inner_radius, outer_radius, startAngle, endAngle, color);
+}
+
+void GPU_SectorFilled(GPU_Target* target, float x, float y, float inner_radius, float outer_radius, float startAngle, float endAngle, SDL_Color color)
+{
+	CHECK_RENDERER();
+	if(renderer->SectorFilled == NULL)
+		return;
+	
+	renderer->SectorFilled(renderer, target, x, y, inner_radius, outer_radius, startAngle, endAngle, color);
+}
+
 void GPU_Tri(GPU_Target* target, float x1, float y1, float x2, float y2, float x3, float y3, SDL_Color color)
 {
 	CHECK_RENDERER();
