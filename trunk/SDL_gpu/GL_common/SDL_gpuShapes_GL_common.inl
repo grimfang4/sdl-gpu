@@ -122,43 +122,43 @@ static void Line(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1,
 // Arc() might call Circle()
 static void Circle(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float radius, SDL_Color color);
 
-static void Arc(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float radius, float startAngle, float endAngle, SDL_Color color)
+static void Arc(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float radius, float start_angle, float end_angle, SDL_Color color)
 {
-    float originalSA = startAngle;
+    float originalSA = start_angle;
 
-    if(startAngle > endAngle)
+    if(start_angle > end_angle)
     {
-        float swapa = endAngle;
-        endAngle = startAngle;
-        startAngle = swapa;
+        float swapa = end_angle;
+        end_angle = start_angle;
+        start_angle = swapa;
     }
-    if(startAngle == endAngle)
+    if(start_angle == end_angle)
         return;
 
     // Big angle
-    if(endAngle - startAngle >= 360)
+    if(end_angle - start_angle >= 360)
     {
         Circle(renderer, target, x, y, radius, color);
         return;
     }
 
     // Shift together
-    while(startAngle < 0 && endAngle < 0)
+    while(start_angle < 0 && end_angle < 0)
     {
-        startAngle += 360;
-        endAngle += 360;
+        start_angle += 360;
+        end_angle += 360;
     }
-    while(startAngle > 360 && endAngle > 360)
+    while(start_angle > 360 && end_angle > 360)
     {
-        startAngle -= 360;
-        endAngle -= 360;
+        start_angle -= 360;
+        end_angle -= 360;
     }
 
     // Check if the angle to be drawn crosses 0
-    Uint8 crossesZero = (startAngle < 0 && endAngle > 0) || (startAngle < 360 && endAngle > 360);
+    Uint8 crossesZero = (start_angle < 0 && end_angle > 0) || (start_angle < 360 && end_angle > 360);
 
-    if(endAngle == 0)
-        endAngle = 360;
+    if(end_angle == 0)
+        end_angle = 360;
     else if(crossesZero)
     {
         float sa = originalSA;
@@ -168,17 +168,17 @@ static void Arc(GPU_Renderer* renderer, GPU_Target* target, float x, float y, fl
         Arc(renderer, target, x, y, radius, sa, 359.9f, color);
 
         // Continue to render the right part
-        startAngle = 0;
-        while(endAngle >= 360)
-            endAngle -= 360;
+        start_angle = 0;
+        while(end_angle >= 360)
+            end_angle -= 360;
     }
 
 
-    float t = startAngle;
-    float dt = ((endAngle - startAngle)/360)*(1.25f/sqrtf(radius)) * DEGPERRAD;  // s = rA, so dA = ds/r.  ds of 1.25*sqrt(radius) is good, use A in degrees.
+    float t = start_angle;
+    float dt = ((end_angle - start_angle)/360)*(1.25f/sqrtf(radius)) * DEGPERRAD;  // s = rA, so dA = ds/r.  ds of 1.25*sqrt(radius) is good, use A in degrees.
     float dx, dy;
 
-    int numSegments = fabs(endAngle - startAngle)/dt;
+    int numSegments = fabs(end_angle - start_angle)/dt;
     if(numSegments == 0)
         return;
     
@@ -200,51 +200,51 @@ static void Arc(GPU_Renderer* renderer, GPU_Target* target, float x, float y, fl
     }
     
     // Last point
-    dx = radius*cos(endAngle*RADPERDEG);
-    dy = radius*sin(endAngle*RADPERDEG);
+    dx = radius*cos(end_angle*RADPERDEG);
+    dy = radius*sin(end_angle*RADPERDEG);
     SET_UNTEXTURED_VERTEX(x+dx, y+dy, r, g, b, a);
 }
 
 // ArcFilled() might call CircleFilled()
 static void CircleFilled(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float radius, SDL_Color color);
 
-static void ArcFilled(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float radius, float startAngle, float endAngle, SDL_Color color)
+static void ArcFilled(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float radius, float start_angle, float end_angle, SDL_Color color)
 {
-    float originalSA = startAngle;
+    float originalSA = start_angle;
 
-    if(startAngle > endAngle)
+    if(start_angle > end_angle)
     {
-        float swapa = endAngle;
-        endAngle = startAngle;
-        startAngle = swapa;
+        float swapa = end_angle;
+        end_angle = start_angle;
+        start_angle = swapa;
     }
-    if(startAngle == endAngle)
+    if(start_angle == end_angle)
         return;
 
     // Big angle
-    if(endAngle - startAngle >= 360)
+    if(end_angle - start_angle >= 360)
     {
         CircleFilled(renderer, target, x, y, radius, color);
         return;
     }
 
     // Shift together
-    while(startAngle < 0 && endAngle < 0)
+    while(start_angle < 0 && end_angle < 0)
     {
-        startAngle += 360;
-        endAngle += 360;
+        start_angle += 360;
+        end_angle += 360;
     }
-    while(startAngle > 360 && endAngle > 360)
+    while(start_angle > 360 && end_angle > 360)
     {
-        startAngle -= 360;
-        endAngle -= 360;
+        start_angle -= 360;
+        end_angle -= 360;
     }
 
     // Check if the angle to be drawn crosses 0
-    Uint8 crossesZero = (startAngle < 0 && endAngle > 0) || (startAngle < 360 && endAngle > 360);
+    Uint8 crossesZero = (start_angle < 0 && end_angle > 0) || (start_angle < 360 && end_angle > 360);
 
-    if(endAngle == 0)
-        endAngle = 360;
+    if(end_angle == 0)
+        end_angle = 360;
     else if(crossesZero)
     {
         float sa = originalSA;
@@ -255,16 +255,16 @@ static void ArcFilled(GPU_Renderer* renderer, GPU_Target* target, float x, float
         ArcFilled(renderer, target, x, y, radius, sa, 359.9f, color);
 
         // Continue to render the right part
-        startAngle = 0;
-        while(endAngle >= 360)
-            endAngle -= 360;
+        start_angle = 0;
+        while(end_angle >= 360)
+            end_angle -= 360;
     }
     
-    float t = startAngle;
-    float dt = ((endAngle - startAngle)/360)*(1.25f/sqrtf(radius)) * DEGPERRAD;  // s = rA, so dA = ds/r.  ds of 1.25*sqrt(radius) is good, use A in degrees.
+    float t = start_angle;
+    float dt = ((end_angle - start_angle)/360)*(1.25f/sqrtf(radius)) * DEGPERRAD;  // s = rA, so dA = ds/r.  ds of 1.25*sqrt(radius) is good, use A in degrees.
     float dx, dy;
 
-    int numSegments = fabs(endAngle - startAngle)/dt;
+    int numSegments = fabs(end_angle - start_angle)/dt;
     if(numSegments == 0)
         return;
 
@@ -294,8 +294,8 @@ static void ArcFilled(GPU_Renderer* renderer, GPU_Target* target, float x, float
     }
     
     // Last triangle
-    dx = radius*cos(endAngle*RADPERDEG);
-    dy = radius*sin(endAngle*RADPERDEG);
+    dx = radius*cos(end_angle*RADPERDEG);
+    dy = radius*sin(end_angle*RADPERDEG);
     SET_INDEXED_VERTEX(0);  // center
     SET_INDEXED_VERTEX(i);  // last point
     SET_UNTEXTURED_VERTEX(x+dx, y+dy, r, g, b, a); // new point
@@ -364,7 +364,7 @@ static void CircleFilled(GPU_Renderer* renderer, GPU_Target* target, float x, fl
     SET_INDEXED_VERTEX(1);  // first point
 }
 
-static void Sector(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float inner_radius, float outer_radius, float startAngle, float endAngle, SDL_Color color)
+static void Sector(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float inner_radius, float outer_radius, float start_angle, float end_angle, SDL_Color color)
 {
     if(inner_radius < 0.0f)
         inner_radius = 0.0f;
@@ -380,30 +380,30 @@ static void Sector(GPU_Renderer* renderer, GPU_Target* target, float x, float y,
     
     if(inner_radius == outer_radius)
     {
-        Arc(renderer, target, x, y, inner_radius, startAngle, endAngle, color);
+        Arc(renderer, target, x, y, inner_radius, start_angle, end_angle, color);
         return;
     }
     
     // Composited shape...  But that means error codes may be confusing. :-/
     float dx1, dy1, dx2, dy2, dx3, dy3, dx4, dy4;
-    Arc(renderer, target, x, y, inner_radius, startAngle, endAngle, color);
+    Arc(renderer, target, x, y, inner_radius, start_angle, end_angle, color);
     
-    dx1 = inner_radius*cos(endAngle*RADPERDEG);
-    dy1 = inner_radius*sin(endAngle*RADPERDEG);
-    dx2 = outer_radius*cos(endAngle*RADPERDEG);
-    dy2 = outer_radius*sin(endAngle*RADPERDEG);
+    dx1 = inner_radius*cos(end_angle*RADPERDEG);
+    dy1 = inner_radius*sin(end_angle*RADPERDEG);
+    dx2 = outer_radius*cos(end_angle*RADPERDEG);
+    dy2 = outer_radius*sin(end_angle*RADPERDEG);
     Line(renderer, target, x+dx1, y+dy1, x+dx2, y+dy2, color);
     
-    Arc(renderer, target, x, y, outer_radius, startAngle, endAngle, color);
+    Arc(renderer, target, x, y, outer_radius, start_angle, end_angle, color);
     
-    dx3 = inner_radius*cos(startAngle*RADPERDEG);
-    dy3 = inner_radius*sin(startAngle*RADPERDEG);
-    dx4 = outer_radius*cos(startAngle*RADPERDEG);
-    dy4 = outer_radius*sin(startAngle*RADPERDEG);
+    dx3 = inner_radius*cos(start_angle*RADPERDEG);
+    dy3 = inner_radius*sin(start_angle*RADPERDEG);
+    dx4 = outer_radius*cos(start_angle*RADPERDEG);
+    dy4 = outer_radius*sin(start_angle*RADPERDEG);
     Line(renderer, target, x+dx3, y+dy3, x+dx4, y+dy4, color);
 }
 
-static void SectorFilled(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float inner_radius, float outer_radius, float startAngle, float endAngle, SDL_Color color)
+static void SectorFilled(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float inner_radius, float outer_radius, float start_angle, float end_angle, SDL_Color color)
 {
     if(inner_radius < 0.0f)
         inner_radius = 0.0f;
@@ -419,29 +419,29 @@ static void SectorFilled(GPU_Renderer* renderer, GPU_Target* target, float x, fl
     
     if(inner_radius == outer_radius)
     {
-        Arc(renderer, target, x, y, inner_radius, startAngle, endAngle, color);
+        Arc(renderer, target, x, y, inner_radius, start_angle, end_angle, color);
         return;
     }
     
     
-    if(startAngle > endAngle)
+    if(start_angle > end_angle)
     {
-        float swapa = endAngle;
-        endAngle = startAngle;
-        startAngle = swapa;
+        float swapa = end_angle;
+        end_angle = start_angle;
+        start_angle = swapa;
     }
-    if(startAngle == endAngle)
+    if(start_angle == end_angle)
         return;
 
-    if(endAngle - startAngle >= 360)
-        endAngle = startAngle + 360;
+    if(end_angle - start_angle >= 360)
+        end_angle = start_angle + 360;
     
     
-    float t = startAngle;
-    float dt = ((endAngle - startAngle)/360)*(1.25f/sqrtf(outer_radius)) * DEGPERRAD;  // s = rA, so dA = ds/r.  ds of 1.25*sqrt(radius) is good, use A in degrees.
+    float t = start_angle;
+    float dt = ((end_angle - start_angle)/360)*(1.25f/sqrtf(outer_radius)) * DEGPERRAD;  // s = rA, so dA = ds/r.  ds of 1.25*sqrt(radius) is good, use A in degrees.
     float dx, dy;
 
-    int numSegments = fabs(endAngle - startAngle)/dt;
+    int numSegments = fabs(end_angle - start_angle)/dt;
     if(numSegments == 0)
         return;
 
@@ -485,7 +485,7 @@ static void SectorFilled(GPU_Renderer* renderer, GPU_Target* target, float x, fl
     }
     
     // Last quad
-    t = endAngle;
+    t = end_angle;
     if(use_inner)
     {
         dx = inner_radius*cos(t*RADPERDEG);
