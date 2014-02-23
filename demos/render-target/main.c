@@ -31,11 +31,11 @@ int main(int argc, char* argv[])
 	GPU_SetRGB(font->image, 255, 0, 0);
 	SDL_FreeSurface(font_surface);
 	
-	GPU_Image* mode1image = GPU_CreateImage(300, 300, 4);
+	GPU_Image* mode1image = GPU_CreateImage(300, 300, GPU_FORMAT_RGBA);
 	if(mode1image == NULL)
 		return -1;
 		
-	GPU_Image* mode2image = GPU_CreateImage(400, 400, 4);
+	GPU_Image* mode2image = GPU_CreateImage(400, 400, GPU_FORMAT_RGBA);
 	if(mode2image == NULL)
 		return -1;
     

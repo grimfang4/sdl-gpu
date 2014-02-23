@@ -89,7 +89,7 @@ int main(int argc, char* argv[])
 	SDL_Color black = {0, 0, 0, 255};
 	
 	GPU_Image* img = GPU_LoadImage("data/test3.png");
-	GPU_Image* buffer = GPU_CreateImage(800, 600, 4);
+	GPU_Image* buffer = GPU_CreateImage(800, 600, GPU_FORMAT_RGBA);
 	GPU_LoadTarget(buffer);
 	
 	GPU_Target* target = screen;

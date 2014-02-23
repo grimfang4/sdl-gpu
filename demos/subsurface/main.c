@@ -14,7 +14,7 @@ int main(int argc, char* argv[])
     printCurrentRenderer();
 	
 	SDL_Surface* surf = SDL_LoadBMP("data/test.bmp");
-	GPU_Image* image = GPU_CreateImage(100, 100, 4);
+	GPU_Image* image = GPU_CreateImage(100, 100, GPU_FORMAT_RGBA);
 	GPU_Target* tgt = GPU_LoadTarget(image);
 	GPU_Image* image2 = GPU_LoadImage("data/test.bmp");
 	if(image == NULL || surf == NULL || tgt == NULL || image2 == NULL)

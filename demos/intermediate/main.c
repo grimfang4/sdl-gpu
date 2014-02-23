@@ -48,7 +48,7 @@ int main(int argc, char* argv[])
 	int i;
 	for(i = 0; i < max_images; i++)
     {
-        images[i] = GPU_CreateImage(640, 480, 4);
+        images[i] = GPU_CreateImage(640, 480, GPU_FORMAT_RGBA);
         GPU_LoadTarget(images[i]);
         //GPU_SetVirtualResolution(images[i]->target, 640, 480);
         GPU_SetImageFilter(images[i], filter_mode);
