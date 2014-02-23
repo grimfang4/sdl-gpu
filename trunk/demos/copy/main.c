@@ -20,7 +20,7 @@ int main(int argc, char* argv[])
 		return -1;
 	
 	// Copying the annoying way
-	GPU_Image* image1 = GPU_CreateImage(image->w, image->h, 4);
+	GPU_Image* image1 = GPU_CreateImage(image->w, image->h, GPU_FORMAT_RGBA);
 	GPU_Target* image1_tgt = GPU_LoadTarget(image1);
 	GPU_Blit(image, NULL, image1_tgt, image1_tgt->w/2, image1_tgt->h/2);
 	GPU_FreeTarget(image1_tgt);

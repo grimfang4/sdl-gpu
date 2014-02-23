@@ -18,7 +18,7 @@ int main(int argc, char* argv[])
 	if(image == NULL)
 		return -1;
     
-    GPU_Image* buffer = GPU_CreateImage(800, 600, 3);
+    GPU_Image* buffer = GPU_CreateImage(800, 600, GPU_FORMAT_RGB);
     GPU_LoadTarget(buffer);
 	
 	Uint32 startTime = SDL_GetTicks();

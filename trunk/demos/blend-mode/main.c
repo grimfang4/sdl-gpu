@@ -192,7 +192,7 @@ int main(int argc, char* argv[])
 	if(bg_base == NULL)
 		return -1;
 	
-	GPU_Image* bg = GPU_CreateImage(screen->w, screen->h, 4);
+	GPU_Image* bg = GPU_CreateImage(screen->w, screen->h, GPU_FORMAT_RGBA);
 	GPU_Target* bg_target = GPU_LoadTarget(bg);
 	if(bg == NULL || bg_target == NULL)
 		return -1;

@@ -27,7 +27,7 @@ int main(int argc, char* argv[])
     }
 	
 	GPU_LogError("Loading image1\n");
-	GPU_Image* image1 = GPU_CreateImage(200, 200, 4);
+	GPU_Image* image1 = GPU_CreateImage(200, 200, GPU_FORMAT_RGBA);
 	if(image1 == NULL)
     {
         GPU_LogError("Failed to create image.\n");

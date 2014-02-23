@@ -59,7 +59,7 @@ int main(int argc, char* argv[])
 	if(image == NULL)
 		return -1;
 	
-	GPU_Image* screen2_image = GPU_CreateImage(800, 600, 4);
+	GPU_Image* screen2_image = GPU_CreateImage(800, 600, GPU_FORMAT_RGBA);
 	GPU_Target* screen2 = GPU_LoadTarget(screen2_image);
 	
 	float angle = 0.0f;
