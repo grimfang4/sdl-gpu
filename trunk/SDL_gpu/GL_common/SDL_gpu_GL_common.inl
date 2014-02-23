@@ -1425,20 +1425,51 @@ static GPU_Camera SetCamera(GPU_Renderer* renderer, GPU_Target* target, GPU_Came
 }
 
 
-static GPU_Image* CreateUninitializedImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint8 channels)
+static GPU_Image* CreateUninitializedImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, GPU_FormatEnum format)
 {
-    if(channels < 3 || channels > 4)
+    GLuint handle, channels;
+    GLenum gl_format;
+    switch(format)
+    {
+        case GPU_FORMAT_LUMINANCE:
+            gl_format = GL_LUMINANCE;
+            channels = 1;
+            break;
+        case GPU_FORMAT_LUMINANCE_ALPHA:
+            gl_format = GL_LUMINANCE_ALPHA;
+            channels = 2;
+            break;
+        case GPU_FORMAT_RGB:
+            gl_format = GL_RGB;
+            channels = 3;
+            break;
+        case GPU_FORMAT_RGBA:
+            gl_format = GL_RGBA;
+            channels = 4;
+            break;
+        case GPU_FORMAT_ALPHA:
+            gl_format = GL_ALPHA;
+            channels = 1;
+            break;
+        case GPU_FORMAT_RG:
+            gl_format = GL_RG;
+            channels = 2;
+            break;
+        case GPU_FORMAT_YCbCr420P:
+            gl_format = GL_RGB;
+            channels = 3;
+            break;
+        case GPU_FORMAT_YCbCr422:
+            gl_format = GL_RGB;
+            channels = 3;
+            break;
+    }
+    
+    if(channels < 1 || channels > 4)
     {
         GPU_PushErrorCode("GPU_CreateUninitializedImage", GPU_ERROR_DATA_ERROR, "Unsupported number of color channels");
         return NULL;
     }
-
-    GLuint handle;
-    GLenum format;
-    if(channels == 3)
-        format = GL_RGB;
-    else
-        format = GL_RGBA;
 
     glGenTextures( 1, &handle );
     if(handle == 0)
@@ -1466,12 +1497,13 @@ static GPU_Image* CreateUninitializedImage(GPU_Renderer* renderer, Uint16 w, Uin
     data->refcount = 1;
     result->target = NULL;
     result->renderer = renderer;
+    result->format = format;
     result->channels = channels;
     result->has_mipmaps = 0;
     
     SDL_Color white = {255, 255, 255, 255};
     result->color = white;
-    result->use_blending = (channels > 3? 1 : 0);
+    result->use_blending = ((format == GPU_FORMAT_LUMINANCE_ALPHA || format == GPU_FORMAT_RGBA)? 1 : 0);
     result->blend_mode = GPU_BLEND_NORMAL;
     result->filter_mode = GPU_LINEAR;
     result->wrap_mode_x = GPU_CLAMP_TO_EDGE;
@@ -1480,7 +1512,7 @@ static GPU_Image* CreateUninitializedImage(GPU_Renderer* renderer, Uint16 w, Uin
     result->data = data;
     result->is_alias = 0;
     data->handle = handle;
-    data->format = format;
+    data->format = gl_format;
 
     result->w = w;
     result->h = h;
@@ -1492,15 +1524,15 @@ static GPU_Image* CreateUninitializedImage(GPU_Renderer* renderer, Uint16 w, Uin
 }
 
 
-static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint8 channels)
+static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, GPU_FormatEnum format)
 {
-    if(channels < 3 || channels > 4)
+    if(format < 1 || format > GPU_FORMAT_RGBA)
     {
-        GPU_PushErrorCode("GPU_CreateImage", GPU_ERROR_DATA_ERROR, "Unsupported number of color channels");
+        GPU_PushErrorCode("GPU_CreateImage", GPU_ERROR_DATA_ERROR, "Unsupported image format");
         return NULL;
     }
 
-    GPU_Image* result = CreateUninitializedImage(renderer, w, h, channels);
+    GPU_Image* result = CreateUninitializedImage(renderer, w, h, format);
 
     if(result == NULL)
     {
@@ -1639,6 +1671,7 @@ static unsigned char* getRawTargetData(GPU_Renderer* renderer, GPU_Target* targe
         memcpy(top, bottom, pitch);
         memcpy(bottom, copy, pitch);
     }
+    free(copy);
 
     return data;
 }
@@ -2212,7 +2245,7 @@ static GPU_Image* CopyImage(GPU_Renderer* renderer, GPU_Image* image)
     if(image == NULL)
         return NULL;
     
-    GPU_Image* result = CreateUninitializedImage(renderer, image->w, image->h, image->channels);
+    GPU_Image* result = CreateUninitializedImage(renderer, image->w, image->h, image->format);
     if(result == NULL)
         return NULL;
     
@@ -2325,9 +2358,10 @@ static inline Uint32 getPixel(SDL_Surface *Surface, int x, int y)
 static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surface)
 {
     const SDL_PixelFormat *fmt;
-    Uint8 needAlpha;
+    Uint8 needAlpha, hasAlpha;
     GPU_Image* image;
     int channels;
+    GPU_FormatEnum format = GPU_FORMAT_RGBA;
 
     if(!surface)
     {
@@ -2337,28 +2371,55 @@ static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surf
 
     /* See what the best texture format is */
     fmt = surface->format;
-    if (fmt->Amask || hasColorkey(surface)) {
-        needAlpha = 1;
-    } else {
-        needAlpha = 0;
-    }
-
-    // Get appropriate storage format
-    // TODO: More options would be nice...
-    if(needAlpha)
+    hasAlpha = (fmt->Amask != 0);
+    if(!hasAlpha)
     {
-        channels = 4;
+        if(hasColorkey(surface))
+            needAlpha = 1;
+        else
+            needAlpha = 0;
     }
     else
+        needAlpha = 1;
+
+    // Get appropriate storage format
+    channels = fmt->BytesPerPixel;
+    if(channels < 1 || channels > 4)
     {
-        channels = 3;
+        GPU_PushErrorCode("GPU_CopyImageFromSurface", GPU_ERROR_DATA_ERROR, "Unsupported number of channels in surface");
+        return NULL;
+    }
+    
+    switch(channels)
+    {
+        case 1:
+            if(hasAlpha)
+                format = GPU_FORMAT_ALPHA;
+            else
+                format = GPU_FORMAT_LUMINANCE;
+        break;
+        case 2:
+            if(hasAlpha)
+                format = GPU_FORMAT_LUMINANCE_ALPHA;
+            else
+                format = GPU_FORMAT_RG;
+        break;
+        case 3:
+            if(needAlpha)
+                format = GPU_FORMAT_RGBA;
+            else
+                format = GPU_FORMAT_RGB;
+        break;
+        case 4:
+            format = GPU_FORMAT_RGBA;
+        break;
     }
     
     //GPU_LogError("Format...  Channels: %d, BPP: %d, Masks: %X %X %X %X\n", channels, fmt->BytesPerPixel, fmt->Rmask, fmt->Gmask, fmt->Bmask, fmt->Amask);
     
     //Uint32 pix = getPixel(surface, surface->w/2, surface->h/2);
     //GPU_LogError("Middle pixel: %X\n", pix);
-    image = CreateUninitializedImage(renderer, surface->w, surface->h, channels);
+    image = CreateUninitializedImage(renderer, surface->w, surface->h, format);
     if(image == NULL)
         return NULL;
 

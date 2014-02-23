@@ -423,12 +423,12 @@ GPU_Camera GPU_SetCamera(GPU_Target* target, GPU_Camera* cam)
 	return current_renderer->SetCamera(current_renderer, target, cam);
 }
 
-GPU_Image* GPU_CreateImage(Uint16 w, Uint16 h, Uint8 channels)
+GPU_Image* GPU_CreateImage(Uint16 w, Uint16 h, GPU_FormatEnum format)
 {
 	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->CreateImage == NULL)
 		return NULL;
 	
-	return current_renderer->CreateImage(current_renderer, w, h, channels);
+	return current_renderer->CreateImage(current_renderer, w, h, format);
 }
 
 GPU_Image* GPU_LoadImage(const char* filename)
@@ -512,32 +512,39 @@ SDL_Surface* GPU_LoadSurface(const char* filename)
 		GPU_PushErrorCode(__func__, GPU_ERROR_DATA_ERROR, stbi_failure_reason());
 		return NULL;
 	}
-	if(channels < 3 || channels > 4)
+	if(channels < 1 || channels > 4)
 	{
 		GPU_PushErrorCode(__func__, GPU_ERROR_DATA_ERROR, "Unsupported pixel format");
 		stbi_image_free(data);
 		return NULL;
 	}
 	
-	if(channels == 3)
+	switch(channels)
 	{
-	    // These are reversed from what SDL_image uses...  That is bad. :(  Needs testing.
-	    #if SDL_BYTEORDER == SDL_BIG_ENDIAN
-		Rmask = 0xff0000;
-		Gmask = 0x00ff00;
-		Bmask = 0x0000ff;
-		#else
-		Rmask = 0x0000ff;
-		Gmask = 0x00ff00;
-		Bmask = 0xff0000;
-		#endif
-	}
-	else
-	{
-		Rmask = 0x000000ff;
-		Gmask = 0x0000ff00;
-		Bmask = 0x00ff0000;
-		Amask = 0xff000000;
+        case 1:
+            Rmask = Gmask = Bmask = 0;  // Use default RGB masks for 8-bit
+            break;
+        case 2:
+            Rmask = Gmask = Bmask = 0;  // Use default RGB masks for 16-bit
+            break;
+        case 3:
+            // These are reversed from what SDL_image uses...  That is bad. :(  Needs testing.
+            #if SDL_BYTEORDER == SDL_BIG_ENDIAN
+            Rmask = 0xff0000;
+            Gmask = 0x00ff00;
+            Bmask = 0x0000ff;
+            #else
+            Rmask = 0x0000ff;
+            Gmask = 0x00ff00;
+            Bmask = 0xff0000;
+            #endif
+            break;
+        case 4:
+            Rmask = 0x000000ff;
+            Gmask = 0x0000ff00;
+            Bmask = 0x00ff0000;
+            Amask = 0xff000000;
+            break;
 	}
 	
 	SDL_Surface* result = SDL_CreateRGBSurfaceFrom(data, width, height, channels*8, width*channels, Rmask, Gmask, Bmask, Amask);

@@ -100,6 +100,20 @@ typedef enum {
     GPU_BLEND_OVERRIDE = 100  // Lets you specify direct GL calls before blitting.  Note: You should call GPU_FlushBlitBuffer() before you change blend modes via OpenGL so the new blend mode doesn't affect SDL_gpu's previously buffered blits.
 } GPU_BlendEnum;
 
+/*! Image format enum
+ * \see GPU_CreateImage()
+ */
+typedef enum {
+    GPU_FORMAT_LUMINANCE = 1,
+    GPU_FORMAT_LUMINANCE_ALPHA = 2,
+    GPU_FORMAT_RGB = 3,
+    GPU_FORMAT_RGBA = 4,
+    GPU_FORMAT_ALPHA = 5,
+    GPU_FORMAT_RG = 6,
+    GPU_FORMAT_YCbCr422 = 7,
+    GPU_FORMAT_YCbCr420P = 8
+} GPU_FormatEnum;
+
 /*! Image object for containing pixel/texture data.
  * A GPU_Image can be created with GPU_CreateImage(), GPU_LoadImage(), GPU_CopyImage(), or GPU_CopyImageFromSurface().
  * Free the memory with GPU_FreeImage() when you're done.
@@ -114,6 +128,7 @@ typedef struct GPU_Image
 	struct GPU_Renderer* renderer;
 	GPU_Target* target;
 	Uint16 w, h;
+	GPU_FormatEnum format;
 	int channels;
 	Uint32 texture_w, texture_h;  // Underlying texture dimensions
 	Uint8 has_mipmaps;
@@ -466,7 +481,7 @@ struct GPU_Renderer
 	GPU_Camera (*SetCamera)(GPU_Renderer* renderer, GPU_Target* target, GPU_Camera* cam);
 	
     /*! \see GPU_CreateImage() */
-	GPU_Image* (*CreateImage)(GPU_Renderer* renderer, Uint16 w, Uint16 h, Uint8 channels);
+	GPU_Image* (*CreateImage)(GPU_Renderer* renderer, Uint16 w, Uint16 h, GPU_FormatEnum format);
 	
 	/*! \see GPU_LoadImage() */
 	GPU_Image* (*LoadImage)(GPU_Renderer* renderer, const char* filename);
@@ -1009,12 +1024,12 @@ Uint8 GPU_SaveSurface(SDL_Surface* surface, const char* filename);
 
 // Image controls
 
-/*! Create a new, blank image with a format determined by the number of channels requested.  Don't forget to GPU_FreeImage() it. 
+/*! Create a new, blank image with the given format.  Don't forget to GPU_FreeImage() it.
 	 * \param w Image width in pixels
 	 * \param h Image height in pixels
-	 * \param channels Number of color channels.  Usually in the range of [1,4] with 3 being RGB and 4 being RGBA.
+	 * \param format Format of color channels.
 	 */
-GPU_Image* GPU_CreateImage(Uint16 w, Uint16 h, Uint8 channels);
+GPU_Image* GPU_CreateImage(Uint16 w, Uint16 h, GPU_FormatEnum format);
 
 /*! Load image from an image file that is supported by this renderer.  Don't forget to GPU_FreeImage() it. */
 GPU_Image* GPU_LoadImage(const char* filename);
