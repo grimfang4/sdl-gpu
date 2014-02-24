@@ -97,6 +97,8 @@ typedef enum {
     GPU_BLEND_DIFFERENCE = 9,
     GPU_BLEND_PUNCHOUT = 10,
     GPU_BLEND_CUTOUT = 11,
+    GPU_BLEND_MOD_ALPHA = 12,
+    GPU_BLEND_SET_ALPHA = 13,
     GPU_BLEND_OVERRIDE = 100  // Lets you specify direct GL calls before blitting.  Note: You should call GPU_FlushBlitBuffer() before you change blend modes via OpenGL so the new blend mode doesn't affect SDL_gpu's previously buffered blits.
 } GPU_BlendEnum;
 
