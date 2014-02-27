@@ -541,6 +541,23 @@ static void changeBlendMode(GPU_Renderer* renderer, GPU_BlendEnum mode)
             return;
         glBlendEquation(GL_FUNC_ADD);
     }
+    else if(mode == GPU_BLEND_SET)
+    {
+        glBlendFunc(GL_ONE, GL_ZERO);
+        if(!(renderer->enabled_features & GPU_FEATURE_BLEND_EQUATIONS))
+            return;
+        glBlendEquation(GL_FUNC_ADD);
+    }
+    else if(mode == GPU_BLEND_KEEP_ALPHA)
+    {
+        if(!(renderer->enabled_features & GPU_FEATURE_BLEND_FUNC_SEPARATE))
+            return;
+        // Don't disturb the alpha
+        glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ONE);
+        if(!(renderer->enabled_features & GPU_FEATURE_BLEND_EQUATIONS))
+            return;
+        glBlendEquation(GL_FUNC_ADD);
+    }
 }
 
 
