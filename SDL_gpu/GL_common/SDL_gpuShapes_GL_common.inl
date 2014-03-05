@@ -113,10 +113,21 @@ static void Pixel(GPU_Renderer* renderer, GPU_Target* target, float x, float y, 
 
 static void Line(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color)
 {
-    BEGIN_UNTEXTURED("GPU_Line", GL_LINES, 2, 2);
+    BEGIN_UNTEXTURED("GPU_Line", GL_TRIANGLES, 4, 6);
     
-    SET_UNTEXTURED_VERTEX(x1, y1, r, g, b, a);
-    SET_UNTEXTURED_VERTEX(x2, y2, r, g, b, a);
+	float thickness = renderer->GetLineThickness(renderer);
+
+    float t = thickness/2;
+    float line_angle = atan2f(y2 - y1, x2 - x1);
+    float tc = t*cosf(line_angle);
+    float ts = t*sinf(line_angle);
+    SET_UNTEXTURED_VERTEX(x1 + ts, y1 - tc, r, g, b, a);
+    SET_UNTEXTURED_VERTEX(x1 - ts, y1 + tc, r, g, b, a);
+    SET_UNTEXTURED_VERTEX(x2 + ts, y2 - tc, r, g, b, a);
+    
+    SET_INDEXED_VERTEX(1);
+    SET_INDEXED_VERTEX(2);
+    SET_UNTEXTURED_VERTEX(x2 - ts, y2 + tc, r, g, b, a);
 }
 
 // Arc() might call Circle()
