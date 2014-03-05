@@ -548,12 +548,21 @@ static void changeBlendMode(GPU_Renderer* renderer, GPU_BlendEnum mode)
             return;
         glBlendEquation(GL_FUNC_ADD);
     }
-    else if(mode == GPU_BLEND_KEEP_ALPHA)
+    else if(mode == GPU_BLEND_NORMAL_KEEP_ALPHA)
     {
         if(!(renderer->enabled_features & GPU_FEATURE_BLEND_FUNC_SEPARATE))
             return;
         // Don't disturb the alpha
         glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ONE);
+        if(!(renderer->enabled_features & GPU_FEATURE_BLEND_EQUATIONS))
+            return;
+        glBlendEquation(GL_FUNC_ADD);
+    }
+    else if(mode == GPU_BLEND_NORMAL_ADD_ALPHA)
+    {
+        if(!(renderer->enabled_features & GPU_FEATURE_BLEND_FUNC_SEPARATE))
+            return;
+        glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
         if(!(renderer->enabled_features & GPU_FEATURE_BLEND_EQUATIONS))
             return;
         glBlendEquation(GL_FUNC_ADD);
@@ -2500,8 +2509,9 @@ static void FreeImage(GPU_Renderer* renderer, GPU_Image* image)
     // Delete the attached target first
     if(image->target != NULL)
     {
-        renderer->FreeTarget(renderer, image->target);
+        GPU_Target* target = image->target;
         image->target = NULL;
+        renderer->FreeTarget(renderer, target);
     }
 
     flushAndClearBlitBufferIfCurrentTexture(renderer, image);
