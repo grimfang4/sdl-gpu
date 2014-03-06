@@ -741,7 +741,7 @@ static Uint8 equal_cameras(GPU_Camera a, GPU_Camera b)
 
 static void changeCamera(GPU_Target* target)
 {
-    GPU_CONTEXT_DATA* cdata = (GPU_CONTEXT_DATA*)GPU_GetContextTarget()->context->data;
+    //GPU_CONTEXT_DATA* cdata = (GPU_CONTEXT_DATA*)GPU_GetContextTarget()->context->data;
     
     //if(cdata->last_camera_target != target || !equal_cameras(cdata->last_camera, target->camera))
     {
@@ -1600,9 +1600,24 @@ static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, GPU_Fo
             h = getNearestPowerOf2(h);
     }
 
-    // Initialize texture
+    // Initialize texture using a blank buffer
+    static unsigned char* zero_buffer = NULL;
+    static unsigned int zero_buffer_size = 0;
+    if(zero_buffer_size < w*h*result->channels)
+    {
+        free(zero_buffer);
+        zero_buffer_size = w*h*result->channels;
+        zero_buffer = (unsigned char*)malloc(zero_buffer_size);
+        memset(zero_buffer, 0, zero_buffer_size);
+    }
+    
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    #ifdef SDL_GPU_USE_OPENGL
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, w);
+    #endif
+    
     glTexImage2D(GL_TEXTURE_2D, 0, internal_format, w, h, 0,
-                 internal_format, GL_UNSIGNED_BYTE, NULL);
+                 internal_format, GL_UNSIGNED_BYTE, zero_buffer);
     // Tell SDL_gpu what we got.
     result->texture_w = w;
     result->texture_h = h;
