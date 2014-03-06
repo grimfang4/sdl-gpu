@@ -518,9 +518,6 @@ struct GPU_Renderer
 	/*! \see GPU_FreeImage() */
 	void (*FreeImage)(GPU_Renderer* renderer, GPU_Image* image);
 	
-    /*! \see GPU_SubSurfaceCopy() */
-    void (*SubSurfaceCopy)(GPU_Renderer* renderer, SDL_Surface* src, GPU_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y);
-	
 	/*! \see GPU_LoadTarget() */
 	GPU_Target* (*LoadTarget)(GPU_Renderer* renderer, GPU_Image* image);
 	
@@ -1051,9 +1048,6 @@ void GPU_FreeImage(GPU_Image* image);
 
 /*! Update an image from surface data. */
 void GPU_UpdateImage(GPU_Image* image, const GPU_Rect* rect, SDL_Surface* surface);
-
-/*! Copies software surface data to a hardware texture.  Draws data with the upper left corner being (x,y).  */
-void GPU_SubSurfaceCopy(SDL_Surface* src, GPU_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y);
 
 /*! Save image to a file.  The file type is deduced from the extension.  Supported formats are: png, bmp, tga.  Returns 0 on failure. */
 Uint8 GPU_SaveImage(GPU_Image* image, const char* filename);

@@ -678,14 +678,6 @@ void GPU_FreeImage(GPU_Image* image)
 }
 
 
-void GPU_SubSurfaceCopy(SDL_Surface* src, GPU_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y)
-{
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->SubSurfaceCopy == NULL)
-        return;
-	
-	current_renderer->SubSurfaceCopy(current_renderer, src, srcrect, dest, x, y);
-}
-
 GPU_Target* GPU_GetContextTarget(void)
 {
 	if(current_renderer == NULL)

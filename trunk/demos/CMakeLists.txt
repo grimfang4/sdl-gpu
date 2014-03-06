@@ -68,9 +68,6 @@ target_link_libraries (copy-demo SDL_gpu)
 add_executable(npot-demo npot/main.c common/common.c common/demo-font.c)
 target_link_libraries (npot-demo SDL_gpu)
 
-add_executable(subsurface-demo subsurface/main.c common/common.c common/demo-font.c)
-target_link_libraries (subsurface-demo SDL_gpu)
-
 add_executable(features-demo features/main.c common/common.c common/demo-font.c)
 target_link_libraries (features-demo SDL_gpu)
 
