@@ -12,7 +12,7 @@ extern "C" {
 
 // Compile-time versions
 #define SDL_GPU_VERSION_MAJOR 0
-#define SDL_GPU_VERSION_MINOR 6
+#define SDL_GPU_VERSION_MINOR 8
 #define SDL_GPU_VERSION_PATCH 0
 
 /* Auto-detect if we're using the SDL2 API by the headers available. */
@@ -912,7 +912,8 @@ GPU_Target* GPU_CreateTargetFromWindow(Uint32 windowID);
  */
 void GPU_MakeCurrent(GPU_Target* target, Uint32 windowID);
 
-/*! Change the actual size of the current context target's window. */
+/*! Change the actual size of the current context target's window.  This resets the virtual resolution and viewport of the context target.
+ * Aside from direct resolution changes, this should also be called in response to SDL_WINDOWEVENT_RESIZED window events for resizable windows. */
 Uint8 GPU_SetWindowResolution(Uint16 w, Uint16 h);
 
 /*! Enable/disable fullscreen mode for the current context target's window.
@@ -928,7 +929,7 @@ void GPU_SetShapeBlending(Uint8 enable);
 void GPU_SetShapeBlendMode(GPU_BlendEnum mode);
 
 /*! Sets the thickness of lines for the current context. 
- * \param thickness New line thickness in pixels.  Default is 1.0f.
+ * \param thickness New line thickness in pixels measured across the line.  Default is 1.0f.
  * \return The old thickness value
  */
 float GPU_SetLineThickness(float thickness);
