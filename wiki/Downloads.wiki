@@ -1,0 +1,11 @@
+#summary Downloads
+
+= Downloads =
+
+The latest release of SDL_gpu is version 0.8.0.  You can get it here:
+    SDL 2.0:
+        [https://code.google.com/p/sdl-gpu/source/browse/builds/SDL2_gpu-0.8.0-win32.zip SDL_gpu 0.8.0, Windows - MinGW32]
+    SDL 1.2:
+        [https://code.google.com/p/sdl-gpu/source/browse/builds/SDL_gpu-0.8.0-win32.zip SDL_gpu 0.8.0, Windows - MinGW32]
+
+For other builds, check the [https://code.google.com/p/sdl-gpu/source/browse/#svn%2Fbuilds 'builds' directory] in the repository.
