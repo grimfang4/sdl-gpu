@@ -1,6 +1,15 @@
 #summary The current plan for changes to SDL_gpu
 
-= Road Map =
+= Versions =
+
+0.8.0
+    First binary release
+
+1.0.0
+    Needs a lot of testing and feedback
+
+
+= To Do =
 
  * GPU_Bezier()
  * Support 1-channel and 2-channel textures (for shader data, not really for blitting)
