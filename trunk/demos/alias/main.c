@@ -28,7 +28,7 @@ int main(int argc, char* argv[])
 	
 	GPU_Image* alias_image = GPU_CreateAliasImage(image);
 	
-	GPU_SetImageFilter(alias_image, GPU_NEAREST);
+	GPU_SetImageFilter(alias_image, GPU_FILTER_NEAREST);
 	GPU_SetRGBA(alias_image, 100, 255, 100, 200);
 	
 	

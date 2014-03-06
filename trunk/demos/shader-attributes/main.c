@@ -135,7 +135,7 @@ int main(int argc, char* argv[])
 	float expanded_colors[4*maxSprites];
 	float src_rects[4*maxSprites];
     
-    color_attr.format = GPU_MakeAttributeFormat(4, GPU_FLOAT, 0, 4*sizeof(float), 0);
+    color_attr.format = GPU_MakeAttributeFormat(4, GPU_TYPE_FLOAT, 0, 4*sizeof(float), 0);
     color_attr.format.is_per_sprite = 0;
     color_attr.values = colors;
     

@@ -38,7 +38,7 @@ int main(int argc, char* argv[])
 	GPU_Image* images[max_images];
 	
 	int using_images = 1;
-	GPU_FilterEnum filter_mode = GPU_NEAREST;
+	GPU_FilterEnum filter_mode = GPU_FILTER_NEAREST;
 	Uint8 show_original = 0;
 	
 	Uint8 switched = 1;
@@ -103,15 +103,15 @@ int main(int argc, char* argv[])
                     show_original = !show_original;
 				else if(event.key.keysym.sym == SDLK_f)
                 {
-                    if(filter_mode == GPU_NEAREST)
+                    if(filter_mode == GPU_FILTER_NEAREST)
                     {
-                        filter_mode = GPU_LINEAR;
-                        GPU_LogError("GPU_LINEAR\n");
+                        filter_mode = GPU_FILTER_LINEAR;
+                        GPU_LogError("GPU_FILTER_LINEAR\n");
                     }
                     else
                     {
-                        filter_mode = GPU_NEAREST;
-                        GPU_LogError("GPU_NEAREST\n");
+                        filter_mode = GPU_FILTER_NEAREST;
+                        GPU_LogError("GPU_FILTER_NEAREST\n");
                     }
                     
                     

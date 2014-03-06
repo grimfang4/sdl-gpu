@@ -30,7 +30,7 @@ void polygon_blit(GPU_Image* image, GPU_Target* target, unsigned int num_vertice
     
     GPU_WrapEnum wrap_x = image->wrap_mode_x;
     GPU_WrapEnum wrap_y = image->wrap_mode_y;
-    GPU_SetWrapMode(image, GPU_REPEAT, GPU_REPEAT);
+    GPU_SetWrapMode(image, GPU_WRAP_REPEAT, GPU_WRAP_REPEAT);
     
     float* vertices = (float*)malloc(8*num_vertices*sizeof(float));
     unsigned short* indices = (unsigned short*)malloc((3 + (num_vertices-3)*3)*sizeof(unsigned short));
