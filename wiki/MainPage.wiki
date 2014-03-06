@@ -5,6 +5,12 @@
 SDL_gpu is currently in feature development.  As such, features are liable to be added or changed in the future.  This means that the documentation is also changing.  The header comments are kept up-to-date, so the best documentation can be generated via Doxygen.  The library and demos can be built for any platform by using CMake.
 
 
+= Download =
+
+Binary builds are available in the 'builds' directory of the repository:
+https://code.google.com/p/sdl-gpu/source/browse/#svn%2Fbuilds
+
+
 = Demos =
 
 The demos directory contains a suite of test programs for the various available features.  Perusing these demos is the best way to get a feel for what SDL_gpu can do.  The "init" demo is the base project for many of the other demos, so it is a good place to start.
