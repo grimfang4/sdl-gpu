@@ -51,7 +51,7 @@ State contained in context targets:
 	Shape blending
 	Shape blend mode
 	Line thickness (GPU_SetThickness())
-	GL Context (SDL_GLContext is just a void*)
+	GL Context (SDL_GLContext is just a void`*`)
 	Matrix stack
 	
 State contained in renderer:
