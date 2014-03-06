@@ -1514,6 +1514,9 @@ static GPU_Image* CreateUninitializedImage(GPU_Renderer* renderer, Uint16 w, Uin
             gl_format = GL_RGB;
             channels = 3;
             break;
+        default:
+            GPU_PushErrorCode("GPU_CreateUninitializedImage", GPU_ERROR_DATA_ERROR, "Unsupported image format (%x)", format);
+            return NULL;
     }
     
     if(channels < 1 || channels > 4)
@@ -2311,17 +2314,40 @@ static GPU_Image* CopyImage(GPU_Renderer* renderer, GPU_Image* image)
     if(image == NULL)
         return NULL;
     
-    GPU_Image* result = CreateUninitializedImage(renderer, image->w, image->h, image->format);
+    GPU_Image* result = renderer->CreateImage(renderer, image->w, image->h, image->format);
     if(result == NULL)
+    {
+        GPU_PushErrorCode("GPU_CopyImage", GPU_ERROR_BACKEND_ERROR, "Failed to create new image.");
         return NULL;
+    }
     
-    SDL_Surface* surface = renderer->CopySurfaceFromImage(renderer, image);
-    if(surface == NULL)
+    GPU_Target* target = GPU_LoadTarget(result);
+    if(target == NULL)
+    {
+        GPU_FreeImage(result);
+        GPU_PushErrorCode("GPU_CopyImage", GPU_ERROR_BACKEND_ERROR, "Failed to load target.");
         return NULL;
+    }
     
-    InitImageWithSurface(renderer, result, surface);
+    // For some reason, I wasn't able to get glCopyTexImage2D() or glCopyTexSubImage2D() working without getting GL_INVALID_ENUM (0x500).
+    // It seemed to only work for the default framebuffer...
     
-    SDL_FreeSurface(surface);
+    // Clear the color, blending, and filter mode
+	SDL_Color color = image->color;
+	Uint8 use_blending = image->use_blending;
+	GPU_FilterEnum filter_mode = image->filter_mode;
+	GPU_SetColor(image, NULL);
+	GPU_SetBlending(image, 0);
+	GPU_SetImageFilter(image, GPU_NEAREST);
+	
+    renderer->Blit(renderer, image, NULL, target, image->w/2, image->h/2);
+    
+    // Restore the saved settings
+	GPU_SetColor(image, &color);
+	GPU_SetBlending(image, use_blending);
+	GPU_SetImageFilter(image, filter_mode);
+    
+    GPU_FreeTarget(target);
     
     return result;
 }

@@ -135,8 +135,6 @@ static void Circle(GPU_Renderer* renderer, GPU_Target* target, float x, float y,
 
 static void Arc(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float radius, float start_angle, float end_angle, SDL_Color color)
 {
-    float originalSA = start_angle;
-
     if(start_angle > end_angle)
     {
         float swapa = end_angle;
@@ -202,8 +200,6 @@ static void CircleFilled(GPU_Renderer* renderer, GPU_Target* target, float x, fl
 
 static void ArcFilled(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float radius, float start_angle, float end_angle, SDL_Color color)
 {
-    float originalSA = start_angle;
-
     if(start_angle > end_angle)
     {
         float swapa = end_angle;
