@@ -165,25 +165,6 @@ static void Arc(GPU_Renderer* renderer, GPU_Target* target, float x, float y, fl
         end_angle -= 360;
     }
 
-    // Check if the angle to be drawn crosses 0
-    Uint8 crossesZero = (start_angle < 0 && end_angle > 0) || (start_angle < 360 && end_angle > 360);
-
-    if(end_angle == 0)
-        end_angle = 360;
-    else if(crossesZero)
-    {
-        float sa = originalSA;
-        // Render the left part
-        while(sa < 0.0f)
-            sa += 360;
-        Arc(renderer, target, x, y, radius, sa, 359.9f, color);
-
-        // Continue to render the right part
-        start_angle = 0;
-        while(end_angle >= 360)
-            end_angle -= 360;
-    }
-
 
     float t = start_angle;
     float dt = ((end_angle - start_angle)/360)*(1.25f/sqrtf(radius)) * DEGPERRAD;  // s = rA, so dA = ds/r.  ds of 1.25*sqrt(radius) is good, use A in degrees.
@@ -249,26 +230,6 @@ static void ArcFilled(GPU_Renderer* renderer, GPU_Target* target, float x, float
     {
         start_angle -= 360;
         end_angle -= 360;
-    }
-
-    // Check if the angle to be drawn crosses 0
-    Uint8 crossesZero = (start_angle < 0 && end_angle > 0) || (start_angle < 360 && end_angle > 360);
-
-    if(end_angle == 0)
-        end_angle = 360;
-    else if(crossesZero)
-    {
-        float sa = originalSA;
-
-        // Render the left part
-        while(sa < 0.0f)
-            sa += 360;
-        ArcFilled(renderer, target, x, y, radius, sa, 359.9f, color);
-
-        // Continue to render the right part
-        start_angle = 0;
-        while(end_angle >= 360)
-            end_angle -= 360;
     }
     
     float t = start_angle;
@@ -389,29 +350,45 @@ static void Sector(GPU_Renderer* renderer, GPU_Target* target, float x, float y,
         outer_radius = s;
     }
     
+    if(start_angle > end_angle)
+    {
+        float swapa = end_angle;
+        end_angle = start_angle;
+        start_angle = swapa;
+    }
+    if(start_angle == end_angle)
+        return;
+    
     if(inner_radius == outer_radius)
     {
         Arc(renderer, target, x, y, inner_radius, start_angle, end_angle, color);
         return;
     }
     
+    Uint8 circled = (end_angle - start_angle >= 360);
     // Composited shape...  But that means error codes may be confusing. :-/
     float dx1, dy1, dx2, dy2, dx3, dy3, dx4, dy4;
     Arc(renderer, target, x, y, inner_radius, start_angle, end_angle, color);
     
-    dx1 = inner_radius*cos(end_angle*RADPERDEG);
-    dy1 = inner_radius*sin(end_angle*RADPERDEG);
-    dx2 = outer_radius*cos(end_angle*RADPERDEG);
-    dy2 = outer_radius*sin(end_angle*RADPERDEG);
-    Line(renderer, target, x+dx1, y+dy1, x+dx2, y+dy2, color);
+    if(!circled)
+    {
+        dx1 = inner_radius*cos(end_angle*RADPERDEG);
+        dy1 = inner_radius*sin(end_angle*RADPERDEG);
+        dx2 = outer_radius*cos(end_angle*RADPERDEG);
+        dy2 = outer_radius*sin(end_angle*RADPERDEG);
+        Line(renderer, target, x+dx1, y+dy1, x+dx2, y+dy2, color);
+    }
     
     Arc(renderer, target, x, y, outer_radius, start_angle, end_angle, color);
     
-    dx3 = inner_radius*cos(start_angle*RADPERDEG);
-    dy3 = inner_radius*sin(start_angle*RADPERDEG);
-    dx4 = outer_radius*cos(start_angle*RADPERDEG);
-    dy4 = outer_radius*sin(start_angle*RADPERDEG);
-    Line(renderer, target, x+dx3, y+dy3, x+dx4, y+dy4, color);
+    if(!circled)
+    {
+        dx3 = inner_radius*cos(start_angle*RADPERDEG);
+        dy3 = inner_radius*sin(start_angle*RADPERDEG);
+        dx4 = outer_radius*cos(start_angle*RADPERDEG);
+        dy4 = outer_radius*sin(start_angle*RADPERDEG);
+        Line(renderer, target, x+dx3, y+dy3, x+dx4, y+dy4, color);
+    }
 }
 
 static void SectorFilled(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float inner_radius, float outer_radius, float start_angle, float end_angle, SDL_Color color)
