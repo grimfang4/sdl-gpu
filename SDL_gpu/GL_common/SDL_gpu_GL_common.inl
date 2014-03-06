@@ -1559,9 +1559,9 @@ static GPU_Image* CreateUninitializedImage(GPU_Renderer* renderer, Uint16 w, Uin
     result->color = white;
     result->use_blending = ((format == GPU_FORMAT_LUMINANCE_ALPHA || format == GPU_FORMAT_RGBA)? 1 : 0);
     result->blend_mode = GPU_BLEND_NORMAL;
-    result->filter_mode = GPU_LINEAR;
-    result->wrap_mode_x = GPU_CLAMP_TO_EDGE;
-    result->wrap_mode_y = GPU_CLAMP_TO_EDGE;
+    result->filter_mode = GPU_FILTER_LINEAR;
+    result->wrap_mode_x = GPU_WRAP_NONE;
+    result->wrap_mode_y = GPU_WRAP_NONE;
     
     result->data = data;
     result->is_alias = 0;
@@ -2338,7 +2338,7 @@ static GPU_Image* CopyImage(GPU_Renderer* renderer, GPU_Image* image)
 	GPU_FilterEnum filter_mode = image->filter_mode;
 	GPU_SetColor(image, NULL);
 	GPU_SetBlending(image, 0);
-	GPU_SetImageFilter(image, GPU_NEAREST);
+	GPU_SetImageFilter(image, GPU_FILTER_NEAREST);
 	
     renderer->Blit(renderer, image, NULL, target, image->w/2, image->h/2);
     
@@ -2806,7 +2806,7 @@ static void Blit(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, G
     Uint16 tex_w = image->texture_w;
     Uint16 tex_h = image->texture_h;
     
-    if(image->filter_mode == GPU_NEAREST)
+    if(image->filter_mode == GPU_FILTER_NEAREST)
     {
         // Avoid rounding errors in texture sampling by insisting on integral pixel positions
         x = floorf(x+0.5f);
@@ -2983,7 +2983,7 @@ static void BlitTransformX(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* s
     Uint16 tex_w = image->texture_w;
     Uint16 tex_h = image->texture_h;
     
-    if(image->filter_mode == GPU_NEAREST)
+    if(image->filter_mode == GPU_FILTER_NEAREST)
     {
         // Avoid rounding errors in texture sampling by insisting on integral pixel positions
         x = floorf(x+0.5f);
@@ -3188,14 +3188,14 @@ static void BlitTransformMatrix(GPU_Renderer* renderer, GPU_Image* image, GPU_Re
 
 static inline int sizeof_GPU_type(GPU_TypeEnum type)
 {
-    if(type == GPU_DOUBLE) return sizeof(double);
-    if(type == GPU_FLOAT) return sizeof(float);
-    if(type == GPU_INT) return sizeof(int);
-    if(type == GPU_UNSIGNED_INT) return sizeof(unsigned int);
-    if(type == GPU_SHORT) return sizeof(short);
-    if(type == GPU_UNSIGNED_SHORT) return sizeof(unsigned short);
-    if(type == GPU_BYTE) return sizeof(char);
-    if(type == GPU_UNSIGNED_BYTE) return sizeof(unsigned char);
+    if(type == GPU_TYPE_DOUBLE) return sizeof(double);
+    if(type == GPU_TYPE_FLOAT) return sizeof(float);
+    if(type == GPU_TYPE_INT) return sizeof(int);
+    if(type == GPU_TYPE_UNSIGNED_INT) return sizeof(unsigned int);
+    if(type == GPU_TYPE_SHORT) return sizeof(short);
+    if(type == GPU_TYPE_UNSIGNED_SHORT) return sizeof(unsigned short);
+    if(type == GPU_TYPE_BYTE) return sizeof(char);
+    if(type == GPU_TYPE_UNSIGNED_BYTE) return sizeof(unsigned char);
     return 0;
 }
 
@@ -3839,11 +3839,11 @@ static void SetImageFilter(GPU_Renderer* renderer, GPU_Image* image, GPU_FilterE
 
     switch(filter)
     {
-        case GPU_NEAREST:
+        case GPU_FILTER_NEAREST:
             minFilter = GL_NEAREST;
             magFilter = GL_NEAREST;
             break;
-        case GPU_LINEAR:
+        case GPU_FILTER_LINEAR:
             if(image->has_mipmaps)
                 minFilter = GL_LINEAR_MIPMAP_NEAREST;
             else
@@ -3851,7 +3851,7 @@ static void SetImageFilter(GPU_Renderer* renderer, GPU_Image* image, GPU_FilterE
 
             magFilter = GL_LINEAR;
             break;
-        case GPU_LINEAR_MIPMAP:
+        case GPU_FILTER_LINEAR_MIPMAP:
             if(image->has_mipmaps)
                 minFilter = GL_LINEAR_MIPMAP_LINEAR;
             else
@@ -3890,18 +3890,18 @@ static void SetWrapMode(GPU_Renderer* renderer, GPU_Image* image, GPU_WrapEnum w
 	
 	switch(wrap_mode_x)
 	{
-    case GPU_CLAMP_TO_EDGE:
+    case GPU_WRAP_NONE:
         wrap_x = GL_CLAMP_TO_EDGE;
         break;
-    case GPU_REPEAT:
+    case GPU_WRAP_REPEAT:
         wrap_x = GL_REPEAT;
         break;
-    case GPU_REPEAT_MIRRORED:
+    case GPU_WRAP_MIRRORED:
         if(renderer->enabled_features & GPU_FEATURE_WRAP_REPEAT_MIRRORED)
             wrap_x = GL_MIRRORED_REPEAT;
         else
         {
-            GPU_PushErrorCode("GPU_SetWrapMode", GPU_ERROR_BACKEND_ERROR, "This renderer does not support GPU_REPEAT_MIRRORED.");
+            GPU_PushErrorCode("GPU_SetWrapMode", GPU_ERROR_BACKEND_ERROR, "This renderer does not support GPU_WRAP_MIRRORED.");
             return;
         }
         break;
@@ -3912,18 +3912,18 @@ static void SetWrapMode(GPU_Renderer* renderer, GPU_Image* image, GPU_WrapEnum w
 	
 	switch(wrap_mode_y)
 	{
-    case GPU_CLAMP_TO_EDGE:
+    case GPU_WRAP_NONE:
         wrap_y = GL_CLAMP_TO_EDGE;
         break;
-    case GPU_REPEAT:
+    case GPU_WRAP_REPEAT:
         wrap_y = GL_REPEAT;
         break;
-    case GPU_REPEAT_MIRRORED:
+    case GPU_WRAP_MIRRORED:
         if(renderer->enabled_features & GPU_FEATURE_WRAP_REPEAT_MIRRORED)
             wrap_y = GL_MIRRORED_REPEAT;
         else
         {
-            GPU_PushErrorCode("GPU_SetWrapMode", GPU_ERROR_BACKEND_ERROR, "This renderer does not support GPU_REPEAT_MIRRORED.");
+            GPU_PushErrorCode("GPU_SetWrapMode", GPU_ERROR_BACKEND_ERROR, "This renderer does not support GPU_WRAP_MIRRORED.");
             return;
         }
         break;

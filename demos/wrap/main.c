@@ -52,10 +52,10 @@ int main(int argc, char* argv[])
 		
 		float x = 0;
 		float y = 0;
-		FONT_Draw(font, screen, x + 10, y + 10, "CLAMP_TO_EDGE");
+		FONT_Draw(font, screen, x + 10, y + 10, "NONE");
 		x += 40;
 		y += 20;
-		GPU_SetWrapMode(image, GPU_CLAMP_TO_EDGE, GPU_CLAMP_TO_EDGE);
+		GPU_SetWrapMode(image, GPU_WRAP_NONE, GPU_WRAP_NONE);
 		GPU_Blit(image, &rect1, screen, x + rect1.w/2, y + rect1.h/2);
 		x += image->w*4;
 		GPU_Blit(image, &rect2, screen, x + rect2.w/2, y + rect2.h/2);
@@ -65,47 +65,47 @@ int main(int argc, char* argv[])
 		FONT_Draw(font, screen, x + 10, y + 10, "REPEAT");
 		x += 40;
 		y += 20;
-		GPU_SetWrapMode(image, GPU_REPEAT, GPU_REPEAT);
+		GPU_SetWrapMode(image, GPU_WRAP_REPEAT, GPU_WRAP_REPEAT);
 		GPU_Blit(image, &rect1, screen, x + rect1.w/2, y + rect1.h/2);
 		x += image->w*4;
 		GPU_Blit(image, &rect2, screen, x + rect2.w/2, y + rect2.h/2);
 		
 		x = 0;
 		y += (rect1.h + 10);
-		FONT_Draw(font, screen, x + 10, y + 10, "REPEAT_MIRRORED");
+		FONT_Draw(font, screen, x + 10, y + 10, "MIRRORED");
 		x += 40;
 		y += 20;
-		GPU_SetWrapMode(image, GPU_REPEAT_MIRRORED, GPU_REPEAT_MIRRORED);
+		GPU_SetWrapMode(image, GPU_WRAP_MIRRORED, GPU_WRAP_MIRRORED);
 		GPU_Blit(image, &rect1, screen, x + rect1.w/2, y + rect1.h/2);
 		x += image->w*4;
 		GPU_Blit(image, &rect2, screen, x + rect2.w/2, y + rect2.h/2);
 		
 		x = 500;
 		y = 0;
-		FONT_Draw(font, screen, x + 10, y + 10, "REPEAT/REPEAT_MIRRORED");
+		FONT_Draw(font, screen, x + 10, y + 10, "REPEAT/MIRRORED");
 		x += 40;
 		y += 20;
-		GPU_SetWrapMode(image, GPU_REPEAT, GPU_REPEAT_MIRRORED);
+		GPU_SetWrapMode(image, GPU_WRAP_REPEAT, GPU_WRAP_MIRRORED);
 		GPU_Blit(image, &rect1, screen, x + rect1.w/2, y + rect1.h/2);
 		x += image->w*4;
 		GPU_Blit(image, &rect2, screen, x + rect2.w/2, y + rect2.h/2);
 		
 		x = 500;
 		y += (rect1.h + 10);
-		FONT_Draw(font, screen, x + 10, y + 10, "CLAMP_TO_EDGE/REPEAT");
+		FONT_Draw(font, screen, x + 10, y + 10, "NONE/REPEAT");
 		x += 40;
 		y += 20;
-		GPU_SetWrapMode(image, GPU_CLAMP_TO_EDGE, GPU_REPEAT);
+		GPU_SetWrapMode(image, GPU_WRAP_NONE, GPU_WRAP_REPEAT);
 		GPU_Blit(image, &rect1, screen, x + rect1.w/2, y + rect1.h/2);
 		x += image->w*4;
 		GPU_Blit(image, &rect2, screen, x + rect2.w/2, y + rect2.h/2);
 		
 		x = 500;
 		y += (rect1.h + 10);
-		FONT_Draw(font, screen, x + 10, y + 10, "CLAMP_TO_EDGE/REPEAT_MIRRORED");
+		FONT_Draw(font, screen, x + 10, y + 10, "NONE/MIRRORED");
 		x += 40;
 		y += 20;
-		GPU_SetWrapMode(image, GPU_CLAMP_TO_EDGE, GPU_REPEAT_MIRRORED);
+		GPU_SetWrapMode(image, GPU_WRAP_NONE, GPU_WRAP_MIRRORED);
 		GPU_Blit(image, &rect1, screen, x + rect1.w/2, y + rect1.h/2);
 		x += image->w*4;
 		GPU_Blit(image, &rect2, screen, x + rect2.w/2, y + rect2.h/2);

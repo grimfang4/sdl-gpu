@@ -367,11 +367,11 @@ int do_attributes(GPU_Target* screen)
 	
 	GPU_Attribute attributes[3] = {
 	    GPU_MakeAttribute(GPU_GetAttributeLocation(program_object, "gpu_Vertex"), vertex_values, 
-                                                    GPU_MakeAttributeFormat(2, GPU_FLOAT, 0, floats_per_vertex*sizeof(float), 0)),
+                                                    GPU_MakeAttributeFormat(2, GPU_TYPE_FLOAT, 0, floats_per_vertex*sizeof(float), 0)),
         GPU_MakeAttribute(GPU_GetAttributeLocation(program_object, "gpu_TexCoord"), vertex_values, 
-                                                    GPU_MakeAttributeFormat(2, GPU_FLOAT, 0, floats_per_vertex*sizeof(float), 2*sizeof(float))),
+                                                    GPU_MakeAttributeFormat(2, GPU_TYPE_FLOAT, 0, floats_per_vertex*sizeof(float), 2*sizeof(float))),
         GPU_MakeAttribute(GPU_GetAttributeLocation(program_object, "gpu_Color"), vertex_values, 
-                                                    GPU_MakeAttributeFormat(4, GPU_FLOAT, 0, floats_per_vertex*sizeof(float), 4*sizeof(float)))
+                                                    GPU_MakeAttributeFormat(4, GPU_TYPE_FLOAT, 0, floats_per_vertex*sizeof(float), 4*sizeof(float)))
     };
 	
 	float* velx = (float*)malloc(sizeof(float)*max_vertices/3);

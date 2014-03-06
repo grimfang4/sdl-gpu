@@ -55,15 +55,15 @@ int main(int argc, char* argv[])
                 }
 				else if(event.key.keysym.sym == SDLK_f)
                 {
-                    if(image->filter_mode == GPU_NEAREST)
+                    if(image->filter_mode == GPU_FILTER_NEAREST)
                     {
-                        GPU_SetImageFilter(image, GPU_LINEAR);
-                        GPU_LogError("GPU_LINEAR\n");
+                        GPU_SetImageFilter(image, GPU_FILTER_LINEAR);
+                        GPU_LogError("GPU_FILTER_LINEAR\n");
                     }
                     else
                     {
-                        GPU_SetImageFilter(image, GPU_NEAREST);
-                        GPU_LogError("GPU_NEAREST\n");
+                        GPU_SetImageFilter(image, GPU_FILTER_NEAREST);
+                        GPU_LogError("GPU_FILTER_NEAREST\n");
                     }
                 }
 				else if(event.key.keysym.sym == SDLK_UP)

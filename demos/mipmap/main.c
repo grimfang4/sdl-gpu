@@ -19,11 +19,11 @@ int main(int argc, char* argv[])
 	
 	GPU_Image* image2 = GPU_CopyImage(image);
 	GPU_GenerateMipmaps(image2);
-	GPU_SetImageFilter(image2, GPU_LINEAR);
+	GPU_SetImageFilter(image2, GPU_FILTER_LINEAR);
 	
 	GPU_Image* image3 = GPU_CopyImage(image);
 	GPU_GenerateMipmaps(image3);
-	GPU_SetImageFilter(image3, GPU_LINEAR_MIPMAP);
+	GPU_SetImageFilter(image3, GPU_FILTER_LINEAR_MIPMAP);
 	
 	Uint32 startTime = SDL_GetTicks();
 	long frameCount = 0;

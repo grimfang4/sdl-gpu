@@ -67,18 +67,18 @@ typedef struct GPU_RendererID
  * \see GPU_SetImageFilter()
  */
 typedef enum {
-    GPU_NEAREST = 0,
-    GPU_LINEAR = 1,
-    GPU_LINEAR_MIPMAP = 2
+    GPU_FILTER_NEAREST = 0,
+    GPU_FILTER_LINEAR = 1,
+    GPU_FILTER_LINEAR_MIPMAP = 2
 } GPU_FilterEnum;
 
 /*! Image wrapping options.  These affect how images handle src_rect coordinates beyond their dimensions when blitted.
  * \see GPU_SetWrapMode()
  */
 typedef enum {
-    GPU_CLAMP_TO_EDGE = 0,
-    GPU_REPEAT = 1,
-    GPU_REPEAT_MIRRORED = 2
+    GPU_WRAP_NONE = 0,
+    GPU_WRAP_REPEAT = 1,
+    GPU_WRAP_MIRRORED = 2
 } GPU_WrapEnum;
 
 /*! Blending options 
@@ -323,14 +323,14 @@ static const GPU_BlitFlagEnum GPU_USE_DEFAULT_COLORS = 0x20;
 /*! Type enumeration for GPU_AttributeFormat specifications. */
 typedef Uint32 GPU_TypeEnum;
 // Use OpenGL's values for simpler translation
-static const GPU_TypeEnum GPU_BYTE = 0x1400;
-static const GPU_TypeEnum GPU_UNSIGNED_BYTE = 0x1401;
-static const GPU_TypeEnum GPU_SHORT = 0x1402;
-static const GPU_TypeEnum GPU_UNSIGNED_SHORT = 0x1403;
-static const GPU_TypeEnum GPU_INT = 0x1404;
-static const GPU_TypeEnum GPU_UNSIGNED_INT = 0x1405;
-static const GPU_TypeEnum GPU_FLOAT = 0x1406;
-static const GPU_TypeEnum GPU_DOUBLE = 0x140A;
+static const GPU_TypeEnum GPU_TYPE_BYTE = 0x1400;
+static const GPU_TypeEnum GPU_TYPE_UNSIGNED_BYTE = 0x1401;
+static const GPU_TypeEnum GPU_TYPE_SHORT = 0x1402;
+static const GPU_TypeEnum GPU_TYPE_UNSIGNED_SHORT = 0x1403;
+static const GPU_TypeEnum GPU_TYPE_INT = 0x1404;
+static const GPU_TypeEnum GPU_TYPE_UNSIGNED_INT = 0x1405;
+static const GPU_TypeEnum GPU_TYPE_FLOAT = 0x1406;
+static const GPU_TypeEnum GPU_TYPE_DOUBLE = 0x140A;
 
 
 
@@ -351,19 +351,19 @@ typedef enum {
 
 /*! Type enumeration for the shader language used by the renderer. */
 typedef enum {
-    GPU_NO_SHADERS = 0,
-    GPU_ARB_ASSEMBLY = 1,
-    GPU_GLSL = 2,
-    GPU_GLSLES = 3,
-    GPU_HLSL = 4,
-    GPU_CG = 5
+    GPU_LANGUAGE_NONE = 0,
+    GPU_LANGUAGE_ARB_ASSEMBLY = 1,
+    GPU_LANGUAGE_GLSL = 2,
+    GPU_LANGUAGE_GLSLES = 3,
+    GPU_LANGUAGE_HLSL = 4,
+    GPU_LANGUAGE_CG = 5
 } GPU_ShaderLanguageEnum;
 
 typedef struct GPU_AttributeFormat
 {
     Uint8 is_per_sprite;  // Per-sprite values are expanded to 4 vertices
     int num_elems_per_value;
-    GPU_TypeEnum type;  // GPU_FLOAT, GPU_INT, GPU_UNSIGNED_INT, etc.
+    GPU_TypeEnum type;  // GPU_TYPE_FLOAT, GPU_TYPE_INT, GPU_TYPE_UNSIGNED_INT, etc.
     Uint8 normalize;
     int stride_bytes;  // Number of bytes between two vertex specifications
     int offset_bytes;  // Number of bytes to skip at the beginning of 'values'

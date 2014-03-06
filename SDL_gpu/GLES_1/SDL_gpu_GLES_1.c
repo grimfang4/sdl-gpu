@@ -31,7 +31,7 @@ GPU_Renderer* GPU_CreateRenderer_GLES_1(GPU_RendererID request)
 
     renderer->id = request;
     renderer->id.id = GPU_RENDERER_GLES_1;
-    renderer->shader_language = GPU_NO_SHADERS;
+    renderer->shader_language = GPU_LANGUAGE_NONE;
     renderer->shader_version = 0;
     
     renderer->current_context_target = NULL;
