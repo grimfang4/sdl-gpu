@@ -2553,85 +2553,6 @@ static void FreeImage(GPU_Renderer* renderer, GPU_Image* image)
 
 
 
-static void SubSurfaceCopy(GPU_Renderer* renderer, SDL_Surface* src, GPU_Rect* srcrect, GPU_Target* dest, Sint16 x, Sint16 y)
-{
-    if(src == NULL || dest == NULL || dest->image == NULL)
-        return;
-
-    if(renderer != dest->renderer)
-        return;
-
-    GPU_Rect r;
-    if(srcrect != NULL)
-        r = *srcrect;
-    else
-    {
-        r.x = 0;
-        r.y = 0;
-        r.w = src->w;
-        r.h = src->h;
-        if(r.w < 0.0f || r.h < 0.0f)
-        {
-            GPU_PushErrorCode("GPU_SubSurfaceCopy", GPU_ERROR_USER_ERROR, "Given negative source rectangle.");
-            return;
-        }
-    }
-
-    bindTexture(renderer, dest->image);
-
-    //GLenum texture_format = GL_RGBA;//((GPU_IMAGE_DATA*)image->data)->format;
-
-    SDL_Surface* temp = SDL_CreateRGBSurface(SDL_SWSURFACE, r.w, r.h, src->format->BitsPerPixel, src->format->Rmask, src->format->Gmask, src->format->Bmask, src->format->Amask);
-
-    if(temp == NULL)
-    {
-        GPU_PushErrorCode("GPU_SubSurfaceCopy", GPU_ERROR_BACKEND_ERROR, "Failed to create new surface.");
-        return;
-    }
-
-    // Copy data to new surface
-#ifdef SDL_GPU_USE_SDL2
-    SDL_BlendMode blendmode;
-    SDL_GetSurfaceBlendMode(src, &blendmode);
-    SDL_SetSurfaceBlendMode(src, SDL_BLENDMODE_NONE);
-#else
-    Uint32 srcAlpha = src->flags & SDL_SRCALPHA;
-    SDL_SetAlpha(src, 0, src->format->alpha);
-#endif
-
-    SDL_Rect destrect = {r.x, r.y, r.w, r.h};
-    SDL_BlitSurface(src, &destrect, temp, NULL);
-    // FIXME: What if destrect does not equal r anymore?
-
-#ifdef SDL_GPU_USE_SDL2
-    SDL_SetSurfaceBlendMode(src, blendmode);
-#else
-    SDL_SetAlpha(src, srcAlpha, src->format->alpha);
-#endif
-
-    // Make surface into an image
-    GPU_Image* image = GPU_CopyImageFromSurface(temp);
-    if(image == NULL)
-    {
-        GPU_PushErrorCode("GPU_SubSurfaceCopy", GPU_ERROR_BACKEND_ERROR, "Failed to create new image.");
-        return;
-    }
-
-    // Copy image to dest
-    GPU_FlushBlitBuffer();
-    GPU_SetBlending(image, 0);
-    GPU_Blit(image, NULL, dest, x + r.w/2, y + r.h/2);
-    GPU_FlushBlitBuffer();
-
-    // Using glTexSubImage might be more efficient
-    //glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, r.w, r.h, texture_format, GL_UNSIGNED_BYTE, buffer);
-
-    GPU_FreeImage(image);
-
-    SDL_FreeSurface(temp);
-}
-
-
 static GPU_Target* LoadTarget(GPU_Renderer* renderer, GPU_Image* image)
 {
     if(image == NULL)
@@ -5262,7 +5183,6 @@ static void SetAttributeSource(GPU_Renderer* renderer, int num_values, GPU_Attri
     renderer->CopyImageFromTarget = &CopyImageFromTarget; \
     renderer->CopySurfaceFromTarget = &CopySurfaceFromTarget; \
     renderer->CopySurfaceFromImage = &CopySurfaceFromImage; \
-    renderer->SubSurfaceCopy = &SubSurfaceCopy; \
     renderer->FreeImage = &FreeImage; \
  \
     renderer->LoadTarget = &LoadTarget; \
