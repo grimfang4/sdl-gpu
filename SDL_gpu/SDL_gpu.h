@@ -407,9 +407,9 @@ typedef enum {
 
 typedef struct GPU_ErrorObject
 {
-    const char* function;
+    char* function;
     GPU_ErrorEnum error;
-    const char* details;
+    char* details;
 } GPU_ErrorObject;
 
 
@@ -834,7 +834,7 @@ void GPU_LogError(const char* format, ...);
  * \param error The error code to push on the error stack
  * \param details Additional information string, can be NULL.
  */
-void GPU_PushErrorCode(const char* function, GPU_ErrorEnum error, const char* details);
+void GPU_PushErrorCode(const char* function, GPU_ErrorEnum error, const char* details, ...);
 
 /*! Pops an error object from the error stack and returns it.  If the error stack is empty, it returns an error object with NULL function, GPU_ERROR_NONE error, and NULL details. */
 GPU_ErrorObject GPU_PopErrorCode(void);

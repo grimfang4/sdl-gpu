@@ -242,7 +242,7 @@ void GPU_SetRendererOrder(int order_size, GPU_RendererID* order)
     
     if(order_size > GPU_RENDERER_ORDER_MAX)
     {
-        GPU_PushErrorCode(__func__, GPU_ERROR_USER_ERROR, "Given order_size is greater than GPU_RENDERER_ORDER_MAX.");
+        GPU_PushErrorCode(__func__, GPU_ERROR_USER_ERROR, "Given order_size (%d) is greater than GPU_RENDERER_ORDER_MAX (%d)", order_size, GPU_RENDERER_ORDER_MAX);
         order_size = GPU_RENDERER_ORDER_MAX;
     }
     

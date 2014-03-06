@@ -16,7 +16,7 @@
 #define CHECK_RENDERER (current_renderer != NULL)
 #define CHECK_CONTEXT (current_renderer->current_context_target != NULL)
 #define CHECK_FUNCTION_POINTER(fn) (current_renderer->fn != NULL)
-#define RETURN_ERROR(code, details) do{ GPU_PushErrorCode(__func__, code, details); return; } while(0)
+#define RETURN_ERROR(code, details) do{ GPU_PushErrorCode(__func__, code, "%s", details); return; } while(0)
 
 void GPU_InitRendererRegister(void);
 
@@ -24,7 +24,9 @@ static GPU_Renderer* current_renderer = NULL;
 
 static GPU_DebugLevelEnum debug_level = GPU_DEBUG_LEVEL_0;
 
-#define GPU_MAX_NUM_ERRORS 30
+#define GPU_MAX_NUM_ERRORS 20
+#define GPU_ERROR_FUNCTION_STRING_MAX 128
+#define GPU_ERROR_DETAILS_STRING_MAX 512
 static GPU_ErrorObject error_code_stack[GPU_MAX_NUM_ERRORS];
 static int num_error_codes = 0;
 
@@ -148,6 +150,14 @@ GPU_InitFlagEnum GPU_GetPreInitFlags(void)
 
 GPU_Target* GPU_Init(Uint16 w, Uint16 h, GPU_WindowFlagEnum SDL_flags)
 {
+    // Init the error stack
+    int i;
+    for(i = 0; i < GPU_MAX_NUM_ERRORS; i++)
+    {
+        error_code_stack[i].function = (char*)malloc(GPU_ERROR_FUNCTION_STRING_MAX);
+        error_code_stack[i].details = (char*)malloc(GPU_ERROR_DETAILS_STRING_MAX);
+    }
+    
 	GPU_InitRendererRegister();
 	
 	if(!init_SDL())
@@ -158,7 +168,6 @@ GPU_Target* GPU_Init(Uint16 w, Uint16 h, GPU_WindowFlagEnum SDL_flags)
     GPU_GetRendererOrder(&renderer_order_size, renderer_order);
 	
     // Init the renderers in order
-    int i;
     for(i = 0; i < renderer_order_size; i++)
     {
         GPU_Target* screen = GPU_InitRendererByID(renderer_order[i], w, h, SDL_flags);
@@ -278,6 +287,16 @@ void GPU_Quit(void)
 {
     if(num_error_codes > 0 && GPU_GetDebugLevel() >= GPU_DEBUG_LEVEL_1)
         GPU_LogError("GPU_Quit: %d uncleared errors.\n", num_error_codes);
+        
+    // Free the error stack
+    int i;
+    for(i = 0; i < GPU_MAX_NUM_ERRORS; i++)
+    {
+        free(error_code_stack[i].function);
+        error_code_stack[i].function = NULL;
+        free(error_code_stack[i].details);
+        error_code_stack[i].details = NULL;
+    }
     
 	// FIXME: Remove all renderers
 	if(current_renderer == NULL)
@@ -303,21 +322,44 @@ GPU_DebugLevelEnum GPU_GetDebugLevel(void)
     return debug_level;
 }
 
-void GPU_PushErrorCode(const char* function, GPU_ErrorEnum error, const char* details)
+void GPU_PushErrorCode(const char* function, GPU_ErrorEnum error, const char* details, ...)
 {
     if(GPU_GetDebugLevel() >= GPU_DEBUG_LEVEL_1)
     {
         // Print the message
         if(details != NULL)
-            GPU_LogError("%s: %s - %s\n", (function == NULL? "NULL" : function), GPU_GetErrorString(error), details);
+        {
+            char buf[GPU_ERROR_DETAILS_STRING_MAX];
+            va_list lst;
+            va_start(lst, details);
+            vsnprintf(buf, GPU_ERROR_DETAILS_STRING_MAX, details, lst);
+            va_end(lst);
+            
+            GPU_LogError("%s: %s - %s\n", (function == NULL? "NULL" : function), GPU_GetErrorString(error), buf);
+        }
         else
             GPU_LogError("%s: %s\n", (function == NULL? "NULL" : function), GPU_GetErrorString(error));
     }
     
     if(num_error_codes < GPU_MAX_NUM_ERRORS)
     {
-        GPU_ErrorObject e = {function, error, details};
-        error_code_stack[num_error_codes] = e;
+        if(function == NULL)
+            error_code_stack[num_error_codes].function[0] = '\0';
+        else
+        {
+            strncpy(error_code_stack[num_error_codes].function, function, GPU_ERROR_FUNCTION_STRING_MAX);
+            error_code_stack[num_error_codes].function[GPU_ERROR_FUNCTION_STRING_MAX] = '\0';
+        }
+        error_code_stack[num_error_codes].error = error;
+        if(details == NULL)
+            error_code_stack[num_error_codes].details[0] = '\0';
+        else
+        {
+            va_list lst;
+            va_start(lst, details);
+            vsnprintf(error_code_stack[num_error_codes].details, GPU_ERROR_DETAILS_STRING_MAX, details, lst);
+            va_end(lst);
+        }
         num_error_codes++;
     }
 }
@@ -509,12 +551,12 @@ SDL_Surface* GPU_LoadSurface(const char* filename)
 	
 	if(data == NULL)
 	{
-		GPU_PushErrorCode(__func__, GPU_ERROR_DATA_ERROR, stbi_failure_reason());
+		GPU_PushErrorCode(__func__, GPU_ERROR_DATA_ERROR, "Failed to load \"%s\": %s", filename, stbi_failure_reason());
 		return NULL;
 	}
 	if(channels < 1 || channels > 4)
 	{
-		GPU_PushErrorCode(__func__, GPU_ERROR_DATA_ERROR, "Unsupported pixel format");
+		GPU_PushErrorCode(__func__, GPU_ERROR_DATA_ERROR, "Failed to load \"%s\": Unsupported pixel format", filename);
 		stbi_image_free(data);
 		return NULL;
 	}
@@ -1745,7 +1787,7 @@ Uint32 GPU_LoadShader(GPU_ShaderEnum shader_type, const char* filename)
     SDL_RWops* rwops = SDL_RWFromFile(filename, "r");
     if(rwops == NULL)
     {
-        GPU_PushErrorCode(__func__, GPU_ERROR_FILE_NOT_FOUND, filename);
+        GPU_PushErrorCode(__func__, GPU_ERROR_FILE_NOT_FOUND, "%s", filename);
         return 0;
     }
     Uint32 result = GPU_CompileShader_RW(shader_type, rwops);
