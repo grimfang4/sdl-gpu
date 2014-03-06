@@ -1312,11 +1312,16 @@ static Uint8 SetWindowResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
 
     glClear( GL_COLOR_BUFFER_BIT );
 #endif
-
+    
+    // Store the resolution for fullscreen_desktop changes
     target->context->stored_window_w = target->context->window_w;
     target->context->stored_window_h = target->context->window_h;
+    
+    // Resets virtual resolution
+    target->w = target->context->window_w;
+    target->h = target->context->window_h;
 
-    // Update display
+    // Resets viewport
     target->viewport = GPU_MakeRect(0, 0, target->w, target->h);
     changeViewport(target);
 
