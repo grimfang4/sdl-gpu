@@ -9,6 +9,7 @@ else(UNIX)
 endif(UNIX)
 
 option(SDL_gpu_INSTALL "Install SDL_gpu libs, includes, and CMake scripts" ${SDL_gpu_INSTALL_BY_DEFAULT})
+option(SDL_gpu_BUILD_DEBUG "Build with debugging symbols" ON)
 option(SDL_gpu_BUILD_SHARED "Build SDL_gpu shared libraries" OFF)
 option(SDL_gpu_BUILD_STATIC "Build SDL_gpu static libraries" ON)
 option(SDL_gpu_BUILD_DEMOS "Build SDL_gpu demo programs" ON)
@@ -25,9 +26,15 @@ option(SDL_gpu_DISABLE_GLES_1 "Disable OpenGLES 1.X renderer" OFF)
 option(SDL_gpu_DISABLE_GLES_2 "Disable OpenGLES 2.X renderer" OFF)
 option(SDL_gpu_DISABLE_GLES_3 "Disable OpenGLES 3.X renderer" OFF)
 
-set(SDL_gpu_VERSION 0.1.0)
+set(SDL_gpu_VERSION 0.8.0)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/CMake_scripts)
+
+if ( SDL_gpu_BUILD_DEBUG )
+	SET(CMAKE_BUILD_TYPE Debug)
+else ( SDL_gpu_BUILD_DEBUG )
+	SET(CMAKE_BUILD_TYPE Release)
+endif ( SDL_gpu_BUILD_DEBUG )
 
 # Find the package for SDL or SDL2
 if ( NOT SDL_gpu_USE_SDL2 )
@@ -116,7 +123,7 @@ include_directories(SDL_gpu/externals/glew)
 include_directories(SDL_gpu/externals/stb_image)
 
 
-add_definitions("-g -Wall -std=c99 -pedantic -DSTBI_FAILURE_USERMSG")
+add_definitions("-Wall -std=c99 -pedantic -DSTBI_FAILURE_USERMSG")
 
 # Build the SDL_gpu library.
 add_subdirectory(SDL_gpu)
