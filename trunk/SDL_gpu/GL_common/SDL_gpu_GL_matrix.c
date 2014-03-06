@@ -132,7 +132,7 @@ void GPU_PushMatrix()
     GPU_MatrixStack* stack = (target->context->matrix_mode == GPU_MODELVIEW? &target->context->modelview_matrix : &target->context->projection_matrix);
     if(stack->size + 1 >= GPU_MATRIX_STACK_MAX)
     {
-        GPU_PushErrorCode(__func__, GPU_ERROR_USER_ERROR, "Matrix stack is full.");
+        GPU_PushErrorCode(__func__, GPU_ERROR_USER_ERROR, "Matrix stack is full (%d)", GPU_MATRIX_STACK_MAX);
         return;
     }
     GPU_MatrixCopy(stack->matrix[stack->size], stack->matrix[stack->size-1]);

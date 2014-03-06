@@ -1037,7 +1037,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
             renderer->id.minor_version = 0;
         #endif
         
-        GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Failed to parse OpenGL version string");
+        GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Failed to parse OpenGL version string: \"%s\"", version_string);
     }
     #else
     // GLES doesn't have GL_MAJOR_VERSION.  Check via version string instead.
@@ -1055,7 +1055,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
                 renderer->id.minor_version = 0;
             #endif
             
-            GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Failed to parse OpenGL version string");
+            GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Failed to parse OpenGL version string: \"%s\"", version_string);
         }
     }
     #endif
@@ -1064,7 +1064,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     if(renderer->id.major_version < renderer->requested_id.major_version)
     {
 		#ifdef SDL_GPU_USE_GLES
-            GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Renderer is incompatible with the available OpenGL runtime library.");
+            GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Renderer version (%d) is incompatible with the available OpenGL runtime library version (%d).", renderer->requested_id.major_version, renderer->id.major_version);
 		#endif
         return NULL;
     }
@@ -1513,7 +1513,7 @@ static GPU_Image* CreateUninitializedImage(GPU_Renderer* renderer, Uint16 w, Uin
     
     if(channels < 1 || channels > 4)
     {
-        GPU_PushErrorCode("GPU_CreateUninitializedImage", GPU_ERROR_DATA_ERROR, "Unsupported number of color channels");
+        GPU_PushErrorCode("GPU_CreateUninitializedImage", GPU_ERROR_DATA_ERROR, "Unsupported number of color channels (%d)", channels);
         return NULL;
     }
 
@@ -1574,7 +1574,7 @@ static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, GPU_Fo
 {
     if(format < 1 || format > GPU_FORMAT_RGBA)
     {
-        GPU_PushErrorCode("GPU_CreateImage", GPU_ERROR_DATA_ERROR, "Unsupported image format");
+        GPU_PushErrorCode("GPU_CreateImage", GPU_ERROR_DATA_ERROR, "Unsupported image format (%x)", format);
         return NULL;
     }
 
@@ -1789,7 +1789,7 @@ static Uint8 SaveImage(GPU_Renderer* renderer, GPU_Image* image, const char* fil
         result = stbi_write_tga(filename, image->w, image->h, image->channels, (void*)data);
     else
     {
-        GPU_PushErrorCode("GPU_SaveImage", GPU_ERROR_DATA_ERROR, "Unsupported output file format");
+        GPU_PushErrorCode("GPU_SaveImage", GPU_ERROR_DATA_ERROR, "Unsupported output file format (%s)", extension);
         result = 0;
     }
 
@@ -1809,7 +1809,7 @@ static SDL_Surface* CopySurfaceFromTarget(GPU_Renderer* renderer, GPU_Target* ta
     }
     if(target->w < 1 || target->h < 1)
     {
-        GPU_PushErrorCode("GPU_CopySurfaceFromTarget", GPU_ERROR_DATA_ERROR, "Invalid target dimensions");
+        GPU_PushErrorCode("GPU_CopySurfaceFromTarget", GPU_ERROR_DATA_ERROR, "Invalid target dimensions (%dx%d)", target->w, target->h);
         return NULL;
     }
 
@@ -1841,7 +1841,7 @@ static SDL_Surface* CopySurfaceFromImage(GPU_Renderer* renderer, GPU_Image* imag
     }
     if(image->w < 1 || image->h < 1)
     {
-        GPU_PushErrorCode("GPU_CopySurfaceFromImage", GPU_ERROR_DATA_ERROR, "Invalid image dimensions");
+        GPU_PushErrorCode("GPU_CopySurfaceFromImage", GPU_ERROR_DATA_ERROR, "Invalid image dimensions (%dx%d)", image->w, image->h);
         return NULL;
     }
 
@@ -1939,7 +1939,7 @@ static int compareFormats(GPU_Renderer* renderer, GLenum glFormat, SDL_Surface* 
 #endif
         return 1;
     default:
-        GPU_PushErrorCode("GPU_CompareFormats", GPU_ERROR_DATA_ERROR, "Invalid texture format");
+        GPU_PushErrorCode("GPU_CompareFormats", GPU_ERROR_DATA_ERROR, "Invalid texture format (%x)", glFormat);
         return -1;
     }
 }
@@ -2016,7 +2016,7 @@ static int compareFormats(GPU_Renderer* renderer, GLenum glFormat, SDL_Surface* 
         }
         return 1;
     default:
-        GPU_PushErrorCode("GPU_CompareFormats", GPU_ERROR_DATA_ERROR, "Invalid texture format");
+        GPU_PushErrorCode("GPU_CompareFormats", GPU_ERROR_DATA_ERROR, "Invalid texture format (%x)", glFormat);
         return -1;
     }
 }
@@ -2447,7 +2447,7 @@ static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surf
     channels = fmt->BytesPerPixel;
     if(channels < 1 || channels > 4)
     {
-        GPU_PushErrorCode("GPU_CopyImageFromSurface", GPU_ERROR_DATA_ERROR, "Unsupported number of channels in surface");
+        GPU_PushErrorCode("GPU_CopyImageFromSurface", GPU_ERROR_DATA_ERROR, "Unsupported number of channels in surface (%d)", channels);
         return NULL;
     }
     
@@ -3908,7 +3908,7 @@ static void SetImageFilter(GPU_Renderer* renderer, GPU_Image* image, GPU_FilterE
             magFilter = GL_LINEAR;
             break;
         default:
-            GPU_PushErrorCode("GPU_SetImageFilter", GPU_ERROR_USER_ERROR, "Unsupported value for filter");
+            GPU_PushErrorCode("GPU_SetImageFilter", GPU_ERROR_USER_ERROR, "Unsupported value for filter (%x)", filter);
             return;
     }
 
@@ -3954,7 +3954,7 @@ static void SetWrapMode(GPU_Renderer* renderer, GPU_Image* image, GPU_WrapEnum w
         }
         break;
     default:
-        GPU_PushErrorCode("GPU_SetWrapMode", GPU_ERROR_USER_ERROR, "Unsupported value for wrap_mode_x");
+        GPU_PushErrorCode("GPU_SetWrapMode", GPU_ERROR_USER_ERROR, "Unsupported value for wrap_mode_x (%x)", wrap_mode_x);
         return;
 	}
 	
@@ -3976,7 +3976,7 @@ static void SetWrapMode(GPU_Renderer* renderer, GPU_Image* image, GPU_WrapEnum w
         }
         break;
     default:
-        GPU_PushErrorCode("GPU_SetWrapMode", GPU_ERROR_USER_ERROR, "Unsupported value for wrap_mode_y");
+        GPU_PushErrorCode("GPU_SetWrapMode", GPU_ERROR_USER_ERROR, "Unsupported value for wrap_mode_y (%x)", wrap_mode_y);
         return;
 	}
     
@@ -4967,7 +4967,7 @@ static void SetUniformMatrixfv(GPU_Renderer* renderer, int location, int num_mat
         return;
     if(num_rows < 2 || num_rows > 4 || num_columns < 2 || num_columns > 4)
     {
-        GPU_PushErrorCode("GPU_SetUniformMatrixfv", GPU_ERROR_DATA_ERROR, "Given invalid dimensions");
+        GPU_PushErrorCode("GPU_SetUniformMatrixfv", GPU_ERROR_DATA_ERROR, "Given invalid dimensions (%dx%d)", num_rows, num_columns);
         return;
     }
     #if defined(SDL_GPU_USE_GLES)
@@ -4980,7 +4980,7 @@ static void SetUniformMatrixfv(GPU_Renderer* renderer, int location, int num_mat
     #define glUniformMatrix4x3fv glUniformMatrix2fv
     if(num_rows != num_columns)
     {
-        GPU_PushErrorCode("GPU_SetUniformMatrixfv", GPU_ERROR_DATA_ERROR, "GLES renderers do not accept non-square matrices");
+        GPU_PushErrorCode("GPU_SetUniformMatrixfv", GPU_ERROR_DATA_ERROR, "GLES renderers do not accept non-square matrices (given %dx%d)", num_rows, num_columns);
         return;
     }
     #endif
