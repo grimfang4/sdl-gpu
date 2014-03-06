@@ -23,6 +23,7 @@
 
 #else
 
+#define SDL_Keymod SDLMod
 #define KEY_UP SDLK_UP
 #define KEY_DOWN SDLK_DOWN
 #define KEY_LEFT SDLK_LEFT

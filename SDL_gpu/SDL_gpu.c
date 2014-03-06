@@ -505,12 +505,20 @@ GPU_Image* GPU_CopyImage(GPU_Image* image)
 	return current_renderer->CopyImage(current_renderer, image);
 }
 
-void GPU_UpdateImage(GPU_Image* image, const GPU_Rect* rect, SDL_Surface* surface)
+void GPU_UpdateImage(GPU_Image* image, SDL_Surface* surface, const GPU_Rect* surface_rect)
 {
 	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->UpdateImage == NULL)
 		return;
 	
-	current_renderer->UpdateImage(current_renderer, image, rect, surface);
+	current_renderer->UpdateImage(current_renderer, image, surface, surface_rect);
+}
+
+void GPU_UpdateSubImage(GPU_Image* image, const GPU_Rect* image_rect, SDL_Surface* surface, const GPU_Rect* surface_rect)
+{
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->UpdateSubImage == NULL)
+		return;
+	
+	current_renderer->UpdateSubImage(current_renderer, image, image_rect, surface, surface_rect);
 }
 
 SDL_Surface* GPU_LoadSurface(const char* filename)

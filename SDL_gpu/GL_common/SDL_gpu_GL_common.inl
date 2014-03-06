@@ -2354,8 +2354,14 @@ static GPU_Image* CopyImage(GPU_Renderer* renderer, GPU_Image* image)
 
 
 
-// From SDL_UpdateTexture()
-static void UpdateImage(GPU_Renderer* renderer, GPU_Image* image, const GPU_Rect* rect, SDL_Surface* surface)
+
+static void UpdateImage(GPU_Renderer* renderer, GPU_Image* image, SDL_Surface* surface, const GPU_Rect* surface_rect)
+{
+    renderer->UpdateSubImage(renderer, image, NULL, surface, surface_rect);
+}
+
+
+static void UpdateSubImage(GPU_Renderer* renderer, GPU_Image* image, const GPU_Rect* image_rect, SDL_Surface* surface, const GPU_Rect* surface_rect)
 {
     if(image == NULL || surface == NULL)
         return;
@@ -2366,25 +2372,78 @@ static void UpdateImage(GPU_Renderer* renderer, GPU_Image* image, const GPU_Rect
     SDL_Surface* newSurface = copySurfaceIfNeeded(renderer, data->format, surface, &original_format);
     if(newSurface == NULL)
     {
-        GPU_PushErrorCode("GPU_UpdateImage", GPU_ERROR_BACKEND_ERROR, "Failed to convert surface to proper pixel format.");
+        GPU_PushErrorCode("GPU_UpdateSubImage", GPU_ERROR_BACKEND_ERROR, "Failed to convert surface to proper pixel format.");
         return;
     }
 
 
     GPU_Rect updateRect;
-    if(rect != NULL)
-        updateRect = *rect;
+    if(image_rect != NULL)
+    {
+        updateRect = *image_rect;
+        if(updateRect.x < 0)
+        {
+            updateRect.w += updateRect.x;
+            updateRect.x = 0;
+        }
+        if(updateRect.y < 0)
+        {
+            updateRect.h += updateRect.y;
+            updateRect.y = 0;
+        }
+        if(updateRect.x + updateRect.w > image->w)
+            updateRect.w += image->w - (updateRect.x + updateRect.w);
+        if(updateRect.y + updateRect.h > image->h)
+            updateRect.h += image->h - (updateRect.y + updateRect.h);
+        
+        if(updateRect.w <= 0)
+            updateRect.w = 0;
+        if(updateRect.h <= 0)
+            updateRect.h = 0;
+    }
     else
     {
         updateRect.x = 0;
         updateRect.y = 0;
-        updateRect.w = newSurface->w;
-        updateRect.h = newSurface->h;
+        updateRect.w = image->w;
+        updateRect.h = image->h;
         if(updateRect.w < 0.0f || updateRect.h < 0.0f)
         {
-            GPU_PushErrorCode("GPU_UpdateImage", GPU_ERROR_USER_ERROR, "Given negative update rectangle.");
+            GPU_PushErrorCode("GPU_UpdateSubImage", GPU_ERROR_USER_ERROR, "Given negative image rectangle.");
             return;
         }
+    }
+    
+    GPU_Rect sourceRect;
+    if(surface_rect != NULL)
+    {
+        sourceRect = *surface_rect;
+        if(sourceRect.x < 0)
+        {
+            sourceRect.w += sourceRect.x;
+            sourceRect.x = 0;
+        }
+        if(sourceRect.y < 0)
+        {
+            sourceRect.h += sourceRect.y;
+            sourceRect.y = 0;
+        }
+        if(sourceRect.x + sourceRect.w > newSurface->w)
+            sourceRect.w += newSurface->w - (sourceRect.x + sourceRect.w);
+        if(sourceRect.y + sourceRect.h > newSurface->h)
+            sourceRect.h += newSurface->h - (sourceRect.y + sourceRect.h);
+        
+        if(sourceRect.w <= 0)
+            sourceRect.w = 0;
+        if(sourceRect.h <= 0)
+            sourceRect.h = 0;
+    }
+    else
+    {
+        sourceRect.x = 0;
+        sourceRect.y = 0;
+        sourceRect.w = newSurface->w;
+        sourceRect.h = newSurface->h;
     }
 
 
@@ -2399,9 +2458,20 @@ static void UpdateImage(GPU_Renderer* renderer, GPU_Image* image, const GPU_Rect
     #ifdef SDL_GPU_USE_OPENGL
     glPixelStorei(GL_UNPACK_ROW_LENGTH, (newSurface->pitch / newSurface->format->BytesPerPixel));
     #endif
-    glTexSubImage2D(GL_TEXTURE_2D, 0, updateRect.x, updateRect.y, updateRect.w,
-                    updateRect.h, original_format, GL_UNSIGNED_BYTE,
-                    newSurface->pixels);
+    
+    // Use the smaller of the image and surface rect dimensions
+    if(sourceRect.w < updateRect.w)
+        updateRect.w = sourceRect.w;
+    if(sourceRect.h < updateRect.h)
+        updateRect.h = sourceRect.h;
+    
+    Uint8* pixels = (Uint8*)newSurface->pixels;
+    // Shift the pixels pointer to the proper source position
+    pixels += (int)(newSurface->pitch * sourceRect.y + (newSurface->format->BytesPerPixel)*sourceRect.x);
+    
+    glTexSubImage2D(GL_TEXTURE_2D, 0,
+                    updateRect.x, updateRect.y, updateRect.w, updateRect.h,
+                    original_format, GL_UNSIGNED_BYTE, pixels);
 
     // Delete temporary surface
     if(surface != newSurface)
@@ -5205,6 +5275,7 @@ static void SetAttributeSource(GPU_Renderer* renderer, int num_values, GPU_Attri
     renderer->SaveImage = &SaveImage; \
     renderer->CopyImage = &CopyImage; \
     renderer->UpdateImage = &UpdateImage; \
+    renderer->UpdateSubImage = &UpdateSubImage; \
     renderer->CopyImageFromSurface = &CopyImageFromSurface; \
     renderer->CopyImageFromTarget = &CopyImageFromTarget; \
     renderer->CopySurfaceFromTarget = &CopySurfaceFromTarget; \

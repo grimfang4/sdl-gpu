@@ -501,7 +501,10 @@ struct GPU_Renderer
 	GPU_Image* (*CopyImage)(GPU_Renderer* renderer, GPU_Image* image);
 	
 	/*! \see GPU_UpdateImage */
-	void (*UpdateImage)(GPU_Renderer* renderer, GPU_Image* image, const GPU_Rect* rect, SDL_Surface* surface);
+	void (*UpdateImage)(GPU_Renderer* renderer, GPU_Image* image, SDL_Surface* surface, const GPU_Rect* surface_rect);
+	
+	/*! \see GPU_UpdateSubImage */
+	void (*UpdateSubImage)(GPU_Renderer* renderer, GPU_Image* image, const GPU_Rect* image_rect, SDL_Surface* surface, const GPU_Rect* surface_rect);
 	
 	/*! \see GPU_CopyImageFromSurface() */
 	GPU_Image* (*CopyImageFromSurface)(GPU_Renderer* renderer, SDL_Surface* surface);
@@ -1047,7 +1050,10 @@ GPU_Image* GPU_CopyImage(GPU_Image* image);
 void GPU_FreeImage(GPU_Image* image);
 
 /*! Update an image from surface data. */
-void GPU_UpdateImage(GPU_Image* image, const GPU_Rect* rect, SDL_Surface* surface);
+void GPU_UpdateImage(GPU_Image* image, SDL_Surface* surface, const GPU_Rect* surface_rect);
+
+/*! Update an image from surface data. */
+void GPU_UpdateSubImage(GPU_Image* image, const GPU_Rect* image_rect, SDL_Surface* surface, const GPU_Rect* surface_rect);
 
 /*! Save image to a file.  The file type is deduced from the extension.  Supported formats are: png, bmp, tga.  Returns 0 on failure. */
 Uint8 GPU_SaveImage(GPU_Image* image, const char* filename);
