@@ -1,0 +1,16 @@
+#summary The current plan for changes to SDL_gpu
+
+= Road Map =
+
+ * GPU_Bezier()
+ * Support 1-channel and 2-channel textures (for shader data, not really for blitting)
+ * Support video texture formats (YUV of some sort)
+ * GPU_LoadMultitarget(n, images)
+	Returns a target that will render to multiple images simultaneously.  The image might need to be the same size because of the viewports, texcoords, projections, etc., but I could use multiple attachments to the FBO and glDrawBuffers().  If multiple attachments are not supported (GLES 2-), then I can fake it with multiple blits.  From what I saw, attaching a single texture to multiple FBOs is fine.
+ * Perftest - e.g. X sprite blits in 10 seconds.  Need to disable vsync.  Use performance timer if SDL2 is used.
+ * Destroy created init window properly if all initing fails.
+ * Destroy windows properly when their targets are freed?
+ * GPU_ApplyRendererState()
+	Reset all of the GL state that would reasonably have been changed (reset from current context target, current target, and current image state, etc.)
+ * GPU_ClearRendererState()
+	Reset all of the GL state back to their defaults.  This would ensure that direct API calls would work as expected.  Could take flags to specify which state to clear.
