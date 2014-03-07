@@ -29,6 +29,7 @@ static GPU_DebugLevelEnum debug_level = GPU_DEBUG_LEVEL_0;
 #define GPU_ERROR_DETAILS_STRING_MAX 512
 static GPU_ErrorObject error_code_stack[GPU_MAX_NUM_ERRORS];
 static int num_error_codes = 0;
+static int inited_error_code_stack = 0;
 
 
 SDL_version GPU_GetLinkedVersion(void)
@@ -147,16 +148,23 @@ GPU_InitFlagEnum GPU_GetPreInitFlags(void)
     return preinit_flags;
 }
 
+static void init_error_stack()
+{
+    if(!inited_error_code_stack)
+    {
+        int i;
+        inited_error_code_stack = 1;
+        for(i = 0; i < GPU_MAX_NUM_ERRORS; i++)
+        {
+            error_code_stack[i].function = (char*)malloc(GPU_ERROR_FUNCTION_STRING_MAX);
+            error_code_stack[i].details = (char*)malloc(GPU_ERROR_DETAILS_STRING_MAX);
+        }
+    }
+}
 
 GPU_Target* GPU_Init(Uint16 w, Uint16 h, GPU_WindowFlagEnum SDL_flags)
 {
-    // Init the error stack
-    int i;
-    for(i = 0; i < GPU_MAX_NUM_ERRORS; i++)
-    {
-        error_code_stack[i].function = (char*)malloc(GPU_ERROR_FUNCTION_STRING_MAX);
-        error_code_stack[i].details = (char*)malloc(GPU_ERROR_DETAILS_STRING_MAX);
-    }
+    init_error_stack();
     
 	GPU_InitRendererRegister();
 	
@@ -168,6 +176,7 @@ GPU_Target* GPU_Init(Uint16 w, Uint16 h, GPU_WindowFlagEnum SDL_flags)
     GPU_GetRendererOrder(&renderer_order_size, renderer_order);
 	
     // Init the renderers in order
+    int i;
     for(i = 0; i < renderer_order_size; i++)
     {
         GPU_Target* screen = GPU_InitRendererByID(renderer_order[i], w, h, SDL_flags);
@@ -185,6 +194,7 @@ GPU_Target* GPU_InitRenderer(GPU_RendererEnum renderer_enum, Uint16 w, Uint16 h,
 
 GPU_Target* GPU_InitRendererByID(GPU_RendererID renderer_request, Uint16 w, Uint16 h, GPU_WindowFlagEnum SDL_flags)
 {
+    init_error_stack();
 	GPU_InitRendererRegister();
 	
 	if(!init_SDL())
@@ -297,6 +307,7 @@ void GPU_Quit(void)
         free(error_code_stack[i].details);
         error_code_stack[i].details = NULL;
     }
+    inited_error_code_stack = 0;
     
 	// FIXME: Remove all renderers
 	if(current_renderer == NULL)
