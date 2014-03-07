@@ -115,3 +115,6 @@ target_link_libraries (wrap-demo SDL_gpu)
 
 add_executable(upload-image-demo upload-image/main.c common/common.c common/demo-font.c)
 target_link_libraries (upload-image-demo SDL_gpu)
+
+add_executable(tutorial-space-demo tutorial-space/main.c common/common.c)
+target_link_libraries (tutorial-space-demo SDL_gpu)
