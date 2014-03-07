@@ -891,13 +891,17 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     {
         created = 1;
         target = (GPU_Target*)malloc(sizeof(GPU_Target));
+        memset(target, 0, sizeof(GPU_Target));
         target->refcount = 1;
         target->is_alias = 0;
         target->data = (GPU_TARGET_DATA*)malloc(sizeof(GPU_TARGET_DATA));
+        memset(target->data, 0, sizeof(GPU_TARGET_DATA));
         ((GPU_TARGET_DATA*)target->data)->refcount = 1;
         target->image = NULL;
-        cdata = (GPU_CONTEXT_DATA*)malloc(sizeof(GPU_CONTEXT_DATA));
         target->context = (GPU_Context*)malloc(sizeof(GPU_Context));
+        memset(target->context, 0, sizeof(GPU_Context));
+        cdata = (GPU_CONTEXT_DATA*)malloc(sizeof(GPU_CONTEXT_DATA));
+        memset(cdata, 0, sizeof(GPU_CONTEXT_DATA));
         target->context->data = cdata;
         target->context->context = NULL;
         
@@ -975,7 +979,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     
     #endif
     
-    int framebuffer_handle;
+    int framebuffer_handle = 0;
     glGetIntegerv(GL_FRAMEBUFFER_BINDING, &framebuffer_handle);
     ((GPU_TARGET_DATA*)target->data)->handle = framebuffer_handle;
     ((GPU_TARGET_DATA*)target->data)->format = GL_RGBA;
