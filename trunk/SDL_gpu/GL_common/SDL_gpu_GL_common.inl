@@ -1519,7 +1519,7 @@ static GPU_Image* CreateUninitializedImage(GPU_Renderer* renderer, Uint16 w, Uin
             channels = 3;
             break;
         default:
-            GPU_PushErrorCode("GPU_CreateUninitializedImage", GPU_ERROR_DATA_ERROR, "Unsupported image format (%x)", format);
+            GPU_PushErrorCode("GPU_CreateUninitializedImage", GPU_ERROR_DATA_ERROR, "Unsupported image format (0x%x)", format);
             return NULL;
     }
     
@@ -1586,7 +1586,7 @@ static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, GPU_Fo
 {
     if(format < 1 || format > GPU_FORMAT_RGBA)
     {
-        GPU_PushErrorCode("GPU_CreateImage", GPU_ERROR_DATA_ERROR, "Unsupported image format (%x)", format);
+        GPU_PushErrorCode("GPU_CreateImage", GPU_ERROR_DATA_ERROR, "Unsupported image format (0x%x)", format);
         return NULL;
     }
 
@@ -1951,7 +1951,7 @@ static int compareFormats(GPU_Renderer* renderer, GLenum glFormat, SDL_Surface* 
 #endif
         return 1;
     default:
-        GPU_PushErrorCode("GPU_CompareFormats", GPU_ERROR_DATA_ERROR, "Invalid texture format (%x)", glFormat);
+        GPU_PushErrorCode("GPU_CompareFormats", GPU_ERROR_DATA_ERROR, "Invalid texture format (0x%x)", glFormat);
         return -1;
     }
 }
@@ -2028,7 +2028,7 @@ static int compareFormats(GPU_Renderer* renderer, GLenum glFormat, SDL_Surface* 
         }
         return 1;
     default:
-        GPU_PushErrorCode("GPU_CompareFormats", GPU_ERROR_DATA_ERROR, "Invalid texture format (%x)", glFormat);
+        GPU_PushErrorCode("GPU_CompareFormats", GPU_ERROR_DATA_ERROR, "Invalid texture format (0x%x)", glFormat);
         return -1;
     }
 }
@@ -3807,7 +3807,7 @@ static void SetImageFilter(GPU_Renderer* renderer, GPU_Image* image, GPU_FilterE
             magFilter = GL_LINEAR;
             break;
         default:
-            GPU_PushErrorCode("GPU_SetImageFilter", GPU_ERROR_USER_ERROR, "Unsupported value for filter (%x)", filter);
+            GPU_PushErrorCode("GPU_SetImageFilter", GPU_ERROR_USER_ERROR, "Unsupported value for filter (0x%x)", filter);
             return;
     }
 
@@ -3853,7 +3853,7 @@ static void SetWrapMode(GPU_Renderer* renderer, GPU_Image* image, GPU_WrapEnum w
         }
         break;
     default:
-        GPU_PushErrorCode("GPU_SetWrapMode", GPU_ERROR_USER_ERROR, "Unsupported value for wrap_mode_x (%x)", wrap_mode_x);
+        GPU_PushErrorCode("GPU_SetWrapMode", GPU_ERROR_USER_ERROR, "Unsupported value for wrap_mode_x (0x%x)", wrap_mode_x);
         return;
 	}
 	
@@ -3875,7 +3875,7 @@ static void SetWrapMode(GPU_Renderer* renderer, GPU_Image* image, GPU_WrapEnum w
         }
         break;
     default:
-        GPU_PushErrorCode("GPU_SetWrapMode", GPU_ERROR_USER_ERROR, "Unsupported value for wrap_mode_y (%x)", wrap_mode_y);
+        GPU_PushErrorCode("GPU_SetWrapMode", GPU_ERROR_USER_ERROR, "Unsupported value for wrap_mode_y (0x%x)", wrap_mode_y);
         return;
 	}
     
