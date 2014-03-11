@@ -2753,13 +2753,6 @@ static void Blit(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, G
     Uint16 tex_w = image->texture_w;
     Uint16 tex_h = image->texture_h;
     
-    if(image->filter_mode == GPU_FILTER_NEAREST)
-    {
-        // Avoid rounding errors in texture sampling by insisting on integral pixel positions
-        x = floorf(x+0.5f);
-        y = floorf(y+0.5f);
-    }
-    
     float x1, y1, x2, y2;
     float dx1, dy1, dx2, dy2;
     if(src_rect == NULL)
@@ -2929,13 +2922,6 @@ static void BlitTransformX(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* s
     
     Uint16 tex_w = image->texture_w;
     Uint16 tex_h = image->texture_h;
-    
-    if(image->filter_mode == GPU_FILTER_NEAREST)
-    {
-        // Avoid rounding errors in texture sampling by insisting on integral pixel positions
-        x = floorf(x+0.5f);
-        y = floorf(y+0.5f);
-    }
 
     float x1, y1, x2, y2;
     /*
