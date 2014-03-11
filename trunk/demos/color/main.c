@@ -194,6 +194,56 @@ void shiftHSV(GPU_Image* image, int hue, int saturation, int value)
     SDL_FreeSurface(surface);
 }
 
+void shiftHSVExcept(GPU_Image* image, int hue, int saturation, int value, int notHue, int notSat, int notVal, int range)
+{
+    SDL_Surface* surface = GPU_CopySurfaceFromImage(image);
+    Uint8* pixels = surface->pixels;
+    
+    int x,y,i;
+    for(y = 0; y < surface->h; y++)
+    {
+        for(x = 0; x < surface->w; x++)
+        {
+            i = y*surface->pitch + x*surface->format->BytesPerPixel;
+            
+            if(surface->format->BytesPerPixel == 4 && pixels[i+3] == 0)
+                continue;
+
+            int r = pixels[i];
+            int g = pixels[i+1];
+            int b = pixels[i+2];
+            int h, s, v;
+            rgb_to_hsv(r, g, b, &h, &s, &v);
+            h += hue;
+            s += saturation;
+            v += value;
+            // Wrap hue
+            while(h < 0)
+                h += 256;
+            while(h > 255)
+                h -= 256;
+
+            // Clamp
+            s = clamp(s, 0, 255);
+            v = clamp(v, 0, 255);
+
+            hsv_to_rgb(h, s, v, &r, &g, &b);
+                        
+            if(notHue - range <= h && notHue + range >= h
+                    && notSat - range <= s && notSat + range >= s
+                    && notVal - range <= v && notVal + range >= v)
+                    continue;
+
+            pixels[i] = r;
+            pixels[i+1] = g;
+            pixels[i+2] = b;
+        }
+    }
+    
+    GPU_UpdateImage(image, surface, NULL);
+    SDL_FreeSurface(surface);
+}
+
 int main(int argc, char* argv[])
 {
 	printRenderers();
