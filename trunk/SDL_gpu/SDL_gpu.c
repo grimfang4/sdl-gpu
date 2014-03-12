@@ -156,8 +156,8 @@ static void init_error_stack()
         inited_error_code_stack = 1;
         for(i = 0; i < GPU_MAX_NUM_ERRORS; i++)
         {
-            error_code_stack[i].function = (char*)malloc(GPU_ERROR_FUNCTION_STRING_MAX);
-            error_code_stack[i].details = (char*)malloc(GPU_ERROR_DETAILS_STRING_MAX);
+            error_code_stack[i].function = (char*)malloc(GPU_ERROR_FUNCTION_STRING_MAX+1);
+            error_code_stack[i].details = (char*)malloc(GPU_ERROR_DETAILS_STRING_MAX+1);
         }
     }
 }

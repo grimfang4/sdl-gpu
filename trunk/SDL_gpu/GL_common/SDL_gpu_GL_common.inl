@@ -2276,7 +2276,8 @@ static GPU_Image* CopyImage(GPU_Renderer* renderer, GPU_Image* image)
 	GPU_SetBlending(image, use_blending);
 	GPU_SetImageFilter(image, filter_mode);
     
-    GPU_FreeTarget(target);
+    // Don't free the target yet (a waste of perf), but let it be freed next time...
+    target->refcount--;
     
     return result;
 }
@@ -2554,6 +2555,7 @@ static GPU_Target* LoadTarget(GPU_Renderer* renderer, GPU_Image* image)
         return NULL;
 
     GPU_Target* result = (GPU_Target*)malloc(sizeof(GPU_Target));
+    memset(result, 0, sizeof(GPU_Target));
     result->refcount = 1;
     GPU_TARGET_DATA* data = (GPU_TARGET_DATA*)malloc(sizeof(GPU_TARGET_DATA));
     data->refcount = 1;
