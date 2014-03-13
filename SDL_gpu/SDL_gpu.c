@@ -443,6 +443,12 @@ GPU_Rect GPU_MakeRect(float x, float y, float w, float h)
     return r;
 }
 
+SDL_Color GPU_MakeColor(Uint8 r, Uint8 g, Uint8 b, Uint8 a)
+{
+    SDL_Color c = {r, g, b, a};
+    return c;
+}
+
 GPU_RendererID GPU_MakeRendererID(GPU_RendererEnum id, int major_version, int minor_version)
 {
     GPU_RendererID r = {id, major_version, minor_version, -1};

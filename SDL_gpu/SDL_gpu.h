@@ -965,6 +965,9 @@ void GPU_UnsetVirtualResolution(GPU_Target* target);
 /*! \return A GPU_Rect with the given values. */
 GPU_Rect GPU_MakeRect(float x, float y, float w, float h);
 
+/*! \return An SDL_Color with the given values. */
+SDL_Color GPU_MakeColor(Uint8 r, Uint8 g, Uint8 b, Uint8 a);
+
 /*! Sets the given target's viewport. */
 void GPU_SetViewport(GPU_Target* target, GPU_Rect viewport);
 
