@@ -903,6 +903,9 @@ void GPU_SetCurrentRenderer(GPU_RendererID id);
 /*! \return The renderer's current context target. */
 GPU_Target* GPU_GetContextTarget(void);
 
+/*! \return The target that is associated with the given windowID. */
+GPU_Target* GPU_GetWindowTarget(Uint32 windowID);
+
 /*! Creates a separate context for the given window using the current renderer and returns a GPU_Target that represents it. */
 GPU_Target* GPU_CreateTargetFromWindow(Uint32 windowID);
 

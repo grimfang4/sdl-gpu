@@ -54,7 +54,6 @@ Group create_group()
     Group g;
     SDL_Window* window = SDL_CreateWindow("", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, screen_w, screen_h, SDL_WINDOW_OPENGL);
     Uint32 windowID = SDL_GetWindowID(window);
-    SDL_Log("New windowID: %u\n", windowID);
     
     g.windowID = windowID;
     
@@ -128,7 +127,7 @@ int main(int argc, char* argv[])
                         {
                             groups[i] = create_group();
                             num_groups++;
-                            SDL_Log("num_groups: %d\n", num_groups);
+                            GPU_Log("Added window %u.  num_groups: %d\n", groups[i].windowID, num_groups);
                             break;
                         }
                     }
@@ -145,7 +144,7 @@ int main(int argc, char* argv[])
                                 destroy_group(groups, i);
                                 
                                 num_groups--;
-                                SDL_Log("num_groups: %d\n", num_groups);
+                                GPU_Log("Removed window %u.  num_groups: %d\n", groups[i].windowID, num_groups);
                                 break;
                             }
                         }
@@ -155,6 +154,14 @@ int main(int argc, char* argv[])
                     }
 				}
 			}
+			else if(event.type == SDL_MOUSEBUTTONDOWN)
+            {
+                GPU_Target* target = GPU_GetWindowTarget(event.button.windowID);
+                if(target == NULL)
+                    GPU_Log("Clicked on window %u.  NULL target.\n", event.button.windowID);
+                else
+                    GPU_Log("Clicked on window %u.  Target dims: %dx%d\n", event.button.windowID, target->w, target->h);
+            }
 			else if(event.type == SDL_WINDOWEVENT)
             {
                 if(event.window.event == SDL_WINDOWEVENT_CLOSE)
@@ -168,7 +175,7 @@ int main(int argc, char* argv[])
                             
                             closed = 1;
                             num_groups--;
-                            SDL_Log("num_groups: %d\n", num_groups);
+                            GPU_Log("num_groups: %d\n", num_groups);
                             break;
                         }
                     }
@@ -226,10 +233,10 @@ int main(int argc, char* argv[])
 		
 		frameCount++;
 		if(frameCount%500 == 0)
-			printf("Average FPS: %.2f\n", 1000.0f*frameCount/(SDL_GetTicks() - startTime));
+			GPU_Log("Average FPS: %.2f\n", 1000.0f*frameCount/(SDL_GetTicks() - startTime));
 	}
     
-	printf("Average FPS: %.2f\n", 1000.0f*frameCount/(SDL_GetTicks() - startTime));
+	GPU_Log("Average FPS: %.2f\n", 1000.0f*frameCount/(SDL_GetTicks() - startTime));
 	
     for(i = 0; i < max_groups; i++)
     {

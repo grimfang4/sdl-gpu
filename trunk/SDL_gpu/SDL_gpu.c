@@ -31,6 +31,18 @@ static GPU_ErrorObject error_code_stack[GPU_MAX_NUM_ERRORS];
 static int num_error_codes = 0;
 static int inited_error_code_stack = 0;
 
+/*! A mapping of windowID to a GPU_Target to facilitate GPU_GetWindowTarget(). */
+typedef struct GPU_WindowMapping
+{
+    Uint32 windowID;
+    GPU_Target* target;
+} GPU_WindowMapping;
+
+#define GPU_INITIAL_WINDOW_MAPPINGS_SIZE 10
+static GPU_WindowMapping* window_mappings = NULL;
+static int window_mappings_size = 0;
+static int num_window_mappings = 0;
+
 
 SDL_version GPU_GetLinkedVersion(void)
 {
@@ -160,6 +172,137 @@ static void init_error_stack()
             error_code_stack[i].details = (char*)malloc(GPU_ERROR_DETAILS_STRING_MAX+1);
         }
     }
+}
+
+static void init_window_mappings()
+{
+    if(window_mappings == NULL)
+    {
+        window_mappings_size = GPU_INITIAL_WINDOW_MAPPINGS_SIZE;
+        window_mappings = (GPU_WindowMapping*)malloc(window_mappings_size * sizeof(GPU_WindowMapping));
+        num_window_mappings = 0;
+    }
+}
+
+void GPU_AddWindowMapping(GPU_Target* target)
+{
+    if(window_mappings == NULL)
+        init_window_mappings();
+    
+    if(target == NULL || target->context == NULL)
+        return;
+    
+    Uint32 windowID = target->context->windowID;
+    if(windowID == 0)  // Invalid window ID
+        return;
+    
+    int i;
+    // Check for duplicates
+    for(i = 0; i < num_window_mappings; i++)
+    {
+        if(window_mappings[i].windowID == windowID)
+        {
+            GPU_PushErrorCode(__func__, GPU_ERROR_DATA_ERROR, "WindowID %u already has a mapping.", windowID);
+            return;
+        }
+        // Don't check the target because it's okay for a single target to be used with multiple windows
+    }
+    
+    // Check if list is big enough to hold another
+    if(num_window_mappings >= window_mappings_size)
+    {
+        window_mappings_size *= 2;
+        GPU_WindowMapping* new_array = (GPU_WindowMapping*)malloc(window_mappings_size * sizeof(GPU_WindowMapping));
+        memcpy(new_array, window_mappings, num_window_mappings * sizeof(GPU_WindowMapping));
+        free(window_mappings);
+        window_mappings = new_array;
+    }
+    
+    // Add to end of list
+    GPU_WindowMapping m = {windowID, target};
+    window_mappings[num_window_mappings] = m;
+    num_window_mappings++;
+}
+
+void GPU_RemoveWindowMapping(Uint32 windowID)
+{
+    if(window_mappings == NULL)
+        init_window_mappings();
+    
+    if(windowID == 0)  // Invalid window ID
+        return;
+    
+    int i;
+    // Find the occurrence
+    for(i = 0; i < num_window_mappings; i++)
+    {
+        if(window_mappings[i].windowID == windowID)
+        {
+            // Unset the target's window
+            window_mappings[i].target->context->windowID = 0;
+            
+            // Move the remaining entries to replace the removed one
+            num_window_mappings--;
+            int num_to_move = num_window_mappings - i;
+            if(num_to_move > 0)
+                memmove(&window_mappings[i], &window_mappings[i+1], num_to_move * sizeof(GPU_WindowMapping));
+            return;
+        }
+    }
+    
+}
+
+void GPU_RemoveWindowMappingByTarget(GPU_Target* target)
+{
+    if(window_mappings == NULL)
+        init_window_mappings();
+    
+    if(target == NULL || target->context == NULL)
+        return;
+    
+    Uint32 windowID = target->context->windowID;
+    if(windowID == 0)  // Invalid window ID
+        return;
+    
+    // Unset the target's window
+    target->context->windowID = 0;
+    
+    int i;
+    // Find the occurrences
+    for(i = 0; i < num_window_mappings; )
+    {
+        if(window_mappings[i].target == target)
+        {
+            // Move the remaining entries to replace the removed one
+            num_window_mappings--;
+            int num_to_move = num_window_mappings - i;
+            if(num_to_move > 0)
+                memmove(&window_mappings[i], &window_mappings[i+1], num_to_move * sizeof(GPU_WindowMapping));
+            return;
+        }
+        else
+            i++;
+    }
+    
+}
+
+GPU_Target* GPU_GetWindowTarget(Uint32 windowID)
+{
+    if(window_mappings == NULL)
+        init_window_mappings();
+    
+    if(windowID == 0)  // Invalid window ID
+        return NULL;
+    
+    int i;
+    // Find the occurrence
+    for(i = 0; i < num_window_mappings; i++)
+    {
+        if(window_mappings[i].windowID == windowID)
+            return window_mappings[i].target;
+    }
+    
+    return NULL;
 }
 
 GPU_Target* GPU_Init(Uint16 w, Uint16 h, GPU_WindowFlagEnum SDL_flags)

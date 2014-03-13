@@ -53,8 +53,10 @@ See a particular renderer's *.c file for specifics. */
 #endif
 
 
-
-
+// Internal API for managing window mappings
+void GPU_AddWindowMapping(GPU_Target* target);
+void GPU_RemoveWindowMapping(Uint32 windowID);
+void GPU_RemoveWindowMappingByTarget(GPU_Target* target);
 
 
 static SDL_PixelFormat* AllocFormat(GLenum glFormat);
@@ -918,7 +920,10 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
         cdata->index_buffer = (unsigned short*)malloc(index_buffer_storage_size);
     }
     else
+    {
+        GPU_RemoveWindowMapping(target->context->windowID);
         cdata = (GPU_CONTEXT_DATA*)target->context->data;
+    }
     
     #ifdef SDL_GPU_USE_SDL2
     
@@ -948,6 +953,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     {
         target->context->context = SDL_GL_CreateContext(window);
         renderer->current_context_target = target;
+        GPU_AddWindowMapping(target);
     }
     else
         renderer->MakeCurrent(renderer, target, target->context->windowID);
@@ -969,7 +975,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
         return NULL;
     }
     
-    target->context->windowID = 0;
+    target->context->windowID = 1;
     target->context->window_w = screen->w;
     target->context->window_h = screen->h;
     target->context->stored_window_w = target->context->window_w;
@@ -1263,12 +1269,36 @@ static void MakeCurrent(GPU_Renderer* renderer, GPU_Target* target, Uint32 windo
         if(target->context->windowID != windowID)
         {
             renderer->FlushBlitBuffer(renderer);
+            
+            // Update the window mappings
+            GPU_RemoveWindowMapping(windowID);
+            // Don't remove the target's current mapping.  That lets other windows refer to it.
             target->context->windowID = windowID;
+            GPU_AddWindowMapping(target);
+            
+            // Update target's window size
+            SDL_Window* window = SDL_GetWindowFromID(windowID);
+            if(window != NULL)
+                SDL_GetWindowSize(window, &target->context->window_w, &target->context->window_h);
+            
+            // Reset the camera for this window
             applyTargetCamera(((GPU_CONTEXT_DATA*)renderer->current_context_target->context->data)->last_target);
         }
     }
     #else
     renderer->current_context_target = target;
+    // Only one window...
+    GPU_RemoveWindowMapping(1);
+    target->context->windowID = 1;
+    GPU_AddWindowMapping(target);
+    
+    // Update target's window size
+    SDL_Surface* screen = SDL_GetVideoSurface();
+    if(screen != NULL)
+    {
+        target->context->window_w = screen->w;
+        target->context->window_h = screen->h;
+    }
     #endif
 }
 
@@ -2647,6 +2677,9 @@ static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
             #endif
         }
         #endif
+        
+        // Remove all of the window mappings that refer to this target
+        GPU_RemoveWindowMappingByTarget(target);
         
         free(target->context->data);
         free(target->context);
