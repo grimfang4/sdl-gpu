@@ -1663,6 +1663,12 @@ static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, GPU_Fo
     // Tell SDL_gpu what we got.
     result->texture_w = w;
     result->texture_h = h;
+    
+    // Restore GL defaults
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+    #ifdef SDL_GPU_USE_OPENGL
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+    #endif
 
     return result;
 }
@@ -2436,6 +2442,12 @@ static void UpdateSubImage(GPU_Renderer* renderer, GPU_Image* image, const GPU_R
     // Delete temporary surface
     if(surface != newSurface)
         SDL_FreeSurface(newSurface);
+    
+    // Restore GL defaults
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+    #ifdef SDL_GPU_USE_OPENGL
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+    #endif
 }
 
 
