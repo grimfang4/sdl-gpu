@@ -2899,8 +2899,10 @@ static void BlitRotate(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_r
         GPU_PushErrorCode("GPU_BlitRotate", GPU_ERROR_NULL_ARGUMENT, "target");
         return;
     }
-
-    renderer->BlitTransformX(renderer, image, src_rect, target, x, y, image->w/2.0f, image->h/2.0f, degrees, 1.0f, 1.0f);
+    
+    float w = (src_rect == NULL? image->w : src_rect->w);
+    float h = (src_rect == NULL? image->h : src_rect->h);
+    renderer->BlitTransformX(renderer, image, src_rect, target, x, y, w/2.0f, h/2.0f, degrees, 1.0f, 1.0f);
 }
 
 static void BlitScale(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float scaleX, float scaleY)
@@ -2916,7 +2918,9 @@ static void BlitScale(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_re
         return;
     }
 
-    renderer->BlitTransformX(renderer, image, src_rect, target, x, y, image->w/2.0f, image->h/2.0f, 0.0f, scaleX, scaleY);
+    float w = (src_rect == NULL? image->w : src_rect->w);
+    float h = (src_rect == NULL? image->h : src_rect->h);
+    renderer->BlitTransformX(renderer, image, src_rect, target, x, y, w/2.0f, h/2.0f, 0.0f, scaleX, scaleY);
 }
 
 static void BlitTransform(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float degrees, float scaleX, float scaleY)
@@ -2932,7 +2936,9 @@ static void BlitTransform(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* sr
         return;
     }
 
-    renderer->BlitTransformX(renderer, image, src_rect, target, x, y, image->w/2.0f, image->h/2.0f, degrees, scaleX, scaleY);
+    float w = (src_rect == NULL? image->w : src_rect->w);
+    float h = (src_rect == NULL? image->h : src_rect->h);
+    renderer->BlitTransformX(renderer, image, src_rect, target, x, y, w/2.0f, h/2.0f, degrees, scaleX, scaleY);
 }
 
 static void BlitTransformX(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float pivot_x, float pivot_y, float degrees, float scaleX, float scaleY)
@@ -3019,10 +3025,13 @@ static void BlitTransformX(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* s
         dy1 = (dy2 + dy1)/2 - h/2;
         dy2 = dy1 + h;
     }
+    
+    float w = (src_rect == NULL? image->w : src_rect->w);
+    float h = (src_rect == NULL? image->h : src_rect->h);
 
     // Shift away from the center (these are relative to the image corner)
-    pivot_x -= image->w/2.0f;
-    pivot_y -= image->h/2.0f;
+    pivot_x -= w/2.0f;
+    pivot_y -= h/2.0f;
 
     // Translate origin to pivot
     dx1 -= pivot_x*scaleX;
@@ -3145,7 +3154,7 @@ static void BlitTransformMatrix(GPU_Renderer* renderer, GPU_Image* image, GPU_Re
     GPU_PushMatrix();
 
     // column-major 3x3 to column-major 4x4 (and scooting the 2D translations to the homogeneous column)
-    // TODO: Should index 8 replace the homogeneous 1?  This looks like it adjusts the z-value...
+    // FIXME: Should index 8 replace the homogeneous 1?  This looks like it adjusts the z-value...
     float matrix[16] = {matrix3x3[0], matrix3x3[1], matrix3x3[2], 0,
                         matrix3x3[3], matrix3x3[4], matrix3x3[5], 0,
                         0,            0,            matrix3x3[8], 0,
