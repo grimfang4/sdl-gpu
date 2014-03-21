@@ -80,9 +80,18 @@ int main(int argc, char* argv[])
 		float scale_y = 0.5f;
 		GPU_BlitTransformX(image, NULL, target, area.x, area.y, 0, 0, SDL_GetTicks()/10.0f, scale_x, scale_y);
 		GPU_BlitTransformX(image, NULL, target, area.x + area.w, area.y, image->w, 0, SDL_GetTicks()/10.0f, scale_x, scale_y);
-		GPU_BlitTransformX(image, NULL, target, area.x, area.y + area.h, 0, image->h, SDL_GetTicks()/10.0f, scale_x, scale_y);
-		GPU_BlitTransformX(image, NULL, target, area.x + area.w, area.y + area.h, image->w, image->h, SDL_GetTicks()/10.0f, scale_x, scale_y);
 		
+		GPU_Rect r = {0.2*image->w, 0.4*image->w, 0.3*image->w, 0.6*image->h};
+		GPU_BlitTransformX(image, &r, target, area.x, area.y + area.h, 0, r.h, SDL_GetTicks()/10.0f, scale_x, scale_y);
+		
+		GPU_BlitTransform(image, &r, target, area.x - 150, area.y + area.h, SDL_GetTicks()/10.0f, scale_x, scale_y);
+		GPU_CircleFilled(target, area.x - 150, area.y + area.h, 10, red);
+		
+		r = GPU_MakeRect(-0.2*image->w, 0, image->w, image->h);
+		GPU_BlitTransformX(image, &r, target, area.x + area.w, area.y + area.h, r.w, r.h, SDL_GetTicks()/10.0f, scale_x, scale_y);
+		
+		GPU_BlitTransform(image, &r, target, area.x + area.w + 150, area.y + area.h, SDL_GetTicks()/10.0f, scale_x, scale_y);
+		GPU_CircleFilled(target, area.x + area.w + 150, area.y + area.h, 10, red);
 		
 		if(target == screen2)
 			GPU_CircleFilled(screen2, 0, 0, 100, red);
