@@ -1536,10 +1536,12 @@ static GPU_Image* CreateUninitializedImage(GPU_Renderer* renderer, Uint16 w, Uin
             gl_format = GL_ALPHA;
             channels = 1;
             break;
+        #ifndef SDL_GPU_USE_GLES
         case GPU_FORMAT_RG:
             gl_format = GL_RG;
             channels = 2;
             break;
+        #endif
         case GPU_FORMAT_YCbCr420P:
             gl_format = GL_RGB;
             channels = 3;
