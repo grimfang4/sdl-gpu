@@ -142,6 +142,7 @@ typedef struct GPU_Image
 	Uint8 use_blending;
 	GPU_BlendEnum blend_mode;
 	GPU_FilterEnum filter_mode;
+	Uint8 snap_to_pixels;
 	GPU_WrapEnum wrap_mode_x;
 	GPU_WrapEnum wrap_mode_y;
 	
@@ -1088,6 +1089,12 @@ void GPU_SetBlendMode(GPU_Image* image, GPU_BlendEnum mode);
 
 /*! Sets the image filtering mode, if supported by the renderer. */
 void GPU_SetImageFilter(GPU_Image* image, GPU_FilterEnum filter);
+
+/*! Gets the current pixel snap setting. */
+Uint8 GPU_GetPixelSnap(GPU_Image* image);
+
+/*! Enables/disables snapping to the pixel grid for the given image. */
+void GPU_SetPixelSnap(GPU_Image* image, Uint8 enable);
 
 /*! Sets the image wrapping mode, if supported by the renderer. */
 void GPU_SetWrapMode(GPU_Image* image, GPU_WrapEnum wrap_mode_x, GPU_WrapEnum wrap_mode_y);

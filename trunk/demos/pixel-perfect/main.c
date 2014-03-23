@@ -19,12 +19,28 @@ int main(int argc, char* argv[])
 	GPU_Image* image = GPU_LoadImage("data/pixel_perfect.png");
 	if(image == NULL)
 		return -1;
+    
+    /*GPU_Image* gen = GPU_CreateImage(257, 257, GPU_FORMAT_RGB);
+    GPU_LoadTarget(gen);
+    for(int i = 0; i < gen->w/2; i++)
+    {
+        SDL_Color color = (i%2 == 0? GPU_MakeColor(255, 255, 255, 255) : GPU_MakeColor(0, 0, 255, 255));
+        GPU_Rectangle(gen->target, i, i, gen->w-i-1, gen->h-1-i, color);
+    }
+    GPU_SaveImage(gen, "data/pixel_perfect_odd.png");*/
+    
+	GPU_Image* image2 = GPU_LoadImage("data/pixel_perfect_odd.png");
+	if(image2 == NULL)
+		return -2;
 	
 	int mode = 0;
 	int num_modes = 7;
 	float x = 0.0f;
 	float y = 0.0f;
 	SDL_Color color = {0, 255, 0, 255};
+	
+	float dt = 0.010f;
+	GPU_Camera camera = GPU_GetDefaultCamera();
 	
 	Uint8* keystates = SDL_GetKeyState(NULL);
 	
@@ -52,18 +68,37 @@ int main(int argc, char* argv[])
 				else if(event.key.keysym.sym == SDLK_r)
                 {
 					x = y = 0.0f;
-                }
+					
+					camera = GPU_GetDefaultCamera();
+				}
 				else if(event.key.keysym.sym == SDLK_f)
                 {
                     if(image->filter_mode == GPU_FILTER_NEAREST)
                     {
                         GPU_SetImageFilter(image, GPU_FILTER_LINEAR);
+                        GPU_SetImageFilter(image2, GPU_FILTER_LINEAR);
                         GPU_LogError("GPU_FILTER_LINEAR\n");
                     }
                     else
                     {
                         GPU_SetImageFilter(image, GPU_FILTER_NEAREST);
+                        GPU_SetImageFilter(image2, GPU_FILTER_NEAREST);
                         GPU_LogError("GPU_FILTER_NEAREST\n");
+                    }
+                }
+				else if(event.key.keysym.sym == SDLK_p)
+                {
+                    if(GPU_GetPixelSnap(image))
+                    {
+                        GPU_SetPixelSnap(image, 0);
+                        GPU_SetPixelSnap(image2, 0);
+                        GPU_LogError("Pixel snap off\n");
+                    }
+                    else
+                    {
+                        GPU_SetPixelSnap(image, 1);
+                        GPU_SetPixelSnap(image2, 1);
+                        GPU_LogError("Pixel snap on\n");
                     }
                 }
 				else if(event.key.keysym.sym == SDLK_UP)
@@ -89,13 +124,25 @@ int main(int argc, char* argv[])
             x -= 0.1f;
         else if(keystates[KEY_d])
             x += 0.1f;
+        
+		if(keystates[KEY_MINUS])
+		{
+			camera.zoom -= 1.0f*dt;
+		}
+		else if(keystates[KEY_EQUALS])
+		{
+			camera.zoom += 1.0f*dt;
+		}
+		
+		GPU_SetCamera(screen, &camera);
 		
 		GPU_Clear(screen);
 		
 		if(mode == 0)
         {
             // Blitting
-            GPU_Blit(image, NULL, screen, x + image->w/2.0f, y + image->h/2.0f);
+            GPU_Blit(image, NULL, screen, x + image->w/2, y + image->h/2);
+            GPU_Blit(image2, NULL, screen, x + image2->w/2, y + image->h + image2->h/2);
         }
         else if(mode == 1)
         {
@@ -139,6 +186,7 @@ int main(int argc, char* argv[])
 	
 	printf("Average FPS: %.2f\n", 1000.0f*frameCount/(SDL_GetTicks() - startTime));
 	
+	GPU_FreeImage(image2);
 	GPU_FreeImage(image);
 	GPU_Quit();
 	

@@ -1596,6 +1596,7 @@ static GPU_Image* CreateUninitializedImage(GPU_Renderer* renderer, Uint16 w, Uin
     result->use_blending = ((format == GPU_FORMAT_LUMINANCE_ALPHA || format == GPU_FORMAT_RGBA)? 1 : 0);
     result->blend_mode = GPU_BLEND_NORMAL;
     result->filter_mode = GPU_FILTER_LINEAR;
+    result->snap_to_pixels = 1;
     result->wrap_mode_x = GPU_WRAP_NONE;
     result->wrap_mode_y = GPU_WRAP_NONE;
     
@@ -2802,6 +2803,8 @@ static void Blit(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, G
     Uint16 tex_w = image->texture_w;
     Uint16 tex_h = image->texture_h;
     
+    float w;
+    float h;
     float x1, y1, x2, y2;
     float dx1, dy1, dx2, dy2;
     if(src_rect == NULL)
@@ -2811,11 +2814,8 @@ static void Blit(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, G
         y1 = 0.0f;
         x2 = ((float)image->w)/tex_w;
         y2 = ((float)image->h)/tex_h;
-        // Center the image on the given coords
-        dx1 = x - image->w/2.0f;
-        dy1 = y - image->h/2.0f;
-        dx2 = x + image->w/2.0f;
-        dy2 = y + image->h/2.0f;
+        w = image->w;
+        h = image->h;
     }
     else
     {
@@ -2824,11 +2824,25 @@ static void Blit(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, G
         y1 = src_rect->y/(float)tex_h;
         x2 = (src_rect->x + src_rect->w)/(float)tex_w;
         y2 = (src_rect->y + src_rect->h)/(float)tex_h;
-        // Center the image on the given coords
-        dx1 = x - src_rect->w/2.0f;
-        dy1 = y - src_rect->h/2.0f;
-        dx2 = x + src_rect->w/2.0f;
-        dy2 = y + src_rect->h/2.0f;
+        w = src_rect->w;
+        h = src_rect->h;
+    }
+    
+    // Center the image on the given coords
+    dx1 = x - w/2.0f;
+    dy1 = y - h/2.0f;
+    dx2 = x + w/2.0f;
+    dy2 = y + h/2.0f;
+    
+    if(image->snap_to_pixels)
+    {
+        float fractional;
+        fractional = modff(w/2.0f, NULL);
+        dx1 += fractional;
+        dx2 += fractional;
+        fractional = modff(h/2.0f, NULL);
+        dy1 += fractional;
+        dy2 += fractional;
     }
 
     GPU_CONTEXT_DATA* cdata = (GPU_CONTEXT_DATA*)renderer->current_context_target->context->data;
@@ -2986,6 +3000,8 @@ static void BlitTransformX(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* s
         4,4 --- 2,2
     */
     float dx1, dy1, dx2, dy2, dx3, dy3, dx4, dy4;
+    
+    float w, h;
     if(src_rect == NULL)
     {
         // Scale tex coords according to actual texture dims
@@ -2993,11 +3009,8 @@ static void BlitTransformX(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* s
         y1 = 0.0f;
         x2 = ((float)image->w)/tex_w;
         y2 = ((float)image->h)/tex_h;
-        // Center the image on the given coords
-        dx1 = -image->w/2.0f;
-        dy1 = -image->h/2.0f;
-        dx2 = image->w/2.0f;
-        dy2 = image->h/2.0f;
+        w = image->w;
+        h = image->h;
     }
     else
     {
@@ -3006,11 +3019,26 @@ static void BlitTransformX(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* s
         y1 = src_rect->y/(float)tex_h;
         x2 = (src_rect->x + src_rect->w)/(float)tex_w;
         y2 = (src_rect->y + src_rect->h)/(float)tex_h;
-        // Center the image on the given coords
-        dx1 = -src_rect->w/2.0f;
-        dy1 = -src_rect->h/2.0f;
-        dx2 = src_rect->w/2.0f;
-        dy2 = src_rect->h/2.0f;
+        w = src_rect->w;
+        h = src_rect->h;
+    }
+    
+    // Center the image on the given coords (offset later)
+    dx1 = -w/2.0f;
+    dy1 = -h/2.0f;
+    dx2 = w/2.0f;
+    dy2 = h/2.0f;
+    
+    if(image->snap_to_pixels)
+    {
+        // This is a little weird for rotating sprites, but oh well.
+        float fractional;
+        fractional = modff(w/2.0f, NULL);
+        dx1 += fractional;
+        dx2 += fractional;
+        fractional = modff(h/2.0f, NULL);
+        dy1 += fractional;
+        dy2 += fractional;
     }
 
     // Apply transforms
@@ -3025,9 +3053,6 @@ static void BlitTransformX(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* s
         dy1 = (dy2 + dy1)/2 - h/2;
         dy2 = dy1 + h;
     }
-    
-    float w = (src_rect == NULL? image->w : src_rect->w);
-    float h = (src_rect == NULL? image->h : src_rect->h);
 
     // Shift away from the center (these are relative to the image corner)
     pivot_x -= w/2.0f;

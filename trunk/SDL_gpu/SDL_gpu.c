@@ -1851,6 +1851,22 @@ void GPU_SetImageFilter(GPU_Image* image, GPU_FilterEnum filter)
 	current_renderer->SetImageFilter(current_renderer, image, filter);
 }
 
+Uint8 GPU_GetPixelSnap(GPU_Image* image)
+{
+	if(image == NULL)
+		return 0;
+	
+	return image->snap_to_pixels;
+}
+
+void GPU_SetPixelSnap(GPU_Image* image, Uint8 enable)
+{
+	if(image == NULL)
+		return;
+	
+	image->snap_to_pixels = enable;
+}
+
 void GPU_SetWrapMode(GPU_Image* image, GPU_WrapEnum wrap_mode_x, GPU_WrapEnum wrap_mode_y)
 {
 	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->SetWrapMode == NULL)

@@ -113,11 +113,7 @@ int main(int argc, char* argv[])
 					done = 1;
 				else if(event.key.keysym.sym == SDLK_r)
 				{
-					camera.x = 0.0f;
-					camera.y = 0.0f;
-					camera.z = -10.0f;
-					camera.zoom = 1.0f;
-					camera.angle = 0.0f;
+				    camera = GPU_GetDefaultCamera();
 				}
 				else if(event.key.keysym.sym == SDLK_RETURN)
                 {
