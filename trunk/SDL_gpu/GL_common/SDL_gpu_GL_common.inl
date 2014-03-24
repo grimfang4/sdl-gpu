@@ -2837,10 +2837,10 @@ static void Blit(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, G
     if(image->snap_to_pixels)
     {
         float fractional;
-        fractional = modff(w/2.0f, NULL);
+        fractional = w/2.0f - floorf(w/2.0f);
         dx1 += fractional;
         dx2 += fractional;
-        fractional = modff(h/2.0f, NULL);
+        fractional = h/2.0f - floorf(h/2.0f);
         dy1 += fractional;
         dy2 += fractional;
     }
@@ -3033,10 +3033,10 @@ static void BlitTransformX(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* s
     {
         // This is a little weird for rotating sprites, but oh well.
         float fractional;
-        fractional = modff(w/2.0f, NULL);
+        fractional = w/2.0f - floorf(w/2.0f);
         dx1 += fractional;
         dx2 += fractional;
-        fractional = modff(h/2.0f, NULL);
+        fractional = h/2.0f - floorf(h/2.0f);
         dy1 += fractional;
         dy2 += fractional;
     }
