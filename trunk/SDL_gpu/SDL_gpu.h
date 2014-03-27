@@ -63,24 +63,6 @@ typedef struct GPU_RendererID
 } GPU_RendererID;
 
 
-/*! Image filtering options.  These affect the quality/interpolation of colors when images are scaled. 
- * \see GPU_SetImageFilter()
- */
-typedef enum {
-    GPU_FILTER_NEAREST = 0,
-    GPU_FILTER_LINEAR = 1,
-    GPU_FILTER_LINEAR_MIPMAP = 2
-} GPU_FilterEnum;
-
-/*! Image wrapping options.  These affect how images handle src_rect coordinates beyond their dimensions when blitted.
- * \see GPU_SetWrapMode()
- */
-typedef enum {
-    GPU_WRAP_NONE = 0,
-    GPU_WRAP_REPEAT = 1,
-    GPU_WRAP_MIRRORED = 2
-} GPU_WrapEnum;
-
 /*! Blending options 
  * \see GPU_SetBlendMode()
  */
@@ -105,6 +87,36 @@ typedef enum {
     GPU_BLEND_OVERRIDE = 100  // Lets you specify direct GL calls before blitting.  Note: You should call GPU_FlushBlitBuffer() before you change blend modes via OpenGL so the new blend mode doesn't affect SDL_gpu's previously buffered blits.
 } GPU_BlendEnum;
 
+/*! Image filtering options.  These affect the quality/interpolation of colors when images are scaled. 
+ * \see GPU_SetImageFilter()
+ */
+typedef enum {
+    GPU_FILTER_NEAREST = 0,
+    GPU_FILTER_LINEAR = 1,
+    GPU_FILTER_LINEAR_MIPMAP = 2
+} GPU_FilterEnum;
+
+/*! Snap modes.  Blitting with these modes will align the sprite with the target's pixel grid.
+ * \see GPU_SetSnapMode()
+ * \see GPU_GetSnapMode()
+ */
+typedef enum {
+    GPU_SNAP_NONE = 0,
+    GPU_SNAP_POSITION = 1,
+    GPU_SNAP_DIMENSIONS = 2,
+    GPU_SNAP_POSITION_AND_DIMENSIONS = 3
+} GPU_SnapEnum;
+
+
+/*! Image wrapping options.  These affect how images handle src_rect coordinates beyond their dimensions when blitted.
+ * \see GPU_SetWrapMode()
+ */
+typedef enum {
+    GPU_WRAP_NONE = 0,
+    GPU_WRAP_REPEAT = 1,
+    GPU_WRAP_MIRRORED = 2
+} GPU_WrapEnum;
+
 /*! Image format enum
  * \see GPU_CreateImage()
  */
@@ -118,6 +130,8 @@ typedef enum {
     GPU_FORMAT_YCbCr422 = 7,
     GPU_FORMAT_YCbCr420P = 8
 } GPU_FormatEnum;
+
+
 
 /*! Image object for containing pixel/texture data.
  * A GPU_Image can be created with GPU_CreateImage(), GPU_LoadImage(), GPU_CopyImage(), or GPU_CopyImageFromSurface().
@@ -142,7 +156,7 @@ typedef struct GPU_Image
 	Uint8 use_blending;
 	GPU_BlendEnum blend_mode;
 	GPU_FilterEnum filter_mode;
-	Uint8 snap_to_pixels;
+	GPU_SnapEnum snap_mode;
 	GPU_WrapEnum wrap_mode_x;
 	GPU_WrapEnum wrap_mode_y;
 	
@@ -332,6 +346,8 @@ static const GPU_TypeEnum GPU_TYPE_INT = 0x1404;
 static const GPU_TypeEnum GPU_TYPE_UNSIGNED_INT = 0x1405;
 static const GPU_TypeEnum GPU_TYPE_FLOAT = 0x1406;
 static const GPU_TypeEnum GPU_TYPE_DOUBLE = 0x140A;
+
+
 
 
 
@@ -1090,11 +1106,11 @@ void GPU_SetBlendMode(GPU_Image* image, GPU_BlendEnum mode);
 /*! Sets the image filtering mode, if supported by the renderer. */
 void GPU_SetImageFilter(GPU_Image* image, GPU_FilterEnum filter);
 
-/*! Gets the current pixel snap setting. */
-Uint8 GPU_GetPixelSnap(GPU_Image* image);
+/*! Gets the current pixel snap setting.  The default value is GPU_SNAP_POSITION_AND_DIMENSIONS.  */
+GPU_SnapEnum GPU_GetSnapMode(GPU_Image* image);
 
-/*! Enables/disables snapping to the pixel grid for the given image. */
-void GPU_SetPixelSnap(GPU_Image* image, Uint8 enable);
+/*! Sets the pixel grid snapping mode for the given image. */
+void GPU_SetSnapMode(GPU_Image* image, GPU_SnapEnum mode);
 
 /*! Sets the image wrapping mode, if supported by the renderer. */
 void GPU_SetWrapMode(GPU_Image* image, GPU_WrapEnum wrap_mode_x, GPU_WrapEnum wrap_mode_y);

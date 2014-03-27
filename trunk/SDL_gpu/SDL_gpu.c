@@ -1851,20 +1851,20 @@ void GPU_SetImageFilter(GPU_Image* image, GPU_FilterEnum filter)
 	current_renderer->SetImageFilter(current_renderer, image, filter);
 }
 
-Uint8 GPU_GetPixelSnap(GPU_Image* image)
+GPU_SnapEnum GPU_GetSnapMode(GPU_Image* image)
 {
 	if(image == NULL)
 		return 0;
 	
-	return image->snap_to_pixels;
+	return image->snap_mode;
 }
 
-void GPU_SetPixelSnap(GPU_Image* image, Uint8 enable)
+void GPU_SetSnapMode(GPU_Image* image, GPU_SnapEnum mode)
 {
 	if(image == NULL)
 		return;
 	
-	image->snap_to_pixels = enable;
+	image->snap_mode = mode;
 }
 
 void GPU_SetWrapMode(GPU_Image* image, GPU_WrapEnum wrap_mode_x, GPU_WrapEnum wrap_mode_y)

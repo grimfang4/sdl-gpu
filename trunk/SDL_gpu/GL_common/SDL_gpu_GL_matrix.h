@@ -1,6 +1,10 @@
 #ifndef _SDL_GPU_GL_MATRIX_H__
 #define _SDL_GPU_GL_MATRIX_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Basic matrix operations
 void GPU_MatrixCopy(float* result, const float* A);
 void GPU_MatrixIdentity(float* result);
@@ -28,5 +32,8 @@ void GPU_Scale(float sx, float sy, float sz);
 void GPU_Rotate(float degrees, float x, float y, float z);
 void GPU_MultMatrix(float* matrix4x4);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif
