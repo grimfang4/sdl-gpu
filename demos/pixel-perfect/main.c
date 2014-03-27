@@ -88,17 +88,30 @@ int main(int argc, char* argv[])
                 }
 				else if(event.key.keysym.sym == SDLK_p)
                 {
-                    if(GPU_GetPixelSnap(image))
+                    GPU_SnapEnum mode = GPU_GetSnapMode(image);
+                    if(mode == GPU_SNAP_POSITION_AND_DIMENSIONS)
                     {
-                        GPU_SetPixelSnap(image, 0);
-                        GPU_SetPixelSnap(image2, 0);
+                        GPU_SetSnapMode(image, GPU_SNAP_NONE);
+                        GPU_SetSnapMode(image2, GPU_SNAP_NONE);
                         GPU_LogError("Pixel snap off\n");
+                    }
+                    else if(mode == GPU_SNAP_NONE)
+                    {
+                        GPU_SetSnapMode(image, GPU_SNAP_POSITION);
+                        GPU_SetSnapMode(image2, GPU_SNAP_POSITION);
+                        GPU_LogError("Pixel snap POSITION\n");
+                    }
+                    else if(mode == GPU_SNAP_POSITION)
+                    {
+                        GPU_SetSnapMode(image, GPU_SNAP_DIMENSIONS);
+                        GPU_SetSnapMode(image2, GPU_SNAP_DIMENSIONS);
+                        GPU_LogError("Pixel snap DIMENSIONS\n");
                     }
                     else
                     {
-                        GPU_SetPixelSnap(image, 1);
-                        GPU_SetPixelSnap(image2, 1);
-                        GPU_LogError("Pixel snap on\n");
+                        GPU_SetSnapMode(image, GPU_SNAP_POSITION_AND_DIMENSIONS);
+                        GPU_SetSnapMode(image2, GPU_SNAP_POSITION_AND_DIMENSIONS);
+                        GPU_LogError("Pixel snap POSITION_AND_DIMENSIONS\n");
                     }
                 }
 				else if(event.key.keysym.sym == SDLK_UP)

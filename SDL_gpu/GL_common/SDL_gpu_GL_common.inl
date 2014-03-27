@@ -1596,7 +1596,7 @@ static GPU_Image* CreateUninitializedImage(GPU_Renderer* renderer, Uint16 w, Uin
     result->use_blending = ((format == GPU_FORMAT_LUMINANCE_ALPHA || format == GPU_FORMAT_RGBA)? 1 : 0);
     result->blend_mode = GPU_BLEND_NORMAL;
     result->filter_mode = GPU_FILTER_LINEAR;
-    result->snap_to_pixels = 1;
+    result->snap_mode = GPU_SNAP_POSITION_AND_DIMENSIONS;
     result->wrap_mode_x = GPU_WRAP_NONE;
     result->wrap_mode_y = GPU_WRAP_NONE;
     
@@ -2803,6 +2803,13 @@ static void Blit(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, G
     Uint16 tex_w = image->texture_w;
     Uint16 tex_h = image->texture_h;
     
+    if(image->snap_mode == GPU_SNAP_POSITION || image->snap_mode == GPU_SNAP_POSITION_AND_DIMENSIONS)
+    {
+        // Avoid rounding errors in texture sampling by insisting on integral pixel positions
+        x = floorf(x+0.5f);
+        y = floorf(y+0.5f);
+    }
+    
     float w;
     float h;
     float x1, y1, x2, y2;
@@ -2834,7 +2841,7 @@ static void Blit(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, G
     dx2 = x + w/2.0f;
     dy2 = y + h/2.0f;
     
-    if(image->snap_to_pixels)
+    if(image->snap_mode == GPU_SNAP_DIMENSIONS || image->snap_mode == GPU_SNAP_POSITION_AND_DIMENSIONS)
     {
         float fractional;
         fractional = w/2.0f - floorf(w/2.0f);
@@ -2991,6 +2998,13 @@ static void BlitTransformX(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* s
     
     Uint16 tex_w = image->texture_w;
     Uint16 tex_h = image->texture_h;
+    
+    if(image->snap_mode == GPU_SNAP_POSITION || image->snap_mode == GPU_SNAP_POSITION_AND_DIMENSIONS)
+    {
+        // Avoid rounding errors in texture sampling by insisting on integral pixel positions
+        x = floorf(x+0.5f);
+        y = floorf(y+0.5f);
+    }
 
     float x1, y1, x2, y2;
     /*
@@ -3029,7 +3043,7 @@ static void BlitTransformX(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* s
     dx2 = w/2.0f;
     dy2 = h/2.0f;
     
-    if(image->snap_to_pixels)
+    if(image->snap_mode == GPU_SNAP_DIMENSIONS || image->snap_mode == GPU_SNAP_POSITION_AND_DIMENSIONS)
     {
         // This is a little weird for rotating sprites, but oh well.
         float fractional;
