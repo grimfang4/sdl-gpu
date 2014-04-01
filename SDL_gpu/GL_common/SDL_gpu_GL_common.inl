@@ -2314,6 +2314,19 @@ static GPU_Image* CopyImage(GPU_Renderer* renderer, GPU_Image* image)
 	GPU_SetColor(image, &color);
 	GPU_SetBlending(image, use_blending);
 	GPU_SetImageFilter(image, filter_mode);
+	
+	// Copy the image settings
+	if(image->has_mipmaps)
+        renderer->GenerateMipmaps(renderer, result);
+    
+	result->color = image->color;
+	result->use_blending = image->use_blending;
+	result->blend_mode = image->blend_mode;
+	result->filter_mode = image->filter_mode;
+	result->snap_mode = image->snap_mode;
+	result->wrap_mode_x = image->wrap_mode_x;
+	result->wrap_mode_y = image->wrap_mode_y;
+	
     
     // Don't free the target yet (a waste of perf), but let it be freed next time...
     target->refcount--;
@@ -2806,8 +2819,8 @@ static void Blit(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, G
     if(image->snap_mode == GPU_SNAP_POSITION || image->snap_mode == GPU_SNAP_POSITION_AND_DIMENSIONS)
     {
         // Avoid rounding errors in texture sampling by insisting on integral pixel positions
-        x = floorf(x+0.5f);
-        y = floorf(y+0.5f);
+        x = floorf(x);
+        y = floorf(y);
     }
     
     float w;
@@ -3002,8 +3015,8 @@ static void BlitTransformX(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* s
     if(image->snap_mode == GPU_SNAP_POSITION || image->snap_mode == GPU_SNAP_POSITION_AND_DIMENSIONS)
     {
         // Avoid rounding errors in texture sampling by insisting on integral pixel positions
-        x = floorf(x+0.5f);
-        y = floorf(y+0.5f);
+        x = floorf(x);
+        y = floorf(y);
     }
 
     float x1, y1, x2, y2;
