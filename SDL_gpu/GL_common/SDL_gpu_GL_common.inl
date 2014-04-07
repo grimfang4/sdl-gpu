@@ -1760,6 +1760,9 @@ static Uint8 readImagePixels(GPU_Renderer* renderer, GPU_Image* source, GLint fo
 
 static unsigned char* getRawTargetData(GPU_Renderer* renderer, GPU_Target* target)
 {
+    if(isCurrentTarget(renderer, target))
+        renderer->FlushBlitBuffer(renderer);
+    
     int channels = 4;
     if(target->image != NULL)
         channels = target->image->channels;
@@ -1790,6 +1793,9 @@ static unsigned char* getRawTargetData(GPU_Renderer* renderer, GPU_Target* targe
 
 static unsigned char* getRawImageData(GPU_Renderer* renderer, GPU_Image* image)
 {
+    if(image->target != NULL && isCurrentTarget(renderer, image->target))
+        renderer->FlushBlitBuffer(renderer);
+    
     unsigned char* data = (unsigned char*)malloc(image->w * image->h * image->channels);
 
     if(!readImagePixels(renderer, image, ((GPU_IMAGE_DATA*)image->data)->format, data))
