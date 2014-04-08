@@ -681,6 +681,14 @@ void GPU_UpdateSubImage(GPU_Image* image, const GPU_Rect* image_rect, SDL_Surfac
 	current_renderer->UpdateSubImage(current_renderer, image, image_rect, surface, surface_rect);
 }
 
+void GPU_UpdateImageBytes(GPU_Image* image, const GPU_Rect* image_rect, const unsigned char* bytes, int bytes_per_row)
+{
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->UpdateImageBytes == NULL)
+		return;
+	
+	current_renderer->UpdateImageBytes(current_renderer, image, image_rect, bytes, bytes_per_row);
+}
+
 SDL_Surface* GPU_LoadSurface(const char* filename)
 {
 	int width, height, channels;

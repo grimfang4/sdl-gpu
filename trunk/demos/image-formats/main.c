@@ -32,6 +32,43 @@ GPU_Image* copy_and_log(SDL_Surface* surface)
     return image;
 }
 
+void update_luminance_data(GPU_Image* image)
+{
+    int bytes_per_row = image->channels * image->w;
+    unsigned int size = image->channels * image->w * image->h;
+    unsigned char* bytes = (unsigned char*)malloc(size);
+    
+    // A vertical grayscale gradient
+    int i;
+    for(i = 0; i < size; i++)
+    {
+        bytes[i] = i/bytes_per_row * 255 / image->h;
+    }
+    
+    GPU_UpdateImageBytes(image, NULL, bytes, bytes_per_row);
+    free(bytes);
+}
+
+void update_luminance_alpha_data(GPU_Image* image)
+{
+    int bytes_per_row = image->channels * image->w;
+    unsigned int size = image->channels * image->w * image->h;
+    unsigned char* bytes = (unsigned char*)malloc(size);
+    
+    // A vertical grayscale gradient superimposed with a horizontal alpha gradient
+    int i;
+    for(i = 0; i < size; i++)
+    {
+        if(i%2 == 0)
+            bytes[i] = i/bytes_per_row * 255 / image->h;
+        else
+            bytes[i] = i%bytes_per_row * 255 / bytes_per_row;
+    }
+    
+    GPU_UpdateImageBytes(image, NULL, bytes, bytes_per_row);
+    free(bytes);
+}
+
 int main(int argc, char* argv[])
 {
 	printRenderers();
@@ -68,7 +105,19 @@ int main(int argc, char* argv[])
 	if(image_png == NULL)
 		return -4;
     
-	
+	GPU_Image* image_luminance = GPU_CreateImage(200, 200, GPU_FORMAT_LUMINANCE);
+	if(image_luminance == NULL)
+        return -5;
+    
+    log_image_details(image_luminance);
+    update_luminance_data(image_luminance);
+    
+	GPU_Image* image_luminance_alpha = GPU_CreateImage(200, 200, GPU_FORMAT_LUMINANCE_ALPHA);
+	if(image_luminance_alpha == NULL)
+        return -6;
+    
+    log_image_details(image_luminance_alpha);
+    update_luminance_alpha_data(image_luminance_alpha);
 	
 	Uint32 startTime = SDL_GetTicks();
 	long frameCount = 0;
@@ -95,6 +144,10 @@ int main(int argc, char* argv[])
 		GPU_Blit(image32, NULL, screen, image32->w/2, image8->h + image32->h/2);
 		GPU_Blit(image_png, NULL, screen, image8->w + image_png->w/2, image24->h + image_png->h/2);
 		
+		
+		GPU_Blit(image_luminance, NULL, screen, image8->w + image24->w + image_luminance->w/2, image_luminance->h/2);
+		GPU_Blit(image_luminance_alpha, NULL, screen, image8->w + image24->w + image_luminance_alpha->w/2, image_luminance->h + image_luminance_alpha->h/2);
+		
 		GPU_Flip(screen);
 		
 		frameCount++;
@@ -104,6 +157,7 @@ int main(int argc, char* argv[])
 	
 	printf("Average FPS: %.2f\n", 1000.0f*frameCount/(SDL_GetTicks() - startTime));
 	
+	GPU_FreeImage(image_luminance);
 	GPU_FreeImage(image_png);
 	GPU_FreeImage(image32);
 	GPU_FreeImage(image24);
