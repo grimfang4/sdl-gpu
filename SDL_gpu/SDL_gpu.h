@@ -440,7 +440,7 @@ typedef enum {
     GPU_DEBUG_LEVEL_2 = 2,
     GPU_DEBUG_LEVEL_3 = 3,
     GPU_DEBUG_LEVEL_MAX = 3
-    } GPU_DebugLevelEnum;
+} GPU_DebugLevelEnum;
 
 
 
@@ -522,6 +522,9 @@ struct GPU_Renderer
 	
 	/*! \see GPU_UpdateSubImage */
 	void (*UpdateSubImage)(GPU_Renderer* renderer, GPU_Image* image, const GPU_Rect* image_rect, SDL_Surface* surface, const GPU_Rect* surface_rect);
+	
+	/*! \see GPU_UpdateImageBytes */
+	void (*UpdateImageBytes)(GPU_Renderer* renderer, GPU_Image* image, const GPU_Rect* image_rect, const unsigned char* bytes, int bytes_per_row);
 	
 	/*! \see GPU_CopyImageFromSurface() */
 	GPU_Image* (*CopyImageFromSurface)(GPU_Renderer* renderer, SDL_Surface* surface);
@@ -1078,6 +1081,9 @@ void GPU_UpdateImage(GPU_Image* image, SDL_Surface* surface, const GPU_Rect* sur
 
 /*! Update an image from surface data. */
 void GPU_UpdateSubImage(GPU_Image* image, const GPU_Rect* image_rect, SDL_Surface* surface, const GPU_Rect* surface_rect);
+
+/*! Update an image from an array of pixel data. */
+void GPU_UpdateImageBytes(GPU_Image* image, const GPU_Rect* image_rect, const unsigned char* bytes, int bytes_per_row);
 
 /*! Save image to a file.  The file type is deduced from the extension.  Supported formats are: png, bmp, tga.  Returns 0 on failure. */
 Uint8 GPU_SaveImage(GPU_Image* image, const char* filename);

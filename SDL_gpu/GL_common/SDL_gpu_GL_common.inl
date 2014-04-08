@@ -1617,7 +1617,7 @@ static GPU_Image* CreateUninitializedImage(GPU_Renderer* renderer, Uint16 w, Uin
 
 static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, GPU_FormatEnum format)
 {
-    if(format < 1 || format > GPU_FORMAT_RGBA)
+    if(format < 1)
     {
         GPU_PushErrorCode("GPU_CreateImage", GPU_ERROR_DATA_ERROR, "Unsupported image format (0x%x)", format);
         return NULL;
@@ -2464,6 +2464,74 @@ static void UpdateSubImage(GPU_Renderer* renderer, GPU_Image* image, const GPU_R
     // Delete temporary surface
     if(surface != newSurface)
         SDL_FreeSurface(newSurface);
+    
+    // Restore GL defaults
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+    #ifdef SDL_GPU_USE_OPENGL
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+    #endif
+}
+
+
+static void UpdateImageBytes(GPU_Renderer* renderer, GPU_Image* image, const GPU_Rect* image_rect, const unsigned char* bytes, int bytes_per_row)
+{
+    if(image == NULL || bytes == NULL)
+        return;
+
+    GPU_IMAGE_DATA* data = (GPU_IMAGE_DATA*)image->data;
+    GLenum original_format = data->format;
+
+    GPU_Rect updateRect;
+    if(image_rect != NULL)
+    {
+        updateRect = *image_rect;
+        if(updateRect.x < 0)
+        {
+            updateRect.w += updateRect.x;
+            updateRect.x = 0;
+        }
+        if(updateRect.y < 0)
+        {
+            updateRect.h += updateRect.y;
+            updateRect.y = 0;
+        }
+        if(updateRect.x + updateRect.w > image->w)
+            updateRect.w += image->w - (updateRect.x + updateRect.w);
+        if(updateRect.y + updateRect.h > image->h)
+            updateRect.h += image->h - (updateRect.y + updateRect.h);
+        
+        if(updateRect.w <= 0)
+            updateRect.w = 0;
+        if(updateRect.h <= 0)
+            updateRect.h = 0;
+    }
+    else
+    {
+        updateRect.x = 0;
+        updateRect.y = 0;
+        updateRect.w = image->w;
+        updateRect.h = image->h;
+        if(updateRect.w < 0.0f || updateRect.h < 0.0f)
+        {
+            GPU_PushErrorCode("GPU_UpdateSubImage", GPU_ERROR_USER_ERROR, "Given negative image rectangle.");
+            return;
+        }
+    }
+
+
+    changeTexturing(renderer, 1);
+    if(image->target != NULL && isCurrentTarget(renderer, image->target))
+        renderer->FlushBlitBuffer(renderer);
+    bindTexture(renderer, image);
+    int alignment = 1;
+    glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
+    #ifdef SDL_GPU_USE_OPENGL
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, (bytes_per_row / image->channels));
+    #endif
+    
+    glTexSubImage2D(GL_TEXTURE_2D, 0,
+                    updateRect.x, updateRect.y, updateRect.w, updateRect.h,
+                    original_format, GL_UNSIGNED_BYTE, bytes);
     
     // Restore GL defaults
     glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
@@ -5255,6 +5323,7 @@ static void SetAttributeSource(GPU_Renderer* renderer, int num_values, GPU_Attri
     renderer->CopyImage = &CopyImage; \
     renderer->UpdateImage = &UpdateImage; \
     renderer->UpdateSubImage = &UpdateSubImage; \
+    renderer->UpdateImageBytes = &UpdateImageBytes; \
     renderer->CopyImageFromSurface = &CopyImageFromSurface; \
     renderer->CopyImageFromTarget = &CopyImageFromTarget; \
     renderer->CopySurfaceFromTarget = &CopySurfaceFromTarget; \
