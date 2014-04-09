@@ -2314,6 +2314,7 @@ static GPU_Image* CopyImage(GPU_Renderer* renderer, GPU_Image* image)
 	GPU_SetBlending(image, 0);
 	GPU_SetImageFilter(image, GPU_FILTER_NEAREST);
 	
+	// FIXME: This will only work for targetable textures (RGB, RGBA, not luminance)!
     renderer->Blit(renderer, image, NULL, target, image->w/2, image->h/2);
     
     // Restore the saved settings
@@ -2322,16 +2323,14 @@ static GPU_Image* CopyImage(GPU_Renderer* renderer, GPU_Image* image)
 	GPU_SetImageFilter(image, filter_mode);
 	
 	// Copy the image settings
+	GPU_SetColor(result, &image->color);
+	GPU_SetBlending(result, image->use_blending);
+	GPU_SetBlendMode(result, image->blend_mode);
+	GPU_SetImageFilter(result, image->filter_mode);
+	GPU_SetSnapMode(result, image->snap_mode);
+	GPU_SetWrapMode(result, image->wrap_mode_x, image->wrap_mode_y);
 	if(image->has_mipmaps)
-        renderer->GenerateMipmaps(renderer, result);
-    
-	result->color = image->color;
-	result->use_blending = image->use_blending;
-	result->blend_mode = image->blend_mode;
-	result->filter_mode = image->filter_mode;
-	result->snap_mode = image->snap_mode;
-	result->wrap_mode_x = image->wrap_mode_x;
-	result->wrap_mode_y = image->wrap_mode_y;
+        GPU_GenerateMipmaps(result);
 	
     
     // Don't free the target yet (a waste of perf), but let it be freed next time...
