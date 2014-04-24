@@ -2298,53 +2298,122 @@ static GPU_Image* CopyImage(GPU_Renderer* renderer, GPU_Image* image)
     if(image == NULL)
         return NULL;
     
-    GPU_Image* result = renderer->CreateImage(renderer, image->w, image->h, image->format);
-    if(result == NULL)
+    GPU_Image* result = NULL;
+    switch(image->format)
     {
-        GPU_PushErrorCode("GPU_CopyImage", GPU_ERROR_BACKEND_ERROR, "Failed to create new image.");
-        return NULL;
+        case GPU_FORMAT_RGB:
+        case GPU_FORMAT_RGBA:
+        // Copy via framebuffer blitting (fast)
+        {
+            result = renderer->CreateImage(renderer, image->w, image->h, image->format);
+            if(result == NULL)
+            {
+                GPU_PushErrorCode("GPU_CopyImage", GPU_ERROR_BACKEND_ERROR, "Failed to create new image.");
+                return NULL;
+            }
+            
+            GPU_Target* target = GPU_LoadTarget(result);
+            if(target == NULL)
+            {
+                GPU_FreeImage(result);
+                GPU_PushErrorCode("GPU_CopyImage", GPU_ERROR_BACKEND_ERROR, "Failed to load target.");
+                return NULL;
+            }
+            
+            // For some reason, I wasn't able to get glCopyTexImage2D() or glCopyTexSubImage2D() working without getting GL_INVALID_ENUM (0x500).
+            // It seemed to only work for the default framebuffer...
+            
+            // Clear the color, blending, and filter mode
+            SDL_Color color = image->color;
+            Uint8 use_blending = image->use_blending;
+            GPU_FilterEnum filter_mode = image->filter_mode;
+            GPU_SetColor(image, NULL);
+            GPU_SetBlending(image, 0);
+            GPU_SetImageFilter(image, GPU_FILTER_NEAREST);
+            
+            renderer->Blit(renderer, image, NULL, target, image->w/2, image->h/2);
+            
+            // Restore the saved settings
+            GPU_SetColor(image, &color);
+            GPU_SetBlending(image, use_blending);
+            GPU_SetImageFilter(image, filter_mode);
+            
+            // Don't free the target yet (a waste of perf), but let it be freed next time...
+            target->refcount--;
+        }
+        break;
+        case GPU_FORMAT_LUMINANCE:
+        case GPU_FORMAT_LUMINANCE_ALPHA:
+        case GPU_FORMAT_ALPHA:
+        case GPU_FORMAT_RG:
+        // Copy via texture download and upload (slow)
+        {
+            unsigned char* texture_data = getRawImageData(renderer, image);
+            if(texture_data == NULL)
+            {
+                GPU_PushErrorCode("GPU_CopyImage", GPU_ERROR_BACKEND_ERROR, "Failed to get raw texture data.");
+                return NULL;
+            }
+            
+            result = CreateUninitializedImage(renderer, image->w, image->h, image->format);
+            if(result == NULL)
+            {
+                free(texture_data);
+                GPU_PushErrorCode("GPU_CopyImage", GPU_ERROR_BACKEND_ERROR, "Failed to create new image.");
+                return NULL;
+            }
+            
+            changeTexturing(renderer, 1);
+            bindTexture(renderer, result);
+
+            GLenum internal_format = ((GPU_IMAGE_DATA*)(result->data))->format;
+            int w = result->w;
+            int h = result->h;
+            if(!(renderer->enabled_features & GPU_FEATURE_NON_POWER_OF_TWO))
+            {
+                if(!isPowerOfTwo(w))
+                    w = getNearestPowerOf2(w);
+                if(!isPowerOfTwo(h))
+                    h = getNearestPowerOf2(h);
+            }
+            
+            glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+            #ifdef SDL_GPU_USE_OPENGL
+            glPixelStorei(GL_UNPACK_ROW_LENGTH, w);
+            #endif
+            
+            glTexImage2D(GL_TEXTURE_2D, 0, internal_format, w, h, 0,
+                         internal_format, GL_UNSIGNED_BYTE, texture_data);
+            // Tell SDL_gpu what we got.
+            result->texture_w = w;
+            result->texture_h = h;
+            
+            // Restore GL defaults
+            glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+            #ifdef SDL_GPU_USE_OPENGL
+            glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+            #endif
+            
+            free(texture_data);
+        }
+        break;
+        default:
+            GPU_PushErrorCode("GPU_CopyImage", GPU_ERROR_BACKEND_ERROR, "Could not copy the given image format.");
+        break;
     }
     
-    GPU_Target* target = GPU_LoadTarget(result);
-    if(target == NULL)
+    if(result != NULL)
     {
-        GPU_FreeImage(result);
-        GPU_PushErrorCode("GPU_CopyImage", GPU_ERROR_BACKEND_ERROR, "Failed to load target.");
-        return NULL;
+        // Copy the image settings
+        GPU_SetColor(result, &image->color);
+        GPU_SetBlending(result, image->use_blending);
+        GPU_SetBlendMode(result, image->blend_mode);
+        GPU_SetImageFilter(result, image->filter_mode);
+        GPU_SetSnapMode(result, image->snap_mode);
+        GPU_SetWrapMode(result, image->wrap_mode_x, image->wrap_mode_y);
+        if(image->has_mipmaps)
+            GPU_GenerateMipmaps(result);
     }
-    
-    // For some reason, I wasn't able to get glCopyTexImage2D() or glCopyTexSubImage2D() working without getting GL_INVALID_ENUM (0x500).
-    // It seemed to only work for the default framebuffer...
-    
-    // Clear the color, blending, and filter mode
-	SDL_Color color = image->color;
-	Uint8 use_blending = image->use_blending;
-	GPU_FilterEnum filter_mode = image->filter_mode;
-	GPU_SetColor(image, NULL);
-	GPU_SetBlending(image, 0);
-	GPU_SetImageFilter(image, GPU_FILTER_NEAREST);
-	
-	// FIXME: This will only work for targetable textures (RGB, RGBA, not luminance)!
-    renderer->Blit(renderer, image, NULL, target, image->w/2, image->h/2);
-    
-    // Restore the saved settings
-	GPU_SetColor(image, &color);
-	GPU_SetBlending(image, use_blending);
-	GPU_SetImageFilter(image, filter_mode);
-	
-	// Copy the image settings
-	GPU_SetColor(result, &image->color);
-	GPU_SetBlending(result, image->use_blending);
-	GPU_SetBlendMode(result, image->blend_mode);
-	GPU_SetImageFilter(result, image->filter_mode);
-	GPU_SetSnapMode(result, image->snap_mode);
-	GPU_SetWrapMode(result, image->wrap_mode_x, image->wrap_mode_y);
-	if(image->has_mipmaps)
-        GPU_GenerateMipmaps(result);
-	
-    
-    // Don't free the target yet (a waste of perf), but let it be freed next time...
-    target->refcount--;
     
     return result;
 }
