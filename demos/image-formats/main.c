@@ -109,6 +109,7 @@ int main(int argc, char* argv[])
 	if(image_luminance == NULL)
         return -5;
     
+    //image_luminance = GPU_CopyImage(image_luminance);
     log_image_details(image_luminance);
     update_luminance_data(image_luminance);
     
@@ -116,6 +117,7 @@ int main(int argc, char* argv[])
 	if(image_luminance_alpha == NULL)
         return -6;
     
+    //image_luminance_alpha = GPU_CopyImage(image_luminance_alpha);
     log_image_details(image_luminance_alpha);
     update_luminance_alpha_data(image_luminance_alpha);
 	
