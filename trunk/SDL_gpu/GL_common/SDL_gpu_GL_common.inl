@@ -2848,14 +2848,11 @@ static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
         #endif
     
         #ifdef SDL_GPU_USE_GL_TIER3
-        if(data->handle != 0)
-        {
-            glDeleteBuffers(2, cdata->blit_VBO);
-            glDeleteBuffers(16, cdata->attribute_VBO);
+        glDeleteBuffers(2, cdata->blit_VBO);
+        glDeleteBuffers(16, cdata->attribute_VBO);
             #if !defined(SDL_GPU_NO_VAO)
             glDeleteVertexArrays(1, &cdata->blit_VAO);
             #endif
-        }
         #endif
         
         // Remove all of the window mappings that refer to this target
