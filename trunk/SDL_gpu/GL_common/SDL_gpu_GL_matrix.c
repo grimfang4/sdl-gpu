@@ -3,11 +3,52 @@
 #include <math.h>
 #include <string.h>
 
+#ifdef _MSC_VER
+#define __func__ __FUNCTION__
+#endif
 
 #ifndef M_PI
 #define M_PI 3.1415926f
 #endif
 
+
+// Visual C does not support static inline
+#ifndef static_inline
+	#ifdef _MSC_VER
+		#define static_inline static
+	#else
+		#define static_inline static inline
+	#endif
+#endif
+
+// Visual C does not support C99 (which includes a safe snprintf)
+#ifdef _MSC_VER
+#define snprintf c99_snprintf
+// From Valentin Milea: http://stackoverflow.com/questions/2915672/snprintf-and-visual-studio-2010
+static_inline int c99_vsnprintf(char* str, size_t size, const char* format, va_list ap)
+{
+	int count = -1;
+
+	if (size != 0)
+		count = _vsnprintf_s(str, size, _TRUNCATE, format, ap);
+	if (count == -1)
+		count = _vscprintf(format, ap);
+
+	return count;
+}
+
+static_inline int c99_snprintf(char* str, size_t size, const char* format, ...)
+{
+	int count;
+	va_list ap;
+
+	va_start(ap, format);
+	count = c99_vsnprintf(str, size, format, ap);
+	va_end(ap);
+
+	return count;
+}
+#endif
 
 
 // Implementations based on Wayne Cochran's (wcochran) matrix.c
@@ -88,9 +129,11 @@ void GPU_MatrixMode(int matrix_mode)
 float* GPU_GetModelView(void)
 {
     GPU_Target* target = GPU_GetContextTarget();
+	GPU_MatrixStack* stack;
+
     if(target == NULL || target->context == NULL)
         return NULL;
-    GPU_MatrixStack* stack = &target->context->modelview_matrix;
+    stack = &target->context->modelview_matrix;
     if(stack->size == 0)
         return NULL;
     return stack->matrix[stack->size-1];
@@ -99,9 +142,11 @@ float* GPU_GetModelView(void)
 float* GPU_GetProjection(void)
 {
     GPU_Target* target = GPU_GetContextTarget();
+	GPU_MatrixStack* stack;
+
     if(target == NULL || target->context == NULL)
         return NULL;
-    GPU_MatrixStack* stack = &target->context->projection_matrix;
+    stack = &target->context->projection_matrix;
     if(stack->size == 0)
         return NULL;
     return stack->matrix[stack->size-1];
@@ -110,9 +155,10 @@ float* GPU_GetProjection(void)
 float* GPU_GetCurrentMatrix(void)
 {
     GPU_Target* target = GPU_GetContextTarget();
+    GPU_MatrixStack* stack;
+
     if(target == NULL || target->context == NULL)
         return NULL;
-    GPU_MatrixStack* stack;
     if(target->context->matrix_mode == GPU_MODELVIEW)
         stack = &target->context->modelview_matrix;
     else
@@ -126,10 +172,12 @@ float* GPU_GetCurrentMatrix(void)
 void GPU_PushMatrix()
 {
     GPU_Target* target = GPU_GetContextTarget();
+	GPU_MatrixStack* stack;
+
     if(target == NULL || target->context == NULL)
         return;
     
-    GPU_MatrixStack* stack = (target->context->matrix_mode == GPU_MODELVIEW? &target->context->modelview_matrix : &target->context->projection_matrix);
+    stack = (target->context->matrix_mode == GPU_MODELVIEW? &target->context->modelview_matrix : &target->context->projection_matrix);
     if(stack->size + 1 >= GPU_MATRIX_STACK_MAX)
     {
         GPU_PushErrorCode(__func__, GPU_ERROR_USER_ERROR, "Matrix stack is full (%d)", GPU_MATRIX_STACK_MAX);
@@ -142,10 +190,12 @@ void GPU_PushMatrix()
 void GPU_PopMatrix()
 {
     GPU_Target* target = GPU_GetContextTarget();
+	GPU_MatrixStack* stack;
+
     if(target == NULL || target->context == NULL)
         return;
     
-    GPU_MatrixStack* stack = (target->context->matrix_mode == GPU_MODELVIEW? &target->context->modelview_matrix : &target->context->projection_matrix);
+    stack = (target->context->matrix_mode == GPU_MODELVIEW? &target->context->modelview_matrix : &target->context->projection_matrix);
     if(stack->size == 0)
     {
         GPU_PushErrorCode(__func__, GPU_ERROR_USER_ERROR, "Matrix stack is empty.");
@@ -166,108 +216,126 @@ void GPU_Ortho(float left, float right, float bottom, float top, float near, flo
 {
     float* result = GPU_GetCurrentMatrix();
     if(result == NULL)
-        return;
-    #ifdef ROW_MAJOR
-    float A[16] = {2/(right - left), 0,  0, -(right + left)/(right - left),
-                   0, 2/(top - bottom), 0, -(top + bottom)/(top - bottom),
-                   0, 0, -2/(far - near), -(far + near)/(far - near),
-                   0, 0, 0, 1};
-    #else
-    float A[16] = {2/(right - left), 0,  0, 0,
-                   0, 2/(top - bottom), 0, 0,
-                   0, 0, -2/(far - near), 0,
-                   -(right + left)/(right - left), -(top + bottom)/(top - bottom), -(far + near)/(far - near), 1};
-    #endif
-    
-    GPU_MultiplyAndAssign(result, A);
+		return;
+
+	{
+#ifdef ROW_MAJOR
+		float A[16] = {2/(right - left), 0,  0, -(right + left)/(right - left),
+			0, 2/(top - bottom), 0, -(top + bottom)/(top - bottom),
+			0, 0, -2/(far - near), -(far + near)/(far - near),
+			0, 0, 0, 1};
+#else
+		float A[16] = { 2 / (right - left), 0, 0, 0,
+			0, 2 / (top - bottom), 0, 0,
+			0, 0, -2 / (far - near), 0,
+			-(right + left) / (right - left), -(top + bottom) / (top - bottom), -(far + near) / (far - near), 1 };
+#endif
+
+		GPU_MultiplyAndAssign(result, A);
+	}
 }
 
 void GPU_Frustum(float right, float left, float bottom, float top, float near, float far)
 {
     float* result = GPU_GetCurrentMatrix();
     if(result == NULL)
-        return;
-    #ifdef ROW_MAJOR
-    float A[16] = {2 * near / (right - left), 0, 0, 0,
-                   0, 2 * near / (top - bottom), 0, 0,
-                   (right + left) / (right - left), (top + bottom) / (top - bottom), -(far + near) / (far - near), -1,
-                   0, 0, -(2 * far * near) / (far - near), 0};
-    #else
-    float A[16] = {2 * near / (right - left), 0, (right + left) / (right - left), 0,
-                   0, 2 * near / (top - bottom), (top + bottom) / (top - bottom), 0,
-                   0, 0, -(far + near) / (far - near), -(2 * far * near) / (far - near),
-                   0, 0, -1, 0};
-    #endif
-                   
-    GPU_MultiplyAndAssign(result, A);
+		return;
+
+	{
+#ifdef ROW_MAJOR
+		float A[16] = {2 * near / (right - left), 0, 0, 0,
+			0, 2 * near / (top - bottom), 0, 0,
+			(right + left) / (right - left), (top + bottom) / (top - bottom), -(far + near) / (far - near), -1,
+			0, 0, -(2 * far * near) / (far - near), 0};
+#else
+		float A[16] = { 2 * near / (right - left), 0, (right + left) / (right - left), 0,
+			0, 2 * near / (top - bottom), (top + bottom) / (top - bottom), 0,
+			0, 0, -(far + near) / (far - near), -(2 * far * near) / (far - near),
+			0, 0, -1, 0 };
+#endif
+
+		GPU_MultiplyAndAssign(result, A);
+	}
 }
 
 void GPU_Translate(float x, float y, float z)
 {
     float* result = GPU_GetCurrentMatrix();
     if(result == NULL)
-        return;
-    #ifdef ROW_MAJOR
-    float A[16] = {1, 0, 0, x,
-                   0, 1, 0, y,
-                   0, 0, 1, z,
-                   0, 0, 0, 1};
-    #else
-    float A[16] = {1, 0, 0, 0,
-                   0, 1, 0, 0,
-                   0, 0, 1, 0,
-                   x, y, z, 1};
-    #endif
-    
-    GPU_MultiplyAndAssign(result, A);
+		return;
+
+	{
+#ifdef ROW_MAJOR
+		float A[16] = {1, 0, 0, x,
+			0, 1, 0, y,
+			0, 0, 1, z,
+			0, 0, 0, 1};
+#else
+		float A[16] = { 1, 0, 0, 0,
+			0, 1, 0, 0,
+			0, 0, 1, 0,
+			x, y, z, 1 };
+#endif
+
+		GPU_MultiplyAndAssign(result, A);
+	}
 }
 
 void GPU_Scale(float sx, float sy, float sz)
 {
     float* result = GPU_GetCurrentMatrix();
     if(result == NULL)
-        return;
-    float A[16] = {sx, 0,  0,  0,
-                    0,  sy, 0,  0,
-                    0,  0,  sz, 0,
-                    0,  0,  0,  1};
-                  
-    GPU_MultiplyAndAssign(result, A);
+		return;
+
+	{
+		float A[16] = { sx, 0, 0, 0,
+			0, sy, 0, 0,
+			0, 0, sz, 0,
+			0, 0, 0, 1 };
+
+		GPU_MultiplyAndAssign(result, A);
+	}
 }
 
 void GPU_Rotate(float degrees, float x, float y, float z)
 {
-    const float p = 1/sqrtf(x*x + y*y + z*z);
-    x *= p; y *= p; z *= p;
-    const float radians = degrees * (M_PI/180);
-    const float c = cosf(radians);
-    const float s = sinf(radians);
-    const float c_ = 1 - c;
-    const float zc_ = z*c_;
-    const float yc_ = y*c_;
-    const float xzc_ = x*zc_;
-    const float xyc_ = x*y*c_;
-    const float yzc_ = y*zc_;
-    const float xs = x*s;
-    const float ys = y*s;
-    const float zs = z*s;
+	float p, radians, c, s, c_, zc_, yc_, xzc_, xyc_, yzc_, xs, ys, zs;
+	float* result;
 
-    float* result = GPU_GetCurrentMatrix();
+    p = 1/sqrtf(x*x + y*y + z*z);
+    x *= p; y *= p; z *= p;
+    radians = degrees * (M_PI/180);
+    c = cosf(radians);
+    s = sinf(radians);
+    c_ = 1 - c;
+    zc_ = z*c_;
+    yc_ = y*c_;
+    xzc_ = x*zc_;
+    xyc_ = x*y*c_;
+    yzc_ = y*zc_;
+    xs = x*s;
+    ys = y*s;
+    zs = z*s;
+
+    result = GPU_GetCurrentMatrix();
     if(result == NULL)
-        return;
-    #ifdef ROW_MAJOR
-    float A[16] = {x*x*c_ + c,  xyc_ - zs,   xzc_ + ys, 0,
-                    xyc_ + zs,   y*yc_ + c,   yzc_ - xs, 0,
-                    xzc_ - ys,   yzc_ + xs,   z*zc_ + c, 0,
-                    0,           0,           0,         1};
-    #else
-    float A[16] = {x*x*c_ + c,  xyc_ + zs,   xzc_ - ys, 0,
-                    xyc_ - zs,   y*yc_ + c,   yzc_ + xs, 0,
-                    xzc_ + ys,   yzc_ - xs,   z*zc_ + c, 0,
-                    0,           0,           0,         1};
-    #endif
-                  
-    GPU_MultiplyAndAssign(result, A);
+		return;
+
+	{
+#ifdef ROW_MAJOR
+		float A[16] = {x*x*c_ + c,  xyc_ - zs,   xzc_ + ys, 0,
+			xyc_ + zs,   y*yc_ + c,   yzc_ - xs, 0,
+			xzc_ - ys,   yzc_ + xs,   z*zc_ + c, 0,
+			0,           0,           0,         1};
+#else
+		float A[16] = { x*x*c_ + c, xyc_ + zs, xzc_ - ys, 0,
+			xyc_ - zs, y*yc_ + c, yzc_ + xs, 0,
+			xzc_ + ys, yzc_ - xs, z*zc_ + c, 0,
+			0, 0, 0, 1 };
+#endif
+
+		GPU_MultiplyAndAssign(result, A);
+	}
 }
 
 void GPU_MultMatrix(float* A)

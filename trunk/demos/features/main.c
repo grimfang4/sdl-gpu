@@ -3,16 +3,18 @@
 #include <math.h>
 #include "common.h"
 
-static inline const char* bool_string(Uint8 value)
+const char* bool_string(Uint8 value)
 {
     return (value? "true" : "false");
 }
 
 int main(int argc, char* argv[])
 {
+	GPU_Target* screen;
+
 	printRenderers();
 	
-	GPU_Target* screen = GPU_Init(800, 600, GPU_DEFAULT_INIT_FLAGS);
+	screen = GPU_Init(800, 600, GPU_DEFAULT_INIT_FLAGS);
 	if(screen == NULL)
 		return -1;
 	

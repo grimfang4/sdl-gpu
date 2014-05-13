@@ -105,6 +105,8 @@ static void hsv_to_rgb(int hue, int sat, int val, int* r, int* g, int* b)
     float x = chroma * (1 - fabs(fmod(h*5.999f, 2) - 1));
 
     unsigned char R = 0, G = 0, B = 0;
+	unsigned char m;
+
     switch(H)
     {
     case 0:
@@ -133,7 +135,7 @@ static void hsv_to_rgb(int hue, int sat, int val, int* r, int* g, int* b)
         break;
     }
 
-    unsigned char m = 255*(v - chroma);
+    m = 255*(v - chroma);
 
     *r = R+m;
     *g = G+m;
@@ -155,6 +157,7 @@ void shiftHSV(GPU_Image* image, int hue, int saturation, int value)
     Uint8* pixels = surface->pixels;
     
     int x,y,i;
+	int r, g, b, h, s, v;
     for(y = 0; y < surface->h; y++)
     {
         for(x = 0; x < surface->w; x++)
@@ -164,10 +167,9 @@ void shiftHSV(GPU_Image* image, int hue, int saturation, int value)
             if(surface->format->BytesPerPixel == 4 && pixels[i+3] == 0)
                 continue;
 
-            int r = pixels[i];
-            int g = pixels[i+1];
-            int b = pixels[i+2];
-            int h, s, v;
+            r = pixels[i];
+            g = pixels[i+1];
+            b = pixels[i+2];
             rgb_to_hsv(r, g, b, &h, &s, &v);
             h += hue;
             s += saturation;
@@ -200,6 +202,7 @@ void shiftHSVExcept(GPU_Image* image, int hue, int saturation, int value, int no
     Uint8* pixels = surface->pixels;
     
     int x,y,i;
+	int r, g, b, h, s, v;
     for(y = 0; y < surface->h; y++)
     {
         for(x = 0; x < surface->w; x++)
@@ -209,10 +212,9 @@ void shiftHSVExcept(GPU_Image* image, int hue, int saturation, int value, int no
             if(surface->format->BytesPerPixel == 4 && pixels[i+3] == 0)
                 continue;
 
-            int r = pixels[i];
-            int g = pixels[i+1];
-            int b = pixels[i+2];
-            int h, s, v;
+            r = pixels[i];
+            g = pixels[i+1];
+            b = pixels[i+2];
             rgb_to_hsv(r, g, b, &h, &s, &v);
             h += hue;
             s += saturation;
@@ -246,85 +248,100 @@ void shiftHSVExcept(GPU_Image* image, int hue, int saturation, int value, int no
 
 int main(int argc, char* argv[])
 {
+	GPU_Target* screen;
+
 	printRenderers();
 	
-	GPU_Target* screen = GPU_Init(800, 600, GPU_DEFAULT_INIT_FLAGS);
+	screen = GPU_Init(800, 600, GPU_DEFAULT_INIT_FLAGS);
 	if(screen == NULL)
 		return -1;
 	
 	printCurrentRenderer();
 	
-	GPU_Image* image = GPU_LoadImage("data/test3.png");
-	if(image == NULL)
-		return -1;
-	
-	GPU_Image* image1 = GPU_CopyImage(image);
-	
-	SDL_Color yellow = {246, 255, 0};
-	makeColorTransparent(image1, yellow);
-	
-	GPU_Image* image1a = GPU_CopyImage(image);
-	
-	SDL_Color red = {200, 0, 0};
-	replaceColor(image1a, yellow, red);
-	
-	
-	
-	
-	GPU_Image* image2 = GPU_CopyImage(image);
-	
-	shiftHSV(image2, 100, 0, 0);
-	
-	GPU_Image* image3 = GPU_CopyImage(image);
-	
-	shiftHSV(image3, 0, -100, 0);
-	
-	GPU_Image* image4 = GPU_CopyImage(image);
-	
-	shiftHSV(image4, 0, 0, 100);
-	
-	Uint32 startTime = SDL_GetTicks();
-	long frameCount = 0;
-	
-	Uint8 done = 0;
-	SDL_Event event;
-	while(!done)
 	{
-		while(SDL_PollEvent(&event))
-		{
-			if(event.type == SDL_QUIT)
-				done = 1;
-			else if(event.type == SDL_KEYDOWN)
-			{
-				if(event.key.keysym.sym == SDLK_ESCAPE)
-					done = 1;
-			}
-		}
-		
-		GPU_Clear(screen);
-		
-		GPU_Blit(image, NULL, screen, 150, 150);
-		GPU_Blit(image1, NULL, screen, 300, 150);
-		GPU_Blit(image1a, NULL, screen, 450, 150);
-		GPU_Blit(image2, NULL, screen, 150, 300);
-		GPU_Blit(image3, NULL, screen, 300, 300);
-		GPU_Blit(image4, NULL, screen, 450, 300);
-		
-		GPU_Flip(screen);
-		
-		frameCount++;
-		if(frameCount%500 == 0)
-			printf("Average FPS: %.2f\n", 1000.0f*frameCount/(SDL_GetTicks() - startTime));
+        Uint32 startTime;
+        long frameCount;
+        Uint8 done;
+        SDL_Event event;
+        GPU_Image* image;
+        GPU_Image* image1;
+        GPU_Image* image1a;
+        SDL_Color yellow = {246, 255, 0};
+        SDL_Color red = {200, 0, 0};
+        GPU_Image* image2;
+        GPU_Image* image3;
+        GPU_Image* image4;
+        
+        image = GPU_LoadImage("data/test3.png");
+        if(image == NULL)
+            return -1;
+        
+        image1 = GPU_CopyImage(image);
+        
+        makeColorTransparent(image1, yellow);
+        
+        image1a = GPU_CopyImage(image);
+        
+        replaceColor(image1a, yellow, red);
+        
+        
+        
+        
+        image2 = GPU_CopyImage(image);
+        
+        shiftHSV(image2, 100, 0, 0);
+        
+        image3 = GPU_CopyImage(image);
+        
+        shiftHSV(image3, 0, -100, 0);
+        
+        image4 = GPU_CopyImage(image);
+        
+        shiftHSV(image4, 0, 0, 100);
+        
+        startTime = SDL_GetTicks();
+        frameCount = 0;
+        
+        done = 0;
+        while(!done)
+        {
+            while(SDL_PollEvent(&event))
+            {
+                if(event.type == SDL_QUIT)
+                    done = 1;
+                else if(event.type == SDL_KEYDOWN)
+                {
+                    if(event.key.keysym.sym == SDLK_ESCAPE)
+                        done = 1;
+                }
+            }
+            
+            GPU_Clear(screen);
+            
+            GPU_Blit(image, NULL, screen, 150, 150);
+            GPU_Blit(image1, NULL, screen, 300, 150);
+            GPU_Blit(image1a, NULL, screen, 450, 150);
+            GPU_Blit(image2, NULL, screen, 150, 300);
+            GPU_Blit(image3, NULL, screen, 300, 300);
+            GPU_Blit(image4, NULL, screen, 450, 300);
+            
+            GPU_Flip(screen);
+            
+            frameCount++;
+            if(frameCount%500 == 0)
+                printf("Average FPS: %.2f\n", 1000.0f*frameCount/(SDL_GetTicks() - startTime));
+        }
+        
+        printf("Average FPS: %.2f\n", 1000.0f*frameCount/(SDL_GetTicks() - startTime));
+        
+        GPU_FreeImage(image);
+        GPU_FreeImage(image1);
+        GPU_FreeImage(image1a);
+        GPU_FreeImage(image2);
+        GPU_FreeImage(image3);
+        GPU_FreeImage(image4);
 	}
 	
-	printf("Average FPS: %.2f\n", 1000.0f*frameCount/(SDL_GetTicks() - startTime));
-	
-	GPU_FreeImage(image);
-	GPU_FreeImage(image1);
-	GPU_FreeImage(image1a);
-	GPU_FreeImage(image2);
-	GPU_FreeImage(image3);
-	GPU_FreeImage(image4);
 	GPU_Quit();
 	
 	return 0;

@@ -5,6 +5,10 @@
 #include <android/log.h>
 #endif
 
+#ifdef _MSC_VER
+	#define __func__ __FUNCTION__
+#endif
+
 #include "stb_image.h"
 
 #ifdef SDL_GPU_USE_SDL2
@@ -186,17 +190,19 @@ static void init_window_mappings()
 
 void GPU_AddWindowMapping(GPU_Target* target)
 {
-    if(window_mappings == NULL)
+	Uint32 windowID;
+	int i;
+
+	if(window_mappings == NULL)
         init_window_mappings();
     
     if(target == NULL || target->context == NULL)
         return;
     
-    Uint32 windowID = target->context->windowID;
+    windowID = target->context->windowID;
     if(windowID == 0)  // Invalid window ID
         return;
     
-    int i;
     // Check for duplicates
     for(i = 0; i < num_window_mappings; i++)
     {
@@ -211,39 +217,45 @@ void GPU_AddWindowMapping(GPU_Target* target)
     // Check if list is big enough to hold another
     if(num_window_mappings >= window_mappings_size)
     {
+		GPU_WindowMapping* new_array;
         window_mappings_size *= 2;
-        GPU_WindowMapping* new_array = (GPU_WindowMapping*)malloc(window_mappings_size * sizeof(GPU_WindowMapping));
+        new_array = (GPU_WindowMapping*)malloc(window_mappings_size * sizeof(GPU_WindowMapping));
         memcpy(new_array, window_mappings, num_window_mappings * sizeof(GPU_WindowMapping));
         free(window_mappings);
         window_mappings = new_array;
     }
     
     // Add to end of list
-    GPU_WindowMapping m = {windowID, target};
-    window_mappings[num_window_mappings] = m;
+	{
+		GPU_WindowMapping m = { windowID, target };
+		window_mappings[num_window_mappings] = m;
+	}
     num_window_mappings++;
 }
 
 void GPU_RemoveWindowMapping(Uint32 windowID)
 {
+	int i;
+
     if(window_mappings == NULL)
         init_window_mappings();
     
     if(windowID == 0)  // Invalid window ID
         return;
     
-    int i;
     // Find the occurrence
     for(i = 0; i < num_window_mappings; i++)
     {
         if(window_mappings[i].windowID == windowID)
         {
+			int num_to_move;
+
             // Unset the target's window
             window_mappings[i].target->context->windowID = 0;
             
             // Move the remaining entries to replace the removed one
             num_window_mappings--;
-            int num_to_move = num_window_mappings - i;
+            num_to_move = num_window_mappings - i;
             if(num_to_move > 0)
                 memmove(&window_mappings[i], &window_mappings[i+1], num_to_move * sizeof(GPU_WindowMapping));
             return;
@@ -254,28 +266,31 @@ void GPU_RemoveWindowMapping(Uint32 windowID)
 
 void GPU_RemoveWindowMappingByTarget(GPU_Target* target)
 {
+	Uint32 windowID;
+	int i;
+
     if(window_mappings == NULL)
         init_window_mappings();
     
     if(target == NULL || target->context == NULL)
         return;
     
-    Uint32 windowID = target->context->windowID;
+    windowID = target->context->windowID;
     if(windowID == 0)  // Invalid window ID
         return;
     
     // Unset the target's window
     target->context->windowID = 0;
     
-    int i;
     // Find the occurrences
     for(i = 0; i < num_window_mappings; )
     {
         if(window_mappings[i].target == target)
         {
             // Move the remaining entries to replace the removed one
+			int num_to_move;
             num_window_mappings--;
-            int num_to_move = num_window_mappings - i;
+            num_to_move = num_window_mappings - i;
             if(num_to_move > 0)
                 memmove(&window_mappings[i], &window_mappings[i+1], num_to_move * sizeof(GPU_WindowMapping));
             return;
@@ -288,13 +303,14 @@ void GPU_RemoveWindowMappingByTarget(GPU_Target* target)
 
 GPU_Target* GPU_GetWindowTarget(Uint32 windowID)
 {
+    int i;
+
     if(window_mappings == NULL)
         init_window_mappings();
     
     if(windowID == 0)  // Invalid window ID
         return NULL;
     
-    int i;
     // Find the occurrence
     for(i = 0; i < num_window_mappings; i++)
     {
@@ -307,6 +323,10 @@ GPU_Target* GPU_GetWindowTarget(Uint32 windowID)
 
 GPU_Target* GPU_Init(Uint16 w, Uint16 h, GPU_WindowFlagEnum SDL_flags)
 {
+	int renderer_order_size;
+	int i;
+    GPU_RendererID renderer_order[GPU_RENDERER_ORDER_MAX];
+
     init_error_stack();
     
 	GPU_InitRendererRegister();
@@ -314,12 +334,10 @@ GPU_Target* GPU_Init(Uint16 w, Uint16 h, GPU_WindowFlagEnum SDL_flags)
 	if(!init_SDL())
         return NULL;
         
-    int renderer_order_size = 0;
-    GPU_RendererID renderer_order[GPU_RENDERER_ORDER_MAX];
+    renderer_order_size = 0;
     GPU_GetRendererOrder(&renderer_order_size, renderer_order);
 	
     // Init the renderers in order
-    int i;
     for(i = 0; i < renderer_order_size; i++)
     {
         GPU_Target* screen = GPU_InitRendererByID(renderer_order[i], w, h, SDL_flags);
@@ -337,19 +355,22 @@ GPU_Target* GPU_InitRenderer(GPU_RendererEnum renderer_enum, Uint16 w, Uint16 h,
 
 GPU_Target* GPU_InitRendererByID(GPU_RendererID renderer_request, Uint16 w, Uint16 h, GPU_WindowFlagEnum SDL_flags)
 {
+	GPU_Renderer* renderer;
+	GPU_Target* screen;
+
     init_error_stack();
 	GPU_InitRendererRegister();
 	
 	if(!init_SDL())
         return NULL;
 	
-	GPU_Renderer* renderer = GPU_AddRenderer(renderer_request);
+	renderer = GPU_AddRenderer(renderer_request);
 	if(renderer == NULL || renderer->Init == NULL)
 		return NULL;
     
 	GPU_SetCurrentRenderer(renderer->id);
 	
-	GPU_Target* screen = renderer->Init(renderer, renderer_request, w, h, SDL_flags);
+	screen = renderer->Init(renderer, renderer_request, w, h, SDL_flags);
 	if(screen == NULL)
     {
         // Init failed, destroy the renderer...
@@ -438,11 +459,11 @@ void GPU_CloseCurrentRenderer(void)
 
 void GPU_Quit(void)
 {
+    int i;
     if(num_error_codes > 0 && GPU_GetDebugLevel() >= GPU_DEBUG_LEVEL_1)
         GPU_LogError("GPU_Quit: %d uncleared errors.\n", num_error_codes);
         
     // Free the error stack
-    int i;
     for(i = 0; i < GPU_MAX_NUM_ERRORS; i++)
     {
         free(error_code_stack[i].function);
@@ -693,6 +714,8 @@ SDL_Surface* GPU_LoadSurface(const char* filename)
 {
 	int width, height, channels;
 	Uint32 Rmask, Gmask, Bmask, Amask = 0;
+	unsigned char* data;
+	SDL_Surface* result;
 	
 	if(filename == NULL)
     {
@@ -701,7 +724,6 @@ SDL_Surface* GPU_LoadSurface(const char* filename)
     }
 	
 	#ifdef __ANDROID__
-	unsigned char* data;
 	if(strlen(filename) > 0 && filename[0] != '/')
 	{
         // Must use SDL_RWops to access the assets directory automatically
@@ -722,7 +744,7 @@ SDL_Surface* GPU_LoadSurface(const char* filename)
         data = stbi_load(filename, &width, &height, &channels, 0);
     }
 	#else
-	unsigned char* data = stbi_load(filename, &width, &height, &channels, 0);
+	data = stbi_load(filename, &width, &height, &channels, 0);
 	#endif
 	
 	if(data == NULL)
@@ -765,7 +787,7 @@ SDL_Surface* GPU_LoadSurface(const char* filename)
             break;
 	}
 	
-	SDL_Surface* result = SDL_CreateRGBSurfaceFrom(data, width, height, channels*8, width*channels, Rmask, Gmask, Bmask, Amask);
+	result = SDL_CreateRGBSurfaceFrom(data, width, height, channels*8, width*channels, Rmask, Gmask, Bmask, Amask);
 	
 	return result;
 }
@@ -991,6 +1013,40 @@ void GPU_BlitTransformMatrix(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* t
 
 void GPU_BlitBatch(GPU_Image* image, GPU_Target* target, unsigned int num_sprites, float* values, GPU_BlitFlagEnum flags)
 {
+	int src_position_floats_per_sprite;
+	int src_rect_floats_per_sprite;
+	int src_color_floats_per_sprite;
+
+	Uint8 no_positions;
+	Uint8 no_rects;
+	Uint8 no_colors;
+	Uint8 pass_vertices;
+	Uint8 pass_texcoords;
+	Uint8 pass_colors;
+
+	int src_floats_per_sprite;
+
+	int size;
+	float* new_values;
+
+	int n;  // The sprite number iteration variable.
+	// Source indices (per sprite)
+	int pos_n;
+	int rect_n;
+	int color_n;
+	// Dest indices
+	int vert_i;
+	int texcoord_i;
+	int color_i;
+	// Dest float stride
+	int floats_per_vertex;
+
+	float w2;  // texcoord helpers for position expansion
+	float h2;
+
+	float tex_w;
+	float tex_h;
+
     if(!CHECK_RENDERER)
         RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL renderer");
     if(!CHECK_CONTEXT)
@@ -1019,16 +1075,16 @@ void GPU_BlitBatch(GPU_Image* image, GPU_Target* target, unsigned int num_sprite
 	// Condensed: Each vertex has 2 pos, 4 rect, 4 color
 	
 	// Default values: Each sprite is defined by a position, a rect, and a color.
-	int src_position_floats_per_sprite = 2;
-	int src_rect_floats_per_sprite = 4;
-	int src_color_floats_per_sprite = 4;
+	src_position_floats_per_sprite = 2;
+	src_rect_floats_per_sprite = 4;
+	src_color_floats_per_sprite = 4;
 	
-	Uint8 no_positions = (flags & GPU_USE_DEFAULT_POSITIONS);
-	Uint8 no_rects = (flags & GPU_USE_DEFAULT_SRC_RECTS);
-	Uint8 no_colors = (flags & GPU_USE_DEFAULT_COLORS);
-	Uint8 pass_vertices = (flags & GPU_PASSTHROUGH_VERTICES);
-	Uint8 pass_texcoords = (flags & GPU_PASSTHROUGH_TEXCOORDS);
-	Uint8 pass_colors = (flags & GPU_PASSTHROUGH_COLORS);
+	no_positions = (flags & GPU_USE_DEFAULT_POSITIONS);
+	no_rects = (flags & GPU_USE_DEFAULT_SRC_RECTS);
+	no_colors = (flags & GPU_USE_DEFAULT_COLORS);
+	pass_vertices = (flags & GPU_PASSTHROUGH_VERTICES);
+	pass_texcoords = (flags & GPU_PASSTHROUGH_TEXCOORDS);
+	pass_colors = (flags & GPU_PASSTHROUGH_COLORS);
 	
 	// Passthrough data is per-vertex.  Non-passthrough is per-sprite.  They can't interleave cleanly.
 	if(flags & GPU_PASSTHROUGH_ALL && (flags & GPU_PASSTHROUGH_ALL) != GPU_PASSTHROUGH_ALL)
@@ -1050,28 +1106,27 @@ void GPU_BlitBatch(GPU_Image* image, GPU_Target* target, unsigned int num_sprite
 	if(no_colors)
         src_color_floats_per_sprite = 0;
     
-	int src_floats_per_sprite = src_position_floats_per_sprite + src_rect_floats_per_sprite + src_color_floats_per_sprite;
+	src_floats_per_sprite = src_position_floats_per_sprite + src_rect_floats_per_sprite + src_color_floats_per_sprite;
 	
-	int size = num_sprites*(8 + 8 + 16);
-	float* new_values = (float*)malloc(sizeof(float)*size);
+	size = num_sprites*(8 + 8 + 16);
+	new_values = (float*)malloc(sizeof(float)*size);
     
-	int n;  // The sprite number iteration variable.
 	// Source indices (per sprite)
-	int pos_n = 0;
-	int rect_n = src_position_floats_per_sprite;
-	int color_n = src_position_floats_per_sprite + src_rect_floats_per_sprite;
+	pos_n = 0;
+	rect_n = src_position_floats_per_sprite;
+	color_n = src_position_floats_per_sprite + src_rect_floats_per_sprite;
 	// Dest indices
-	int vert_i = 0;
-	int texcoord_i = 2;
-	int color_i = 4;
+	vert_i = 0;
+	texcoord_i = 2;
+	color_i = 4;
 	// Dest float stride
-	int floats_per_vertex = 8;
+	floats_per_vertex = 8;
 	
-	float w2 = 0.5f*image->w;  // texcoord helpers for position expansion
-	float h2 = 0.5f*image->h;
+	w2 = 0.5f*image->w;  // texcoord helpers for position expansion
+	h2 = 0.5f*image->h;
 	
-	float tex_w = image->texture_w;
-	float tex_h = image->texture_h;
+	tex_w = image->texture_w;
+	tex_h = image->texture_h;
 	
     for(n = 0; n < num_sprites; n++)
     {
@@ -1122,14 +1177,15 @@ void GPU_BlitBatch(GPU_Image* image, GPU_Target* target, unsigned int num_sprite
             else
             {
                 // 4 vertices all in a row
-                float s1 = new_values[texcoord_i] = values[rect_n];
-                float t1 = new_values[texcoord_i+1] = values[rect_n+1];
+				float s1, t1, s3, t3;
+                s1 = new_values[texcoord_i] = values[rect_n];
+                t1 = new_values[texcoord_i+1] = values[rect_n+1];
                 texcoord_i += floats_per_vertex;
                 new_values[texcoord_i] = values[rect_n+2];
                 new_values[texcoord_i+1] = values[rect_n+3];
                 texcoord_i += floats_per_vertex;
-                float s3 = new_values[texcoord_i] = values[rect_n+4];
-                float t3 = new_values[texcoord_i+1] = values[rect_n+5];
+                s3 = new_values[texcoord_i] = values[rect_n+4];
+                t3 = new_values[texcoord_i+1] = values[rect_n+5];
                 texcoord_i += floats_per_vertex;
                 new_values[texcoord_i] = values[rect_n+6];
                 new_values[texcoord_i+1] = values[rect_n+7];
@@ -1289,6 +1345,31 @@ void GPU_BlitBatch(GPU_Image* image, GPU_Target* target, unsigned int num_sprite
 
 void GPU_BlitBatchSeparate(GPU_Image* image, GPU_Target* target, unsigned int num_sprites, float* positions, float* src_rects, float* colors, GPU_BlitFlagEnum flags)
 {
+	Uint8 pass_vertices;
+	Uint8 pass_texcoords;
+	Uint8 pass_colors;
+
+	int size;  // 4 vertices of x, y...  s, t...  r, g, b, a
+	float* values;
+
+	int n;  // The sprite number iteration variable.
+	// Source indices
+	int pos_n;
+	int rect_n;
+	int color_n;
+	// Dest indices
+	int vert_i;
+	int texcoord_i;
+	int color_i;
+	// Dest float stride
+	int floats_per_vertex;
+
+	float w2;  // texcoord helpers for position expansion
+	float h2;
+
+	float tex_w;
+	float tex_h;
+
     if(!CHECK_RENDERER)
         RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL renderer");
     if(!CHECK_CONTEXT)
@@ -1314,30 +1395,29 @@ void GPU_BlitBatchSeparate(GPU_Image* image, GPU_Target* target, unsigned int nu
 	// Repack the given arrays into an interleaved array for more efficient access
 	// Default values: Each sprite is defined by a position, a rect, and a color.
 	
-	Uint8 pass_vertices = (flags & GPU_PASSTHROUGH_VERTICES);
-	Uint8 pass_texcoords = (flags & GPU_PASSTHROUGH_TEXCOORDS);
-	Uint8 pass_colors = (flags & GPU_PASSTHROUGH_COLORS);
+	pass_vertices = (flags & GPU_PASSTHROUGH_VERTICES);
+	pass_texcoords = (flags & GPU_PASSTHROUGH_TEXCOORDS);
+	pass_colors = (flags & GPU_PASSTHROUGH_COLORS);
 	
-	int size = num_sprites*(8 + 8 + 16);  // 4 vertices of x, y...  s, t...  r, g, b, a
-	float* values = (float*)malloc(sizeof(float)*size);
+	size = num_sprites*(8 + 8 + 16);  // 4 vertices of x, y...  s, t...  r, g, b, a
+	values = (float*)malloc(sizeof(float)*size);
 	
-	int n;  // The sprite number iteration variable.
 	// Source indices
-	int pos_n = 0;
-	int rect_n = 0;
-	int color_n = 0;
+	pos_n = 0;
+	rect_n = 0;
+	color_n = 0;
 	// Dest indices
-	int vert_i = 0;
-	int texcoord_i = 2;
-	int color_i = 4;
+	vert_i = 0;
+	texcoord_i = 2;
+	color_i = 4;
 	// Dest float stride
-	int floats_per_vertex = 8;
+	floats_per_vertex = 8;
 	
-	float w2 = 0.5f*image->w;  // texcoord helpers for position expansion
-	float h2 = 0.5f*image->h;
+	w2 = 0.5f*image->w;  // texcoord helpers for position expansion
+	h2 = 0.5f*image->h;
 	
-	float tex_w = image->texture_w;
-	float tex_h = image->texture_h;
+	tex_w = image->texture_w;
+	tex_h = image->texture_h;
     
 	for(n = 0; n < num_sprites; n++)
     {
@@ -1389,14 +1469,15 @@ void GPU_BlitBatchSeparate(GPU_Image* image, GPU_Target* target, unsigned int nu
             else
             {
                 // 4 vertices all in a row
-                float s1 = values[texcoord_i] = src_rects[rect_n++];
-                float t1 = values[texcoord_i+1] = src_rects[rect_n++];
+				float s1, t1, s3, t3;
+                s1 = values[texcoord_i] = src_rects[rect_n++];
+                t1 = values[texcoord_i+1] = src_rects[rect_n++];
                 texcoord_i += floats_per_vertex;
                 values[texcoord_i] = src_rects[rect_n++];
                 values[texcoord_i+1] = src_rects[rect_n++];
                 texcoord_i += floats_per_vertex;
-                float s3 = values[texcoord_i] = src_rects[rect_n++];
-                float t3 = values[texcoord_i+1] = src_rects[rect_n++];
+                s3 = values[texcoord_i] = src_rects[rect_n++];
+                t3 = values[texcoord_i+1] = src_rects[rect_n++];
                 texcoord_i += floats_per_vertex;
                 values[texcoord_i] = src_rects[rect_n++];
                 values[texcoord_i+1] = src_rects[rect_n++];
@@ -1549,6 +1630,32 @@ void GPU_BlitBatchSeparate(GPU_Image* image, GPU_Target* target, unsigned int nu
 
 void GPU_TriangleBatch(GPU_Image* image, GPU_Target* target, unsigned short num_vertices, float* values, unsigned int num_indices, unsigned short* indices, GPU_BlitFlagEnum flags)
 {
+	int src_position_floats_per_vertex;
+	int src_texcoord_floats_per_vertex;
+	int src_color_floats_per_vertex;
+
+	Uint8 no_positions;
+	Uint8 no_texcoords;
+	Uint8 no_colors;
+	Uint8 pass_texcoords;
+	Uint8 pass_colors;
+
+	int src_floats_per_vertex;
+
+	int size;
+	float* new_values;
+
+	int n; // Vertex number iteration variable
+	// Source indices
+	int pos_n;
+	int texcoord_n;
+	int color_n;
+	// Dest indices
+	int vert_i;
+
+	float tex_w;
+	float tex_h;
+
     if(!CHECK_RENDERER)
         RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL renderer");
     if(!CHECK_CONTEXT)
@@ -1577,15 +1684,15 @@ void GPU_TriangleBatch(GPU_Image* image, GPU_Target* target, unsigned short num_
 	// Condensed: Each vertex has 2 pos, 2 texcoords, 4 color components
 	
 	// Default values: Each vertex is defined by a position, texcoords, and a color.
-	int src_position_floats_per_vertex = 2;
-	int src_texcoord_floats_per_vertex = 2;
-	int src_color_floats_per_vertex = 4;
+	src_position_floats_per_vertex = 2;
+	src_texcoord_floats_per_vertex = 2;
+	src_color_floats_per_vertex = 4;
 	
-	Uint8 no_positions = (flags & GPU_USE_DEFAULT_POSITIONS);
-	Uint8 no_texcoords = (flags & GPU_USE_DEFAULT_SRC_RECTS);
-	Uint8 no_colors = (flags & GPU_USE_DEFAULT_COLORS);
-	Uint8 pass_texcoords = (flags & GPU_PASSTHROUGH_TEXCOORDS);
-	Uint8 pass_colors = (flags & GPU_PASSTHROUGH_COLORS);
+	no_positions = (flags & GPU_USE_DEFAULT_POSITIONS);
+	no_texcoords = (flags & GPU_USE_DEFAULT_SRC_RECTS);
+	no_colors = (flags & GPU_USE_DEFAULT_COLORS);
+	pass_texcoords = (flags & GPU_PASSTHROUGH_TEXCOORDS);
+	pass_colors = (flags & GPU_PASSTHROUGH_COLORS);
 	
 	// Vertex position passthrough is ignored (we're not positioning triangles, we're positioning vertices already)
 	src_position_floats_per_vertex = 2; // x, y
@@ -1600,21 +1707,20 @@ void GPU_TriangleBatch(GPU_Image* image, GPU_Target* target, unsigned short num_
 	if(no_colors)
         src_color_floats_per_vertex = 0;
     
-	int src_floats_per_vertex = src_position_floats_per_vertex + src_texcoord_floats_per_vertex + src_color_floats_per_vertex;
+	src_floats_per_vertex = src_position_floats_per_vertex + src_texcoord_floats_per_vertex + src_color_floats_per_vertex;
 	
-	int size = num_vertices*(2 + 2 + 4);
-	float* new_values = (float*)malloc(sizeof(float)*size);
+	size = num_vertices*(2 + 2 + 4);
+	new_values = (float*)malloc(sizeof(float)*size);
     
-	int n; // Vertex number iteration variable
 	// Source indices
-	int pos_n = 0;
-	int texcoord_n = src_position_floats_per_vertex;
-	int color_n = src_position_floats_per_vertex + src_texcoord_floats_per_vertex;
+	pos_n = 0;
+	texcoord_n = src_position_floats_per_vertex;
+	color_n = src_position_floats_per_vertex + src_texcoord_floats_per_vertex;
 	// Dest indices
-	int vert_i = 0;
+	vert_i = 0;
 	
-	float tex_w = image->texture_w;
-	float tex_h = image->texture_h;
+	tex_w = image->texture_w;
+	tex_h = image->texture_h;
 	
     for(n = 0; n < num_vertices; n++)
     {
@@ -1748,19 +1854,21 @@ void GPU_SetColor(GPU_Image* image, SDL_Color* color)
 
 void GPU_SetRGB(GPU_Image* image, Uint8 r, Uint8 g, Uint8 b)
 {
+	SDL_Color c = {r, g, b, 255};
+
 	if(image == NULL)
 		return;
 	
-	SDL_Color c = {r, g, b, 255};
 	image->color = c;
 }
 
 void GPU_SetRGBA(GPU_Image* image, Uint8 r, Uint8 g, Uint8 b, Uint8 a)
 {
+	SDL_Color c = {r, g, b, a};
+
 	if(image == NULL)
 		return;
 	
-	SDL_Color c = {r, g, b, a};
 	image->color = c;
 }
 
@@ -1787,8 +1895,8 @@ void GPU_SetTargetRGB(GPU_Target* target, Uint8 r, Uint8 g, Uint8 b)
         target->use_color = 0;
     else
     {
-        target->use_color = 1;
         SDL_Color c = {r, g, b, 255};
+        target->use_color = 1;
         target->color = c;
     }
 }
@@ -1802,8 +1910,8 @@ void GPU_SetTargetRGBA(GPU_Target* target, Uint8 r, Uint8 g, Uint8 b, Uint8 a)
         target->use_color = 0;
     else
     {
-        target->use_color = 1;
         SDL_Color c = {r, g, b, a};
+        target->use_color = 1;
         target->color = c;
     }
 }
@@ -1963,18 +2071,21 @@ Uint32 GPU_CompileShader_RW(GPU_ShaderEnum shader_type, SDL_RWops* shader_source
 
 Uint32 GPU_LoadShader(GPU_ShaderEnum shader_type, const char* filename)
 {
+	SDL_RWops* rwops;
+	Uint32 result;
+
     if(filename == NULL)
     {
         GPU_PushErrorCode(__func__, GPU_ERROR_NULL_ARGUMENT, "filename");
         return 0;
     }
-    SDL_RWops* rwops = SDL_RWFromFile(filename, "r");
+    rwops = SDL_RWFromFile(filename, "r");
     if(rwops == NULL)
     {
         GPU_PushErrorCode(__func__, GPU_ERROR_FILE_NOT_FOUND, "%s", filename);
         return 0;
     }
-    Uint32 result = GPU_CompileShader_RW(shader_type, rwops);
+    result = GPU_CompileShader_RW(shader_type, rwops);
     SDL_RWclose(rwops);
     return result;
 }
@@ -2083,7 +2194,10 @@ GPU_AttributeFormat GPU_MakeAttributeFormat(int num_elems_per_vertex, GPU_TypeEn
 
 GPU_Attribute GPU_MakeAttribute(int location, void* values, GPU_AttributeFormat format)
 {
-    GPU_Attribute a = {location, values, format};
+	GPU_Attribute a;
+	a.location = location;
+	a.values = values;
+	a.format = format;
     return a;
 }
 
