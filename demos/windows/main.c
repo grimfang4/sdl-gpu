@@ -75,178 +75,187 @@ void destroy_group(Group* groups, int i)
 
 int main(int argc, char* argv[])
 {
+	GPU_Target* screen;
+
 	printRenderers();
 	
-    GPU_Target* screen = GPU_Init(screen_w, screen_h, GPU_DEFAULT_INIT_FLAGS);
+	screen = GPU_Init(800, 600, GPU_DEFAULT_INIT_FLAGS);
     if(screen == NULL)
         return -1;
     
 	printCurrentRenderer();
 	
-	GPU_Image* image;
 	{
-        SDL_Surface* surface = SDL_LoadBMP("data/test.bmp");
+		Uint32 startTime;
+		long frameCount;
+		Uint8 done;
+		SDL_Event event;
         
-        image = GPU_CopyImageFromSurface(surface);
+        int i = 0;
         
-        SDL_FreeSurface(surface);
-	}
-	
-    int max_groups = 30;
-    Group groups[max_groups];
-    memset(groups, 0, sizeof(Group)*max_groups);
-	
-	int num_groups = 0;
-	groups[num_groups] = create_first_group();
-	num_groups++;
-	
-	int i = 0;
-	
-	float dt = 0.010f;
-	
-	Uint32 startTime = SDL_GetTicks();
-	long frameCount = 0;
-	
-    Uint8 done = 0;
-	SDL_Event event;
-	while(!done)
-	{
-		while(SDL_PollEvent(&event))
-		{
-			if(event.type == SDL_QUIT)
-				done = 1;
-			else if(event.type == SDL_KEYDOWN)
-			{
-				if(event.key.keysym.sym == SDLK_ESCAPE)
-					done = 1;
-				else if(event.key.keysym.sym == SDLK_EQUALS || event.key.keysym.sym == SDLK_PLUS)
-				{
-                    for(i = 0; i < max_groups; i++)
+        float dt = 0.010f;
+        
+        #define MAX_GROUPS 30
+        Group groups[MAX_GROUPS];
+        int num_groups;
+        
+        GPU_Image* image;
+        {
+            SDL_Surface* surface = SDL_LoadBMP("data/test.bmp");
+            
+            image = GPU_CopyImageFromSurface(surface);
+            
+            SDL_FreeSurface(surface);
+        }
+		memset(groups, 0, sizeof(Group)*MAX_GROUPS);
+        
+        num_groups = 0;
+        groups[num_groups] = create_first_group();
+        num_groups++;
+        
+        startTime = SDL_GetTicks();
+        frameCount = 0;
+        
+        done = 0;
+        while(!done)
+        {
+            while(SDL_PollEvent(&event))
+            {
+                if(event.type == SDL_QUIT)
+                    done = 1;
+                else if(event.type == SDL_KEYDOWN)
+                {
+                    if(event.key.keysym.sym == SDLK_ESCAPE)
+                        done = 1;
+                    else if(event.key.keysym.sym == SDLK_EQUALS || event.key.keysym.sym == SDLK_PLUS)
                     {
-                        if(!groups[i].on)
+                        for(i = 0; i < MAX_GROUPS; i++)
                         {
-                            groups[i] = create_group();
-                            num_groups++;
-                            GPU_Log("Added window %u.  num_groups: %d\n", groups[i].windowID, num_groups);
-                            break;
+                            if(!groups[i].on)
+                            {
+                                groups[i] = create_group();
+                                num_groups++;
+                                GPU_Log("Added window %u.  num_groups: %d\n", groups[i].windowID, num_groups);
+                                break;
+                            }
                         }
                     }
-				}
-				else if(event.key.keysym.sym == SDLK_MINUS)
-				{
-					if(num_groups > 0)
+                    else if(event.key.keysym.sym == SDLK_MINUS)
                     {
-						
-                        for(i = max_groups-1; i >= 0; i--)
+                        if(num_groups > 0)
                         {
-                            if(groups[i].on)
+                            
+                            for(i = MAX_GROUPS-1; i >= 0; i--)
+                            {
+                                if(groups[i].on)
+                                {
+                                    destroy_group(groups, i);
+                                    
+                                    num_groups--;
+                                    GPU_Log("Removed window %u.  num_groups: %d\n", groups[i].windowID, num_groups);
+                                    break;
+                                }
+                            }
+                            
+                            if(num_groups == 0)
+                                done = 1;
+                        }
+                    }
+                }
+                else if(event.type == SDL_MOUSEBUTTONDOWN)
+                {
+                    GPU_Target* target = GPU_GetWindowTarget(event.button.windowID);
+                    if(target == NULL)
+                        GPU_Log("Clicked on window %u.  NULL target.\n", event.button.windowID);
+                    else
+                        GPU_Log("Clicked on window %u.  Target dims: %dx%d\n", event.button.windowID, target->w, target->h);
+                }
+                else if(event.type == SDL_WINDOWEVENT)
+                {
+                    if(event.window.event == SDL_WINDOWEVENT_CLOSE)
+                    {
+                        Uint8 closed = 0;
+                        for(i = 0; i < MAX_GROUPS; i++)
+                        {
+                            if(groups[i].on && groups[i].windowID == event.window.windowID)
                             {
                                 destroy_group(groups, i);
                                 
+                                closed = 1;
                                 num_groups--;
-                                GPU_Log("Removed window %u.  num_groups: %d\n", groups[i].windowID, num_groups);
+                                GPU_Log("num_groups: %d\n", num_groups);
                                 break;
                             }
                         }
                         
-                        if(num_groups == 0)
+                        // The last window was closed, then.
+                        if(!closed || num_groups == 0)
                             done = 1;
                     }
-				}
-			}
-			else if(event.type == SDL_MOUSEBUTTONDOWN)
-            {
-                GPU_Target* target = GPU_GetWindowTarget(event.button.windowID);
-                if(target == NULL)
-                    GPU_Log("Clicked on window %u.  NULL target.\n", event.button.windowID);
-                else
-                    GPU_Log("Clicked on window %u.  Target dims: %dx%d\n", event.button.windowID, target->w, target->h);
-            }
-			else if(event.type == SDL_WINDOWEVENT)
-            {
-                if(event.window.event == SDL_WINDOWEVENT_CLOSE)
-                {
-                    Uint8 closed = 0;
-                    for(i = 0; i < max_groups; i++)
-                    {
-                        if(groups[i].on && groups[i].windowID == event.window.windowID)
-                        {
-                            destroy_group(groups, i);
-                            
-                            closed = 1;
-                            num_groups--;
-                            GPU_Log("num_groups: %d\n", num_groups);
-                            break;
-                        }
-                    }
-                    
-                    // The last window was closed, then.
-                    if(!closed || num_groups == 0)
-                        done = 1;
                 }
             }
-		}
-		
-		for(i = 0; i < max_groups; i++)
-		{
-		    if(!groups[i].on)
-                continue;
             
-			groups[i].sprite.x += groups[i].sprite.velx*dt;
-			groups[i].sprite.y += groups[i].sprite.vely*dt;
-			if(groups[i].sprite.x < 0)
-			{
-				groups[i].sprite.x = 0;
-				groups[i].sprite.velx = -groups[i].sprite.velx;
-			}
-			else if(groups[i].sprite.x > screen_w)
-			{
-				groups[i].sprite.x = screen_w;
-				groups[i].sprite.velx = -groups[i].sprite.velx;
-			}
-			
-			if(groups[i].sprite.y < 0)
-			{
-				groups[i].sprite.y = 0;
-				groups[i].sprite.vely = -groups[i].sprite.vely;
-			}
-			else if(groups[i].sprite.y > screen_h)
-			{
-				groups[i].sprite.y = screen_h;
-				groups[i].sprite.vely = -groups[i].sprite.vely;
-			}
-		}
-		
-		for(i = 0; i < max_groups; i++)
-		{
-		    if(!groups[i].on)
-                continue;
+            for(i = 0; i < MAX_GROUPS; i++)
+            {
+                if(!groups[i].on)
+                    continue;
+                
+                groups[i].sprite.x += groups[i].sprite.velx*dt;
+                groups[i].sprite.y += groups[i].sprite.vely*dt;
+                if(groups[i].sprite.x < 0)
+                {
+                    groups[i].sprite.x = 0;
+                    groups[i].sprite.velx = -groups[i].sprite.velx;
+                }
+                else if(groups[i].sprite.x > screen_w)
+                {
+                    groups[i].sprite.x = screen_w;
+                    groups[i].sprite.velx = -groups[i].sprite.velx;
+                }
+                
+                if(groups[i].sprite.y < 0)
+                {
+                    groups[i].sprite.y = 0;
+                    groups[i].sprite.vely = -groups[i].sprite.vely;
+                }
+                else if(groups[i].sprite.y > screen_h)
+                {
+                    groups[i].sprite.y = screen_h;
+                    groups[i].sprite.vely = -groups[i].sprite.vely;
+                }
+            }
             
-            GPU_MakeCurrent(screen, groups[i].windowID);
+            for(i = 0; i < MAX_GROUPS; i++)
+            {
+                if(!groups[i].on)
+                    continue;
+                
+                GPU_MakeCurrent(screen, groups[i].windowID);
+                
+                GPU_Clear(screen);
+                
+                GPU_Blit(image, NULL, screen, groups[i].sprite.x, groups[i].sprite.y);
+                
+                GPU_Flip(screen);
+            }
             
-		    GPU_Clear(screen);
-		    
-		    GPU_Blit(image, NULL, screen, groups[i].sprite.x, groups[i].sprite.y);
-		    
-		    GPU_Flip(screen);
-		}
-		
-		frameCount++;
-		if(frameCount%500 == 0)
-			GPU_Log("Average FPS: %.2f\n", 1000.0f*frameCount/(SDL_GetTicks() - startTime));
-	}
-    
-	GPU_Log("Average FPS: %.2f\n", 1000.0f*frameCount/(SDL_GetTicks() - startTime));
-	
-    for(i = 0; i < max_groups; i++)
-    {
-        if(!groups[i].on)
-            continue;
+            frameCount++;
+            if(frameCount%500 == 0)
+                GPU_Log("Average FPS: %.2f\n", 1000.0f*frameCount/(SDL_GetTicks() - startTime));
+        }
         
-        destroy_group(groups, i);
-    }
-    
-    
+        GPU_Log("Average FPS: %.2f\n", 1000.0f*frameCount/(SDL_GetTicks() - startTime));
+        
+        for(i = 0; i < MAX_GROUPS; i++)
+        {
+            if(!groups[i].on)
+                continue;
+            
+            destroy_group(groups, i);
+        }
+        
+	}
+	
     GPU_Quit();
     
     return 0;

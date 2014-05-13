@@ -20,7 +20,6 @@ extern "C" {
     #define SDL_GPU_USE_SDL2
 #endif
 
-
 typedef struct GPU_Renderer GPU_Renderer;
 typedef struct GPU_Target GPU_Target;
 
@@ -767,7 +766,12 @@ struct GPU_Renderer
 
 // Setup calls
 
+// Visual C does not support static inline
+#ifdef _MSC_VER
+static SDL_version GPU_GetCompiledVersion(void)
+#else
 static inline SDL_version GPU_GetCompiledVersion(void)
+#endif
 {
     SDL_version v = {SDL_GPU_VERSION_MAJOR, SDL_GPU_VERSION_MINOR, SDL_GPU_VERSION_PATCH};
     return v;

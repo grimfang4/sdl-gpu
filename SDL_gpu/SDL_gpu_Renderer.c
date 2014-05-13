@@ -1,7 +1,12 @@
 #include "SDL_gpu.h"
 #include "SDL_platform.h"
 #include <string.h>
-#include <strings.h>
+
+#ifndef _MSC_VER
+	#include <strings.h>
+#else
+	#define __func__ __FUNCTION__
+#endif
 
 #define MAX_ACTIVE_RENDERERS 20
 #define MAX_REGISTERED_RENDERERS 10
@@ -31,10 +36,12 @@ void GPU_InitRendererRegister(void);
 
 int GPU_GetNumActiveRenderers(void)
 {
+	int count;
+	int i;
+
 	GPU_InitRendererRegister();
 
-	int count = 0;
-	int i;
+	count = 0;
 	for(i = 0; i < MAX_ACTIVE_RENDERERS; i++)
 	{
 		if(rendererMap[i] != NULL)
@@ -45,11 +52,12 @@ int GPU_GetNumActiveRenderers(void)
 
 void GPU_GetActiveRendererList(GPU_RendererID* renderers_array)
 {
+	int count;
+	int i;
+
 	GPU_InitRendererRegister();
 
-	int count = 0;
-	
-	int i;
+	count = 0;
 	for(i = 0; i < MAX_ACTIVE_RENDERERS; i++)
 	{
 		if(rendererMap[i] != NULL)
@@ -63,10 +71,12 @@ void GPU_GetActiveRendererList(GPU_RendererID* renderers_array)
 
 int GPU_GetNumRegisteredRenderers(void)
 {
+	int count;
+	int i;
+
 	GPU_InitRendererRegister();
 
-	int count = 0;
-	int i;
+	count = 0;
 	for(i = 0; i < MAX_REGISTERED_RENDERERS; i++)
 	{
 		if(rendererRegister[i].id.id != GPU_RENDERER_UNKNOWN)
@@ -77,11 +87,12 @@ int GPU_GetNumRegisteredRenderers(void)
 
 void GPU_GetRegisteredRendererList(GPU_RendererID* renderers_array)
 {
+	int count;
+	int i;
+
 	GPU_InitRendererRegister();
 
-	int count = 0;
-	
-	int i;
+	count = 0;
 	for(i = 0; i < MAX_REGISTERED_RENDERERS; i++)
 	{
 		if(rendererRegister[i].id.id != GPU_RENDERER_UNKNOWN)
@@ -192,10 +203,11 @@ static GPU_RendererID renderer_order[GPU_RENDERER_ORDER_MAX];
 
 void GPU_InitRendererRegister(void)
 {
+	int i;
+
 	if(initialized)
 		return;
 	
-	int i;
 	for(i = 0; i < MAX_REGISTERED_RENDERERS; i++)
 	{
 		rendererRegister[i].id.id = GPU_RENDERER_UNKNOWN;

@@ -72,155 +72,168 @@ void printWorldToScreen(float worldX, float worldY)
 
 int main(int argc, char* argv[])
 {
+	GPU_Target* screen;
+
 	printRenderers();
 	
-	GPU_Target* screen = GPU_Init(800, 600, GPU_DEFAULT_INIT_FLAGS);
+	screen = GPU_Init(800, 600, GPU_DEFAULT_INIT_FLAGS);
 	if(screen == NULL)
 		return -1;
 	
 	printCurrentRenderer();
 	
-	
-	Uint32 startTime = SDL_GetTicks();
-	long frameCount = 0;
-	
-	
-	SDL_Color red = {255, 0, 0, 255};
-	SDL_Color black = {0, 0, 0, 255};
-	
-	GPU_Image* img = GPU_LoadImage("data/test3.png");
-	GPU_Image* buffer = GPU_CreateImage(800, 600, GPU_FORMAT_RGBA);
-	GPU_LoadTarget(buffer);
-	
-	GPU_Target* target = screen;
-	
-	Uint8* keystates = SDL_GetKeyState(NULL);
-	
-	GPU_Camera camera = GPU_GetDefaultCamera();
-	
-	float dt = 0.010f;
-	Uint8 done = 0;
-	SDL_Event event;
-	while(!done)
 	{
-		while(SDL_PollEvent(&event))
-		{
-			if(event.type == SDL_QUIT)
-				done = 1;
-			else if(event.type == SDL_KEYDOWN)
-			{
-				if(event.key.keysym.sym == SDLK_ESCAPE)
-					done = 1;
-				else if(event.key.keysym.sym == SDLK_r)
-				{
-				    camera = GPU_GetDefaultCamera();
-				}
-				else if(event.key.keysym.sym == SDLK_RETURN)
-                {
-                    if(target == screen)
-                        target = buffer->target;
-                    else
-                        target = screen;
-                }
-				else if(event.key.keysym.sym == SDLK_SPACE)
-				{
-					int mx, my;
-					SDL_GetMouseState(&mx, &my);
-					float x, y;
-					GPU_GetVirtualCoords(screen, &x, &y, mx, my);
-					
-					printf("Angle: %.1f\n", camera.angle);
-					printScreenToWorld(x, y);
-					printWorldToScreen(50, 50);
-				}
-				else if(event.key.keysym.sym == SDLK_w)
-				{
-					camera.y -= 100;
-				}
-				else if(event.key.keysym.sym == SDLK_s)
-				{
-					camera.y += 100;
-				}
-				else if(event.key.keysym.sym == SDLK_a)
-				{
-					camera.x -= 100;
-				}
-				else if(event.key.keysym.sym == SDLK_d)
-				{
-					camera.x += 100;
-				}
-			}
-		}
-		
-		if(keystates[KEY_UP])
-		{
-			camera.y -= 200*dt;
-		}
-		else if(keystates[KEY_DOWN])
-		{
-			camera.y += 200*dt;
-		}
-		if(keystates[KEY_LEFT])
-		{
-			camera.x -= 200*dt;
-		}
-		else if(keystates[KEY_RIGHT])
-		{
-			camera.x += 200*dt;
-		}
-		if(keystates[KEY_z])
-		{
-			camera.z -= 200*dt;
-		}
-		else if(keystates[KEY_x])
-		{
-			camera.z += 200*dt;
-		}
-		if(keystates[KEY_MINUS])
-		{
-			camera.zoom -= 1.0f*dt;
-		}
-		else if(keystates[KEY_EQUALS])
-		{
-			camera.zoom += 1.0f*dt;
-		}
-		if(keystates[KEY_COMMA])
-		{
-			camera.angle -= 100*dt;
-		}
-		else if(keystates[KEY_PERIOD])
-		{
-			camera.angle += 100*dt;
-		}
-		
-		GPU_ClearRGBA(screen, 255, 255, 255, 255);
-		GPU_SetCamera(screen, NULL);
-		
-		GPU_ClearRGBA(target, 255, 255, 255, 255);
-		
-		GPU_SetCamera(target, &camera);
-		
-		GPU_Rectangle(target, 0, 0, 800, 600, black);
-		GPU_Blit(img, NULL, target, 50, 50);
-		GPU_Blit(img, NULL, target, 320, 50);
-		GPU_Blit(img, NULL, target, 50, 500);
-		
-		if(target != screen)
+        Uint32 startTime;
+        long frameCount;
+        Uint8 done;
+        SDL_Event event;
+        SDL_Color red = {255, 0, 0, 255};
+        SDL_Color black = {0, 0, 0, 255};
+        GPU_Image* img;
+        GPU_Image* buffer;
+        GPU_Target* target;
+        Uint8* keystates;
+        GPU_Camera camera;
+        float dt;
+        
+        startTime = SDL_GetTicks();
+        frameCount = 0;
+        
+        
+        
+        img = GPU_LoadImage("data/test3.png");
+        buffer = GPU_CreateImage(800, 600, GPU_FORMAT_RGBA);
+        GPU_LoadTarget(buffer);
+        
+        target = screen;
+        
+        keystates = SDL_GetKeyState(NULL);
+        
+        camera = GPU_GetDefaultCamera();
+        
+        dt = 0.010f;
+        done = 0;
+        while(!done)
         {
-            GPU_Blit(buffer, NULL, screen, buffer->w/2, buffer->h/2);
-            GPU_CircleFilled(screen, 0, 0, 20, red);
+            while(SDL_PollEvent(&event))
+            {
+                if(event.type == SDL_QUIT)
+                    done = 1;
+                else if(event.type == SDL_KEYDOWN)
+                {
+                    if(event.key.keysym.sym == SDLK_ESCAPE)
+                        done = 1;
+                    else if(event.key.keysym.sym == SDLK_r)
+                    {
+                        camera = GPU_GetDefaultCamera();
+                    }
+                    else if(event.key.keysym.sym == SDLK_RETURN)
+                    {
+                        if(target == screen)
+                            target = buffer->target;
+                        else
+                            target = screen;
+                    }
+                    else if(event.key.keysym.sym == SDLK_SPACE)
+                    {
+                        int mx, my;
+                        float x, y;
+                        SDL_GetMouseState(&mx, &my);
+                        GPU_GetVirtualCoords(screen, &x, &y, mx, my);
+                        
+                        printf("Angle: %.1f\n", camera.angle);
+                        printScreenToWorld(x, y);
+                        printWorldToScreen(50, 50);
+                    }
+                    else if(event.key.keysym.sym == SDLK_w)
+                    {
+                        camera.y -= 100;
+                    }
+                    else if(event.key.keysym.sym == SDLK_s)
+                    {
+                        camera.y += 100;
+                    }
+                    else if(event.key.keysym.sym == SDLK_a)
+                    {
+                        camera.x -= 100;
+                    }
+                    else if(event.key.keysym.sym == SDLK_d)
+                    {
+                        camera.x += 100;
+                    }
+                }
+            }
+            
+            if(keystates[KEY_UP])
+            {
+                camera.y -= 200*dt;
+            }
+            else if(keystates[KEY_DOWN])
+            {
+                camera.y += 200*dt;
+            }
+            if(keystates[KEY_LEFT])
+            {
+                camera.x -= 200*dt;
+            }
+            else if(keystates[KEY_RIGHT])
+            {
+                camera.x += 200*dt;
+            }
+            if(keystates[KEY_z])
+            {
+                camera.z -= 200*dt;
+            }
+            else if(keystates[KEY_x])
+            {
+                camera.z += 200*dt;
+            }
+            if(keystates[KEY_MINUS])
+            {
+                camera.zoom -= 1.0f*dt;
+            }
+            else if(keystates[KEY_EQUALS])
+            {
+                camera.zoom += 1.0f*dt;
+            }
+            if(keystates[KEY_COMMA])
+            {
+                camera.angle -= 100*dt;
+            }
+            else if(keystates[KEY_PERIOD])
+            {
+                camera.angle += 100*dt;
+            }
+            
+            GPU_ClearRGBA(screen, 255, 255, 255, 255);
+            GPU_SetCamera(screen, NULL);
+            
+            GPU_ClearRGBA(target, 255, 255, 255, 255);
+            
+            GPU_SetCamera(target, &camera);
+            
+            GPU_Rectangle(target, 0, 0, 800, 600, black);
+            GPU_Blit(img, NULL, target, 50, 50);
+            GPU_Blit(img, NULL, target, 320, 50);
+            GPU_Blit(img, NULL, target, 50, 500);
+            
+            if(target != screen)
+            {
+                GPU_Blit(buffer, NULL, screen, buffer->w/2, buffer->h/2);
+                GPU_CircleFilled(screen, 0, 0, 20, red);
+            }
+            
+            GPU_Flip(screen);
+            
+            frameCount++;
+            if(frameCount%500 == 0)
+                printf("Average FPS: %.2f\n", 1000.0f*frameCount/(SDL_GetTicks() - startTime));
         }
-		
-		GPU_Flip(screen);
-		
-		frameCount++;
-		if(frameCount%500 == 0)
-			printf("Average FPS: %.2f\n", 1000.0f*frameCount/(SDL_GetTicks() - startTime));
+        
+        printf("Average FPS: %.2f\n", 1000.0f*frameCount/(SDL_GetTicks() - startTime));
+        
+        GPU_FreeImage(img);
 	}
-	
-	printf("Average FPS: %.2f\n", 1000.0f*frameCount/(SDL_GetTicks() - startTime));
-	
-	GPU_FreeImage(img);
 	
 	GPU_Quit();
 	

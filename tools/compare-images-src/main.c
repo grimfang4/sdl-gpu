@@ -72,109 +72,124 @@ void printWorldToScreen(float worldX, float worldY)
 
 int main(int argc, char* argv[])
 {
+	GPU_Target* screen;
+
 	printRenderers();
 	
-	GPU_Target* screen = GPU_Init(800, 600, GPU_DEFAULT_INIT_FLAGS);
+	screen = GPU_Init(800, 600, GPU_DEFAULT_INIT_FLAGS);
 	if(screen == NULL)
 		return -1;
 	
 	printCurrentRenderer();
-	
-	int numImages = 0;
-	
-	GPU_Image* images[argc-1];
-	int i;
-	for(i = 1; i < argc; i++)
+
 	{
-		images[numImages] = GPU_LoadImage(argv[i]);
-		if(images[numImages] != NULL)
-			numImages++;
-	}
-	
-	Uint8* keystates = SDL_GetKeyState(NULL);
-	GPU_Camera camera = GPU_GetDefaultCamera();
-	
-	float dt = 0.010f;
-	Uint8 done = 0;
-	SDL_Event event;
-	while(!done)
-	{
-		while(SDL_PollEvent(&event))
+		int numImages;
+		GPU_Image** images;
+		int i;
+		Uint8* keystates;
+		GPU_Camera camera;
+		float dt;
+		Uint8 done;
+		SDL_Event event;
+		float x, y;
+
+		images = (GPU_Image**)malloc(sizeof(GPU_Image*)*(argc - 1));
+
+		numImages = 0;
+
+		for (i = 1; i < argc; i++)
 		{
-			if(event.type == SDL_QUIT)
-				done = 1;
-			else if(event.type == SDL_KEYDOWN)
+			images[numImages] = GPU_LoadImage(argv[i]);
+			if (images[numImages] != NULL)
+				numImages++;
+		}
+
+		keystates = SDL_GetKeyState(NULL);
+		camera = GPU_GetDefaultCamera();
+
+		dt = 0.010f;
+		done = 0;
+		while (!done)
+		{
+			while (SDL_PollEvent(&event))
 			{
-				if(event.key.keysym.sym == SDLK_ESCAPE)
+				if (event.type == SDL_QUIT)
 					done = 1;
-				else if(event.key.keysym.sym == SDLK_r)
+				else if (event.type == SDL_KEYDOWN)
 				{
-					camera.x = 0.0f;
-					camera.y = 0.0f;
-					camera.z = -10.0f;
-					camera.zoom = 1.0f;
-					camera.angle = 0.0f;
+					if (event.key.keysym.sym == SDLK_ESCAPE)
+						done = 1;
+					else if (event.key.keysym.sym == SDLK_r)
+					{
+						camera.x = 0.0f;
+						camera.y = 0.0f;
+						camera.z = -10.0f;
+						camera.zoom = 1.0f;
+						camera.angle = 0.0f;
+					}
+				}
+				else if (event.type == SDL_MOUSEBUTTONDOWN)
+				{
+					float x, y;
+					GPU_GetVirtualCoords(screen, &x, &y, event.button.x, event.button.y);
+
+					printScreenToWorld(x, y);
 				}
 			}
-			else if(event.type == SDL_MOUSEBUTTONDOWN)
+
+			if (keystates[KEY_UP])
 			{
-				float x, y;
-				GPU_GetVirtualCoords(screen, &x, &y, event.button.x, event.button.y);
-				
-				printScreenToWorld(x, y);
+				camera.y -= 200 * dt;
 			}
+			else if (keystates[KEY_DOWN])
+			{
+				camera.y += 200 * dt;
+			}
+			if (keystates[KEY_LEFT])
+			{
+				camera.x -= 200 * dt;
+			}
+			else if (keystates[KEY_RIGHT])
+			{
+				camera.x += 200 * dt;
+			}
+			if (keystates[KEY_MINUS])
+			{
+				camera.zoom -= 1.0f*dt;
+			}
+			else if (keystates[KEY_EQUALS])
+			{
+				camera.zoom += 1.0f*dt;
+			}
+
+			GPU_ClearRGBA(screen, 255, 255, 255, 255);
+
+			GPU_SetCamera(screen, &camera);
+
+			x = 0;
+			y = 0;
+			for (i = 0; i < numImages; i++)
+			{
+				x += images[i]->w / 2.0f;
+				y += images[i]->h / 2.0f;
+				GPU_Blit(images[i], NULL, screen, x, y);
+				x += images[i]->w / 2.0f;
+				y += images[i]->h / 2.0f;
+			}
+
+
+			GPU_Flip(screen);
+			SDL_Delay(10);
 		}
-		
-		if(keystates[KEY_UP])
+
+		for (i = 0; i < numImages; i++)
 		{
-			camera.y -= 200*dt;
+			GPU_FreeImage(images[i]);
 		}
-		else if(keystates[KEY_DOWN])
-		{
-			camera.y += 200*dt;
-		}
-		if(keystates[KEY_LEFT])
-		{
-			camera.x -= 200*dt;
-		}
-		else if(keystates[KEY_RIGHT])
-		{
-			camera.x += 200*dt;
-		}
-		if(keystates[KEY_MINUS])
-		{
-			camera.zoom -= 1.0f*dt;
-		}
-		else if(keystates[KEY_EQUALS])
-		{
-			camera.zoom += 1.0f*dt;
-		}
-		
-		GPU_ClearRGBA(screen, 255, 255, 255, 255);
-		
-		GPU_SetCamera(screen, &camera);
-		
-		float x = 0;
-		float y = 0;
-		for(i = 0; i < numImages; i++)
-		{
-			x += images[i]->w/2.0f;
-			y += images[i]->h/2.0f;
-			GPU_Blit(images[i], NULL, screen, x, y);
-			x += images[i]->w/2.0f;
-			y += images[i]->h/2.0f;
-		}
-		
-		
-		GPU_Flip(screen);
-		SDL_Delay(10);
+
+		free(images);
 	}
-	
-	for(i = 0; i < numImages; i++)
-	{
-		GPU_FreeImage(images[i]);
-	}
-	
+
 	GPU_Quit();
 	
 	return 0;
