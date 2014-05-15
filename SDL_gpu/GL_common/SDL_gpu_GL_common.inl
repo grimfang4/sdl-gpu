@@ -518,7 +518,7 @@ static void changeBlendMode(GPU_Renderer* renderer, GPU_BlendEnum mode)
     }
     else if(mode == GPU_BLEND_ADD)
     {
-        glBlendFunc(GL_ONE, GL_ONE);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE);
         if(!(renderer->enabled_features & GPU_FEATURE_BLEND_EQUATIONS))
             return;
         glBlendEquation(GL_FUNC_ADD);
