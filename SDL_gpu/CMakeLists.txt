@@ -42,11 +42,11 @@ set(SDL_gpu_install_HDRS
 )
 
 # Set the appropriate library name so SDL_gpu and SDL2_gpu can co-exist.
-if ( NOT SDL_gpu_USE_SDL2)
+if ( SDL_gpu_USE_SDL1)
 	set (SDL_gpu_OUTPUT_NAME "SDL_gpu")
-else ( NOT SDL_gpu_USE_SDL2)
+else ( SDL_gpu_USE_SDL1)
 	set (SDL_gpu_OUTPUT_NAME "SDL2_gpu")
-endif ( NOT SDL_gpu_USE_SDL2)
+endif ( SDL_gpu_USE_SDL1)
 
 # Build the shared library (.so or .dll)
 if(SDL_gpu_BUILD_SHARED)
