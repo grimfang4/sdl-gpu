@@ -23,6 +23,13 @@
 		#define GL_ABGR GL_ABGR_EXT
 	#endif
 	
+	#undef glBlendFuncSeparate
+    #define glBlendFuncSeparate glBlendFuncSeparateEXT
+	#undef glBlendEquation
+    #define glBlendEquation glBlendEquationEXT
+	#undef glBlendEquationSeparate
+    #define glBlendEquationSeparate glBlendEquationSeparateEXT
+    
 	#undef GL_MIRRORED_REPEAT
     #define GL_MIRRORED_REPEAT GL_MIRRORED_REPEAT_ARB
 	

@@ -28,6 +28,7 @@
     #define GL_FRAMEBUFFER_COMPLETE GL_FRAMEBUFFER_COMPLETE_OES
 
     #define glBlendEquation glBlendEquationOES
+    #define glBlendEquationSeparate glBlendEquationSeparateOES
     #define glBlendFuncSeparate glBlendFuncSeparateOES
 
     #define GL_FUNC_ADD GL_FUNC_ADD_OES
