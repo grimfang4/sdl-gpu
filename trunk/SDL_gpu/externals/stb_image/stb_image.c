@@ -757,7 +757,7 @@ stbi_inline static uint8 get8u(stbi *s)
 static void skip(stbi *s, int n)
 {
    if (s->io.read) {
-      int blen = s->img_buffer_end - s->img_buffer;
+      int blen = (int)(s->img_buffer_end - s->img_buffer);
       if (blen < n) {
          s->img_buffer = s->img_buffer_end;
          (s->io.skip)(s->io_user_data, n - blen);
@@ -770,7 +770,7 @@ static void skip(stbi *s, int n)
 static int getn(stbi *s, stbi_uc *buffer, int n)
 {
    if (s->io.read) {
-      int blen = s->img_buffer_end - s->img_buffer;
+      int blen = (int)(s->img_buffer_end - s->img_buffer);
       if (blen < n) {
          int res, count;
 
@@ -4293,11 +4293,11 @@ static float *hdr_load(stbi *s, int *x, int *y, int *comp, int req_comp)
    token = hdr_gettoken(s,buffer);
    if (strncmp(token, "-Y ", 3))  return epf("unsupported data layout", "Unsupported HDR format");
    token += 3;
-   height = strtol(token, &token, 10);
+   height = (int)strtol(token, &token, 10);
    while (*token == ' ') ++token;
    if (strncmp(token, "+X ", 3))  return epf("unsupported data layout", "Unsupported HDR format");
    token += 3;
-   width = strtol(token, NULL, 10);
+   width = (int)strtol(token, NULL, 10);
 
    *x = width;
    *y = height;
@@ -4405,14 +4405,14 @@ static int stbi_hdr_info(stbi *s, int *x, int *y, int *comp)
        return 0;
    }
    token += 3;
-   *y = strtol(token, &token, 10);
+   *y = (int)strtol(token, &token, 10);
    while (*token == ' ') ++token;
    if (strncmp(token, "+X ", 3)) {
        stbi_rewind( s );
        return 0;
    }
    token += 3;
-   *x = strtol(token, NULL, 10);
+   *x = (int)strtol(token, NULL, 10);
    *comp = 3;
    return 1;
 }

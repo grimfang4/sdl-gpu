@@ -53,6 +53,11 @@ else ( SDL_gpu_USE_SDL1 )
 	   message ( FATAL_ERROR "SDL2 not found!" )
 	endif ( NOT SDL2_FOUND )
 	
+	if ( NOT SDL2MAIN_LIBRARY )
+		message ( WARNING "SDL2MAIN_LIBRARY is NOTFOUND" )
+		SET( SDL2MAIN_LIBRARY "" )
+	endif ( NOT SDL2MAIN_LIBRARY )
+
 	include_directories(${SDL2_INCLUDE_DIR})
 	link_libraries(${SDL2MAIN_LIBRARY} ${SDL2_LIBRARY})
 endif( SDL_gpu_USE_SDL1 )

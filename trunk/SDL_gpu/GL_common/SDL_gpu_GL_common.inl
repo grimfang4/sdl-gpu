@@ -114,14 +114,14 @@ static Uint8 isExtensionSupported(const char* extension_str)
     // As suggested by Mesa3D.org
     char* p = (char*)glGetString(GL_EXTENSIONS);
     char* end;
-    int extNameLen;
+    unsigned long extNameLen;
 
     extNameLen = strlen(extension_str);
     end = p + strlen(p);
 
     while(p < end)
     {
-        int n = strcspn(p, " ");
+        unsigned long n = strcspn(p, " ");
         if((extNameLen == n) && (strncmp(extension_str, p, n) == 0))
             return 1;
         
@@ -1818,7 +1818,7 @@ static unsigned char* getRawTargetData(GPU_Renderer* renderer, GPU_Target* targe
     // Flip the data vertically (OpenGL framebuffer is read upside down)
     pitch = target->w * channels;
     copy = (unsigned char*)malloc(pitch);
-    y;
+    
     for(y = 0; y < target->h/2; y++)
     {
         unsigned char* top = &data[target->w * y * channels];
@@ -3542,7 +3542,7 @@ static void upload_attribute_data(GPU_CONTEXT_DATA* cdata, int num_vertices)
             glBufferData(GL_ARRAY_BUFFER, bytes_used, a->next_value, GL_STREAM_DRAW);
             
             glEnableVertexAttribArray(a->attribute.location);
-            glVertexAttribPointer(a->attribute.location, a->attribute.format.num_elems_per_value, a->attribute.format.type, a->attribute.format.normalize, a->per_vertex_storage_stride_bytes, (void*)a->per_vertex_storage_offset_bytes);
+            glVertexAttribPointer(a->attribute.location, a->attribute.format.num_elems_per_value, a->attribute.format.type, a->attribute.format.normalize, a->per_vertex_storage_stride_bytes, (void*)(long)a->per_vertex_storage_offset_bytes);
             
             a->enabled = 1;
             // Move the data along so we use the next values for the next flush
@@ -4601,7 +4601,7 @@ static Uint32 GetShaderSourceSize_RW(SDL_RWops* shader_source)
         {
             // Get the rest of the line
             int line_size = 1;
-            int line_len;
+            unsigned long line_len;
 			char* token;
             while((line_len = SDL_RWread(shader_source, buffer+line_size, 1, 1)) > 0)
             {
@@ -4681,7 +4681,7 @@ static Uint32 GetShaderSource_RW(SDL_RWops* shader_source, char* result)
         {
             // Get the rest of the line
             int line_size = 1;
-			int line_len;
+			unsigned long line_len;
 			char token_buffer[512];  // strtok() is destructive
 			char* token;
             while((line_len = SDL_RWread(shader_source, buffer+line_size, 1, 1)) > 0)
@@ -4795,11 +4795,15 @@ static Uint32 compile_shader_source(GPU_ShaderEnum shader_type, const char* shad
     case GPU_FRAGMENT_SHADER:
         shader_object = glCreateShader(GL_FRAGMENT_SHADER);
         break;
-    #ifdef GL_GEOMETRY_SHADER
     case GPU_GEOMETRY_SHADER:
+    #ifdef GL_GEOMETRY_SHADER
         shader_object = glCreateShader(GL_GEOMETRY_SHADER);
-        break;
+    #else
+        GPU_PushErrorCode("GPU_CompileShader", GPU_ERROR_BACKEND_ERROR, "Hardware does not support GPU_GEOMETRY_SHADER.");
+        snprintf(shader_message, 256, "Failed to create geometry shader object.\n");
+        return 0;
     #endif
+        break;
     }
     
     if(shader_object == 0)
@@ -4854,7 +4858,7 @@ static Uint32 CompileShader_RW(GPU_Renderer* renderer, GPU_ShaderEnum shader_typ
 
 static Uint32 CompileShader(GPU_Renderer* renderer, GPU_ShaderEnum shader_type, const char* shader_source)
 {
-    Uint32 size = strlen(shader_source);
+    Uint32 size = (Uint32)strlen(shader_source);
 	SDL_RWops* rwops;
     if(size == 0)
         return 0;
