@@ -106,7 +106,7 @@ typedef struct ContextData_GLES_2
 	Uint8 last_use_texturing;
 	unsigned int last_shape;
 	Uint8 last_use_blending;
-	GPU_BlendEnum last_blend_mode;
+	GPU_BlendMode last_blend_mode;
 	GPU_Rect last_viewport;
 	GPU_Camera last_camera;
 	Uint8 last_camera_inverted;

@@ -1941,20 +1941,147 @@ void GPU_SetShapeBlending(Uint8 enable)
 	current_renderer->current_context_target->context->shapes_use_blending = enable;
 }
 
-void GPU_SetBlendMode(GPU_Image* image, GPU_BlendEnum mode)
+
+GPU_BlendMode GPU_GetBlendModeFromPreset(GPU_BlendPresetEnum preset)
+{
+	switch(preset)
+	{
+    case GPU_BLEND_NORMAL:
+        {
+            GPU_BlendMode b = {GPU_FUNC_SRC_ALPHA, GPU_FUNC_ONE_MINUS_SRC_ALPHA, GPU_FUNC_SRC_ALPHA, GPU_FUNC_ONE_MINUS_SRC_ALPHA, GPU_EQ_ADD, GPU_EQ_ADD};
+            return b;
+        }
+        break;
+    case GPU_BLEND_PREMULTIPLIED_ALPHA:
+        {
+            GPU_BlendMode b = {GPU_FUNC_ONE, GPU_FUNC_ONE_MINUS_SRC_ALPHA, GPU_FUNC_ONE, GPU_FUNC_ONE_MINUS_SRC_ALPHA, GPU_EQ_ADD, GPU_EQ_ADD};
+            return b;
+        }
+        break;
+    case GPU_BLEND_MULTIPLY:
+        {
+            GPU_BlendMode b = {GPU_FUNC_DST_COLOR, GPU_FUNC_ZERO, GPU_FUNC_SRC_ALPHA, GPU_FUNC_ONE_MINUS_SRC_ALPHA, GPU_EQ_ADD, GPU_EQ_ADD};
+            return b;
+        }
+        break;
+    case GPU_BLEND_ADD:
+        {
+            GPU_BlendMode b = {GPU_FUNC_SRC_ALPHA, GPU_FUNC_ONE, GPU_FUNC_SRC_ALPHA, GPU_FUNC_ONE, GPU_EQ_ADD, GPU_EQ_ADD};
+            return b;
+        }
+        break;
+    case GPU_BLEND_SUBTRACT:
+        // FIXME: Use src alpha for source components?
+        {
+            GPU_BlendMode b = {GPU_FUNC_ONE, GPU_FUNC_ONE, GPU_FUNC_ONE, GPU_FUNC_ONE, GPU_EQ_SUBTRACT, GPU_EQ_SUBTRACT};
+            return b;
+        }
+        break;
+    case GPU_BLEND_MOD_ALPHA:
+        // Don't disturb the colors, but multiply the dest alpha by the src alpha
+        {
+            GPU_BlendMode b = {GPU_FUNC_ZERO, GPU_FUNC_ONE, GPU_FUNC_ZERO, GPU_FUNC_SRC_ALPHA, GPU_EQ_ADD, GPU_EQ_ADD};
+            return b;
+        }
+        break;
+    case GPU_BLEND_SET_ALPHA:
+        // Don't disturb the colors, but set the alpha to the src alpha
+        {
+            GPU_BlendMode b = {GPU_FUNC_ZERO, GPU_FUNC_ONE, GPU_FUNC_ONE, GPU_FUNC_ZERO, GPU_EQ_ADD, GPU_EQ_ADD};
+            return b;
+        }
+        break;
+    case GPU_BLEND_SET:
+        {
+            GPU_BlendMode b = {GPU_FUNC_ONE, GPU_FUNC_ZERO, GPU_FUNC_ONE, GPU_FUNC_ZERO, GPU_EQ_ADD, GPU_EQ_ADD};
+            return b;
+        }
+        break;
+    case GPU_BLEND_NORMAL_KEEP_ALPHA:
+        {
+            GPU_BlendMode b = {GPU_FUNC_SRC_ALPHA, GPU_FUNC_ONE_MINUS_SRC_ALPHA, GPU_FUNC_ZERO, GPU_FUNC_ONE, GPU_EQ_ADD, GPU_EQ_ADD};
+            return b;
+        }
+        break;
+    case GPU_BLEND_NORMAL_ADD_ALPHA:
+        {
+            GPU_BlendMode b = {GPU_FUNC_SRC_ALPHA, GPU_FUNC_ONE_MINUS_SRC_ALPHA, GPU_FUNC_ONE, GPU_FUNC_ONE, GPU_EQ_ADD, GPU_EQ_ADD};
+            return b;
+        }
+        break;
+    default:
+        GPU_PushErrorCode(__func__, GPU_ERROR_USER_ERROR, "Blend preset not supported: %d", preset);
+        {
+            GPU_BlendMode b = {GPU_FUNC_SRC_ALPHA, GPU_FUNC_ONE_MINUS_SRC_ALPHA, GPU_FUNC_SRC_ALPHA, GPU_FUNC_ONE_MINUS_SRC_ALPHA, GPU_EQ_ADD, GPU_EQ_ADD};
+            return b;
+        }
+        break;
+	}
+}
+
+
+void GPU_SetBlendFunction(GPU_Image* image, GPU_BlendFuncEnum source_color, GPU_BlendFuncEnum dest_color, GPU_BlendFuncEnum source_alpha, GPU_BlendFuncEnum dest_alpha)
 {
 	if(image == NULL)
 		return;
 	
-	image->blend_mode = mode;
+	image->blend_mode.source_color = source_color;
+	image->blend_mode.dest_color = dest_color;
+	image->blend_mode.source_alpha = source_alpha;
+	image->blend_mode.dest_alpha = dest_alpha;
 }
 
-void GPU_SetShapeBlendMode(GPU_BlendEnum mode)
+void GPU_SetBlendEquation(GPU_Image* image, GPU_BlendEqEnum color_equation, GPU_BlendEqEnum alpha_equation)
+{
+	if(image == NULL)
+		return;
+    
+    image->blend_mode.color_equation = color_equation;
+    image->blend_mode.alpha_equation = alpha_equation;
+}
+
+void GPU_SetBlendMode(GPU_Image* image, GPU_BlendPresetEnum preset)
+{
+	if(image == NULL)
+		return;
+	
+	GPU_BlendMode b = GPU_GetBlendModeFromPreset(preset);
+    GPU_SetBlendFunction(image, b.source_color, b.dest_color, b.source_alpha, b.dest_alpha);
+    GPU_SetBlendEquation(image, b.color_equation, b.alpha_equation);
+}
+
+void GPU_SetShapeBlendFunction(GPU_BlendFuncEnum source_color, GPU_BlendFuncEnum dest_color, GPU_BlendFuncEnum source_alpha, GPU_BlendFuncEnum dest_alpha)
 {
 	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return;
 	
-	current_renderer->current_context_target->context->shapes_blend_mode = mode;
+	GPU_Context* context = current_renderer->current_context_target->context;
+	
+	context->shapes_blend_mode.source_color = source_color;
+	context->shapes_blend_mode.dest_color = dest_color;
+	context->shapes_blend_mode.source_alpha = source_alpha;
+	context->shapes_blend_mode.dest_alpha = dest_alpha;
+}
+
+void GPU_SetShapeBlendEquation(GPU_BlendEqEnum color_equation, GPU_BlendEqEnum alpha_equation)
+{
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
+		return;
+    
+	GPU_Context* context = current_renderer->current_context_target->context;
+    
+    context->shapes_blend_mode.color_equation = color_equation;
+    context->shapes_blend_mode.alpha_equation = alpha_equation;
+}
+
+void GPU_SetShapeBlendMode(GPU_BlendPresetEnum preset)
+{
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
+		return;
+	
+	GPU_BlendMode b = GPU_GetBlendModeFromPreset(preset);
+    GPU_SetShapeBlendFunction(b.source_color, b.dest_color, b.source_alpha, b.dest_alpha);
+    GPU_SetShapeBlendEquation(b.color_equation, b.alpha_equation);
 }
 
 void GPU_SetImageFilter(GPU_Image* image, GPU_FilterEnum filter)

@@ -62,8 +62,48 @@ typedef struct GPU_RendererID
 } GPU_RendererID;
 
 
-/*! Blending options 
+/*! Blend component functions
+ * \see GPU_SetBlendFunction()
+ * Values chosen for direct OpenGL compatibility.
+ */
+typedef enum {
+    GPU_FUNC_ZERO = 0,
+    GPU_FUNC_ONE = 1,
+    GPU_FUNC_SRC_COLOR = 0x0300,
+    GPU_FUNC_DST_COLOR = 0x0306,
+    GPU_FUNC_ONE_MINUS_SRC = 0x0301,
+    GPU_FUNC_ONE_MINUS_DST = 0x0307,
+    GPU_FUNC_SRC_ALPHA = 0x0302,
+    GPU_FUNC_DST_ALPHA = 0x0304,
+    GPU_FUNC_ONE_MINUS_SRC_ALPHA = 0x0303,
+    GPU_FUNC_ONE_MINUS_DST_ALPHA = 0x0305
+} GPU_BlendFuncEnum;
+
+/*! Blend component equations
+ * \see GPU_SetBlendEquation()
+ * Values chosen for direct OpenGL compatibility.
+ */
+typedef enum {
+    GPU_EQ_ADD = 0x8006,
+    GPU_EQ_SUBTRACT = 0x800A,
+    GPU_EQ_REVERSE_SUBTRACT = 0x800B
+} GPU_BlendEqEnum;
+
+/*! Blend mode storage struct */
+typedef struct GPU_BlendMode
+{
+    GPU_BlendFuncEnum source_color;
+    GPU_BlendFuncEnum dest_color;
+    GPU_BlendFuncEnum source_alpha;
+    GPU_BlendFuncEnum dest_alpha;
+    
+    GPU_BlendEqEnum color_equation;
+    GPU_BlendEqEnum alpha_equation;
+} GPU_BlendMode;
+
+/*! Blend mode presets 
  * \see GPU_SetBlendMode()
+ * \see GPU_GetBlendModeFromPreset()
  */
 typedef enum {
     GPU_BLEND_NORMAL = 0,
@@ -71,21 +111,12 @@ typedef enum {
     GPU_BLEND_MULTIPLY = 2,
     GPU_BLEND_ADD = 3,
     GPU_BLEND_SUBTRACT = 4,
-    GPU_BLEND_ADD_COLOR = 5,
-    GPU_BLEND_SUBTRACT_COLOR = 6,
-    GPU_BLEND_DARKEN = 7,
-    GPU_BLEND_LIGHTEN = 8,
-    GPU_BLEND_DIFFERENCE = 9,
-    GPU_BLEND_PUNCHOUT = 10,
-    GPU_BLEND_CUTOUT = 11,
-    GPU_BLEND_MOD_ALPHA = 12,
-    GPU_BLEND_SET_ALPHA = 13,
-    GPU_BLEND_SET = 14,
-    GPU_BLEND_NORMAL_KEEP_ALPHA = 15,
-    GPU_BLEND_NORMAL_ADD_ALPHA = 16,
-    GPU_BLEND_SUBTRACT_ALPHA = 17,
-    GPU_BLEND_OVERRIDE = 100  // Lets you specify direct GL calls before blitting.  Note: You should call GPU_FlushBlitBuffer() before you change blend modes via OpenGL so the new blend mode doesn't affect SDL_gpu's previously buffered blits.
-} GPU_BlendEnum;
+    GPU_BLEND_MOD_ALPHA = 5,
+    GPU_BLEND_SET_ALPHA = 6,
+    GPU_BLEND_SET = 7,
+    GPU_BLEND_NORMAL_KEEP_ALPHA = 8,
+    GPU_BLEND_NORMAL_ADD_ALPHA = 9
+} GPU_BlendPresetEnum;
 
 /*! Image filtering options.  These affect the quality/interpolation of colors when images are scaled. 
  * \see GPU_SetImageFilter()
@@ -154,7 +185,7 @@ typedef struct GPU_Image
 	
 	SDL_Color color;
 	Uint8 use_blending;
-	GPU_BlendEnum blend_mode;
+	GPU_BlendMode blend_mode;
 	GPU_FilterEnum filter_mode;
 	GPU_SnapEnum snap_mode;
 	GPU_WrapEnum wrap_mode_x;
@@ -231,7 +262,7 @@ typedef struct GPU_Context
 	Uint32 default_untextured_shader_program;
 	
 	Uint8 shapes_use_blending;
-	GPU_BlendEnum shapes_blend_mode;
+	GPU_BlendMode shapes_blend_mode;
 	float line_thickness;
 	Uint8 use_texturing;
 	
@@ -284,9 +315,10 @@ static const GPU_FeatureEnum GPU_FEATURE_NON_POWER_OF_TWO = 0x1;
 static const GPU_FeatureEnum GPU_FEATURE_RENDER_TARGETS = 0x2;
 static const GPU_FeatureEnum GPU_FEATURE_BLEND_EQUATIONS = 0x4;
 static const GPU_FeatureEnum GPU_FEATURE_BLEND_FUNC_SEPARATE = 0x8;
-static const GPU_FeatureEnum GPU_FEATURE_GL_BGR = 0x10;
-static const GPU_FeatureEnum GPU_FEATURE_GL_BGRA = 0x20;
-static const GPU_FeatureEnum GPU_FEATURE_GL_ABGR = 0x40;
+static const GPU_FeatureEnum GPU_FEATURE_BLEND_EQUATIONS_SEPARATE = 0x10;
+static const GPU_FeatureEnum GPU_FEATURE_GL_BGR = 0x20;
+static const GPU_FeatureEnum GPU_FEATURE_GL_BGRA = 0x40;
+static const GPU_FeatureEnum GPU_FEATURE_GL_ABGR = 0x80;
 static const GPU_FeatureEnum GPU_FEATURE_VERTEX_SHADER = 0x100;
 static const GPU_FeatureEnum GPU_FEATURE_FRAGMENT_SHADER = 0x200;
 static const GPU_FeatureEnum GPU_FEATURE_PIXEL_SHADER = 0x200;
@@ -295,7 +327,7 @@ static const GPU_FeatureEnum GPU_FEATURE_WRAP_REPEAT_MIRRORED = 0x800;
 
 /*! Combined feature flags */
 #define GPU_FEATURE_ALL_BASE GPU_FEATURE_RENDER_TARGETS
-#define GPU_FEATURE_ALL_BLEND_MODES (GPU_FEATURE_BLEND_EQUATIONS | GPU_FEATURE_BLEND_FUNC_SEPARATE)
+#define GPU_FEATURE_ALL_BLEND_PRESETS (GPU_FEATURE_BLEND_EQUATIONS | GPU_FEATURE_BLEND_FUNC_SEPARATE)
 #define GPU_FEATURE_ALL_GL_FORMATS (GPU_FEATURE_GL_BGR | GPU_FEATURE_GL_BGRA | GPU_FEATURE_GL_ABGR)
 #define GPU_FEATURE_BASIC_SHADERS (GPU_FEATURE_FRAGMENT_SHADER | GPU_FEATURE_PIXEL_SHADER)
 #define GPU_FEATURE_ALL_SHADERS (GPU_FEATURE_FRAGMENT_SHADER | GPU_FEATURE_PIXEL_SHADER | GPU_FEATURE_GEOMETRY_SHADER)
@@ -952,9 +984,18 @@ Uint8 GPU_ToggleFullscreen(Uint8 use_desktop_resolution);
 
 /*! Enables/disables alpha blending for shape rendering on the current window. */
 void GPU_SetShapeBlending(Uint8 enable);
+
+/*! Translates a blend preset into a blend mode. */
+GPU_BlendMode GPU_GetBlendModeFromPreset(GPU_BlendPresetEnum preset);
+
+/*! Sets the blending component functions for shape rendering. */
+void GPU_SetShapeBlendFunction(GPU_BlendFuncEnum source_color, GPU_BlendFuncEnum dest_color, GPU_BlendFuncEnum source_alpha, GPU_BlendFuncEnum dest_alpha);
+
+/*! Sets the blending component equations for shape rendering. */
+void GPU_SetShapeBlendEquation(GPU_BlendEqEnum color_equation, GPU_BlendEqEnum alpha_equation);
 	
 /*! Sets the blending mode for shape rendering on the current window, if supported by the renderer. */
-void GPU_SetShapeBlendMode(GPU_BlendEnum mode);
+void GPU_SetShapeBlendMode(GPU_BlendPresetEnum mode);
 
 /*! Sets the thickness of lines for the current context. 
  * \param thickness New line thickness in pixels measured across the line.  Default is 1.0f.
@@ -1110,9 +1151,15 @@ Uint8 GPU_GetBlending(GPU_Image* image);
 
 /*! Enables/disables alpha blending for the given image. */
 void GPU_SetBlending(GPU_Image* image, Uint8 enable);
-	
+
+/*! Sets the blending component functions. */
+void GPU_SetBlendFunction(GPU_Image* image, GPU_BlendFuncEnum source_color, GPU_BlendFuncEnum dest_color, GPU_BlendFuncEnum source_alpha, GPU_BlendFuncEnum dest_alpha);
+
+/*! Sets the blending component equations. */
+void GPU_SetBlendEquation(GPU_Image* image, GPU_BlendEqEnum color_equation, GPU_BlendEqEnum alpha_equation);
+
 /*! Sets the blending mode, if supported by the renderer. */
-void GPU_SetBlendMode(GPU_Image* image, GPU_BlendEnum mode);
+void GPU_SetBlendMode(GPU_Image* image, GPU_BlendPresetEnum mode);
 
 /*! Sets the image filtering mode, if supported by the renderer. */
 void GPU_SetImageFilter(GPU_Image* image, GPU_FilterEnum filter);

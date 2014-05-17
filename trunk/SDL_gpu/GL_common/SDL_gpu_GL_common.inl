@@ -168,15 +168,27 @@ static void init_features(GPU_Renderer* renderer)
 #ifdef SDL_GPU_USE_OPENGL
     renderer->enabled_features |= GPU_FEATURE_BLEND_EQUATIONS;
     renderer->enabled_features |= GPU_FEATURE_BLEND_FUNC_SEPARATE;
+    
+    if(isExtensionSupported("GL_EXT_blend_equation_separate"))
+        renderer->enabled_features |= GPU_FEATURE_BLEND_EQUATIONS_SEPARATE;
+    else
+        renderer->enabled_features &= ~GPU_FEATURE_BLEND_EQUATIONS_SEPARATE;
+    
 #elif defined(SDL_GPU_USE_GLES)
     if(isExtensionSupported("GL_OES_blend_subtract"))
         renderer->enabled_features |= GPU_FEATURE_BLEND_EQUATIONS;
     else
         renderer->enabled_features &= ~GPU_FEATURE_BLEND_EQUATIONS;
+    
     if(isExtensionSupported("GL_OES_blend_func_separate"))
         renderer->enabled_features |= GPU_FEATURE_BLEND_FUNC_SEPARATE;
     else
         renderer->enabled_features &= ~GPU_FEATURE_BLEND_FUNC_SEPARATE;
+    
+    if(isExtensionSupported("GL_OES_blend_equation_separate"))
+        renderer->enabled_features |= GPU_FEATURE_BLEND_EQUATIONS_SEPARATE;
+    else
+        renderer->enabled_features &= ~GPU_FEATURE_BLEND_EQUATIONS_SEPARATE;
 #endif
 
     // Wrap modes
@@ -483,149 +495,48 @@ static void changeBlending(GPU_Renderer* renderer, Uint8 enable)
     cdata->last_use_blending = enable;
 }
 
-static void changeBlendMode(GPU_Renderer* renderer, GPU_BlendEnum mode)
+static void changeBlendMode(GPU_Renderer* renderer, GPU_BlendMode mode)
 {
     GPU_CONTEXT_DATA* cdata = (GPU_CONTEXT_DATA*)renderer->current_context_target->context->data;
-    if(cdata->last_blend_mode == mode)
+    if(cdata->last_blend_mode.source_color == mode.source_color
+       && cdata->last_blend_mode.dest_color == mode.dest_color
+       && cdata->last_blend_mode.source_alpha == mode.source_alpha
+       && cdata->last_blend_mode.dest_alpha == mode.dest_alpha
+       && cdata->last_blend_mode.color_equation == mode.color_equation
+       && cdata->last_blend_mode.alpha_equation == mode.alpha_equation)
         return;
     
     renderer->FlushBlitBuffer(renderer);
 
     cdata->last_blend_mode = mode;
     
-    if(mode == GPU_BLEND_NORMAL)
+    if(mode.source_color == mode.source_alpha && mode.dest_color == mode.dest_alpha)
     {
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        if(!(renderer->enabled_features & GPU_FEATURE_BLEND_EQUATIONS))
-            return;  // TODO: Return false so we can avoid depending on it if it fails
-        glBlendEquation(GL_FUNC_ADD);
+        glBlendFunc(mode.source_color, mode.dest_color);
     }
-    else if(mode == GPU_BLEND_PREMULTIPLIED_ALPHA)
+    else if(renderer->enabled_features & GPU_FEATURE_BLEND_FUNC_SEPARATE)
     {
-        glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-        if(!(renderer->enabled_features & GPU_FEATURE_BLEND_EQUATIONS))
-            return;
-        glBlendEquation(GL_FUNC_ADD);
+        glBlendFuncSeparate(mode.source_color, mode.dest_color, mode.source_alpha, mode.dest_alpha);
     }
-    else if(mode == GPU_BLEND_MULTIPLY)
+    else
     {
-        if(!(renderer->enabled_features & GPU_FEATURE_BLEND_FUNC_SEPARATE))
-            return;
-        glBlendFuncSeparate(GL_DST_COLOR, GL_ZERO, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        if(!(renderer->enabled_features & GPU_FEATURE_BLEND_EQUATIONS))
-            return;
-        glBlendEquation(GL_FUNC_ADD);
+        GPU_PushErrorCode("(SDL_gpu internal)", GPU_ERROR_BACKEND_ERROR, "Could not set blend function because GPU_FEATURE_BLEND_FUNC_SEPARATE is not supported.");
     }
-    else if(mode == GPU_BLEND_ADD)
+    
+    if(renderer->enabled_features & GPU_FEATURE_BLEND_EQUATIONS)
     {
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-        if(!(renderer->enabled_features & GPU_FEATURE_BLEND_EQUATIONS))
-            return;
-        glBlendEquation(GL_FUNC_ADD);
+        if(mode.color_equation == mode.alpha_equation)
+            glBlendEquation(mode.color_equation);
+        else if(renderer->enabled_features & GPU_FEATURE_BLEND_EQUATIONS_SEPARATE)
+            glBlendEquationSeparate(mode.color_equation, mode.alpha_equation);
+        else
+        {
+            GPU_PushErrorCode("(SDL_gpu internal)", GPU_ERROR_BACKEND_ERROR, "Could not set blend equation because GPU_FEATURE_BLEND_EQUATIONS_SEPARATE is not supported.");
+        }
     }
-    else if(mode == GPU_BLEND_SUBTRACT)
+    else
     {
-        if(!(renderer->enabled_features & GPU_FEATURE_BLEND_EQUATIONS))
-            return;
-        glBlendFunc(GL_ONE, GL_ONE);
-        glBlendEquation(GL_FUNC_SUBTRACT);
-    }
-    else if(mode == GPU_BLEND_ADD_COLOR)
-    {
-        if(!(renderer->enabled_features & GPU_FEATURE_BLEND_FUNC_SEPARATE))
-            return;
-        glBlendFuncSeparate(GL_ONE, GL_ONE, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        if(!(renderer->enabled_features & GPU_FEATURE_BLEND_EQUATIONS))
-            return;
-        glBlendEquation(GL_FUNC_ADD);
-    }
-    else if(mode == GPU_BLEND_SUBTRACT_COLOR)
-    {
-        if(!(renderer->enabled_features & GPU_FEATURE_BLEND_FUNC_SEPARATE))
-            return;
-        if(!(renderer->enabled_features & GPU_FEATURE_BLEND_EQUATIONS))
-            return;
-        glBlendFuncSeparate(GL_ONE, GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA);
-        glBlendEquation(GL_FUNC_SUBTRACT);
-    }
-    else if(mode == GPU_BLEND_DIFFERENCE)
-    {
-        if(!(renderer->enabled_features & GPU_FEATURE_BLEND_FUNC_SEPARATE))
-            return;
-        if(!(renderer->enabled_features & GPU_FEATURE_BLEND_EQUATIONS))
-            return;
-        glBlendFuncSeparate(GL_ONE, GL_ONE, GL_ONE, GL_ZERO);
-        glBlendEquation(GL_FUNC_SUBTRACT);
-    }
-    else if(mode == GPU_BLEND_PUNCHOUT)
-    {
-        if(!(renderer->enabled_features & GPU_FEATURE_BLEND_EQUATIONS))
-            return;
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
-    }
-    else if(mode == GPU_BLEND_CUTOUT)
-    {
-        if(!(renderer->enabled_features & GPU_FEATURE_BLEND_EQUATIONS))
-            return;
-        glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA);
-        glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
-    }
-    else if(mode == GPU_BLEND_MOD_ALPHA)
-    {
-        if(!(renderer->enabled_features & GPU_FEATURE_BLEND_FUNC_SEPARATE))
-            return;
-        // Don't disturb the colors, but multiply the dest alpha by the src alpha
-        glBlendFuncSeparate(GL_ZERO, GL_ONE, GL_ZERO, GL_SRC_ALPHA);
-        if(!(renderer->enabled_features & GPU_FEATURE_BLEND_EQUATIONS))
-            return;
-        glBlendEquation(GL_FUNC_ADD);
-    }
-    else if(mode == GPU_BLEND_SET_ALPHA)
-    {
-        if(!(renderer->enabled_features & GPU_FEATURE_BLEND_FUNC_SEPARATE))
-            return;
-        // Don't disturb the colors, but set the alpha to the src alpha
-        glBlendFuncSeparate(GL_ZERO, GL_ONE, GL_ONE, GL_ZERO);
-        if(!(renderer->enabled_features & GPU_FEATURE_BLEND_EQUATIONS))
-            return;
-        glBlendEquation(GL_FUNC_ADD);
-    }
-    else if(mode == GPU_BLEND_SET)
-    {
-        glBlendFunc(GL_ONE, GL_ZERO);
-        if(!(renderer->enabled_features & GPU_FEATURE_BLEND_EQUATIONS))
-            return;
-        glBlendEquation(GL_FUNC_ADD);
-    }
-    else if(mode == GPU_BLEND_NORMAL_KEEP_ALPHA)
-    {
-        if(!(renderer->enabled_features & GPU_FEATURE_BLEND_FUNC_SEPARATE))
-            return;
-        // Don't disturb the alpha
-        glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ONE);
-        if(!(renderer->enabled_features & GPU_FEATURE_BLEND_EQUATIONS))
-            return;
-        glBlendEquation(GL_FUNC_ADD);
-    }
-    else if(mode == GPU_BLEND_NORMAL_ADD_ALPHA)
-    {
-        if(!(renderer->enabled_features & GPU_FEATURE_BLEND_FUNC_SEPARATE))
-            return;
-        glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
-        if(!(renderer->enabled_features & GPU_FEATURE_BLEND_EQUATIONS))
-            return;
-        glBlendEquation(GL_FUNC_ADD);
-    }
-    else if(mode == GPU_BLEND_SUBTRACT_ALPHA)
-    {
-        if(!(renderer->enabled_features & GPU_FEATURE_BLEND_FUNC_SEPARATE))
-            return;
-        if(!(renderer->enabled_features & GPU_FEATURE_BLEND_EQUATIONS))
-            return;
-        // Don't disturb the colors, but subtract the alpha
-        glBlendFuncSeparate(GL_ZERO, GL_ONE, GL_ONE, GL_ONE);
-        glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
+        GPU_PushErrorCode("(SDL_gpu internal)", GPU_ERROR_BACKEND_ERROR, "Could not set blend equation because GPU_FEATURE_BLEND_EQUATIONS is not supported.");
     }
 }
 
@@ -1098,7 +1009,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     target->context->line_thickness = 1.0f;
     target->context->use_texturing = 1;
     target->context->shapes_use_blending = 1;
-    target->context->shapes_blend_mode = GPU_BLEND_NORMAL;
+    target->context->shapes_blend_mode = GPU_GetBlendModeFromPreset(GPU_BLEND_NORMAL);
     
     
     cdata->last_color = white;
@@ -1108,7 +1019,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     glEnable(GL_TEXTURE_2D);
     
     cdata->last_use_blending = 0;
-    cdata->last_blend_mode = GPU_BLEND_NORMAL;
+    cdata->last_blend_mode = GPU_GetBlendModeFromPreset(GPU_BLEND_NORMAL);
     
     cdata->last_viewport = target->viewport;
     cdata->last_camera = target->camera;  // Redundant due to applyTargetCamera(), below
@@ -1707,7 +1618,7 @@ static GPU_Image* CreateUninitializedImage(GPU_Renderer* renderer, Uint16 w, Uin
     
     result->color = white;
     result->use_blending = ((format == GPU_FORMAT_LUMINANCE_ALPHA || format == GPU_FORMAT_RGBA)? 1 : 0);
-    result->blend_mode = GPU_BLEND_NORMAL;
+    result->blend_mode = GPU_GetBlendModeFromPreset(GPU_BLEND_NORMAL);
     result->filter_mode = GPU_FILTER_LINEAR;
     result->snap_mode = GPU_SNAP_POSITION_AND_DIMENSIONS;
     result->wrap_mode_x = GPU_WRAP_NONE;
@@ -2551,7 +2462,7 @@ static GPU_Image* CopyImage(GPU_Renderer* renderer, GPU_Image* image)
         // Copy the image settings
         GPU_SetColor(result, &image->color);
         GPU_SetBlending(result, image->use_blending);
-        GPU_SetBlendMode(result, image->blend_mode);
+        result->blend_mode = image->blend_mode;
         GPU_SetImageFilter(result, image->filter_mode);
         GPU_SetSnapMode(result, image->snap_mode);
         GPU_SetWrapMode(result, image->wrap_mode_x, image->wrap_mode_y);
