@@ -9,10 +9,10 @@ set(SDL_gpu_SRCS
 	OpenGL_3/SDL_gpu_OpenGL_3.c
 	GLES_1/SDL_gpu_GLES_1.c
 	GLES_2/SDL_gpu_GLES_2.c
-	externals/glew/glew.c
 	externals/stb_image/stb_image.c
 	externals/stb_image/stb_image_write.c
 )
+
 set(SDL_gpu_HDRS
 	SDL_gpu.h
 	GL_common/SDL_gpu_GL_matrix.h
@@ -24,12 +24,16 @@ set(SDL_gpu_HDRS
 	OpenGL_3/SDL_gpu_OpenGL_3.h
 	GLES_1/SDL_gpu_GLES_1.h
 	GLES_2/SDL_gpu_GLES_2.h
-	externals/glew/glew.h
-	externals/glew/glxew.h
-	externals/glew/wglew.h
 	externals/stb_image/stb_image.h
 	externals/stb_image/stb_image_write.h
 )
+
+
+if (NOT SDL_gpu_DISABLE_OPENGL )
+	SET(SDL_gpu_SRCS ${SDL_gpu_SRCS} externals/glew/glew.c)
+	SET(SDL_gpu_HDRS ${SDL_gpu_HDRS} externals/glew/glew.h externals/glew/glxew.h externals/glew/wglew.h)
+endif (NOT SDL_gpu_DISABLE_OPENGL )
+
 set(SDL_gpu_install_HDRS
 	SDL_gpu.h
 	GL_common/SDL_gpu_GL_matrix.h
