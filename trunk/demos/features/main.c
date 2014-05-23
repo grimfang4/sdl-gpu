@@ -21,7 +21,7 @@ int main(int argc, char* argv[])
 	printCurrentRenderer();
 	
 	GPU_LogError("Supports GPU_FEATURE_ALL_BASE: %s\n", bool_string(GPU_IsFeatureEnabled(GPU_FEATURE_ALL_BASE)));
-	GPU_LogError("Supports GPU_FEATURE_ALL_BLEND_MODES: %s\n", bool_string(GPU_IsFeatureEnabled(GPU_FEATURE_ALL_BLEND_MODES)));
+	GPU_LogError("Supports GPU_FEATURE_ALL_BLEND_PRESETS: %s\n", bool_string(GPU_IsFeatureEnabled(GPU_FEATURE_ALL_BLEND_PRESETS)));
 	GPU_LogError("Supports GPU_FEATURE_ALL_GL_FORMATS: %s\n", bool_string(GPU_IsFeatureEnabled(GPU_FEATURE_ALL_GL_FORMATS)));
 	
 	GPU_LogError("Supports GPU_FEATURE_NON_POWER_OF_TWO: %s\n", bool_string(GPU_IsFeatureEnabled(GPU_FEATURE_NON_POWER_OF_TWO)));

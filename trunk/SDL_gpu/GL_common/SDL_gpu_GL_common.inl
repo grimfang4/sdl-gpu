@@ -1533,7 +1533,7 @@ static GPU_Camera SetCamera(GPU_Renderer* renderer, GPU_Target* target, GPU_Came
 
 static GPU_Image* CreateUninitializedImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, GPU_FormatEnum format)
 {
-    GLuint handle, channels;
+    GLuint handle, num_layers, bytes_per_pixel;
     GLenum gl_format;
 	GPU_Image* result;
 	GPU_IMAGE_DATA* data;
@@ -1543,46 +1543,54 @@ static GPU_Image* CreateUninitializedImage(GPU_Renderer* renderer, Uint16 w, Uin
     {
         case GPU_FORMAT_LUMINANCE:
             gl_format = GL_LUMINANCE;
-            channels = 1;
+            num_layers = 1;
+            bytes_per_pixel = 1;
             break;
         case GPU_FORMAT_LUMINANCE_ALPHA:
             gl_format = GL_LUMINANCE_ALPHA;
-            channels = 2;
+            num_layers = 1;
+            bytes_per_pixel = 2;
             break;
         case GPU_FORMAT_RGB:
             gl_format = GL_RGB;
-            channels = 3;
+            num_layers = 1;
+            bytes_per_pixel = 3;
             break;
         case GPU_FORMAT_RGBA:
             gl_format = GL_RGBA;
-            channels = 4;
+            num_layers = 1;
+            bytes_per_pixel = 4;
             break;
         case GPU_FORMAT_ALPHA:
             gl_format = GL_ALPHA;
-            channels = 1;
+            num_layers = 1;
+            bytes_per_pixel = 1;
             break;
         #ifndef SDL_GPU_USE_GLES
         case GPU_FORMAT_RG:
             gl_format = GL_RG;
-            channels = 2;
+            num_layers = 1;
+            bytes_per_pixel = 2;
             break;
         #endif
         case GPU_FORMAT_YCbCr420P:
-            gl_format = GL_RGB;
-            channels = 3;
+            gl_format = GL_LUMINANCE;
+            num_layers = 3;
+            bytes_per_pixel = 1;
             break;
         case GPU_FORMAT_YCbCr422:
-            gl_format = GL_RGB;
-            channels = 3;
+            gl_format = GL_LUMINANCE;
+            num_layers = 3;
+            bytes_per_pixel = 1;
             break;
         default:
             GPU_PushErrorCode("GPU_CreateUninitializedImage", GPU_ERROR_DATA_ERROR, "Unsupported image format (0x%x)", format);
             return NULL;
     }
     
-    if(channels < 1 || channels > 4)
+    if(bytes_per_pixel < 1 || bytes_per_pixel > 4)
     {
-        GPU_PushErrorCode("GPU_CreateUninitializedImage", GPU_ERROR_DATA_ERROR, "Unsupported number of color channels (%d)", channels);
+        GPU_PushErrorCode("GPU_CreateUninitializedImage", GPU_ERROR_DATA_ERROR, "Unsupported number of bytes per pixel (%d)", bytes_per_pixel);
         return NULL;
     }
 
@@ -1613,7 +1621,8 @@ static GPU_Image* CreateUninitializedImage(GPU_Renderer* renderer, Uint16 w, Uin
     result->target = NULL;
     result->renderer = renderer;
     result->format = format;
-    result->channels = channels;
+    result->num_layers = num_layers;
+    result->bytes_per_pixel = bytes_per_pixel;
     result->has_mipmaps = 0;
     
     result->color = white;
@@ -1675,10 +1684,10 @@ static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, GPU_Fo
     }
 
     // Initialize texture using a blank buffer
-    if(zero_buffer_size < w*h*result->channels)
+    if(zero_buffer_size < w*h*result->bytes_per_pixel)
     {
         free(zero_buffer);
-        zero_buffer_size = w*h*result->channels;
+        zero_buffer_size = w*h*result->bytes_per_pixel;
         zero_buffer = (unsigned char*)malloc(zero_buffer_size);
         memset(zero_buffer, 0, zero_buffer_size);
     }
@@ -1795,7 +1804,7 @@ static Uint8 readImagePixels(GPU_Renderer* renderer, GPU_Image* source, GLint fo
 
 static unsigned char* getRawTargetData(GPU_Renderer* renderer, GPU_Target* target)
 {
-	int channels;
+	int bytes_per_pixel;
 	unsigned char* data;
 	int pitch;
 	unsigned char* copy;
@@ -1804,10 +1813,10 @@ static unsigned char* getRawTargetData(GPU_Renderer* renderer, GPU_Target* targe
     if(isCurrentTarget(renderer, target))
         renderer->FlushBlitBuffer(renderer);
     
-    channels = 4;
+    bytes_per_pixel = 4;
     if(target->image != NULL)
-        channels = target->image->channels;
-    data = (unsigned char*)malloc(target->w * target->h * channels);
+        bytes_per_pixel = target->image->bytes_per_pixel;
+    data = (unsigned char*)malloc(target->w * target->h * bytes_per_pixel);
     
     if(!readTargetPixels(renderer, target, ((GPU_TARGET_DATA*)target->data)->format, data))
     {
@@ -1816,13 +1825,13 @@ static unsigned char* getRawTargetData(GPU_Renderer* renderer, GPU_Target* targe
     }
     
     // Flip the data vertically (OpenGL framebuffer is read upside down)
-    pitch = target->w * channels;
+    pitch = target->w * bytes_per_pixel;
     copy = (unsigned char*)malloc(pitch);
     
     for(y = 0; y < target->h/2; y++)
     {
-        unsigned char* top = &data[target->w * y * channels];
-        unsigned char* bottom = &data[target->w * (target->h - y - 1) * channels];
+        unsigned char* top = &data[target->w * y * bytes_per_pixel];
+        unsigned char* bottom = &data[target->w * (target->h - y - 1) * bytes_per_pixel];
         memcpy(copy, top, pitch);
         memcpy(top, bottom, pitch);
         memcpy(bottom, copy, pitch);
@@ -1839,7 +1848,7 @@ static unsigned char* getRawImageData(GPU_Renderer* renderer, GPU_Image* image)
     if(image->target != NULL && isCurrentTarget(renderer, image->target))
         renderer->FlushBlitBuffer(renderer);
     
-    data = (unsigned char*)malloc(image->w * image->h * image->channels);
+    data = (unsigned char*)malloc(image->w * image->h * image->bytes_per_pixel);
 
     if(!readImagePixels(renderer, image, ((GPU_IMAGE_DATA*)image->data)->format, data))
     {
@@ -1866,7 +1875,7 @@ static Uint8 SaveImage(GPU_Renderer* renderer, GPU_Image* image, const char* fil
     unsigned char* data;
 
     if(image == NULL || filename == NULL ||
-            image->w < 1 || image->h < 1 || image->channels < 1 || image->channels > 4)
+            image->w < 1 || image->h < 1 || image->bytes_per_pixel < 1 || image->bytes_per_pixel > 4)
     {
         return 0;
     }
@@ -1882,11 +1891,11 @@ static Uint8 SaveImage(GPU_Renderer* renderer, GPU_Image* image, const char* fil
     }
 
     if(SDL_strcasecmp(extension, "png") == 0)
-        result = stbi_write_png(filename, image->w, image->h, image->channels, (const unsigned char *const)data, 0);
+        result = stbi_write_png(filename, image->w, image->h, image->bytes_per_pixel, (const unsigned char *const)data, 0);
     else if(SDL_strcasecmp(extension, "bmp") == 0)
-        result = stbi_write_bmp(filename, image->w, image->h, image->channels, (void*)data);
+        result = stbi_write_bmp(filename, image->w, image->h, image->bytes_per_pixel, (void*)data);
     else if(SDL_strcasecmp(extension, "tga") == 0)
-        result = stbi_write_tga(filename, image->w, image->h, image->channels, (void*)data);
+        result = stbi_write_tga(filename, image->w, image->h, image->bytes_per_pixel, (void*)data);
     else
     {
         GPU_PushErrorCode("GPU_SaveImage", GPU_ERROR_DATA_ERROR, "Unsupported output file format (%s)", extension);
@@ -2670,7 +2679,7 @@ static void UpdateImageBytes(GPU_Renderer* renderer, GPU_Image* image, const GPU
     alignment = 1;
     glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
     #ifdef SDL_GPU_USE_OPENGL
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, (bytes_per_row / image->channels));
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, (bytes_per_row / image->bytes_per_pixel));
     #endif
     
     glTexSubImage2D(GL_TEXTURE_2D, 0,
