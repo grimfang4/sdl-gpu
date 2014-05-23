@@ -21,7 +21,7 @@ void log_image_details(GPU_Image* image)
         GPU_Log("Image: NULL\n");
         return;
     }
-    GPU_Log("Image: %dx%d, %d channels, 0x%x format\n", image->w, image->h, image->channels, image->format);
+    GPU_Log("Image: %dx%d, %d bytes_per_pixel, %d layer%s, 0x%x format\n", image->w, image->h, image->bytes_per_pixel, image->num_layers, (image->num_layers == 1? "" : "s"), image->format);
 }
 
 GPU_Image* copy_and_log(SDL_Surface* surface)
@@ -35,8 +35,8 @@ GPU_Image* copy_and_log(SDL_Surface* surface)
 
 void update_luminance_data(GPU_Image* image)
 {
-    int bytes_per_row = image->channels * image->w;
-    unsigned int size = image->channels * image->w * image->h;
+    int bytes_per_row = image->bytes_per_pixel * image->w;
+    unsigned int size = image->bytes_per_pixel * image->w * image->h;
     unsigned char* bytes = (unsigned char*)malloc(size);
     
     // A vertical grayscale gradient
@@ -52,8 +52,8 @@ void update_luminance_data(GPU_Image* image)
 
 void update_luminance_alpha_data(GPU_Image* image)
 {
-    int bytes_per_row = image->channels * image->w;
-    unsigned int size = image->channels * image->w * image->h;
+    int bytes_per_row = image->bytes_per_pixel * image->w;
+    unsigned int size = image->bytes_per_pixel * image->w * image->h;
     unsigned char* bytes = (unsigned char*)malloc(size);
     
     // A vertical grayscale gradient superimposed with a horizontal alpha gradient

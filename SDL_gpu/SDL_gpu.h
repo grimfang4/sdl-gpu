@@ -179,7 +179,8 @@ typedef struct GPU_Image
 	GPU_Target* target;
 	Uint16 w, h;
 	GPU_FormatEnum format;
-	int channels;
+	int num_layers;
+	int bytes_per_pixel;
 	Uint32 texture_w, texture_h;  // Underlying texture dimensions
 	Uint8 has_mipmaps;
 	
