@@ -13,6 +13,7 @@ option(SDL_gpu_BUILD_DEBUG "Build with debugging symbols" ON)
 option(SDL_gpu_BUILD_SHARED "Build SDL_gpu shared libraries" ON)
 option(SDL_gpu_BUILD_STATIC "Build SDL_gpu static libraries" ON)
 option(SDL_gpu_BUILD_DEMOS "Build SDL_gpu demo programs" ON)
+option(SDL_gpu_BUILD_VIDEO_DEMO "Build SDL_gpu video demo program (requires FFMPEG)" OFF)
 option(SDL_gpu_BUILD_TOOLS "Build SDL_gpu tool programs" ON)
 option(SDL_gpu_USE_SDL1 "Use SDL 1.2 headers and library instead of SDL 2" OFF)
 option(SDL_gpu_DISABLE_OPENGL "Disable OpenGL renderers.  Overrides specific OpenGL renderer flags." OFF)
@@ -135,6 +136,15 @@ add_subdirectory(SDL_gpu)
 
 # Build the demos
 if(SDL_gpu_BUILD_DEMOS)
+  if(SDL_gpu_BUILD_VIDEO_DEMO)
+  
+	find_package(FFMPEG REQUIRED)
+	include_directories(${FFMPEG_INCLUDE_DIR})
+	link_libraries (${FFMPEG_LIBRARIES})
+	
+    add_definitions("-DSDL_GPU_BUILD_VIDEO_DEMO")
+  endif(SDL_gpu_BUILD_VIDEO_DEMO)
+  
   add_subdirectory(demos)
 endif(SDL_gpu_BUILD_DEMOS)
 
