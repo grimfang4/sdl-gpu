@@ -22,6 +22,7 @@ int main(int argc, char* argv[])
 {
     GPU_SetDebugLevel(GPU_DEBUG_LEVEL_MAX);
     GPU_Log("register_all\n");
+    
     av_register_all();
     
     if(SDL_Init(SDL_INIT_VIDEO) < 0)
@@ -94,7 +95,7 @@ int main(int argc, char* argv[])
     }
 
     // Allocate a place to put our YUV image on that screen
-    bmp = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_YV12,SDL_TEXTUREACCESS_STATIC, pCodecCtx->width, pCodecCtx->height);
+    bmp = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_YV12, SDL_TEXTUREACCESS_STATIC, pCodecCtx->width, pCodecCtx->height);
 
 
     // Read frames and save first five frames to disk
@@ -142,8 +143,8 @@ int main(int argc, char* argv[])
                 if(frameFinished)
                 {
                     SDL_UpdateYUVTexture(bmp, NULL, pFrame->data[0], pFrame->linesize[0], 
-                                pFrame->data[1], pFrame->linesize[1], 
-                                pFrame->data[2], pFrame->linesize[2]);
+                                pFrame->data[1], pFrame->linesize[0], 
+                                pFrame->data[2], pFrame->linesize[0]);  // FIXME: Why are linesize[1] and linesize[2] the wrong values?
 
                     rect.x = 0;
                     rect.y = 0;
