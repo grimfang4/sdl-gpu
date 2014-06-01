@@ -2042,20 +2042,22 @@ void GPU_SetBlendEquation(GPU_Image* image, GPU_BlendEqEnum color_equation, GPU_
 
 void GPU_SetBlendMode(GPU_Image* image, GPU_BlendPresetEnum preset)
 {
+    GPU_BlendMode b;
 	if(image == NULL)
 		return;
 	
-	GPU_BlendMode b = GPU_GetBlendModeFromPreset(preset);
+	b = GPU_GetBlendModeFromPreset(preset);
     GPU_SetBlendFunction(image, b.source_color, b.dest_color, b.source_alpha, b.dest_alpha);
     GPU_SetBlendEquation(image, b.color_equation, b.alpha_equation);
 }
 
 void GPU_SetShapeBlendFunction(GPU_BlendFuncEnum source_color, GPU_BlendFuncEnum dest_color, GPU_BlendFuncEnum source_alpha, GPU_BlendFuncEnum dest_alpha)
 {
+    GPU_Context* context;
 	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return;
 	
-	GPU_Context* context = current_renderer->current_context_target->context;
+	context = current_renderer->current_context_target->context;
 	
 	context->shapes_blend_mode.source_color = source_color;
 	context->shapes_blend_mode.dest_color = dest_color;
@@ -2065,10 +2067,11 @@ void GPU_SetShapeBlendFunction(GPU_BlendFuncEnum source_color, GPU_BlendFuncEnum
 
 void GPU_SetShapeBlendEquation(GPU_BlendEqEnum color_equation, GPU_BlendEqEnum alpha_equation)
 {
+    GPU_Context* context;
 	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return;
     
-	GPU_Context* context = current_renderer->current_context_target->context;
+	context = current_renderer->current_context_target->context;
     
     context->shapes_blend_mode.color_equation = color_equation;
     context->shapes_blend_mode.alpha_equation = alpha_equation;
@@ -2076,10 +2079,11 @@ void GPU_SetShapeBlendEquation(GPU_BlendEqEnum color_equation, GPU_BlendEqEnum a
 
 void GPU_SetShapeBlendMode(GPU_BlendPresetEnum preset)
 {
+    GPU_BlendMode b;
 	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return;
 	
-	GPU_BlendMode b = GPU_GetBlendModeFromPreset(preset);
+	b = GPU_GetBlendModeFromPreset(preset);
     GPU_SetShapeBlendFunction(b.source_color, b.dest_color, b.source_alpha, b.dest_alpha);
     GPU_SetShapeBlendEquation(b.color_equation, b.alpha_equation);
 }
