@@ -1011,7 +1011,6 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     target->context->shapes_use_blending = 1;
     target->context->shapes_blend_mode = GPU_GetBlendModeFromPreset(GPU_BLEND_NORMAL);
     
-    
     cdata->last_color = white;
     
     cdata->last_use_texturing = 1;
@@ -1030,6 +1029,9 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     if (GLEW_OK != err)
     {
         // Probably don't have the right GL version for this renderer
+        if(renderer->current_context_target == target)
+            renderer->current_context_target = NULL;
+        // FIXME: Free what we've just allocated.
         return NULL;
     }
     #endif
@@ -2903,7 +2905,6 @@ static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
     
     if(!target->is_alias && target->image != NULL)
         target->image->target = NULL;  // Remove reference to this object
-    
     
 
     // Does the renderer data need to be freed too?
