@@ -11,13 +11,13 @@ int main(int argc, char* argv[])
 	GPU_Target* screen;
 
 	printRenderers();
-	
+
 	screen = GPU_Init(800, 600, GPU_DEFAULT_INIT_FLAGS);
 	if(screen == NULL)
 		return -1;
-    
+
     //GPU_SetVirtualResolution(1200, 800);
-	
+
 	printCurrentRenderer();
 
 	{
@@ -31,7 +31,7 @@ int main(int argc, char* argv[])
 		SDL_Color circleColor2 = { 0, 0, 255, 128 };
 		Uint32 startTime;
 		long frameCount;
-		Uint8* keystates;
+		const Uint8* keystates;
 		int mode;
 		int x;
 		int y;
@@ -175,7 +175,7 @@ int main(int argc, char* argv[])
 	}
 
 	GPU_Quit();
-	
+
 	return 0;
 }
 

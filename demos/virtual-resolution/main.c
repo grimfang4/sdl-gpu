@@ -10,46 +10,46 @@ int main(int argc, char* argv[])
 	GPU_Target* screen;
 
 	printRenderers();
-	
+
 	screen = GPU_Init(800, 600, GPU_DEFAULT_INIT_FLAGS);
 	if(screen == NULL)
 		return -1;
-	
+
 	printCurrentRenderer();
-	
+
 	{
 		Uint32 startTime;
 		long frameCount;
 		Uint8 done;
 		SDL_Event event;
-		
+
 		GPU_Image* image;
 		GPU_Target* target;
-		
+
         SDL_Color circleColor = {255, 0, 0, 128};
         SDL_Color circleColor2 = {0, 0, 255, 128};
-        
-        Uint8* keystates = SDL_GetKeyState(NULL);
+
+        const Uint8* keystates = SDL_GetKeyState(NULL);
         int x = 0;
         int y = 0;
-        
+
         Uint8 switched = 1;
-        
+
         image = GPU_LoadImage("data/test.bmp");
         if(image == NULL)
             return -1;
-        
+
         target = GPU_LoadTarget(image);
         if(target == NULL)
             return -1;
-        
-        
+
+
         startTime = SDL_GetTicks();
         frameCount = 0;
-        
+
         GPU_SetVirtualResolution(screen, 640, 480);
         GPU_SetVirtualResolution(target, 640, 480);
-        
+
         done = 0;
         while(!done)
         {
@@ -77,7 +77,7 @@ int main(int argc, char* argv[])
                     }
                 }
             }
-            
+
             if(keystates[KEY_UP])
                 y -= 1;
             else if(keystates[KEY_DOWN])
@@ -86,17 +86,17 @@ int main(int argc, char* argv[])
                 x -= 1;
             else if(keystates[KEY_RIGHT])
                 x += 1;
-            
+
             GPU_Clear(screen);
-            
+
             GPU_CircleFilled(target, 70, 70, 20, circleColor);
-        
+
             GPU_Blit(image, NULL, screen, image->w/2 + 50, image->h/2 + 50);
-            
+
             GPU_CircleFilled(screen, 50 + 70, 50 + 70, 20, circleColor2);
-            
+
             GPU_Flip(screen);
-            
+
             frameCount++;
             if(frameCount%500 == 0)
             {
@@ -104,14 +104,14 @@ int main(int argc, char* argv[])
                 printf("x,y: (%d, %d)\n", x, y);
             }
         }
-        
+
         printf("Average FPS: %.2f\n", 1000.0f*frameCount/(SDL_GetTicks() - startTime));
-        
+
         GPU_FreeImage(image);
 	}
-	
+
 	GPU_Quit();
-	
+
 	return 0;
 }
 

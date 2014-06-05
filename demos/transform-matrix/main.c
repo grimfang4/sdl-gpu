@@ -50,43 +50,43 @@ int main(int argc, char* argv[])
 	GPU_Target* screen;
 
 	printRenderers();
-	
+
 	screen = GPU_Init(800, 600, GPU_DEFAULT_INIT_FLAGS);
 	if(screen == NULL)
 		return -1;
-	
+
 	printCurrentRenderer();
-	
+
 	{
 		Uint32 startTime;
 		long frameCount;
 		Uint8 done;
 		SDL_Event event;
-        
+
         GPU_Image* screen2_image = GPU_CreateImage(800, 600, GPU_FORMAT_RGBA);
         GPU_Target* screen2 = GPU_LoadTarget(screen2_image);
-        
+
         float angle = 0.0f;
         float dx = 0.0f;
         float dy = 0.0f;
         float scale_x = 1.0f;
         float scale_y = 1.0f;
-        
+
         float dt = 0.010f;
-        
+
         GPU_Target* target = screen;
         float x = 400.0f;
         float y = 300.0f;
         SDL_Color red = {255, 0, 0, 255};
-        Uint8* keystates = SDL_GetKeyState(NULL);
-        
+        const Uint8* keystates = SDL_GetKeyState(NULL);
+
         GPU_Image* image = GPU_LoadImage("data/test.bmp");
         if(image == NULL)
             return -1;
-        
+
         startTime = SDL_GetTicks();
         frameCount = 0;
-        
+
         done = 0;
         while(!done)
         {
@@ -107,7 +107,7 @@ int main(int argc, char* argv[])
                     }
                 }
             }
-            
+
             if(keystates[KEY_UP])
                 dy -= 100*dt;
             else if(keystates[KEY_DOWN])
@@ -128,12 +128,12 @@ int main(int argc, char* argv[])
                 scale_y -= 1*dt;
             else if(keystates[KEY_x])
                 scale_y += 1*dt;
-            
+
             GPU_Clear(screen);
             GPU_Clear(screen2);
-            
+
             GPU_BlitScale(image, NULL, target, x, y, 0.1f, 0.1f);
-            
+
             {
                 float matrix[9] = {1,0,0,0,1,0,0,0,1};
                 translate(matrix, dx, dy);
@@ -141,26 +141,26 @@ int main(int argc, char* argv[])
                 rotate(matrix, angle*M_PI/180);
                 GPU_BlitTransformMatrix(image, NULL, target, x, y, matrix);
             }
-            
-            
+
+
             if(target == screen2)
                 GPU_CircleFilled(screen2, 0, 0, 100, red);
-            
+
             GPU_Blit(screen2_image, NULL, screen, 400, 300);
             GPU_Flip(screen);
-            
+
             frameCount++;
             if(frameCount%500 == 0)
                 printf("Average FPS: %.2f\n", 1000.0f*frameCount/(SDL_GetTicks() - startTime));
         }
-        
+
         printf("Average FPS: %.2f\n", 1000.0f*frameCount/(SDL_GetTicks() - startTime));
-        
+
         GPU_FreeImage(image);
 	}
-	
+
 	GPU_Quit();
-	
+
 	return 0;
 }
 

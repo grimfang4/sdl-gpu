@@ -13,7 +13,7 @@ void getScreenToWorld(float screenX, float screenY, float* worldX, float* worldY
 	GPU_Camera camera = GPU_GetCamera(screen);
 	if(screen == NULL)
 		return;
-	
+
 	if(worldX)
 	{
 		//if(camera.angle == 0.0f)
@@ -36,7 +36,7 @@ void getWorldToScreen(float worldX, float worldY, float* screenX, float* screenY
 	GPU_Camera camera = GPU_GetCamera(screen);
 	if(screen == NULL)
 		return;
-	
+
 	if(screenX)
 	{
 		//if(camera.angle == 0.0f)
@@ -57,7 +57,7 @@ void printScreenToWorld(float screenX, float screenY)
 {
 	float worldX, worldY;
 	getScreenToWorld(screenX, screenY, &worldX, &worldY);
-	
+
 	printf("ScreenToWorld: (%.1f, %.1f) -> (%.1f, %.1f)\n", screenX, screenY, worldX, worldY);
 }
 
@@ -65,7 +65,7 @@ void printWorldToScreen(float worldX, float worldY)
 {
 	float screenX, screenY;
 	getWorldToScreen(worldX, worldY, &screenX, &screenY);
-	
+
 	printf("WorldToScreen: (%.1f, %.1f) -> (%.1f, %.1f)\n", worldX, worldY, screenX, screenY);
 }
 
@@ -75,13 +75,13 @@ int main(int argc, char* argv[])
 	GPU_Target* screen;
 
 	printRenderers();
-	
+
 	screen = GPU_Init(800, 600, GPU_DEFAULT_INIT_FLAGS);
 	if(screen == NULL)
 		return -1;
-	
+
 	printCurrentRenderer();
-	
+
 	{
         Uint32 startTime;
         long frameCount;
@@ -92,25 +92,25 @@ int main(int argc, char* argv[])
         GPU_Image* img;
         GPU_Image* buffer;
         GPU_Target* target;
-        Uint8* keystates;
+        const Uint8* keystates;
         GPU_Camera camera;
         float dt;
-        
+
         startTime = SDL_GetTicks();
         frameCount = 0;
-        
-        
-        
+
+
+
         img = GPU_LoadImage("data/test3.png");
         buffer = GPU_CreateImage(800, 600, GPU_FORMAT_RGBA);
         GPU_LoadTarget(buffer);
-        
+
         target = screen;
-        
+
         keystates = SDL_GetKeyState(NULL);
-        
+
         camera = GPU_GetDefaultCamera();
-        
+
         dt = 0.010f;
         done = 0;
         while(!done)
@@ -140,7 +140,7 @@ int main(int argc, char* argv[])
                         float x, y;
                         SDL_GetMouseState(&mx, &my);
                         GPU_GetVirtualCoords(screen, &x, &y, mx, my);
-                        
+
                         printf("Angle: %.1f\n", camera.angle);
                         printScreenToWorld(x, y);
                         printWorldToScreen(50, 50);
@@ -163,7 +163,7 @@ int main(int argc, char* argv[])
                     }
                 }
             }
-            
+
             if(keystates[KEY_UP])
             {
                 camera.y -= 200*dt;
@@ -204,39 +204,39 @@ int main(int argc, char* argv[])
             {
                 camera.angle += 100*dt;
             }
-            
+
             GPU_ClearRGBA(screen, 255, 255, 255, 255);
             GPU_SetCamera(screen, NULL);
-            
+
             GPU_ClearRGBA(target, 255, 255, 255, 255);
-            
+
             GPU_SetCamera(target, &camera);
-            
+
             GPU_Rectangle(target, 0, 0, 800, 600, black);
             GPU_Blit(img, NULL, target, 50, 50);
             GPU_Blit(img, NULL, target, 320, 50);
             GPU_Blit(img, NULL, target, 50, 500);
-            
+
             if(target != screen)
             {
                 GPU_Blit(buffer, NULL, screen, buffer->w/2, buffer->h/2);
                 GPU_CircleFilled(screen, 0, 0, 20, red);
             }
-            
+
             GPU_Flip(screen);
-            
+
             frameCount++;
             if(frameCount%500 == 0)
                 printf("Average FPS: %.2f\n", 1000.0f*frameCount/(SDL_GetTicks() - startTime));
         }
-        
+
         printf("Average FPS: %.2f\n", 1000.0f*frameCount/(SDL_GetTicks() - startTime));
-        
+
         GPU_FreeImage(img);
 	}
-	
+
 	GPU_Quit();
-	
+
 	return 0;
 }
 

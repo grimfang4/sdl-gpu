@@ -13,7 +13,7 @@ void set_pixel(SDL_Surface* surface, int x, int y, Uint32 color)
 
     if(surface == NULL || x < 0 || y < 0 || x >= surface->w || y >= surface->h)
         return;
-    
+
     bpp = surface->format->BytesPerPixel;
     bits = ((Uint8 *)surface->pixels) + y*surface->pitch + x*bpp;
 
@@ -48,38 +48,38 @@ int main(int argc, char* argv[])
 	GPU_Target* screen;
 
 	printRenderers();
-	
+
 	screen = GPU_Init(800, 600, GPU_DEFAULT_INIT_FLAGS);
 	if(screen == NULL)
 		return -1;
-	
+
 	printCurrentRenderer();
-	
+
 	{
 		Uint32 startTime;
 		long frameCount;
 		Uint8 done;
 		SDL_Event event;
-        
+
         Uint32 rmask, gmask, bmask, amask;
         SDL_Surface* surface;
-        
+
         Uint32 red_pixel;
         Uint32 white_pixel;
-        
+
         GPU_Rect image_rect = {0, 0, 400, 400};
         GPU_Rect surface_rect = {0, 0, 400, 400};
-        
+
         SDL_Color border_color = {255, 255, 255, 255};
         SDL_Color image_rect_color = {255, 255, 0, 255};
         SDL_Color surface_rect_color = {0, 255, 0, 255};
-        
-        Uint8* keystates = SDL_GetKeyState(NULL);
+
+        const Uint8* keystates = SDL_GetKeyState(NULL);
         SDL_Keymod kmod;
-        
+
         int mx, my;
         Uint32 mouse_state;
-        
+
         GPU_Image* image = GPU_CreateImage(400, 400, GPU_FORMAT_RGBA);
         if(image == NULL)
             return -1;
@@ -100,13 +100,13 @@ int main(int argc, char* argv[])
                                        rmask, gmask, bmask, amask);
         if(surface == NULL)
             return -2;
-        
+
         red_pixel = SDL_MapRGBA(surface->format, 255, 0, 0, 255);
         white_pixel = SDL_MapRGBA(surface->format, 255, 255, 255, 255);
-        
+
         startTime = SDL_GetTicks();
         frameCount = 0;
-        
+
         done = 0;
         while(!done)
         {
@@ -124,7 +124,7 @@ int main(int argc, char* argv[])
                     }
                 }
             }
-            
+
             kmod = SDL_GetModState();
             if(keystates[KEY_w])
             {
@@ -154,7 +154,7 @@ int main(int argc, char* argv[])
                 else
                     image_rect.x += 1;
             }
-            
+
             if(keystates[KEY_UP])
             {
                 if(kmod & KMOD_SHIFT)
@@ -183,7 +183,7 @@ int main(int argc, char* argv[])
                 else
                     surface_rect.x += 1;
             }
-            
+
             mouse_state = SDL_GetMouseState(&mx, &my);
             if(mouse_state & SDL_BUTTON_LMASK)
             {
@@ -193,11 +193,11 @@ int main(int argc, char* argv[])
             {
                 set_pixel(surface, mx + image->w/2 - screen->w/2, my + image->h/2 - screen->h/2, white_pixel);
             }
-            
+
             GPU_Clear(screen);
-            
+
             GPU_UpdateSubImage(image, &image_rect, surface, &surface_rect);
-            
+
             GPU_Blit(image, NULL, screen, screen->w/2, screen->h/2);
             GPU_Rectangle(screen, screen->w/2 - image->w/2, screen->h/2 - image->h/2,
                                   screen->w/2 + image->w/2, screen->h/2 + image->h/2, border_color);
@@ -205,21 +205,21 @@ int main(int argc, char* argv[])
                                   image_rect.x + image_rect.w + screen->w/2 - image->w/2, image_rect.y + image_rect.h + screen->h/2 - image->h/2, image_rect_color);
             GPU_Rectangle(screen, surface_rect.x + screen->w/2 - image->w/2, surface_rect.y + screen->h/2 - image->h/2,
                                   surface_rect.x + surface_rect.w + screen->w/2 - image->w/2, surface_rect.y + surface_rect.h + screen->h/2 - image->h/2, surface_rect_color);
-            
+
             GPU_Flip(screen);
-            
+
             frameCount++;
             if(frameCount%500 == 0)
                 printf("Average FPS: %.2f\n", 1000.0f*frameCount/(SDL_GetTicks() - startTime));
         }
-        
+
         printf("Average FPS: %.2f\n", 1000.0f*frameCount/(SDL_GetTicks() - startTime));
-        
+
         GPU_FreeImage(image);
 	}
-	
+
 	GPU_Quit();
-	
+
 	return 0;
 }
 

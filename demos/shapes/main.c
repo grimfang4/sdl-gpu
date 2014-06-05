@@ -197,6 +197,12 @@ int main(int argc, char* argv[])
                         GPU_SetLineThickness(thickness);
                     }
                 }
+                else if(event.type == SDL_MOUSEBUTTONDOWN)
+                {
+                    shapeType++;
+                    if(shapeType >= numShapeTypes)
+                        shapeType = 0;
+                }
             }
             
             GPU_Clear(screen);
