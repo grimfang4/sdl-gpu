@@ -10,11 +10,11 @@ int main(int argc, char* argv[])
 	GPU_Target* screen;
 
 	printRenderers();
-	
+
 	screen = GPU_Init(800, 600, GPU_DEFAULT_INIT_FLAGS);
 	if(screen == NULL)
 		return -1;
-	
+
 	printCurrentRenderer();
 
 	{
@@ -22,7 +22,7 @@ int main(int argc, char* argv[])
 
 		int numImages = 0;
 
-		Uint8* keystates = SDL_GetKeyState(NULL);
+		const Uint8* keystates = SDL_GetKeyState(NULL);
 		GPU_Camera camera = GPU_GetDefaultCamera();
 
 		float dt = 0.010f;
@@ -110,7 +110,7 @@ int main(int argc, char* argv[])
 	}
 
 	GPU_Quit();
-	
+
 	return 0;
 }
 

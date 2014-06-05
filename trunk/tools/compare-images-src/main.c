@@ -13,7 +13,7 @@ void getScreenToWorld(float screenX, float screenY, float* worldX, float* worldY
 	GPU_Camera camera = GPU_GetCamera(screen);
 	if(screen == NULL)
 		return;
-	
+
 	if(worldX)
 	{
 		//if(camera.angle == 0.0f)
@@ -36,7 +36,7 @@ void getWorldToScreen(float worldX, float worldY, float* screenX, float* screenY
 	GPU_Camera camera = GPU_GetCamera(screen);
 	if(screen == NULL)
 		return;
-	
+
 	if(screenX)
 	{
 		//if(camera.angle == 0.0f)
@@ -57,7 +57,7 @@ void printScreenToWorld(float screenX, float screenY)
 {
 	float worldX, worldY;
 	getScreenToWorld(screenX, screenY, &worldX, &worldY);
-	
+
 	printf("ScreenToWorld: (%.1f, %.1f) -> (%.1f, %.1f)\n", screenX, screenY, worldX, worldY);
 }
 
@@ -65,7 +65,7 @@ void printWorldToScreen(float worldX, float worldY)
 {
 	float screenX, screenY;
 	getWorldToScreen(worldX, worldY, &screenX, &screenY);
-	
+
 	printf("WorldToScreen: (%.1f, %.1f) -> (%.1f, %.1f)\n", worldX, worldY, screenX, screenY);
 }
 
@@ -75,18 +75,18 @@ int main(int argc, char* argv[])
 	GPU_Target* screen;
 
 	printRenderers();
-	
+
 	screen = GPU_Init(800, 600, GPU_DEFAULT_INIT_FLAGS);
 	if(screen == NULL)
 		return -1;
-	
+
 	printCurrentRenderer();
 
 	{
 		int numImages;
 		GPU_Image** images;
 		int i;
-		Uint8* keystates;
+		const Uint8* keystates;
 		GPU_Camera camera;
 		float dt;
 		Uint8 done;
@@ -191,7 +191,7 @@ int main(int argc, char* argv[])
 	}
 
 	GPU_Quit();
-	
+
 	return 0;
 }
 

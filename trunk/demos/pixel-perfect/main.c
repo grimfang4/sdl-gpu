@@ -11,19 +11,19 @@ int main(int argc, char* argv[])
 	GPU_Target* screen;
 
 	printRenderers();
-	
+
 	screen = GPU_Init(800, 600, GPU_DEFAULT_INIT_FLAGS);
 	if(screen == NULL)
 		return -1;
-	
+
 	printCurrentRenderer();
-	
+
 	{
 		Uint32 startTime;
 		long frameCount;
 		Uint8 done;
 		SDL_Event event;
-		
+
 		GPU_Image* image;
 		GPU_Image* image2;
         int mode;
@@ -32,12 +32,12 @@ int main(int argc, char* argv[])
         SDL_Color color = {0, 255, 0, 255};
         float dt;
         GPU_Camera camera;
-        Uint8* keystates;
-        
+        const Uint8* keystates;
+
         image = GPU_LoadImage("data/pixel_perfect.png");
         if(image == NULL)
             return -1;
-        
+
         /*GPU_Image* gen = GPU_CreateImage(257, 257, GPU_FORMAT_RGB);
         GPU_LoadTarget(gen);
         for(int i = 0; i < gen->w/2; i++)
@@ -46,24 +46,24 @@ int main(int argc, char* argv[])
             GPU_Rectangle(gen->target, i, i, gen->w-i-1, gen->h-1-i, color);
         }
         GPU_SaveImage(gen, "data/pixel_perfect_odd.png");*/
-        
+
         image2 = GPU_LoadImage("data/pixel_perfect_odd.png");
         if(image2 == NULL)
             return -2;
-        
+
         mode = 0;
         num_modes = 7;
         x = 0.0f;
         y = 0.0f;
-        
+
         dt = 0.010f;
         camera = GPU_GetDefaultCamera();
-        
+
         keystates = SDL_GetKeyState(NULL);
-        
+
         startTime = SDL_GetTicks();
         frameCount = 0;
-        
+
         done = 0;
         while(!done)
         {
@@ -84,7 +84,7 @@ int main(int argc, char* argv[])
                     else if(event.key.keysym.sym == SDLK_r)
                     {
                         x = y = 0.0f;
-                        
+
                         camera = GPU_GetDefaultCamera();
                     }
                     else if(event.key.keysym.sym == SDLK_f)
@@ -144,7 +144,7 @@ int main(int argc, char* argv[])
                     GPU_LogError("x, y: (%.2f, %.2f)\n", x, y);
                 }
             }
-            
+
             if(keystates[KEY_w])
                 y -= 0.1f;
             else if(keystates[KEY_s])
@@ -153,7 +153,7 @@ int main(int argc, char* argv[])
                 x -= 0.1f;
             else if(keystates[KEY_d])
                 x += 0.1f;
-            
+
             if(keystates[KEY_MINUS])
             {
                 camera.zoom -= 1.0f*dt;
@@ -162,11 +162,11 @@ int main(int argc, char* argv[])
             {
                 camera.zoom += 1.0f*dt;
             }
-            
+
             GPU_SetCamera(screen, &camera);
-            
+
             GPU_Clear(screen);
-            
+
             if(mode == 0)
             {
                 // Blitting
@@ -205,22 +205,22 @@ int main(int argc, char* argv[])
                 // Circle
                 GPU_Circle(screen, x + screen->w/2.0f, y + screen->h/2.0f, MIN(screen->w, screen->h)/2.0f - 1.0f, color);
             }
-            
+
             GPU_Flip(screen);
-            
+
             frameCount++;
             if(frameCount%500 == 0)
                 printf("Average FPS: %.2f\n", 1000.0f*frameCount/(SDL_GetTicks() - startTime));
         }
-        
+
         printf("Average FPS: %.2f\n", 1000.0f*frameCount/(SDL_GetTicks() - startTime));
-        
+
         GPU_FreeImage(image2);
         GPU_FreeImage(image);
 	}
-	
+
 	GPU_Quit();
-	
+
 	return 0;
 }
 
