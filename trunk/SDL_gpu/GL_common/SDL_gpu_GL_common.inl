@@ -219,6 +219,14 @@ static void init_features(GPU_Renderer* renderer)
         renderer->enabled_features |= GPU_FEATURE_GL_BGRA;
     if(isExtensionSupported("GL_EXT_abgr"))
         renderer->enabled_features |= GPU_FEATURE_GL_ABGR;
+	
+	// Disable other texture formats for GLES.
+	// TODO: Add better (static) checking for format support.  Some GL versions do not report previously non-core features as extensions.
+	#ifdef SDL_GPU_USE_GLES
+		renderer->enabled_features &= !GPU_FEATURE_GL_BGR;
+		renderer->enabled_features &= !GPU_FEATURE_GL_BGRA;
+		renderer->enabled_features &= !GPU_FEATURE_GL_ABGR;
+	#endif
 
     if(isExtensionSupported("GL_ARB_fragment_shader"))
         renderer->enabled_features |= GPU_FEATURE_FRAGMENT_SHADER;
@@ -2011,15 +2019,12 @@ static int compareFormats(GPU_Renderer* renderer, GLenum glFormat, SDL_Surface* 
 #ifdef GL_BGR
         if(format->Rmask == 0xFF0000 && format->Gmask == 0x00FF00 && format->Bmask == 0x0000FF)
         {
-
             if(renderer->enabled_features & GPU_FEATURE_GL_BGR)
             {
                 if(surfaceFormatResult != NULL)
                     *surfaceFormatResult = GL_BGR;
+				return 0;
             }
-            else
-                return 1;
-            return 0;
         }
 #endif
         return 1;
@@ -2037,17 +2042,23 @@ static int compareFormats(GPU_Renderer* renderer, GLenum glFormat, SDL_Surface* 
 #ifdef GL_BGRA
         if (format->Rmask == 0x00FF0000 && format->Gmask == 0x0000FF00 && format->Bmask == 0x000000FF)
         {
-            if(surfaceFormatResult != NULL)
-                *surfaceFormatResult = GL_BGRA;
-            return 0;
+            if(renderer->enabled_features & GPU_FEATURE_GL_BGRA)
+            {
+				if(surfaceFormatResult != NULL)
+					*surfaceFormatResult = GL_BGRA;
+				return 0;
+			}
         }
 #endif
 #ifdef GL_ABGR
         if (format->Rmask == 0xFF000000 && format->Gmask == 0x00FF0000 && format->Bmask == 0x0000FF00)
         {
-            if(surfaceFormatResult != NULL)
-                *surfaceFormatResult = GL_ABGR;
-            return 0;
+            if(renderer->enabled_features & GPU_FEATURE_GL_ABGR)
+            {
+				if(surfaceFormatResult != NULL)
+					*surfaceFormatResult = GL_ABGR;
+				return 0;
+			}
         }
 #endif
         return 1;
