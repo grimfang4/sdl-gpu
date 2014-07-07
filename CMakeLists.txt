@@ -88,6 +88,12 @@ else (SDL_gpu_DISABLE_OPENGL)
 		add_definitions("-DSDL_GPU_DISABLE_OPENGL_4")
 	endif (SDL_gpu_DISABLE_OPENGL_4)
 	
+        # If glew is not found here, we’ll use the bundled version
+	find_package(GLEW)
+        if(NOT GLEW_FOUND)
+          message(" Using bundled version of GLEW")
+        endif(NOT GLEW_FOUND)
+
 endif (SDL_gpu_DISABLE_OPENGL)
 
 # Find the package for OpenGLES
@@ -111,6 +117,12 @@ else (SDL_gpu_DISABLE_GLES)
 	
 endif (SDL_gpu_DISABLE_GLES)
 
+# If stb-image is not found here, we’ll use the bundled version
+find_package(STBI)
+if(NOT STBI_FOUND)
+  message(" Using bundled version of stb-image")
+endif(NOT STBI_FOUND)
+
 if(NOT WIN32)
   find_library(M_LIB m)
   link_libraries(${M_LIB})
@@ -125,11 +137,18 @@ include_directories(SDL_gpu/OpenGL_2)
 include_directories(SDL_gpu/OpenGL_3)
 include_directories(SDL_gpu/GLES_1)
 include_directories(SDL_gpu/GLES_2)
-include_directories(SDL_gpu/externals/glew)
-include_directories(SDL_gpu/externals/stb_image)
+
+if(NOT GLEW_FOUND)
+  include_directories(SDL_gpu/externals/glew)
+endif(NOT GLEW_FOUND)
+
+if(NOT STBI_FOUND)
+  include_directories(SDL_gpu/externals/stb_image)
+  add_definitions("-DSTBI_FAILURE_USERMSG")
+endif(NOT STBI_FOUND)
 
 
-add_definitions("-Wall -std=c99 -pedantic -DSTBI_FAILURE_USERMSG")
+add_definitions("-Wall -std=c99 -pedantic")
 
 # Build the SDL_gpu library.
 add_subdirectory(SDL_gpu)
