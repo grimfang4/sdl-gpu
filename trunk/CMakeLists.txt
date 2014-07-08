@@ -123,6 +123,11 @@ if(NOT STBI_FOUND)
   message(" Using bundled version of stb-image")
 endif(NOT STBI_FOUND)
 
+find_package(STBI_write)
+if(NOT STBI_WRITE_FOUND)
+  message(" Using bundled version of stb-image-write")
+endif(NOT STBI_WRITE_FOUND)
+
 if(NOT WIN32)
   find_library(M_LIB m)
   link_libraries(${M_LIB})
