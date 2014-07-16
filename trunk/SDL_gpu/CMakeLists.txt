@@ -40,11 +40,6 @@ else(STBI_WRITE_FOUND)
 	SET(SDL_gpu_HDRS ${SDL_gpu_HDRS} externals/stb_image/stb_image_write.h)
 endif(STBI_WRITE_FOUND)
 
-if (NOT SDL_gpu_DISABLE_OPENGL AND GLEW_FOUND)
-	SET(SDL_gpu_SRCS ${SDL_gpu_SRCS} externals/glew/glew.c)
-	SET(SDL_gpu_HDRS ${SDL_gpu_HDRS} externals/glew/glew.h externals/glew/glxew.h externals/glew/wglew.h)
-	
-endif (NOT SDL_gpu_DISABLE_OPENGL AND GLEW_FOUND)
 
 set(SDL_gpu_install_HDRS
 	SDL_gpu.h
