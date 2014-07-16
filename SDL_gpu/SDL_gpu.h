@@ -245,6 +245,7 @@ typedef struct GPU_Context
 {
     /*! SDL_GLContext */
     void* context;
+    Uint8 failed;
     
     /*! SDL window ID */
 	Uint32 windowID;
