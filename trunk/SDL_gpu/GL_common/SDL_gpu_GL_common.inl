@@ -300,7 +300,14 @@ static Uint8 bindFramebuffer(GPU_Renderer* renderer, GPU_Target* target)
     }
     else
     {
-        return (target != NULL && ((GPU_TARGET_DATA*)target->data)->handle == 0);
+        // There's only one possible render target, the default framebuffer.
+        // Note: Could check against the default framebuffer value (((GPU_TARGET_DATA*)target->data)->handle versus result of GL_FRAMEBUFFER_BINDING)...
+        if(target != NULL)
+        {
+            ((GPU_CONTEXT_DATA*)renderer->current_context_target->context->data)->last_target = target;
+            return 1;
+        }
+        return 0;
     }
 }
 
