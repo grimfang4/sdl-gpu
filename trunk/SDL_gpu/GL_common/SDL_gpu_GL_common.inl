@@ -223,9 +223,9 @@ static void init_features(GPU_Renderer* renderer)
 	// Disable other texture formats for GLES.
 	// TODO: Add better (static) checking for format support.  Some GL versions do not report previously non-core features as extensions.
 	#ifdef SDL_GPU_USE_GLES
-		renderer->enabled_features &= !GPU_FEATURE_GL_BGR;
-		renderer->enabled_features &= !GPU_FEATURE_GL_BGRA;
-		renderer->enabled_features &= !GPU_FEATURE_GL_ABGR;
+		renderer->enabled_features &= ~GPU_FEATURE_GL_BGR;
+		renderer->enabled_features &= ~GPU_FEATURE_GL_BGRA;
+		renderer->enabled_features &= ~GPU_FEATURE_GL_ABGR;
 	#endif
 
     if(isExtensionSupported("GL_ARB_fragment_shader"))
