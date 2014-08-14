@@ -1,4 +1,5 @@
 set(SDL_gpu_SRCS
+	${SDL_gpu_SRCS}
 	SDL_gpu.c
 	SDL_gpuShapes.c
 	SDL_gpu_Renderer.c
@@ -12,6 +13,7 @@ set(SDL_gpu_SRCS
 )
 
 set(SDL_gpu_HDRS
+	${SDL_gpu_HDRS}
 	SDL_gpu.h
 	GL_common/SDL_gpu_GL_matrix.h
 	GL_common/SDL_gpu_GL_common.inl
