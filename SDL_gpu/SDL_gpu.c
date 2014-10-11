@@ -792,6 +792,27 @@ SDL_Surface* GPU_LoadSurface(const char* filename)
 	
 	result = SDL_CreateRGBSurfaceFrom(data, width, height, channels*8, width*channels, Rmask, Gmask, Bmask, Amask);
 	
+	if(result != NULL && result->format->palette != NULL)
+    {
+        // SDL_CreateRGBSurface has no idea what palette to use, so it uses a blank one.
+        // We'll at least create a grayscale one, but it's not ideal...
+        // Better would be to get the palette from stbi, but stbi doesn't do that!
+        SDL_Color colors[256];
+        int i;
+        
+        for(i = 0; i < 256; i++)
+        {
+            colors[i].r = colors[i].g = colors[i].b = i;
+        }
+
+        /* Set palette */
+        #ifdef SDL_GPU_USE_SDL2
+        SDL_SetPaletteColors(result->format->palette, colors, 0, 256);
+        #else
+        SDL_SetPalette(result, SDL_LOGPAL, colors, 0, 256);
+        #endif
+    }
+	
 	return result;
 }
 
