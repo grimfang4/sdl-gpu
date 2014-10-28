@@ -15,6 +15,7 @@ void GPU_FreeRenderer_OpenGL_1(GPU_Renderer* renderer) {}
 #define SDL_GPU_GL_TIER 3
 #define SDL_GPU_GLSL_VERSION 110
 #define SDL_GPU_GL_MAJOR_VERSION 1
+#define SDL_GPU_APPLY_TRANSFORMS_TO_GL_STACK
 #define SDL_GPU_NO_VAO
 #include "../GL_common/SDL_gpu_GL_common.inl"
 #include "../GL_common/SDL_gpuShapes_GL_common.inl"

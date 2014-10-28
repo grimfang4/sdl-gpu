@@ -105,6 +105,9 @@ static SDL_PixelFormat* AllocFormat(GLenum glFormat);
 static void FreeFormat(SDL_PixelFormat* format);
 
 
+static char shader_message[256];
+
+
 
 static Uint8 isExtensionSupported(const char* extension_str)
 {
@@ -133,6 +136,9 @@ static Uint8 isExtensionSupported(const char* extension_str)
 
 static void init_features(GPU_Renderer* renderer)
 {
+    // Reset supported features
+    renderer->enabled_features = 0;
+    
     // NPOT textures
 #ifdef SDL_GPU_USE_OPENGL
     if(isExtensionSupported("GL_ARB_texture_non_power_of_two"))
@@ -228,12 +234,15 @@ static void init_features(GPU_Renderer* renderer)
 		renderer->enabled_features &= ~GPU_FEATURE_GL_ABGR;
 	#endif
 
+    // Shader support
+    #ifndef SDL_GPU_DISABLE_SHADERS
     if(isExtensionSupported("GL_ARB_fragment_shader"))
         renderer->enabled_features |= GPU_FEATURE_FRAGMENT_SHADER;
     if(isExtensionSupported("GL_ARB_vertex_shader"))
         renderer->enabled_features |= GPU_FEATURE_VERTEX_SHADER;
     if(isExtensionSupported("GL_ARB_geometry_shader4"))
         renderer->enabled_features |= GPU_FEATURE_GEOMETRY_SHADER;
+    #endif
 }
 
 static void extBindFramebuffer(GPU_Renderer* renderer, GLuint handle)
@@ -899,9 +908,6 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
 #endif
 	const char* version_string;
 	GPU_FeatureEnum required_features;
-#ifndef SDL_GPU_DISABLE_SHADERS
-	Uint32 v, f, p;
-#endif
 
     if(target == NULL)
 	{
@@ -1158,78 +1164,91 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     #ifndef SDL_GPU_DISABLE_SHADERS
     // Load default shaders
     
-    // Textured shader
-    v = renderer->CompileShader(renderer, GPU_VERTEX_SHADER, GPU_DEFAULT_TEXTURED_VERTEX_SHADER_SOURCE);
-    
-    if(!v)
+    if(renderer->IsFeatureEnabled(renderer, GPU_FEATURE_BASIC_SHADERS))
     {
-        GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Failed to load default textured vertex shader.");
-        target->context->failed = 1;
-        return NULL;
-    }
-    
-    f = renderer->CompileShader(renderer, GPU_FRAGMENT_SHADER, GPU_DEFAULT_TEXTURED_FRAGMENT_SHADER_SOURCE);
-    
-    if(!f)
-    {
-        GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Failed to load default textured fragment shader.");
-        target->context->failed = 1;
-        return NULL;
-    }
-    
-    p = renderer->LinkShaders(renderer, v, f);
-    
-    if(!p)
-    {
-        GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Failed to link default textured shader program.");
-        target->context->failed = 1;
-        return NULL;
-    }
-    
-    target->context->default_textured_shader_program = p;
-    
-    #ifdef SDL_GPU_USE_GL_TIER3
-    // Get locations of the attributes in the shader
-    cdata->shader_block[0] = GPU_LoadShaderBlock(p, "gpu_Vertex", "gpu_TexCoord", "gpu_Color", "gpu_ModelViewProjectionMatrix");
-    #endif
-    
-    // Untextured shader
-    v = renderer->CompileShader(renderer, GPU_VERTEX_SHADER, GPU_DEFAULT_UNTEXTURED_VERTEX_SHADER_SOURCE);
-    
-    if(!v)
-    {
-        GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Failed to load default untextured vertex shader.");
-        target->context->failed = 1;
-        return NULL;
-    }
-    
-    f = renderer->CompileShader(renderer, GPU_FRAGMENT_SHADER, GPU_DEFAULT_UNTEXTURED_FRAGMENT_SHADER_SOURCE);
-    
-    if(!f)
-    {
-        GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Failed to load default untextured fragment shader.");
-        target->context->failed = 1;
-        return NULL;
-    }
-    
-    p = renderer->LinkShaders(renderer, v, f);
-    
-    if(!p)
-    {
-        GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Failed to link default untextured shader program.");
-        target->context->failed = 1;
-        return NULL;
-    }
-    
-    glUseProgram(p);
-    
-    target->context->default_untextured_shader_program = target->context->current_shader_program = p;
-    
-    #ifdef SDL_GPU_USE_GL_TIER3
+        Uint32 v, f, p;
+        
+        // Textured shader
+        v = renderer->CompileShader(renderer, GPU_VERTEX_SHADER, GPU_DEFAULT_TEXTURED_VERTEX_SHADER_SOURCE);
+        
+        if(!v)
+        {
+            GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Failed to load default textured vertex shader.");
+            target->context->failed = 1;
+            return NULL;
+        }
+        
+        f = renderer->CompileShader(renderer, GPU_FRAGMENT_SHADER, GPU_DEFAULT_TEXTURED_FRAGMENT_SHADER_SOURCE);
+        
+        if(!f)
+        {
+            GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Failed to load default textured fragment shader.");
+            target->context->failed = 1;
+            return NULL;
+        }
+        
+        p = renderer->LinkShaders(renderer, v, f);
+        
+        if(!p)
+        {
+            GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Failed to link default textured shader program.");
+            target->context->failed = 1;
+            return NULL;
+        }
+        
+        target->context->default_textured_shader_program = p;
+        
+        #ifdef SDL_GPU_USE_GL_TIER3
+        // Get locations of the attributes in the shader
+        cdata->shader_block[0] = GPU_LoadShaderBlock(p, "gpu_Vertex", "gpu_TexCoord", "gpu_Color", "gpu_ModelViewProjectionMatrix");
+        #endif
+        
+        // Untextured shader
+        v = renderer->CompileShader(renderer, GPU_VERTEX_SHADER, GPU_DEFAULT_UNTEXTURED_VERTEX_SHADER_SOURCE);
+        
+        if(!v)
+        {
+            GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Failed to load default untextured vertex shader.");
+            target->context->failed = 1;
+            return NULL;
+        }
+        
+        f = renderer->CompileShader(renderer, GPU_FRAGMENT_SHADER, GPU_DEFAULT_UNTEXTURED_FRAGMENT_SHADER_SOURCE);
+        
+        if(!f)
+        {
+            GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Failed to load default untextured fragment shader.");
+            target->context->failed = 1;
+            return NULL;
+        }
+        
+        p = renderer->LinkShaders(renderer, v, f);
+        
+        if(!p)
+        {
+            GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Failed to link default untextured shader program.");
+            target->context->failed = 1;
+            return NULL;
+        }
+        
+        glUseProgram(p);
+        
+        target->context->default_untextured_shader_program = target->context->current_shader_program = p;
+        
+        #ifdef SDL_GPU_USE_GL_TIER3
         // Get locations of the attributes in the shader
         cdata->shader_block[1] = GPU_LoadShaderBlock(p, "gpu_Vertex", NULL, "gpu_Color", "gpu_ModelViewProjectionMatrix");
         GPU_SetShaderBlock(cdata->shader_block[1]);
+        #endif
         
+    }
+    else
+    {
+        snprintf(shader_message, 256, "Shaders not supported by this hardware.  Default shaders are disabled.\n");
+        target->context->default_untextured_shader_program = target->context->current_shader_program = 0;
+    }
+    
+    #ifdef SDL_GPU_USE_GL_TIER3
         // Create vertex array container and buffer
         #if !defined(SDL_GPU_NO_VAO)
         glGenVertexArrays(1, &cdata->blit_VAO);
@@ -3702,7 +3721,7 @@ static void BlitBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* targ
     setClipRect(renderer, target);
     
     #ifdef SDL_GPU_APPLY_TRANSFORMS_TO_GL_STACK
-    //if(!renderer->IsFeatureEnabled(GPU_FEATURE_VERTEX_SHADER))
+    if(!renderer->IsFeatureEnabled(renderer, GPU_FEATURE_VERTEX_SHADER))
         applyTransforms();
     #endif
     
@@ -3923,7 +3942,7 @@ static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* 
     setClipRect(renderer, target);
     
     #ifdef SDL_GPU_APPLY_TRANSFORMS_TO_GL_STACK
-    //if(!renderer->IsFeatureEnabled(GPU_FEATURE_VERTEX_SHADER))
+    if(!renderer->IsFeatureEnabled(renderer, GPU_FEATURE_VERTEX_SHADER))
         applyTransforms();
     #endif
     
@@ -4367,14 +4386,14 @@ static void DoPartialFlush(GPU_CONTEXT_DATA* cdata, unsigned short num_vertices,
         float* texcoord_pointer = blit_buffer + GPU_BLIT_BUFFER_TEX_COORD_OFFSET;
         
         glBegin(cdata->last_shape);
-        for(i = 0; i < num_vertices; i++)
+        for(i = 0; i < num_indices; i++)
         {
-            glTexCoord2f( *texcoord_pointer, *(texcoord_pointer+1) );
-            glVertex3f( *vertex_pointer, *(vertex_pointer+1), 0.0f );
-            texcoord_pointer += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
-            vertex_pointer += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
+            unsigned short index = index_buffer[i]*GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
+            glTexCoord2f( texcoord_pointer[index], texcoord_pointer[index+1] );
+            glVertex3f( vertex_pointer[index], vertex_pointer[index+1], 0.0f );
         }
         glEnd();
+        
 #elif defined(SDL_GPU_USE_GL_TIER2)
 
         glEnableClientState(GL_VERTEX_ARRAY);
@@ -4549,7 +4568,7 @@ static void FlushBlitBuffer(GPU_Renderer* renderer)
         applyTexturing(renderer);
         
         #ifdef SDL_GPU_APPLY_TRANSFORMS_TO_GL_STACK
-        //if(!renderer->IsFeatureEnabled(GPU_FEATURE_VERTEX_SHADER))
+        if(!renderer->IsFeatureEnabled(renderer, GPU_FEATURE_VERTEX_SHADER))
             applyTransforms();
         #endif
         
@@ -4840,8 +4859,6 @@ static Uint32 GetShaderSourceSize(const char* filename)
     return result;
 }
 
-static char shader_message[256];
-
 
 static Uint32 compile_shader_source(GPU_ShaderEnum shader_type, const char* shader_source)
 {
@@ -4936,6 +4953,10 @@ static Uint32 LinkShaderProgram(GPU_Renderer* renderer, Uint32 program_object)
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
 	int linked;
+	
+    if(!renderer->IsFeatureEnabled(renderer, GPU_FEATURE_BASIC_SHADERS))
+        return 0;
+    
 	glLinkProgram(program_object);
 	
 	glGetProgramiv(program_object, GL_LINK_STATUS, &linked);
@@ -4947,15 +4968,25 @@ static Uint32 LinkShaderProgram(GPU_Renderer* renderer, Uint32 program_object)
         glDeleteProgram(program_object);
         return 0;
     }
-	#endif
     
 	return program_object;
+	
+    #else
+    
+    return 0;
+    
+	#endif
 }
 
 static Uint32 LinkShaders(GPU_Renderer* renderer, Uint32 shader_object1, Uint32 shader_object2)
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
-    GLuint p = glCreateProgram();
+    GLuint p;
+    
+    if(!renderer->IsFeatureEnabled(renderer, GPU_FEATURE_BASIC_SHADERS))
+        return 0;
+    
+    p = glCreateProgram();
 
 	glAttachShader(p, shader_object1);
 	glAttachShader(p, shader_object2);
@@ -4969,28 +5000,32 @@ static Uint32 LinkShaders(GPU_Renderer* renderer, Uint32 shader_object1, Uint32 
 static void FreeShader(GPU_Renderer* renderer, Uint32 shader_object)
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
-    glDeleteShader(shader_object);
+    if(renderer->IsFeatureEnabled(renderer, GPU_FEATURE_BASIC_SHADERS))
+        glDeleteShader(shader_object);
     #endif
 }
 
 static void FreeShaderProgram(GPU_Renderer* renderer, Uint32 program_object)
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
-    glDeleteProgram(program_object);
+    if(renderer->IsFeatureEnabled(renderer, GPU_FEATURE_BASIC_SHADERS))
+        glDeleteProgram(program_object);
     #endif
 }
 
 static void AttachShader(GPU_Renderer* renderer, Uint32 program_object, Uint32 shader_object)
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
-    glAttachShader(program_object, shader_object);
+    if(renderer->IsFeatureEnabled(renderer, GPU_FEATURE_BASIC_SHADERS))
+        glAttachShader(program_object, shader_object);
     #endif
 }
 
 static void DetachShader(GPU_Renderer* renderer, Uint32 program_object, Uint32 shader_object)
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
-    glDetachShader(program_object, shader_object);
+    if(renderer->IsFeatureEnabled(renderer, GPU_FEATURE_BASIC_SHADERS))
+        glDetachShader(program_object, shader_object);
     #endif
 }
 
@@ -5004,19 +5039,20 @@ static void ActivateShaderProgram(GPU_Renderer* renderer, Uint32 program_object,
 {
     GPU_Target* target = renderer->current_context_target;
     #ifndef SDL_GPU_DISABLE_SHADERS
-    
-    if(program_object == 0) // Implies default shader
+    if(renderer->IsFeatureEnabled(renderer, GPU_FEATURE_BASIC_SHADERS))
     {
-        // Already using a default shader?
-        if(target->context->current_shader_program == target->context->default_textured_shader_program
-            || target->context->current_shader_program == target->context->default_untextured_shader_program)
-            return;
+        if(program_object == 0) // Implies default shader
+        {
+            // Already using a default shader?
+            if(target->context->current_shader_program == target->context->default_textured_shader_program
+                || target->context->current_shader_program == target->context->default_untextured_shader_program)
+                return;
+            
+            program_object = target->context->default_untextured_shader_program;
+        }
         
-        program_object = target->context->default_untextured_shader_program;
-    }
-    
-    renderer->FlushBlitBuffer(renderer);
-    glUseProgram(program_object);
+        renderer->FlushBlitBuffer(renderer);
+        glUseProgram(program_object);
     
         #ifdef SDL_GPU_USE_GL_TIER3
 		{
@@ -5042,6 +5078,7 @@ static void ActivateShaderProgram(GPU_Renderer* renderer, Uint32 program_object,
 				cdata->current_shader_block = *block;
 		}
         #endif
+    }
     #endif
     
     target->context->current_shader_program = program_object;
@@ -5060,6 +5097,8 @@ static const char* GetShaderMessage(GPU_Renderer* renderer)
 static int GetAttributeLocation(GPU_Renderer* renderer, Uint32 program_object, const char* attrib_name)
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
+    if(!renderer->IsFeatureEnabled(renderer, GPU_FEATURE_BASIC_SHADERS))
+        return -1;
     program_object = get_proper_program_id(renderer, program_object);
     if(program_object == 0)
         return -1;
@@ -5072,6 +5111,8 @@ static int GetAttributeLocation(GPU_Renderer* renderer, Uint32 program_object, c
 static int GetUniformLocation(GPU_Renderer* renderer, Uint32 program_object, const char* uniform_name)
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
+    if(!renderer->IsFeatureEnabled(renderer, GPU_FEATURE_BASIC_SHADERS))
+        return -1;
     program_object = get_proper_program_id(renderer, program_object);
     if(program_object == 0)
         return -1;
@@ -5085,7 +5126,7 @@ static GPU_ShaderBlock LoadShaderBlock(GPU_Renderer* renderer, Uint32 program_ob
 {
     GPU_ShaderBlock b;
     program_object = get_proper_program_id(renderer, program_object);
-    if(program_object == 0)
+    if(program_object == 0 || !renderer->IsFeatureEnabled(renderer, GPU_FEATURE_BASIC_SHADERS))
     {
         b.position_loc = -1;
         b.texcoord_loc = -1;
@@ -5129,6 +5170,10 @@ static void SetShaderImage(GPU_Renderer* renderer, GPU_Image* image, int locatio
     // TODO: OpenGL 1 needs to check for ARB_multitexture to use glActiveTexture().
     #ifndef SDL_GPU_DISABLE_SHADERS
 	Uint32 new_texture;
+	
+    if(!renderer->IsFeatureEnabled(renderer, GPU_FEATURE_BASIC_SHADERS))
+        return;
+    
     renderer->FlushBlitBuffer(renderer);
     if(renderer->current_context_target->context->current_shader_program == 0 || image_unit < 0)
         return;
@@ -5152,6 +5197,8 @@ static void SetShaderImage(GPU_Renderer* renderer, GPU_Image* image, int locatio
 static void GetUniformiv(GPU_Renderer* renderer, Uint32 program_object, int location, int* values)
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
+    if(!renderer->IsFeatureEnabled(renderer, GPU_FEATURE_BASIC_SHADERS))
+        return;
     program_object = get_proper_program_id(renderer, program_object);
     if(program_object != 0)
         glGetUniformiv(program_object, location, values);
@@ -5161,6 +5208,8 @@ static void GetUniformiv(GPU_Renderer* renderer, Uint32 program_object, int loca
 static void SetUniformi(GPU_Renderer* renderer, int location, int value)
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
+    if(!renderer->IsFeatureEnabled(renderer, GPU_FEATURE_BASIC_SHADERS))
+        return;
     renderer->FlushBlitBuffer(renderer);
     if(renderer->current_context_target->context->current_shader_program == 0)
         return;
@@ -5171,6 +5220,8 @@ static void SetUniformi(GPU_Renderer* renderer, int location, int value)
 static void SetUniformiv(GPU_Renderer* renderer, int location, int num_elements_per_value, int num_values, int* values)
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
+    if(!renderer->IsFeatureEnabled(renderer, GPU_FEATURE_BASIC_SHADERS))
+        return;
     renderer->FlushBlitBuffer(renderer);
     if(renderer->current_context_target->context->current_shader_program == 0)
         return;
@@ -5196,6 +5247,8 @@ static void SetUniformiv(GPU_Renderer* renderer, int location, int num_elements_
 static void GetUniformuiv(GPU_Renderer* renderer, Uint32 program_object, int location, unsigned int* values)
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
+    if(!renderer->IsFeatureEnabled(renderer, GPU_FEATURE_BASIC_SHADERS))
+        return;
     program_object = get_proper_program_id(renderer, program_object);
     if(program_object != 0)
         #if defined(SDL_GPU_USE_GLES) && SDL_GPU_GLES_MAJOR_VERSION < 3
@@ -5209,6 +5262,8 @@ static void GetUniformuiv(GPU_Renderer* renderer, Uint32 program_object, int loc
 static void SetUniformui(GPU_Renderer* renderer, int location, unsigned int value)
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
+    if(!renderer->IsFeatureEnabled(renderer, GPU_FEATURE_BASIC_SHADERS))
+        return;
     renderer->FlushBlitBuffer(renderer);
     if(renderer->current_context_target->context->current_shader_program == 0)
         return;
@@ -5223,6 +5278,8 @@ static void SetUniformui(GPU_Renderer* renderer, int location, unsigned int valu
 static void SetUniformuiv(GPU_Renderer* renderer, int location, int num_elements_per_value, int num_values, unsigned int* values)
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
+    if(!renderer->IsFeatureEnabled(renderer, GPU_FEATURE_BASIC_SHADERS))
+        return;
     renderer->FlushBlitBuffer(renderer);
     if(renderer->current_context_target->context->current_shader_program == 0)
         return;
@@ -5266,6 +5323,8 @@ static void SetUniformuiv(GPU_Renderer* renderer, int location, int num_elements
 static void GetUniformfv(GPU_Renderer* renderer, Uint32 program_object, int location, float* values)
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
+    if(!renderer->IsFeatureEnabled(renderer, GPU_FEATURE_BASIC_SHADERS))
+        return;
     program_object = get_proper_program_id(renderer, program_object);
     if(program_object != 0)
         glGetUniformfv(program_object, location, values);
@@ -5275,6 +5334,8 @@ static void GetUniformfv(GPU_Renderer* renderer, Uint32 program_object, int loca
 static void SetUniformf(GPU_Renderer* renderer, int location, float value)
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
+    if(!renderer->IsFeatureEnabled(renderer, GPU_FEATURE_BASIC_SHADERS))
+        return;
     renderer->FlushBlitBuffer(renderer);
     if(renderer->current_context_target->context->current_shader_program == 0)
         return;
@@ -5285,6 +5346,8 @@ static void SetUniformf(GPU_Renderer* renderer, int location, float value)
 static void SetUniformfv(GPU_Renderer* renderer, int location, int num_elements_per_value, int num_values, float* values)
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
+    if(!renderer->IsFeatureEnabled(renderer, GPU_FEATURE_BASIC_SHADERS))
+        return;
     renderer->FlushBlitBuffer(renderer);
     if(renderer->current_context_target->context->current_shader_program == 0)
         return;
@@ -5309,6 +5372,8 @@ static void SetUniformfv(GPU_Renderer* renderer, int location, int num_elements_
 static void SetUniformMatrixfv(GPU_Renderer* renderer, int location, int num_matrices, int num_rows, int num_columns, Uint8 transpose, float* values)
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
+    if(!renderer->IsFeatureEnabled(renderer, GPU_FEATURE_BASIC_SHADERS))
+        return;
     renderer->FlushBlitBuffer(renderer);
     if(renderer->current_context_target->context->current_shader_program == 0)
         return;
@@ -5366,6 +5431,8 @@ static void SetUniformMatrixfv(GPU_Renderer* renderer, int location, int num_mat
 static void SetAttributef(GPU_Renderer* renderer, int location, float value)
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
+    if(!renderer->IsFeatureEnabled(renderer, GPU_FEATURE_BASIC_SHADERS))
+        return;
     renderer->FlushBlitBuffer(renderer);
     if(renderer->current_context_target->context->current_shader_program == 0)
         return;
@@ -5387,6 +5454,8 @@ static void SetAttributef(GPU_Renderer* renderer, int location, float value)
 static void SetAttributei(GPU_Renderer* renderer, int location, int value)
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
+    if(!renderer->IsFeatureEnabled(renderer, GPU_FEATURE_BASIC_SHADERS))
+        return;
     renderer->FlushBlitBuffer(renderer);
     if(renderer->current_context_target->context->current_shader_program == 0)
         return;
@@ -5408,6 +5477,8 @@ static void SetAttributei(GPU_Renderer* renderer, int location, int value)
 static void SetAttributeui(GPU_Renderer* renderer, int location, unsigned int value)
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
+    if(!renderer->IsFeatureEnabled(renderer, GPU_FEATURE_BASIC_SHADERS))
+        return;
     renderer->FlushBlitBuffer(renderer);
     if(renderer->current_context_target->context->current_shader_program == 0)
         return;
@@ -5430,6 +5501,8 @@ static void SetAttributeui(GPU_Renderer* renderer, int location, unsigned int va
 static void SetAttributefv(GPU_Renderer* renderer, int location, int num_elements, float* value)
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
+    if(!renderer->IsFeatureEnabled(renderer, GPU_FEATURE_BASIC_SHADERS))
+        return;
     renderer->FlushBlitBuffer(renderer);
     if(renderer->current_context_target->context->current_shader_program == 0)
         return;
@@ -5465,6 +5538,8 @@ static void SetAttributefv(GPU_Renderer* renderer, int location, int num_element
 static void SetAttributeiv(GPU_Renderer* renderer, int location, int num_elements, int* value)
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
+    if(!renderer->IsFeatureEnabled(renderer, GPU_FEATURE_BASIC_SHADERS))
+        return;
     renderer->FlushBlitBuffer(renderer);
     if(renderer->current_context_target->context->current_shader_program == 0)
         return;
@@ -5500,6 +5575,8 @@ static void SetAttributeiv(GPU_Renderer* renderer, int location, int num_element
 static void SetAttributeuiv(GPU_Renderer* renderer, int location, int num_elements, unsigned int* value)
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
+    if(!renderer->IsFeatureEnabled(renderer, GPU_FEATURE_BASIC_SHADERS))
+        return;
     renderer->FlushBlitBuffer(renderer);
     if(renderer->current_context_target->context->current_shader_program == 0)
         return;
@@ -5538,6 +5615,8 @@ static void SetAttributeSource(GPU_Renderer* renderer, int num_values, GPU_Attri
 	GPU_CONTEXT_DATA* cdata;
 	GPU_AttributeSource* a;
 
+    if(!renderer->IsFeatureEnabled(renderer, GPU_FEATURE_BASIC_SHADERS))
+        return;
     if(source.location < 0 || source.location >= 16)
         return;
     cdata = (GPU_CONTEXT_DATA*)renderer->current_context_target->context->data;
