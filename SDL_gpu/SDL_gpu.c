@@ -1,4 +1,5 @@
 #include "SDL_gpu.h"
+#include "SDL_gpu_RendererImpl.h"
 #include "SDL_platform.h"
 
 #ifdef __ANDROID__
@@ -19,7 +20,6 @@
 
 #define CHECK_RENDERER (current_renderer != NULL)
 #define CHECK_CONTEXT (current_renderer->current_context_target != NULL)
-#define CHECK_FUNCTION_POINTER(fn) (current_renderer->fn != NULL)
 #define RETURN_ERROR(code, details) do{ GPU_PushErrorCode(__func__, code, "%s", details); return; } while(0)
 
 void GPU_InitRendererRegister(void);
@@ -57,8 +57,8 @@ void GPU_SetCurrentRenderer(GPU_RendererID id)
 {
 	current_renderer = GPU_GetRendererByID(id);
 	
-	if(current_renderer != NULL && current_renderer->SetAsCurrent != NULL)
-		current_renderer->SetAsCurrent(current_renderer);
+	if(current_renderer != NULL)
+		current_renderer->impl->SetAsCurrent(current_renderer);
 }
 
 GPU_Renderer* GPU_GetCurrentRenderer(void)
@@ -366,12 +366,12 @@ GPU_Target* GPU_InitRendererByID(GPU_RendererID renderer_request, Uint16 w, Uint
         return NULL;
 	
 	renderer = GPU_AddRenderer(renderer_request);
-	if(renderer == NULL || renderer->Init == NULL)
+	if(renderer == NULL)
 		return NULL;
     
 	GPU_SetCurrentRenderer(renderer->id);
 	
-	screen = renderer->Init(renderer, renderer_request, w, h, SDL_flags);
+	screen = renderer->impl->Init(renderer, renderer_request, w, h, SDL_flags);
 	if(screen == NULL)
     {
         // Init failed, destroy the renderer...
@@ -386,67 +386,67 @@ GPU_Target* GPU_InitRendererByID(GPU_RendererID renderer_request, Uint16 w, Uint
 
 Uint8 GPU_IsFeatureEnabled(GPU_FeatureEnum feature)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->IsFeatureEnabled == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return 0;
 	
-	return current_renderer->IsFeatureEnabled(current_renderer, feature);
+	return current_renderer->impl->IsFeatureEnabled(current_renderer, feature);
 }
 
 GPU_Target* GPU_CreateTargetFromWindow(Uint32 windowID)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->CreateTargetFromWindow == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return NULL;
 	
-	return current_renderer->CreateTargetFromWindow(current_renderer, windowID, NULL);
+	return current_renderer->impl->CreateTargetFromWindow(current_renderer, windowID, NULL);
 }
 
 GPU_Target* GPU_CreateAliasTarget(GPU_Target* target)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->CreateAliasTarget == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return NULL;
 	
-	return current_renderer->CreateAliasTarget(current_renderer, target);
+	return current_renderer->impl->CreateAliasTarget(current_renderer, target);
 }
 
 void GPU_MakeCurrent(GPU_Target* target, Uint32 windowID)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->MakeCurrent == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return;
 	
-	current_renderer->MakeCurrent(current_renderer, target, windowID);
+	current_renderer->impl->MakeCurrent(current_renderer, target, windowID);
 }
 
 Uint8 GPU_ToggleFullscreen(Uint8 use_desktop_resolution)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->ToggleFullscreen == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return 0;
 	
-	return current_renderer->ToggleFullscreen(current_renderer, use_desktop_resolution);
+	return current_renderer->impl->ToggleFullscreen(current_renderer, use_desktop_resolution);
 }
 
 Uint8 GPU_SetWindowResolution(Uint16 w, Uint16 h)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->SetWindowResolution == NULL || w == 0 || h == 0)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL || w == 0 || h == 0)
 		return 0;
 	
-	return current_renderer->SetWindowResolution(current_renderer, w, h);
+	return current_renderer->impl->SetWindowResolution(current_renderer, w, h);
 }
 
 
 void GPU_SetVirtualResolution(GPU_Target* target, Uint16 w, Uint16 h)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->SetVirtualResolution == NULL || w == 0 || h == 0)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL || w == 0 || h == 0)
 		return;
 	
-	current_renderer->SetVirtualResolution(current_renderer, target, w, h);
+	current_renderer->impl->SetVirtualResolution(current_renderer, target, w, h);
 }
 
 void GPU_UnsetVirtualResolution(GPU_Target* target)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->UnsetVirtualResolution == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return;
 	
-	current_renderer->UnsetVirtualResolution(current_renderer, target);
+	current_renderer->impl->UnsetVirtualResolution(current_renderer, target);
 }
 
 void GPU_CloseCurrentRenderer(void)
@@ -454,8 +454,7 @@ void GPU_CloseCurrentRenderer(void)
 	if(current_renderer == NULL)
 		return;
 	
-	if(current_renderer->Quit != NULL)
-		current_renderer->Quit(current_renderer);
+	current_renderer->impl->Quit(current_renderer);
 	GPU_RemoveRenderer(current_renderer->id);
 	current_renderer = NULL;
 }
@@ -480,8 +479,7 @@ void GPU_Quit(void)
 	if(current_renderer == NULL)
 		return;
 	
-	if(current_renderer->Quit != NULL)
-		current_renderer->Quit(current_renderer);
+	current_renderer->impl->Quit(current_renderer);
 	GPU_RemoveRenderer(current_renderer->id);
 	
 	if(GPU_GetNumActiveRenderers() == 0)
@@ -643,74 +641,74 @@ GPU_Camera GPU_GetCamera(GPU_Target* target)
 
 GPU_Camera GPU_SetCamera(GPU_Target* target, GPU_Camera* cam)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->SetCamera == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return GPU_GetDefaultCamera();
 	
-	return current_renderer->SetCamera(current_renderer, target, cam);
+	return current_renderer->impl->SetCamera(current_renderer, target, cam);
 }
 
 GPU_Image* GPU_CreateImage(Uint16 w, Uint16 h, GPU_FormatEnum format)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->CreateImage == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return NULL;
 	
-	return current_renderer->CreateImage(current_renderer, w, h, format);
+	return current_renderer->impl->CreateImage(current_renderer, w, h, format);
 }
 
 GPU_Image* GPU_LoadImage(const char* filename)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->LoadImage == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return NULL;
 	
-	return current_renderer->LoadImage(current_renderer, filename);
+	return current_renderer->impl->LoadImage(current_renderer, filename);
 }
 
 GPU_Image* GPU_CreateAliasImage(GPU_Image* image)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->CreateAliasImage == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return NULL;
 	
-	return current_renderer->CreateAliasImage(current_renderer, image);
+	return current_renderer->impl->CreateAliasImage(current_renderer, image);
 }
 
 Uint8 GPU_SaveImage(GPU_Image* image, const char* filename)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->SaveImage == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return 0;
 	
-	return current_renderer->SaveImage(current_renderer, image, filename);
+	return current_renderer->impl->SaveImage(current_renderer, image, filename);
 }
 
 GPU_Image* GPU_CopyImage(GPU_Image* image)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->CopyImage == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return NULL;
 	
-	return current_renderer->CopyImage(current_renderer, image);
+	return current_renderer->impl->CopyImage(current_renderer, image);
 }
 
 void GPU_UpdateImage(GPU_Image* image, SDL_Surface* surface, const GPU_Rect* surface_rect)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->UpdateImage == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return;
 	
-	current_renderer->UpdateImage(current_renderer, image, surface, surface_rect);
+	current_renderer->impl->UpdateImage(current_renderer, image, surface, surface_rect);
 }
 
 void GPU_UpdateSubImage(GPU_Image* image, const GPU_Rect* image_rect, SDL_Surface* surface, const GPU_Rect* surface_rect)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->UpdateSubImage == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return;
 	
-	current_renderer->UpdateSubImage(current_renderer, image, image_rect, surface, surface_rect);
+	current_renderer->impl->UpdateSubImage(current_renderer, image, image_rect, surface, surface_rect);
 }
 
 void GPU_UpdateImageBytes(GPU_Image* image, const GPU_Rect* image_rect, const unsigned char* bytes, int bytes_per_row)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->UpdateImageBytes == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return;
 	
-	current_renderer->UpdateImageBytes(current_renderer, image, image_rect, bytes, bytes_per_row);
+	current_renderer->impl->UpdateImageBytes(current_renderer, image, image_rect, bytes, bytes_per_row);
 }
 
 SDL_Surface* GPU_LoadSurface(const char* filename)
@@ -861,42 +859,42 @@ Uint8 GPU_SaveSurface(SDL_Surface* surface, const char* filename)
 
 GPU_Image* GPU_CopyImageFromSurface(SDL_Surface* surface)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->CopyImageFromSurface == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return NULL;
 	
-	return current_renderer->CopyImageFromSurface(current_renderer, surface);
+	return current_renderer->impl->CopyImageFromSurface(current_renderer, surface);
 }
 
 GPU_Image* GPU_CopyImageFromTarget(GPU_Target* target)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->CopyImageFromTarget == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return NULL;
 	
-	return current_renderer->CopyImageFromTarget(current_renderer, target);
+	return current_renderer->impl->CopyImageFromTarget(current_renderer, target);
 }
 
 SDL_Surface* GPU_CopySurfaceFromTarget(GPU_Target* target)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->CopySurfaceFromTarget == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return NULL;
 	
-	return current_renderer->CopySurfaceFromTarget(current_renderer, target);
+	return current_renderer->impl->CopySurfaceFromTarget(current_renderer, target);
 }
 
 SDL_Surface* GPU_CopySurfaceFromImage(GPU_Image* image)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->CopySurfaceFromImage == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return NULL;
 	
-	return current_renderer->CopySurfaceFromImage(current_renderer, image);
+	return current_renderer->impl->CopySurfaceFromImage(current_renderer, image);
 }
 
 void GPU_FreeImage(GPU_Image* image)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->FreeImage == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return;
 	
-	current_renderer->FreeImage(current_renderer, image);
+	current_renderer->impl->FreeImage(current_renderer, image);
 }
 
 
@@ -911,20 +909,20 @@ GPU_Target* GPU_GetContextTarget(void)
 
 GPU_Target* GPU_LoadTarget(GPU_Image* image)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->LoadTarget == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return NULL;
 	
-	return current_renderer->LoadTarget(current_renderer, image);
+	return current_renderer->impl->LoadTarget(current_renderer, image);
 }
 
 
 
 void GPU_FreeTarget(GPU_Target* target)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->FreeTarget == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return;
 	
-	current_renderer->FreeTarget(current_renderer, target);
+	current_renderer->impl->FreeTarget(current_renderer, target);
 }
 
 
@@ -935,15 +933,13 @@ void GPU_Blit(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x,
         RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL renderer");
     if(!CHECK_CONTEXT)
         RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL context");
-    if(!CHECK_FUNCTION_POINTER(Blit))
-        RETURN_ERROR(GPU_ERROR_UNSUPPORTED_FUNCTION, NULL);
     
 	if(image == NULL)
         RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT, "image");
 	if(target == NULL)
         RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT, "target");
 	
-	current_renderer->Blit(current_renderer, image, src_rect, target, x, y);
+	current_renderer->impl->Blit(current_renderer, image, src_rect, target, x, y);
 }
 
 
@@ -953,15 +949,13 @@ void GPU_BlitRotate(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, fl
         RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL renderer");
     if(!CHECK_CONTEXT)
         RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL context");
-    if(!CHECK_FUNCTION_POINTER(BlitRotate))
-        RETURN_ERROR(GPU_ERROR_UNSUPPORTED_FUNCTION, NULL);
     
 	if(image == NULL)
         RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT, "image");
 	if(target == NULL)
         RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT, "target");
 	
-	current_renderer->BlitRotate(current_renderer, image, src_rect, target, x, y, angle);
+	current_renderer->impl->BlitRotate(current_renderer, image, src_rect, target, x, y, angle);
 }
 
 void GPU_BlitScale(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float scaleX, float scaleY)
@@ -970,15 +964,13 @@ void GPU_BlitScale(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, flo
         RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL renderer");
     if(!CHECK_CONTEXT)
         RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL context");
-    if(!CHECK_FUNCTION_POINTER(BlitScale))
-        RETURN_ERROR(GPU_ERROR_UNSUPPORTED_FUNCTION, NULL);
     
 	if(image == NULL)
         RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT, "image");
 	if(target == NULL)
         RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT, "target");
 	
-	current_renderer->BlitScale(current_renderer, image, src_rect, target, x, y, scaleX, scaleY);
+	current_renderer->impl->BlitScale(current_renderer, image, src_rect, target, x, y, scaleX, scaleY);
 }
 
 void GPU_BlitTransform(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float angle, float scaleX, float scaleY)
@@ -987,15 +979,13 @@ void GPU_BlitTransform(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target,
         RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL renderer");
     if(!CHECK_CONTEXT)
         RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL context");
-    if(!CHECK_FUNCTION_POINTER(BlitTransform))
-        RETURN_ERROR(GPU_ERROR_UNSUPPORTED_FUNCTION, NULL);
     
 	if(image == NULL)
         RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT, "image");
 	if(target == NULL)
         RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT, "target");
 	
-	current_renderer->BlitTransform(current_renderer, image, src_rect, target, x, y, angle, scaleX, scaleY);
+	current_renderer->impl->BlitTransform(current_renderer, image, src_rect, target, x, y, angle, scaleX, scaleY);
 }
 
 void GPU_BlitTransformX(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float pivot_x, float pivot_y, float angle, float scaleX, float scaleY)
@@ -1004,15 +994,13 @@ void GPU_BlitTransformX(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target
         RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL renderer");
     if(!CHECK_CONTEXT)
         RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL context");
-    if(!CHECK_FUNCTION_POINTER(BlitTransformX))
-        RETURN_ERROR(GPU_ERROR_UNSUPPORTED_FUNCTION, NULL);
     
 	if(image == NULL)
         RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT, "image");
 	if(target == NULL)
         RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT, "target");
 	
-	current_renderer->BlitTransformX(current_renderer, image, src_rect, target, x, y, pivot_x, pivot_y, angle, scaleX, scaleY);
+	current_renderer->impl->BlitTransformX(current_renderer, image, src_rect, target, x, y, pivot_x, pivot_y, angle, scaleX, scaleY);
 }
 
 void GPU_BlitTransformMatrix(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float* matrix3x3)
@@ -1021,8 +1009,6 @@ void GPU_BlitTransformMatrix(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* t
         RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL renderer");
     if(!CHECK_CONTEXT)
         RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL context");
-    if(!CHECK_FUNCTION_POINTER(BlitTransformMatrix))
-        RETURN_ERROR(GPU_ERROR_UNSUPPORTED_FUNCTION, NULL);
     
 	if(image == NULL)
         RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT, "image");
@@ -1032,7 +1018,7 @@ void GPU_BlitTransformMatrix(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* t
     if(matrix3x3 == NULL)
 		return;
 	
-	current_renderer->BlitTransformMatrix(current_renderer, image, src_rect, target, x, y, matrix3x3);
+	current_renderer->impl->BlitTransformMatrix(current_renderer, image, src_rect, target, x, y, matrix3x3);
 }
 
 void GPU_BlitBatch(GPU_Image* image, GPU_Target* target, unsigned int num_sprites, float* values, GPU_BlitFlagEnum flags)
@@ -1075,8 +1061,6 @@ void GPU_BlitBatch(GPU_Image* image, GPU_Target* target, unsigned int num_sprite
         RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL renderer");
     if(!CHECK_CONTEXT)
         RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL context");
-    if(!CHECK_FUNCTION_POINTER(BlitBatch))
-        RETURN_ERROR(GPU_ERROR_UNSUPPORTED_FUNCTION, NULL);
     
 	if(image == NULL)
         RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT, "image");
@@ -1089,7 +1073,7 @@ void GPU_BlitBatch(GPU_Image* image, GPU_Target* target, unsigned int num_sprite
     // Is it already in the right format?
     if((flags & GPU_PASSTHROUGH_ALL) == GPU_PASSTHROUGH_ALL || values == NULL)
     {
-        current_renderer->BlitBatch(current_renderer, image, target, num_sprites, values, flags);
+        current_renderer->impl->BlitBatch(current_renderer, image, target, num_sprites, values, flags);
         return;
     }
 	
@@ -1362,7 +1346,7 @@ void GPU_BlitBatch(GPU_Image* image, GPU_Target* target, unsigned int num_sprite
         }
     }
     
-	current_renderer->BlitBatch(current_renderer, image, target, num_sprites, new_values, flags | GPU_PASSTHROUGH_ALL);
+	current_renderer->impl->BlitBatch(current_renderer, image, target, num_sprites, new_values, flags | GPU_PASSTHROUGH_ALL);
 	
 	free(new_values);
 }
@@ -1398,8 +1382,6 @@ void GPU_BlitBatchSeparate(GPU_Image* image, GPU_Target* target, unsigned int nu
         RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL renderer");
     if(!CHECK_CONTEXT)
         RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL context");
-    if(!CHECK_FUNCTION_POINTER(BlitBatch))
-        RETURN_ERROR(GPU_ERROR_UNSUPPORTED_FUNCTION, NULL);
     
 	if(image == NULL)
         RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT, "image");
@@ -1412,7 +1394,7 @@ void GPU_BlitBatchSeparate(GPU_Image* image, GPU_Target* target, unsigned int nu
     // No data to repack?  Skip it.
     if(positions == NULL && src_rects == NULL && colors == NULL)
     {
-        current_renderer->BlitBatch(current_renderer, image, target, num_sprites, NULL, flags);
+        current_renderer->impl->BlitBatch(current_renderer, image, target, num_sprites, NULL, flags);
         return;
     }
 	
@@ -1648,7 +1630,7 @@ void GPU_BlitBatchSeparate(GPU_Image* image, GPU_Target* target, unsigned int nu
         }
     }
 	
-	current_renderer->BlitBatch(current_renderer, image, target, num_sprites, values, flags | GPU_PASSTHROUGH_ALL);
+	current_renderer->impl->BlitBatch(current_renderer, image, target, num_sprites, values, flags | GPU_PASSTHROUGH_ALL);
 	free(values);
 }
 
@@ -1684,8 +1666,6 @@ void GPU_TriangleBatch(GPU_Image* image, GPU_Target* target, unsigned short num_
         RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL renderer");
     if(!CHECK_CONTEXT)
         RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL context");
-    if(!CHECK_FUNCTION_POINTER(TriangleBatch))
-        RETURN_ERROR(GPU_ERROR_UNSUPPORTED_FUNCTION, NULL);
     
 	if(image == NULL)
         RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT, "image");
@@ -1698,7 +1678,7 @@ void GPU_TriangleBatch(GPU_Image* image, GPU_Target* target, unsigned short num_
     // Is it already in the right format?
     if((flags & GPU_PASSTHROUGH_ALL) == GPU_PASSTHROUGH_ALL || values == NULL)
     {
-        current_renderer->TriangleBatch(current_renderer, image, target, num_vertices, values, num_indices, indices, flags);
+        current_renderer->impl->TriangleBatch(current_renderer, image, target, num_vertices, values, num_indices, indices, flags);
         return;
     }
 	
@@ -1810,7 +1790,7 @@ void GPU_TriangleBatch(GPU_Image* image, GPU_Target* target, unsigned short num_
         }
     }
     
-	current_renderer->TriangleBatch(current_renderer, image, target, num_vertices, new_values, num_indices, indices, flags | GPU_PASSTHROUGH_ALL);
+	current_renderer->impl->TriangleBatch(current_renderer, image, target, num_vertices, new_values, num_indices, indices, flags | GPU_PASSTHROUGH_ALL);
 	
 	free(new_values);
 }
@@ -1820,10 +1800,10 @@ void GPU_TriangleBatch(GPU_Image* image, GPU_Target* target, unsigned short num_
 
 void GPU_GenerateMipmaps(GPU_Image* image)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->GenerateMipmaps == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return;
 	
-	current_renderer->GenerateMipmaps(current_renderer, image);
+	current_renderer->impl->GenerateMipmaps(current_renderer, image);
 }
 
 
@@ -1831,32 +1811,32 @@ void GPU_GenerateMipmaps(GPU_Image* image)
 
 GPU_Rect GPU_SetClipRect(GPU_Target* target, GPU_Rect rect)
 {
-	if(target == NULL || current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->SetClip == NULL)
+	if(target == NULL || current_renderer == NULL || current_renderer->current_context_target == NULL)
 	{
 		GPU_Rect r = {0,0,0,0};
 		return r;
 	}
 	
-	return current_renderer->SetClip(current_renderer, target, rect.x, rect.y, rect.w, rect.h);
+	return current_renderer->impl->SetClip(current_renderer, target, rect.x, rect.y, rect.w, rect.h);
 }
 
 GPU_Rect GPU_SetClip(GPU_Target* target, Sint16 x, Sint16 y, Uint16 w, Uint16 h)
 {
-	if(target == NULL || current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->SetClip == NULL)
+	if(target == NULL || current_renderer == NULL || current_renderer->current_context_target == NULL)
 	{
 		GPU_Rect r = {0,0,0,0};
 		return r;
 	}
 	
-	return current_renderer->SetClip(current_renderer, target, x, y, w, h);
+	return current_renderer->impl->SetClip(current_renderer, target, x, y, w, h);
 }
 
 void GPU_UnsetClip(GPU_Target* target)
 {
-	if(target == NULL || current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->UnsetClip == NULL)
+	if(target == NULL || current_renderer == NULL || current_renderer->current_context_target == NULL)
         return;
 	
-	current_renderer->UnsetClip(current_renderer, target);
+	current_renderer->impl->UnsetClip(current_renderer, target);
 }
 
 
@@ -2114,12 +2094,12 @@ void GPU_SetShapeBlendMode(GPU_BlendPresetEnum preset)
 
 void GPU_SetImageFilter(GPU_Image* image, GPU_FilterEnum filter)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->SetImageFilter == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return;
 	if(image == NULL)
 		return;
 	
-	current_renderer->SetImageFilter(current_renderer, image, filter);
+	current_renderer->impl->SetImageFilter(current_renderer, image, filter);
 }
 
 GPU_SnapEnum GPU_GetSnapMode(GPU_Image* image)
@@ -2140,24 +2120,24 @@ void GPU_SetSnapMode(GPU_Image* image, GPU_SnapEnum mode)
 
 void GPU_SetWrapMode(GPU_Image* image, GPU_WrapEnum wrap_mode_x, GPU_WrapEnum wrap_mode_y)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->SetWrapMode == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return;
 	if(image == NULL)
 		return;
 	
-	current_renderer->SetWrapMode(current_renderer, image, wrap_mode_x, wrap_mode_y);
+	current_renderer->impl->SetWrapMode(current_renderer, image, wrap_mode_x, wrap_mode_y);
 }
 
 
 SDL_Color GPU_GetPixel(GPU_Target* target, Sint16 x, Sint16 y)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->GetPixel == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 	{
 		SDL_Color c = {0,0,0,0};
 		return c;
 	}
 	
-	return current_renderer->GetPixel(current_renderer, target, x, y);
+	return current_renderer->impl->GetPixel(current_renderer, target, x, y);
 }
 
 
@@ -2168,45 +2148,45 @@ SDL_Color GPU_GetPixel(GPU_Target* target, Sint16 x, Sint16 y)
 
 void GPU_Clear(GPU_Target* target)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->Clear == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return;
 	
-	current_renderer->Clear(current_renderer, target);
+	current_renderer->impl->Clear(current_renderer, target);
 }
 
 void GPU_ClearColor(GPU_Target* target, SDL_Color* color)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->ClearRGBA == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return;
 	
 	if(color == NULL)
-        current_renderer->ClearRGBA(current_renderer, target, 0, 0, 0, 0);
+        current_renderer->impl->ClearRGBA(current_renderer, target, 0, 0, 0, 0);
     else
-        current_renderer->ClearRGBA(current_renderer, target, color->r, color->g, color->b, GET_ALPHA(*color));
+        current_renderer->impl->ClearRGBA(current_renderer, target, color->r, color->g, color->b, GET_ALPHA(*color));
 }
 
 void GPU_ClearRGBA(GPU_Target* target, Uint8 r, Uint8 g, Uint8 b, Uint8 a)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->ClearRGBA == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return;
 	
-	current_renderer->ClearRGBA(current_renderer, target, r, g, b, a);
+	current_renderer->impl->ClearRGBA(current_renderer, target, r, g, b, a);
 }
 
 void GPU_FlushBlitBuffer(void)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->FlushBlitBuffer == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return;
 	
-	current_renderer->FlushBlitBuffer(current_renderer);
+	current_renderer->impl->FlushBlitBuffer(current_renderer);
 }
 
 void GPU_Flip(GPU_Target* target)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->Flip == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return;
 	
-	current_renderer->Flip(current_renderer, target);
+	current_renderer->impl->Flip(current_renderer, target);
 }
 
 
@@ -2218,10 +2198,10 @@ void GPU_Flip(GPU_Target* target)
 
 Uint32 GPU_CompileShader_RW(GPU_ShaderEnum shader_type, SDL_RWops* shader_source)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->CompileShader_RW == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return 0;
 	
-	return current_renderer->CompileShader_RW(current_renderer, shader_type, shader_source);
+	return current_renderer->impl->CompileShader_RW(current_renderer, shader_type, shader_source);
 }
 
 Uint32 GPU_LoadShader(GPU_ShaderEnum shader_type, const char* filename)
@@ -2247,98 +2227,98 @@ Uint32 GPU_LoadShader(GPU_ShaderEnum shader_type, const char* filename)
 
 Uint32 GPU_CompileShader(GPU_ShaderEnum shader_type, const char* shader_source)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->CompileShader == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return 0;
 	
-	return current_renderer->CompileShader(current_renderer, shader_type, shader_source);
+	return current_renderer->impl->CompileShader(current_renderer, shader_type, shader_source);
 }
 
 Uint32 GPU_LinkShaderProgram(Uint32 program_object)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->LinkShaderProgram == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return 0;
 	
-	return current_renderer->LinkShaderProgram(current_renderer, program_object);
+	return current_renderer->impl->LinkShaderProgram(current_renderer, program_object);
 }
 
 Uint32 GPU_LinkShaders(Uint32 shader_object1, Uint32 shader_object2)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->LinkShaders == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return 0;
 	
-	return current_renderer->LinkShaders(current_renderer, shader_object1, shader_object2);
+	return current_renderer->impl->LinkShaders(current_renderer, shader_object1, shader_object2);
 }
 
 void GPU_FreeShader(Uint32 shader_object)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->FreeShader == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return;
 	
-	current_renderer->FreeShader(current_renderer, shader_object);
+	current_renderer->impl->FreeShader(current_renderer, shader_object);
 }
 
 void GPU_FreeShaderProgram(Uint32 program_object)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->FreeShaderProgram == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return;
 	
-	current_renderer->FreeShaderProgram(current_renderer, program_object);
+	current_renderer->impl->FreeShaderProgram(current_renderer, program_object);
 }
 
 void GPU_AttachShader(Uint32 program_object, Uint32 shader_object)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->AttachShader == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return;
 	
-	current_renderer->AttachShader(current_renderer, program_object, shader_object);
+	current_renderer->impl->AttachShader(current_renderer, program_object, shader_object);
 }
 
 void GPU_DetachShader(Uint32 program_object, Uint32 shader_object)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->DetachShader == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return;
 	
-	current_renderer->DetachShader(current_renderer, program_object, shader_object);
+	current_renderer->impl->DetachShader(current_renderer, program_object, shader_object);
 }
 
 Uint8 GPU_IsDefaultShaderProgram(Uint32 program_object)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->IsDefaultShaderProgram == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return 0;
 		
-	return current_renderer->IsDefaultShaderProgram(current_renderer, program_object);
+	return current_renderer->impl->IsDefaultShaderProgram(current_renderer, program_object);
 }
 
 void GPU_ActivateShaderProgram(Uint32 program_object, GPU_ShaderBlock* block)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->ActivateShaderProgram == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return;
 	
-	current_renderer->ActivateShaderProgram(current_renderer, program_object, block);
+	current_renderer->impl->ActivateShaderProgram(current_renderer, program_object, block);
 }
 
 void GPU_DeactivateShaderProgram(void)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->DeactivateShaderProgram == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return;
 	
-	current_renderer->DeactivateShaderProgram(current_renderer);
+	current_renderer->impl->DeactivateShaderProgram(current_renderer);
 }
 
 const char* GPU_GetShaderMessage(void)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->GetShaderMessage == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return NULL;
 	
-	return current_renderer->GetShaderMessage(current_renderer);
+	return current_renderer->impl->GetShaderMessage(current_renderer);
 }
 
 int GPU_GetAttributeLocation(Uint32 program_object, const char* attrib_name)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->GetAttributeLocation == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return 0;
 	
-	return current_renderer->GetAttributeLocation(current_renderer, program_object, attrib_name);
+	return current_renderer->impl->GetAttributeLocation(current_renderer, program_object, attrib_name);
 }
 
 GPU_AttributeFormat GPU_MakeAttributeFormat(int num_elems_per_vertex, GPU_TypeEnum type, Uint8 normalize, int stride_bytes, int offset_bytes)
@@ -2358,15 +2338,15 @@ GPU_Attribute GPU_MakeAttribute(int location, void* values, GPU_AttributeFormat 
 
 int GPU_GetUniformLocation(Uint32 program_object, const char* uniform_name)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->GetUniformLocation == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return 0;
 	
-	return current_renderer->GetUniformLocation(current_renderer, program_object, uniform_name);
+	return current_renderer->impl->GetUniformLocation(current_renderer, program_object, uniform_name);
 }
 
 GPU_ShaderBlock GPU_LoadShaderBlock(Uint32 program_object, const char* position_name, const char* texcoord_name, const char* color_name, const char* modelViewMatrix_name)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->LoadShaderBlock == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
     {
         GPU_ShaderBlock b;
         b.position_loc = -1;
@@ -2376,170 +2356,170 @@ GPU_ShaderBlock GPU_LoadShaderBlock(Uint32 program_object, const char* position_
 		return b;
     }
 	
-	return current_renderer->LoadShaderBlock(current_renderer, program_object, position_name, texcoord_name, color_name, modelViewMatrix_name);
+	return current_renderer->impl->LoadShaderBlock(current_renderer, program_object, position_name, texcoord_name, color_name, modelViewMatrix_name);
 }
 
 void GPU_SetShaderBlock(GPU_ShaderBlock block)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->SetShaderBlock == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return;
 	
-	current_renderer->SetShaderBlock(current_renderer, block);
+	current_renderer->impl->SetShaderBlock(current_renderer, block);
 }
 
 void GPU_SetShaderImage(GPU_Image* image, int location, int image_unit)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->SetShaderImage == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return;
 	
-	current_renderer->SetShaderImage(current_renderer, image, location, image_unit);
+	current_renderer->impl->SetShaderImage(current_renderer, image, location, image_unit);
 }
 
 void GPU_GetUniformiv(Uint32 program_object, int location, int* values)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->GetUniformiv == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return;
 	
-	current_renderer->GetUniformiv(current_renderer, program_object, location, values);
+	current_renderer->impl->GetUniformiv(current_renderer, program_object, location, values);
 }
 
 void GPU_SetUniformi(int location, int value)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->SetUniformi == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return;
 	
-	current_renderer->SetUniformi(current_renderer, location, value);
+	current_renderer->impl->SetUniformi(current_renderer, location, value);
 }
 
 void GPU_SetUniformiv(int location, int num_elements_per_value, int num_values, int* values)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->SetUniformiv == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return;
 	
-	current_renderer->SetUniformiv(current_renderer, location, num_elements_per_value, num_values, values);
+	current_renderer->impl->SetUniformiv(current_renderer, location, num_elements_per_value, num_values, values);
 }
 
 
 void GPU_GetUniformuiv(Uint32 program_object, int location, unsigned int* values)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->GetUniformuiv == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return;
 	
-	current_renderer->GetUniformuiv(current_renderer, program_object, location, values);
+	current_renderer->impl->GetUniformuiv(current_renderer, program_object, location, values);
 }
 
 void GPU_SetUniformui(int location, unsigned int value)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->SetUniformui == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return;
 	
-	current_renderer->SetUniformui(current_renderer, location, value);
+	current_renderer->impl->SetUniformui(current_renderer, location, value);
 }
 
 void GPU_SetUniformuiv(int location, int num_elements_per_value, int num_values, unsigned int* values)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->SetUniformuiv == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return;
 	
-	current_renderer->SetUniformuiv(current_renderer, location, num_elements_per_value, num_values, values);
+	current_renderer->impl->SetUniformuiv(current_renderer, location, num_elements_per_value, num_values, values);
 }
 
 
 void GPU_GetUniformfv(Uint32 program_object, int location, float* values)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->GetUniformfv == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return;
 	
-	current_renderer->GetUniformfv(current_renderer, program_object, location, values);
+	current_renderer->impl->GetUniformfv(current_renderer, program_object, location, values);
 }
 
 void GPU_SetUniformf(int location, float value)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->SetUniformf == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return;
 	
-	current_renderer->SetUniformf(current_renderer, location, value);
+	current_renderer->impl->SetUniformf(current_renderer, location, value);
 }
 
 void GPU_SetUniformfv(int location, int num_elements_per_value, int num_values, float* values)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->SetUniformfv == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return;
 	
-	current_renderer->SetUniformfv(current_renderer, location, num_elements_per_value, num_values, values);
+	current_renderer->impl->SetUniformfv(current_renderer, location, num_elements_per_value, num_values, values);
 }
 
 // Same as GPU_GetUniformfv()
 void GPU_GetUniformMatrixfv(Uint32 program_object, int location, float* values)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->GetUniformfv == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return;
 	
-	current_renderer->GetUniformfv(current_renderer, program_object, location, values);
+	current_renderer->impl->GetUniformfv(current_renderer, program_object, location, values);
 }
 
 void GPU_SetUniformMatrixfv(int location, int num_matrices, int num_rows, int num_columns, Uint8 transpose, float* values)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->SetUniformMatrixfv == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return;
 	
-	current_renderer->SetUniformMatrixfv(current_renderer, location, num_matrices, num_rows, num_columns, transpose, values);
+	current_renderer->impl->SetUniformMatrixfv(current_renderer, location, num_matrices, num_rows, num_columns, transpose, values);
 }
 
 
 void GPU_SetAttributef(int location, float value)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->SetAttributef == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return;
 	
-	current_renderer->SetAttributef(current_renderer, location, value);
+	current_renderer->impl->SetAttributef(current_renderer, location, value);
 }
 
 void GPU_SetAttributei(int location, int value)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->SetAttributei == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return;
 	
-	current_renderer->SetAttributei(current_renderer, location, value);
+	current_renderer->impl->SetAttributei(current_renderer, location, value);
 }
 
 void GPU_SetAttributeui(int location, unsigned int value)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->SetAttributeui == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return;
 	
-	current_renderer->SetAttributeui(current_renderer, location, value);
+	current_renderer->impl->SetAttributeui(current_renderer, location, value);
 }
 
 void GPU_SetAttributefv(int location, int num_elements, float* value)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->SetAttributefv == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return;
 	
-	current_renderer->SetAttributefv(current_renderer, location, num_elements, value);
+	current_renderer->impl->SetAttributefv(current_renderer, location, num_elements, value);
 }
 
 void GPU_SetAttributeiv(int location, int num_elements, int* value)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->SetAttributeiv == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return;
 	
-	current_renderer->SetAttributeiv(current_renderer, location, num_elements, value);
+	current_renderer->impl->SetAttributeiv(current_renderer, location, num_elements, value);
 }
 
 void GPU_SetAttributeuiv(int location, int num_elements, unsigned int* value)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->SetAttributeuiv == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return;
 	
-	current_renderer->SetAttributeuiv(current_renderer, location, num_elements, value);
+	current_renderer->impl->SetAttributeuiv(current_renderer, location, num_elements, value);
 }
 
 void GPU_SetAttributeSource(int num_values, GPU_Attribute source)
 {
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL || current_renderer->SetAttributeSource == NULL)
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return;
 	
-	current_renderer->SetAttributeSource(current_renderer, num_values, source);
+	current_renderer->impl->SetAttributeSource(current_renderer, num_values, source);
 }
 

@@ -1,4 +1,5 @@
 #include "SDL_gpu_OpenGL_1_BASE.h"
+#include "SDL_gpu_RendererImpl.h"
 
 
 #if defined(SDL_GPU_DISABLE_OPENGL) || defined(SDL_GPU_DISABLE_OPENGL_1_BASE)
@@ -12,7 +13,7 @@ void GPU_FreeRenderer_OpenGL_1_BASE(GPU_Renderer* renderer) {}
 // Most of the code pulled in from here...
 #define SDL_GPU_USE_OPENGL
 #define SDL_GPU_DISABLE_SHADERS
-#define SDL_GPU_USE_GL_TIER1
+#define SDL_GPU_USE_FIXED_FUNCTION_PIPELINE
 #define SDL_GPU_GL_TIER 1
 #define SDL_GPU_GL_MAJOR_VERSION 1
 #define SDL_GPU_APPLY_TRANSFORMS_TO_GL_STACK
@@ -35,8 +36,10 @@ GPU_Renderer* GPU_CreateRenderer_OpenGL_1_BASE(GPU_RendererID request)
     renderer->shader_version = 0;
     
     renderer->current_context_target = NULL;
-
-    SET_COMMON_FUNCTIONS(renderer);
+    
+    renderer->impl = (GPU_RendererImpl*)malloc(sizeof(GPU_RendererImpl));
+    memset(renderer->impl, 0, sizeof(GPU_RendererImpl));
+    SET_COMMON_FUNCTIONS(renderer->impl);
 
     return renderer;
 }
