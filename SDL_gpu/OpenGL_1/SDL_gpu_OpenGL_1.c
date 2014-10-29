@@ -12,8 +12,9 @@ void GPU_FreeRenderer_OpenGL_1(GPU_Renderer* renderer) {}
 
 // Most of the code pulled in from here...
 #define SDL_GPU_USE_OPENGL
+#define SDL_GPU_USE_FIXED_FUNCTION_PIPELINE
 #define SDL_GPU_USE_BUFFER_PIPELINE
-#define SDL_GPU_USE_BUFFER_PIPELINE_WITH_FALLBACK
+#define SDL_GPU_USE_BUFFER_PIPELINE_FALLBACK
 #define SDL_GPU_GL_TIER 1
 #define SDL_GPU_GLSL_VERSION 110
 #define SDL_GPU_GL_MAJOR_VERSION 1
