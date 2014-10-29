@@ -1,4 +1,5 @@
 #include "SDL_gpu_GLES_1.h"
+#include "SDL_gpu_RendererImpl.h"
 
 #if defined(SDL_GPU_DISABLE_GLES) || defined(SDL_GPU_DISABLE_GLES_1)
 
@@ -11,7 +12,7 @@ void GPU_FreeRenderer_GLES_1(GPU_Renderer* renderer) {}
 
 // Most of the code pulled in from here...
 #define SDL_GPU_USE_GLES
-#define SDL_GPU_USE_GL_TIER2
+#define SDL_GPU_USE_ARRAY_PIPELINE
 #define SDL_GPU_GL_TIER 2
 #define SDL_GPU_GLES_MAJOR_VERSION 1
 #define SDL_GPU_DISABLE_SHADERS
@@ -35,8 +36,10 @@ GPU_Renderer* GPU_CreateRenderer_GLES_1(GPU_RendererID request)
     renderer->shader_version = 0;
     
     renderer->current_context_target = NULL;
-
-    SET_COMMON_FUNCTIONS(renderer);
+    
+    renderer->impl = (GPU_RendererImpl*)malloc(sizeof(GPU_RendererImpl));
+    memset(renderer->impl, 0, sizeof(GPU_RendererImpl));
+    SET_COMMON_FUNCTIONS(renderer->impl);
 
     return renderer;
 }

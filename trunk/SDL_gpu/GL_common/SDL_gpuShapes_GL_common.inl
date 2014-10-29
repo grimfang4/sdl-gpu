@@ -56,12 +56,12 @@ See a particular renderer's *.c file for specifics. */
     if(cdata->blit_buffer_num_vertices + (num_additional_vertices) >= cdata->blit_buffer_max_num_vertices) \
     { \
         if(!growBlitBuffer(cdata, cdata->blit_buffer_num_vertices + (num_additional_vertices))) \
-            renderer->FlushBlitBuffer(renderer); \
+            renderer->impl->FlushBlitBuffer(renderer); \
     } \
     if(cdata->index_buffer_num_vertices + (num_additional_indices) >= cdata->index_buffer_max_num_vertices) \
     { \
         if(!growIndexBuffer(cdata, cdata->index_buffer_num_vertices + (num_additional_indices))) \
-            renderer->FlushBlitBuffer(renderer); \
+            renderer->impl->FlushBlitBuffer(renderer); \
     } \
      \
     blit_buffer = cdata->blit_buffer; \
@@ -100,7 +100,7 @@ static float SetLineThickness(GPU_Renderer* renderer, float thickness)
     
 	old = renderer->current_context_target->context->line_thickness;
 	if(old != thickness)
-        renderer->FlushBlitBuffer(renderer);
+        renderer->impl->FlushBlitBuffer(renderer);
     
 	renderer->current_context_target->context->line_thickness = thickness;
 	glLineWidth(thickness);
@@ -121,7 +121,7 @@ static void Pixel(GPU_Renderer* renderer, GPU_Target* target, float x, float y, 
 
 static void Line(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color)
 {
-	float thickness = renderer->GetLineThickness(renderer);
+	float thickness = renderer->impl->GetLineThickness(renderer);
 
     float t = thickness/2;
     float line_angle = atan2f(y2 - y1, x2 - x1);
@@ -571,7 +571,7 @@ static void Rectangle(GPU_Renderer* renderer, GPU_Target* target, float x1, floa
     }
     
 	{
-		float thickness = renderer->GetLineThickness(renderer);
+		float thickness = renderer->impl->GetLineThickness(renderer);
 
 		float t = thickness / 2;
 
