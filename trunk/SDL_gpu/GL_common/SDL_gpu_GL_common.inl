@@ -3985,68 +3985,64 @@ static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* 
         num_indices = num_vertices;
     
         
+#ifdef SDL_GPU_USE_ARRAY_PIPELINE
+
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+    glEnableClientState(GL_COLOR_ARRAY);
+    
+    glVertexPointer(2, GL_FLOAT, stride, values);
+    glTexCoordPointer(2, GL_FLOAT, stride, values + 2);
+    glColorPointer(4, GL_FLOAT, stride, values + 4);
+
+    if(indices == NULL)
+        glDrawArrays(GL_TRIANGLES, 0, num_indices);
+    else
+        glDrawElements(GL_TRIANGLES, num_indices, GL_UNSIGNED_SHORT, indices);
+
+    glDisableClientState(GL_COLOR_ARRAY);
+    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+    glDisableClientState(GL_VERTEX_ARRAY);
+#endif
+
+
+
+#ifdef SDL_GPU_USE_BUFFER_PIPELINE_FALLBACK
+    if(!renderer->impl->IsFeatureEnabled(renderer, GPU_FEATURE_VERTEX_SHADER))
+#endif
 #ifdef SDL_GPU_USE_FIXED_FUNCTION_PIPELINE
+    {
         if(values != NULL)
-		{
-			int i;
+        {
+            int i;
+            unsigned int index;
             float* vertex_pointer = values;
             float* texcoord_pointer = values + 2;
             float* color_pointer = values + 4;
             
-            glBegin(GL_QUADS);
-            for(i = 0; i < num_vertices; i+=3)
+            glBegin(GL_TRIANGLES);
+            for(i = 0; i < num_indices; i++)
             {
-                glColor4f( *color_pointer, *(color_pointer+1), *(color_pointer+2), *(color_pointer+3) );
-                glTexCoord2f( *texcoord_pointer, *(texcoord_pointer+1) );
-                glVertex3f( *vertex_pointer, *(vertex_pointer+1), 0.0f );
-                color_pointer += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
-                texcoord_pointer += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
-                vertex_pointer += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
-
-                glColor4f( *color_pointer, *(color_pointer+1), *(color_pointer+2), *(color_pointer+3) );
-                glTexCoord2f( *texcoord_pointer, *(texcoord_pointer+1) );
-                glVertex3f( *vertex_pointer, *(vertex_pointer+1), 0.0f );
-                color_pointer += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
-                texcoord_pointer += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
-                vertex_pointer += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
-
-                glColor4f( *color_pointer, *(color_pointer+1), *(color_pointer+2), *(color_pointer+3) );
-                glTexCoord2f( *texcoord_pointer, *(texcoord_pointer+1) );
-                glVertex3f( *vertex_pointer, *(vertex_pointer+1), 0.0f );
-                color_pointer += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
-                texcoord_pointer += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
-                vertex_pointer += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
-
-                glColor4f( *color_pointer, *(color_pointer+1), *(color_pointer+2), *(color_pointer+3) );
-                glTexCoord2f( *texcoord_pointer, *(texcoord_pointer+1) );
-                glVertex3f( *vertex_pointer, *(vertex_pointer+1), 0.0f );
-                color_pointer += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
-                texcoord_pointer += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
-                vertex_pointer += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
+                if(indices == NULL)
+                    index = i*GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
+                else
+                    index = indices[i]*GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
+                glColor4f( color_pointer[index], color_pointer[index+1], color_pointer[index+2], color_pointer[index+3] );
+                glTexCoord2f( texcoord_pointer[index], texcoord_pointer[index+1] );
+                glVertex3f( vertex_pointer[index], vertex_pointer[index+1], 0.0f );
             }
             glEnd();
         }
-#elif defined(SDL_GPU_USE_ARRAY_PIPELINE)
+    }
+#endif
+#ifdef SDL_GPU_USE_BUFFER_PIPELINE_FALLBACK
+    else
+#endif
 
-        glEnableClientState(GL_VERTEX_ARRAY);
-        glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-        glEnableClientState(GL_COLOR_ARRAY);
-        
-        glVertexPointer(2, GL_FLOAT, stride, values);
-        glTexCoordPointer(2, GL_FLOAT, stride, values + 2);
-        glColorPointer(4, GL_FLOAT, stride, values + 4);
 
-        if(indices == NULL)
-            glDrawArrays(GL_TRIANGLES, 0, num_indices);
-        else
-            glDrawElements(GL_TRIANGLES, num_indices, GL_UNSIGNED_SHORT, indices);
 
-        glDisableClientState(GL_COLOR_ARRAY);
-        glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-        glDisableClientState(GL_VERTEX_ARRAY);
-
-#elif defined(SDL_GPU_USE_BUFFER_PIPELINE)
-        
+#ifdef SDL_GPU_USE_BUFFER_PIPELINE
+    {
         // Upload our modelviewprojection matrix
         if(cdata->current_shader_block.modelViewProjection_loc >= 0)
         {
@@ -4054,7 +4050,7 @@ static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* 
             GPU_GetModelViewProjection(mvp);
             glUniformMatrix4fv(cdata->current_shader_block.modelViewProjection_loc, 1, 0, mvp);
         }
-    
+
         // Update the vertex array object's buffers
         #if !defined(SDL_GPU_NO_VAO)
         glBindVertexArray(cdata->blit_VAO);
@@ -4107,8 +4103,9 @@ static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* 
         #if !defined(SDL_GPU_NO_VAO)
         glBindVertexArray(0);
         #endif
-
+    }
 #endif
+    
     
     cdata->blit_buffer_num_vertices = 0;
     cdata->index_buffer_num_vertices = 0;
@@ -4378,41 +4375,45 @@ static void DoPartialFlush(GPU_Renderer* renderer, GPU_CONTEXT_DATA* cdata, unsi
 {
 
 #ifdef SDL_GPU_USE_ARRAY_PIPELINE
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+    glVertexPointer(2, GL_FLOAT, GPU_BLIT_BUFFER_STRIDE, blit_buffer + GPU_BLIT_BUFFER_VERTEX_OFFSET);
+    glTexCoordPointer(2, GL_FLOAT, GPU_BLIT_BUFFER_STRIDE, blit_buffer + GPU_BLIT_BUFFER_TEX_COORD_OFFSET);
 
-        glEnableClientState(GL_VERTEX_ARRAY);
-        glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-        glVertexPointer(2, GL_FLOAT, GPU_BLIT_BUFFER_STRIDE, blit_buffer + GPU_BLIT_BUFFER_VERTEX_OFFSET);
-        glTexCoordPointer(2, GL_FLOAT, GPU_BLIT_BUFFER_STRIDE, blit_buffer + GPU_BLIT_BUFFER_TEX_COORD_OFFSET);
+    glDrawElements(cdata->last_shape, num_indices, GL_UNSIGNED_SHORT, index_buffer);
 
-        glDrawElements(cdata->last_shape, num_indices, GL_UNSIGNED_SHORT, index_buffer);
-
-        glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-        glDisableClientState(GL_VERTEX_ARRAY);
+    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+    glDisableClientState(GL_VERTEX_ARRAY);
 #endif
 
-#ifdef SDL_GPU_USE_BUFFER_PIPELINE_WITH_FALLBACK
-        if(!renderer->impl->IsFeatureEnabled(renderer, GPU_FEATURE_VERTEX_SHADER))
+
+
+
+#ifdef SDL_GPU_USE_BUFFER_PIPELINE_FALLBACK
+    if(!renderer->impl->IsFeatureEnabled(renderer, GPU_FEATURE_VERTEX_SHADER))
 #endif
-    #if defined(SDL_GPU_USE_FIXED_FUNCTION_PIPELINE) || defined(SDL_GPU_USE_BUFFER_PIPELINE_WITH_FALLBACK)
+#ifdef SDL_GPU_USE_FIXED_FUNCTION_PIPELINE
+    {
+        unsigned short i;
+        unsigned int index;
+        float* vertex_pointer = blit_buffer + GPU_BLIT_BUFFER_VERTEX_OFFSET;
+        float* texcoord_pointer = blit_buffer + GPU_BLIT_BUFFER_TEX_COORD_OFFSET;
+        
+        glBegin(cdata->last_shape);
+        for(i = 0; i < num_indices; i++)
         {
-            unsigned short i;
-            unsigned int index;
-            float* vertex_pointer = blit_buffer + GPU_BLIT_BUFFER_VERTEX_OFFSET;
-            float* texcoord_pointer = blit_buffer + GPU_BLIT_BUFFER_TEX_COORD_OFFSET;
-            
-            glBegin(cdata->last_shape);
-            for(i = 0; i < num_indices; i++)
-            {
-                index = index_buffer[i]*GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
-                glTexCoord2f( texcoord_pointer[index], texcoord_pointer[index+1] );
-                glVertex3f( vertex_pointer[index], vertex_pointer[index+1], 0.0f );
-            }
-            glEnd();
+            index = index_buffer[i]*GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
+            glTexCoord2f( texcoord_pointer[index], texcoord_pointer[index+1] );
+            glVertex3f( vertex_pointer[index], vertex_pointer[index+1], 0.0f );
         }
-    #endif
-#ifdef SDL_GPU_USE_BUFFER_PIPELINE_WITH_FALLBACK
-        else
+        glEnd();
+        
+        return;
+    }
 #endif
+
+
+
 
 #ifdef SDL_GPU_USE_BUFFER_PIPELINE
         {
@@ -4474,10 +4475,28 @@ static void DoPartialFlush(GPU_Renderer* renderer, GPU_CONTEXT_DATA* cdata, unsi
 #endif
 }
 
-static void DoUntexturedFlush(GPU_CONTEXT_DATA* cdata, unsigned short num_vertices, float* blit_buffer, unsigned int num_indices, unsigned short* index_buffer)
+static void DoUntexturedFlush(GPU_Renderer* renderer, GPU_CONTEXT_DATA* cdata, unsigned short num_vertices, float* blit_buffer, unsigned int num_indices, unsigned short* index_buffer)
 {
-#ifdef SDL_GPU_USE_FIXED_FUNCTION_PIPELINE
 
+#ifdef SDL_GPU_USE_ARRAY_PIPELINE
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_COLOR_ARRAY);
+    
+    glVertexPointer(2, GL_FLOAT, GPU_BLIT_BUFFER_STRIDE, blit_buffer + GPU_BLIT_BUFFER_VERTEX_OFFSET);
+    glColorPointer(4, GL_FLOAT, GPU_BLIT_BUFFER_STRIDE, blit_buffer + GPU_BLIT_BUFFER_COLOR_OFFSET);
+
+    glDrawElements(cdata->last_shape, num_indices, GL_UNSIGNED_SHORT, index_buffer);
+
+    glDisableClientState(GL_COLOR_ARRAY);
+    glDisableClientState(GL_VERTEX_ARRAY);
+#endif
+
+
+#ifdef SDL_GPU_USE_BUFFER_PIPELINE_FALLBACK
+    if(!renderer->impl->IsFeatureEnabled(renderer, GPU_FEATURE_VERTEX_SHADER))
+#endif
+#ifdef SDL_GPU_USE_FIXED_FUNCTION_PIPELINE
+    {
         unsigned short i;
         unsigned int index;
         float* vertex_pointer = blit_buffer + GPU_BLIT_BUFFER_VERTEX_OFFSET;
@@ -4491,21 +4510,13 @@ static void DoUntexturedFlush(GPU_CONTEXT_DATA* cdata, unsigned short num_vertic
             glVertex3f( vertex_pointer[index], vertex_pointer[index+1], 0.0f );
         }
         glEnd();
-#elif defined(SDL_GPU_USE_ARRAY_PIPELINE)
-
-        glEnableClientState(GL_VERTEX_ARRAY);
-        glEnableClientState(GL_COLOR_ARRAY);
         
-        glVertexPointer(2, GL_FLOAT, GPU_BLIT_BUFFER_STRIDE, blit_buffer + GPU_BLIT_BUFFER_VERTEX_OFFSET);
-        glColorPointer(4, GL_FLOAT, GPU_BLIT_BUFFER_STRIDE, blit_buffer + GPU_BLIT_BUFFER_COLOR_OFFSET);
+        return;
+    }
+#endif
 
-        glDrawElements(cdata->last_shape, num_indices, GL_UNSIGNED_SHORT, index_buffer);
-
-        glDisableClientState(GL_COLOR_ARRAY);
-        glDisableClientState(GL_VERTEX_ARRAY);
-
-#elif defined(SDL_GPU_USE_BUFFER_PIPELINE)
-        
+#ifdef SDL_GPU_USE_BUFFER_PIPELINE
+    {
         // Upload our modelviewprojection matrix
         if(cdata->current_shader_block.modelViewProjection_loc >= 0)
         {
@@ -4553,7 +4564,7 @@ static void DoUntexturedFlush(GPU_CONTEXT_DATA* cdata, unsigned short num_vertic
         #if !defined(SDL_GPU_NO_VAO)
         glBindVertexArray(0);
         #endif
-
+    }
 #endif
 }
 
@@ -4606,7 +4617,7 @@ static void FlushBlitBuffer(GPU_Renderer* renderer)
         }
         else
         {
-            DoUntexturedFlush(cdata, cdata->blit_buffer_num_vertices, blit_buffer, cdata->index_buffer_num_vertices, index_buffer);
+            DoUntexturedFlush(renderer, cdata, cdata->blit_buffer_num_vertices, blit_buffer, cdata->index_buffer_num_vertices, index_buffer);
         }
 
         cdata->blit_buffer_num_vertices = 0;
