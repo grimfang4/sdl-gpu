@@ -1,0 +1,27 @@
+var searchData=
+[
+  ['camera',['camera',['../structGPU__Target_a155808523f43551237abce14719a0f82.html#a155808523f43551237abce14719a0f82',1,'GPU_Target']]],
+  ['circle',['Circle',['../structGPU__RendererImpl_a0d2071859cb188a7734c2757456692f0.html#a0d2071859cb188a7734c2757456692f0',1,'GPU_RendererImpl']]],
+  ['circlefilled',['CircleFilled',['../structGPU__RendererImpl_af6e07054403160c2dcd3469bbf7cca84.html#af6e07054403160c2dcd3469bbf7cca84',1,'GPU_RendererImpl']]],
+  ['clear',['Clear',['../structGPU__RendererImpl_afe72feba61bda93836f402442c6ceb37.html#afe72feba61bda93836f402442c6ceb37',1,'GPU_RendererImpl']]],
+  ['clearrgba',['ClearRGBA',['../structGPU__RendererImpl_a50d6bc2e486a7f409230bfe5828247b2.html#a50d6bc2e486a7f409230bfe5828247b2',1,'GPU_RendererImpl']]],
+  ['clip_5frect',['clip_rect',['../structGPU__Target_aca415f468de2bc73a44b1edaca2f40e9.html#aca415f468de2bc73a44b1edaca2f40e9',1,'GPU_Target']]],
+  ['color',['color',['../structGPU__Image_a3c836369e8e7ef884c90a308e7dadd60.html#a3c836369e8e7ef884c90a308e7dadd60',1,'GPU_Image::color()'],['../structGPU__Target_ae7d36f2feae9e0a36be13c7764aec481.html#ae7d36f2feae9e0a36be13c7764aec481',1,'GPU_Target::color()']]],
+  ['color_5fequation',['color_equation',['../structGPU__BlendMode_a3c1e55d4c8c4925bb38895e73098c369.html#a3c1e55d4c8c4925bb38895e73098c369',1,'GPU_BlendMode']]],
+  ['color_5floc',['color_loc',['../structGPU__ShaderBlock_a359aba137c01f5e431c694a94930ba58.html#a359aba137c01f5e431c694a94930ba58',1,'GPU_ShaderBlock']]],
+  ['compileshader',['CompileShader',['../structGPU__RendererImpl_a0025fde3d62290054b9bf45f5e1c24c6.html#a0025fde3d62290054b9bf45f5e1c24c6',1,'GPU_RendererImpl']]],
+  ['compileshader_5frw',['CompileShader_RW',['../structGPU__RendererImpl_a4b67658b76795ed95db1acb2185ea119.html#a4b67658b76795ed95db1acb2185ea119',1,'GPU_RendererImpl']]],
+  ['context',['context',['../structGPU__Context_ae744f95a9e6669bdd561905993b46956.html#ae744f95a9e6669bdd561905993b46956',1,'GPU_Context::context()'],['../structGPU__Target_afd14f40c5b97420619304220610d1a91.html#afd14f40c5b97420619304220610d1a91',1,'GPU_Target::context()']]],
+  ['copyimage',['CopyImage',['../structGPU__RendererImpl_a8fbac88c6cf8e05e01f29fc52a21ebb8.html#a8fbac88c6cf8e05e01f29fc52a21ebb8',1,'GPU_RendererImpl']]],
+  ['copyimagefromsurface',['CopyImageFromSurface',['../structGPU__RendererImpl_ae932086038a1decea5cc4a0f89eebbc9.html#ae932086038a1decea5cc4a0f89eebbc9',1,'GPU_RendererImpl']]],
+  ['copyimagefromtarget',['CopyImageFromTarget',['../structGPU__RendererImpl_a0482b1ee1830db2591187108d7cbfece.html#a0482b1ee1830db2591187108d7cbfece',1,'GPU_RendererImpl']]],
+  ['copysurfacefromimage',['CopySurfaceFromImage',['../structGPU__RendererImpl_af9bb4a2c32c1fe2ead60218261aeb14e.html#af9bb4a2c32c1fe2ead60218261aeb14e',1,'GPU_RendererImpl']]],
+  ['copysurfacefromtarget',['CopySurfaceFromTarget',['../structGPU__RendererImpl_a71ba4bf4f03cab0033445a3790197cc0.html#a71ba4bf4f03cab0033445a3790197cc0',1,'GPU_RendererImpl']]],
+  ['createaliasimage',['CreateAliasImage',['../structGPU__RendererImpl_aa662a9d65624792a1a0641eb2651caed.html#aa662a9d65624792a1a0641eb2651caed',1,'GPU_RendererImpl']]],
+  ['createaliastarget',['CreateAliasTarget',['../structGPU__RendererImpl_a8e8bdd962625adba38023ba3b179932c.html#a8e8bdd962625adba38023ba3b179932c',1,'GPU_RendererImpl']]],
+  ['createfn',['createFn',['../structRendererRegistration_a239b45be41fd66eee8d8ca293e00c72c.html#a239b45be41fd66eee8d8ca293e00c72c',1,'RendererRegistration']]],
+  ['createimage',['CreateImage',['../structGPU__RendererImpl_a8a248bd28f13327b4fa42b814aad1a0d.html#a8a248bd28f13327b4fa42b814aad1a0d',1,'GPU_RendererImpl']]],
+  ['createtargetfromwindow',['CreateTargetFromWindow',['../structGPU__RendererImpl_aa7864fe3a3b83b72523f3c9fb021bd9a.html#aa7864fe3a3b83b72523f3c9fb021bd9a',1,'GPU_RendererImpl']]],
+  ['current_5fcontext_5ftarget',['current_context_target',['../structGPU__Renderer_a83a3bdd7872ee9b4e2eb52fcd7bc266c.html#a83a3bdd7872ee9b4e2eb52fcd7bc266c',1,'GPU_Renderer']]],
+  ['current_5fshader_5fprogram',['current_shader_program',['../structGPU__Context_a8b3cf2ef12f62104979ecc6d90cf0b87.html#a8b3cf2ef12f62104979ecc6d90cf0b87',1,'GPU_Context']]]
+];
