@@ -481,6 +481,7 @@ void GPU_Quit(void)
 	
 	current_renderer->impl->Quit(current_renderer);
 	GPU_RemoveRenderer(current_renderer->id);
+	current_renderer = NULL;
 	
 	if(GPU_GetNumActiveRenderers() == 0)
 		SDL_Quit();
