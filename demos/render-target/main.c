@@ -10,15 +10,11 @@ int main(int argc, char* argv[])
 {
 	GPU_Target* screen;
 
-	printRenderers();
-
-	screen = GPU_Init(800, 600, GPU_DEFAULT_INIT_FLAGS);
+	screen = initialize_demo(argc, argv, 800, 600);
 	if(screen == NULL)
 		return -1;
 
     //GPU_SetVirtualResolution(1200, 800);
-
-	printCurrentRenderer();
 
 	{
 		GPU_Image* image2;
@@ -90,9 +86,9 @@ int main(int argc, char* argv[])
 							mode = 0;
 					}
 					else if (event.key.keysym.sym == SDLK_f)
-						GPU_ToggleFullscreen(0);
+						GPU_SetFullscreen(!GPU_GetFullscreen(), 0);
 					else if (event.key.keysym.sym == SDLK_g)
-						GPU_ToggleFullscreen(1);
+						GPU_SetFullscreen(!GPU_GetFullscreen(), 1);
 				}
 			}
 

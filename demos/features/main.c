@@ -12,13 +12,9 @@ int main(int argc, char* argv[])
 {
 	GPU_Target* screen;
 
-	printRenderers();
-	
-	screen = GPU_Init(800, 600, GPU_DEFAULT_INIT_FLAGS);
+	screen = initialize_demo(argc, argv, 800, 600);
 	if(screen == NULL)
 		return -1;
-	
-	printCurrentRenderer();
 	
 	GPU_LogError("Supports GPU_FEATURE_ALL_BASE: %s\n", bool_string(GPU_IsFeatureEnabled(GPU_FEATURE_ALL_BASE)));
 	GPU_LogError("Supports GPU_FEATURE_ALL_BLEND_PRESETS: %s\n", bool_string(GPU_IsFeatureEnabled(GPU_FEATURE_ALL_BLEND_PRESETS)));

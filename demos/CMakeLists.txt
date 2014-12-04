@@ -122,5 +122,8 @@ target_link_libraries (tutorial-space-demo SDL_gpu)
 add_executable(image-formats-demo image-formats/main.c common/common.c common/demo-font.c)
 target_link_libraries (image-formats-demo SDL_gpu)
 
+add_executable(sandbox-demo sandbox/main.c common/common.c common/demo-font.c)
+target_link_libraries (sandbox-demo SDL_gpu)
+
 add_executable(video-demo video/main.c common/common.c common/demo-font.c)
 target_link_libraries (video-demo SDL_gpu)

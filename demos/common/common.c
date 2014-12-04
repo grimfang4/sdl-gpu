@@ -45,3 +45,52 @@ void printCurrentRenderer(void)
     
 	GPU_Log("Using renderer: %s (%d.%d)\n\n", renderer_string, id.major_version, id.minor_version);
 }
+
+GPU_Target* initialize_demo(int argc, char** argv, int w, int h)
+{
+    GPU_Target* screen;
+	printRenderers();
+	
+	GPU_RendererEnum renderer = GPU_RENDERER_UNKNOWN;
+	
+	// Parse command line args
+    {
+        for(int i = 1; i < argc; i++)
+        {
+            char* s = argv[i];
+            
+            if(s[0] == '-')
+            {
+                if(strcmp(s, "-r") == 0 || strcmp(s, "--renderer") == 0)
+                {
+                    i++;
+                    if(i >= argc)
+                        break;
+                    
+                    s = argv[i];
+                    if(strcasecmp(s, "BASE") == 0 || strcasecmp(s, "OpenGL_BASE") == 0 || strcasecmp(s, "OpenGL_1_BASE") == 0)
+                        renderer = GPU_RENDERER_OPENGL_1_BASE;
+                    else if(strcasecmp(s, "OpenGL_1") == 0)
+                        renderer = GPU_RENDERER_OPENGL_1;
+                    else if(strcasecmp(s, "OpenGL_2") == 0)
+                        renderer = GPU_RENDERER_OPENGL_2;
+                    else if(strcasecmp(s, "OpenGL_3") == 0)
+                        renderer = GPU_RENDERER_OPENGL_3;
+                    else if(strcasecmp(s, "OpenGL_4") == 0)
+                        renderer = GPU_RENDERER_OPENGL_4;
+                }
+            }
+        }
+    }
+	
+    if(renderer == GPU_RENDERER_UNKNOWN)
+        screen = GPU_Init(800, 600, GPU_DEFAULT_INIT_FLAGS);
+    else
+        screen = GPU_InitRenderer(renderer, 800, 600, GPU_DEFAULT_INIT_FLAGS);
+	
+	if(screen == NULL)
+		return NULL;
+	
+	printCurrentRenderer();
+	return screen;
+}

@@ -416,12 +416,28 @@ void GPU_MakeCurrent(GPU_Target* target, Uint32 windowID)
 	current_renderer->impl->MakeCurrent(current_renderer, target, windowID);
 }
 
-Uint8 GPU_ToggleFullscreen(Uint8 use_desktop_resolution)
+Uint8 GPU_SetFullscreen(Uint8 enable_fullscreen, Uint8 use_desktop_resolution)
 {
 	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return 0;
 	
-	return current_renderer->impl->ToggleFullscreen(current_renderer, use_desktop_resolution);
+	return current_renderer->impl->SetFullscreen(current_renderer, enable_fullscreen, use_desktop_resolution);
+}
+
+Uint8 GPU_GetFullscreen(void)
+{
+#ifdef SDL_GPU_USE_SDL2
+    GPU_Target* target = GPU_GetContextTarget();
+    if(target == NULL)
+        return 0;
+    return (SDL_GetWindowFlags(SDL_GetWindowFromID(target->context->windowID))
+             & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP));
+#else
+    SDL_Surface* surf = SDL_GetVideoSurface();
+    if(surf == NULL)
+        return 0;
+    return (surf->flags & SDL_FULLSCREEN);
+#endif
 }
 
 Uint8 GPU_SetWindowResolution(Uint16 w, Uint16 h)
