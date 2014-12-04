@@ -254,7 +254,7 @@ typedef struct GPU_Context
 	int window_w;
 	int window_h;
 	
-	/*! Window dimensions for restoring windowed mode after GPU_ToggleFullscreen(1). */
+	/*! Window dimensions for restoring windowed mode after GPU_SetFullscreen(1,1). */
 	int stored_window_w;
 	int stored_window_h;
 	
@@ -686,9 +686,13 @@ Uint8 GPU_SetWindowResolution(Uint16 w, Uint16 h);
 
 /*! Enable/disable fullscreen mode for the current context target's window.
  * On some platforms, this may destroy the renderer context and require that textures be reloaded.  Unfortunately, SDL does not provide a notification mechanism for this.
+ * \param enable_fullscreen If true, make the application go fullscreen.  If false, make the application go to windowed mode.
  * \param use_desktop_resolution If true, lets the window change its resolution when it enters fullscreen mode (via SDL_WINDOW_FULLSCREEN_DESKTOP).
  * \return 0 if the new mode is windowed, 1 if the new mode is fullscreen.  */
-Uint8 GPU_ToggleFullscreen(Uint8 use_desktop_resolution);
+Uint8 GPU_SetFullscreen(Uint8 enable_fullscreen, Uint8 use_desktop_resolution);
+
+/*! Returns true if the current context target's window is in fullscreen mode. */
+Uint8 GPU_GetFullscreen(void);
 
 /*! Enables/disables alpha blending for shape rendering on the current window. */
 void GPU_SetShapeBlending(Uint8 enable);

@@ -1472,17 +1472,18 @@ static void Quit(GPU_Renderer* renderer)
 
 
 
-static Uint8 ToggleFullscreen(GPU_Renderer* renderer, Uint8 use_desktop_resolution)
+static Uint8 SetFullscreen(GPU_Renderer* renderer, Uint8 enable_fullscreen, Uint8 use_desktop_resolution)
 {
 #ifdef SDL_GPU_USE_SDL2
     GPU_Target* target = renderer->current_context_target;
     Uint32 old_flags = SDL_GetWindowFlags(SDL_GetWindowFromID(target->context->windowID));
     Uint8 is_fullscreen = (old_flags & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP));
+    Uint8 was_fullscreen = is_fullscreen;
     
     Uint32 flags = 0;
 	int w, h;
 
-    if(!is_fullscreen)
+    if(enable_fullscreen)
     {
         if(use_desktop_resolution)
             flags = SDL_WINDOW_FULLSCREEN_DESKTOP;
@@ -1500,7 +1501,7 @@ static Uint8 ToggleFullscreen(GPU_Renderer* renderer, Uint8 use_desktop_resoluti
         is_fullscreen = (flags & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP));
         
         // If we just went fullscreen desktop, save the original resolution
-        if(is_fullscreen && (flags & SDL_WINDOW_FULLSCREEN_DESKTOP))
+        if(!was_fullscreen && is_fullscreen && (flags & SDL_WINDOW_FULLSCREEN_DESKTOP))
         {
             target->context->stored_window_w = w;
             target->context->stored_window_h = h;
@@ -1511,7 +1512,7 @@ static Uint8 ToggleFullscreen(GPU_Renderer* renderer, Uint8 use_desktop_resoluti
         stored_h = target->context->stored_window_h;
         
         // If we're in windowed mode now and a resolution was stored, restore the original window resolution
-        if(!is_fullscreen && (stored_w != 0 || stored_h != 0))
+        if(was_fullscreen && !is_fullscreen && (stored_w != 0 || stored_h != 0))
         {
             w = stored_w;
             h = stored_h;
@@ -1530,13 +1531,14 @@ static Uint8 ToggleFullscreen(GPU_Renderer* renderer, Uint8 use_desktop_resoluti
 #else
     SDL_Surface* surf = SDL_GetVideoSurface();
 	Uint16 w, h;
-
-    if(SDL_WM_ToggleFullScreen(surf))
-        return (surf->flags & SDL_FULLSCREEN);
-
+	Uint8 was_fullscreen = (surf->flags & SDL_FULLSCREEN);
+    
+    if(was_fullscreen ^ enable_fullscreen)
+        SDL_WM_ToggleFullScreen(surf);
+    
     w = surf->w;
     h = surf->h;
-    surf->flags ^= SDL_FULLSCREEN;
+    
     renderer->impl->SetWindowResolution(renderer, w, h);
     return (surf->flags & SDL_FULLSCREEN);
 #endif
@@ -1891,7 +1893,8 @@ static unsigned char* getRawImageData(GPU_Renderer* renderer, GPU_Image* image)
         renderer->impl->FlushBlitBuffer(renderer);
     
     data = (unsigned char*)malloc(image->w * image->h * image->bytes_per_pixel);
-
+    
+    // FIXME: Sometimes the texture is stored and read in RGBA even when I specify RGB.  getRawImageData() might need to return the stored format or Bpp.
     if(!readImagePixels(renderer, image, ((GPU_IMAGE_DATA*)image->data)->format, data))
     {
         free(data);
@@ -5697,7 +5700,7 @@ static void SetAttributeSource(GPU_Renderer* renderer, int num_values, GPU_Attri
     impl->UnsetVirtualResolution = &UnsetVirtualResolution; \
     impl->Quit = &Quit; \
  \
-    impl->ToggleFullscreen = &ToggleFullscreen; \
+    impl->SetFullscreen = &SetFullscreen; \
     impl->SetCamera = &SetCamera; \
  \
     impl->CreateImage = &CreateImage; \

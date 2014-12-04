@@ -40,8 +40,8 @@ typedef struct GPU_RendererImpl
 	/*! Clean up the renderer state. */
 	void (*Quit)(GPU_Renderer* renderer);
 	
-	/*! \see GPU_ToggleFullscreen() */
-	Uint8 (*ToggleFullscreen)(GPU_Renderer* renderer, Uint8 use_desktop_resolution);
+	/*! \see GPU_SetFullscreen() */
+	Uint8 (*SetFullscreen)(GPU_Renderer* renderer, Uint8 enable_fullscreen, Uint8 use_desktop_resolution);
 
 	/*! \see GPU_SetCamera() */
 	GPU_Camera (*SetCamera)(GPU_Renderer* renderer, GPU_Target* target, GPU_Camera* cam);

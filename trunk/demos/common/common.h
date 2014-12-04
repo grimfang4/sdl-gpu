@@ -3,6 +3,6 @@
 
 void printRenderers(void);
 void printCurrentRenderer(void);
-
+GPU_Target* initialize_demo(int argc, char** argv, int w, int h);
 
 #endif

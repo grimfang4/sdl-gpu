@@ -6,14 +6,10 @@
 int main(int argc, char* argv[])
 {
 	GPU_Target* screen;
-
-	printRenderers();
 	
-	screen = GPU_Init(800, 600, GPU_DEFAULT_INIT_FLAGS);
+	screen = initialize_demo(argc, argv, 800, 600);
 	if(screen == NULL)
 		return -1;
-	
-	printCurrentRenderer();
 	
 	{
 		Uint32 startTime;
