@@ -14,8 +14,6 @@ int main(int argc, char* argv[])
 	if(screen == NULL)
 		return -1;
 
-    //GPU_SetVirtualResolution(1200, 800);
-
 	{
 		GPU_Image* image2;
 		GPU_Image* image3;
@@ -89,6 +87,10 @@ int main(int argc, char* argv[])
 						GPU_SetFullscreen(!GPU_GetFullscreen(), 0);
 					else if (event.key.keysym.sym == SDLK_g)
 						GPU_SetFullscreen(!GPU_GetFullscreen(), 1);
+					else if (event.key.keysym.sym == SDLK_1)
+						GPU_UnsetVirtualResolution(screen);
+					else if (event.key.keysym.sym == SDLK_2)
+						GPU_SetVirtualResolution(screen, 1200, 800);
 				}
 			}
 

@@ -291,6 +291,7 @@ struct GPU_Target
 	GPU_Image* image;
 	void* data;
 	Uint16 w, h;
+	Uint8 using_virtual_resolution;
 	Uint8 use_clip_rect;
 	GPU_Rect clip_rect;
 	Uint8 use_color;
