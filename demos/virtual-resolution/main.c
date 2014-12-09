@@ -11,7 +11,7 @@ int main(int argc, char* argv[])
 
 	printRenderers();
 
-	screen = GPU_Init(800, 600, GPU_DEFAULT_INIT_FLAGS);
+	screen = GPU_Init(300, 200, GPU_DEFAULT_INIT_FLAGS);
 	if(screen == NULL)
 		return -1;
 
@@ -28,12 +28,11 @@ int main(int argc, char* argv[])
 
         SDL_Color circleColor = {255, 0, 0, 128};
         SDL_Color circleColor2 = {0, 0, 255, 128};
+        SDL_Color rect_color1 = {0, 255, 0, 128};
 
         const Uint8* keystates = SDL_GetKeyState(NULL);
         int x = 0;
         int y = 0;
-
-        Uint8 switched = 1;
 
         image = GPU_LoadImage("data/test.bmp");
         if(image == NULL)
@@ -43,12 +42,11 @@ int main(int argc, char* argv[])
         if(target == NULL)
             return -1;
 
+        GPU_CircleFilled(target, 70, 70, 20, circleColor);
+        
 
         startTime = SDL_GetTicks();
         frameCount = 0;
-
-        GPU_SetVirtualResolution(screen, 640, 480);
-        GPU_SetVirtualResolution(target, 640, 480);
 
         done = 0;
         while(!done)
@@ -61,20 +59,22 @@ int main(int argc, char* argv[])
                 {
                     if(event.key.keysym.sym == SDLK_ESCAPE)
                         done = 1;
-                    if(event.key.keysym.sym == SDLK_SPACE)
-                    {
-                        if(switched)
-                        {
-                            GPU_SetVirtualResolution(screen, 800, 600);
-                            GPU_SetVirtualResolution(target, 800, 600);
-                        }
-                        else
-                        {
-                            GPU_SetVirtualResolution(screen, 640, 480);
-                            GPU_SetVirtualResolution(target, 640, 480);
-                        }
-                        switched = !switched;
-                    }
+					else if (event.key.keysym.sym == SDLK_f)
+						GPU_SetFullscreen(!GPU_GetFullscreen(), 0);
+					else if (event.key.keysym.sym == SDLK_g)
+						GPU_SetFullscreen(!GPU_GetFullscreen(), 1);
+					else if (event.key.keysym.sym == SDLK_1)
+						GPU_UnsetVirtualResolution(screen);
+					else if (event.key.keysym.sym == SDLK_2)
+						GPU_SetVirtualResolution(screen, 100, 100);
+					else if (event.key.keysym.sym == SDLK_3)
+						GPU_SetVirtualResolution(screen, 320, 240);
+					else if (event.key.keysym.sym == SDLK_4)
+						GPU_SetVirtualResolution(screen, 640, 480);
+					else if (event.key.keysym.sym == SDLK_5)
+						GPU_SetVirtualResolution(screen, 800, 600);
+					else if (event.key.keysym.sym == SDLK_6)
+						GPU_SetVirtualResolution(screen, 1024, 768);
                 }
             }
 
@@ -89,11 +89,11 @@ int main(int argc, char* argv[])
 
             GPU_Clear(screen);
 
-            GPU_CircleFilled(target, 70, 70, 20, circleColor);
-
             GPU_Blit(image, NULL, screen, image->w/2 + 50, image->h/2 + 50);
 
             GPU_CircleFilled(screen, 50 + 70, 50 + 70, 20, circleColor2);
+            
+            GPU_Rectangle(screen, 0, 0, screen->w, screen->h, rect_color1);
 
             GPU_Flip(screen);
 

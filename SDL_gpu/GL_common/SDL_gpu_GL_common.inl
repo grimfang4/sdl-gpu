@@ -1407,6 +1407,7 @@ static Uint8 SetWindowResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
     // Resets virtual resolution
     target->w = target->context->window_w;
     target->h = target->context->window_h;
+    target->using_virtual_resolution = 0;
 
     // Resets viewport
     target->viewport = GPU_MakeRect(0, 0, target->w, target->h);
@@ -1433,6 +1434,7 @@ static void SetVirtualResolution(GPU_Renderer* renderer, GPU_Target* target, Uin
 
     target->w = w;
     target->h = h;
+    target->using_virtual_resolution = 1;
     
     if(isCurrent)
         applyTargetCamera(target);
@@ -1460,6 +1462,8 @@ static void UnsetVirtualResolution(GPU_Renderer* renderer, GPU_Target* target)
         target->h = target->context->window_h;
     }
     
+    target->using_virtual_resolution = 0;
+    
     if(isCurrent)
         applyTargetCamera(target);
 }
@@ -1477,11 +1481,10 @@ static Uint8 SetFullscreen(GPU_Renderer* renderer, Uint8 enable_fullscreen, Uint
 #ifdef SDL_GPU_USE_SDL2
     GPU_Target* target = renderer->current_context_target;
     Uint32 old_flags = SDL_GetWindowFlags(SDL_GetWindowFromID(target->context->windowID));
-    Uint8 is_fullscreen = (old_flags & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP));
-    Uint8 was_fullscreen = is_fullscreen;
+    Uint8 was_fullscreen = (old_flags & SDL_WINDOW_FULLSCREEN);
+    Uint8 is_fullscreen = was_fullscreen;
     
     Uint32 flags = 0;
-	int w, h;
 
     if(enable_fullscreen)
     {
@@ -1491,57 +1494,69 @@ static Uint8 SetFullscreen(GPU_Renderer* renderer, Uint8 enable_fullscreen, Uint
             flags = SDL_WINDOW_FULLSCREEN;
     }
     
-    w = target->context->window_w;
-    h = target->context->window_h;
-    
     if(SDL_SetWindowFullscreen(SDL_GetWindowFromID(target->context->windowID), flags) >= 0)
     {
-		int stored_w, stored_h;
         flags = SDL_GetWindowFlags(SDL_GetWindowFromID(target->context->windowID));
-        is_fullscreen = (flags & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP));
+        is_fullscreen = (flags & SDL_WINDOW_FULLSCREEN);
         
-        // If we just went fullscreen desktop, save the original resolution
-        if(!was_fullscreen && is_fullscreen && (flags & SDL_WINDOW_FULLSCREEN_DESKTOP))
+        // If we just went fullscreen, save the original resolution
+        // We do this because you can't depend on the resolution to be preserved by SDL
+        // SDL_WINDOW_FULLSCREEN_DESKTOP changes the resolution and SDL_WINDOW_FULLSCREEN can change it when a given mode is not available
+        if(!was_fullscreen && is_fullscreen)
         {
-            target->context->stored_window_w = w;
-            target->context->stored_window_h = h;
+            target->context->stored_window_w = target->context->window_w;
+            target->context->stored_window_h = target->context->window_h;
         }
-        
-        // Save original dimensions
-        stored_w = target->context->stored_window_w;
-        stored_h = target->context->stored_window_h;
         
         // If we're in windowed mode now and a resolution was stored, restore the original window resolution
-        if(was_fullscreen && !is_fullscreen && (stored_w != 0 || stored_h != 0))
-        {
-            w = stored_w;
-            h = stored_h;
-        }
-        else
-            SDL_GetWindowSize(SDL_GetWindowFromID(target->context->windowID), &w, &h);
+        if(was_fullscreen && !is_fullscreen && (target->context->stored_window_w != 0 && target->context->stored_window_h != 0))
+            SDL_SetWindowSize(SDL_GetWindowFromID(target->context->windowID), target->context->stored_window_w, target->context->stored_window_h);
         
-        renderer->impl->SetWindowResolution(renderer, w, h);
-        
-        // SetWindowResolution() resets the stored dimensions.
-        target->context->stored_window_w = stored_w;
-        target->context->stored_window_h = stored_h;
+        // Update window dims
+        SDL_GetWindowSize(SDL_GetWindowFromID(target->context->windowID), &target->context->window_w, &target->context->window_h);
     }
     
-    return is_fullscreen;
 #else
     SDL_Surface* surf = SDL_GetVideoSurface();
 	Uint16 w, h;
 	Uint8 was_fullscreen = (surf->flags & SDL_FULLSCREEN);
+	Uint8 is_fullscreen = was_fullscreen;
     
     if(was_fullscreen ^ enable_fullscreen)
+    {
         SDL_WM_ToggleFullScreen(surf);
+        is_fullscreen = (surf->flags & SDL_FULLSCREEN);
+        
+        // Update window dims
+        target->context->window_w = surf->w;
+        target->context->window_h = surf->h;
+    }
     
-    w = surf->w;
-    h = surf->h;
-    
-    renderer->impl->SetWindowResolution(renderer, w, h);
-    return (surf->flags & SDL_FULLSCREEN);
 #endif
+
+    if(is_fullscreen != was_fullscreen)
+    {
+        // If virtual res is not set, we need to update the target dims and reset stuff that no longer is right
+        if(!target->using_virtual_resolution)
+        {
+            // Update dims
+            target->w = target->context->window_w;
+            target->h = target->context->window_h;
+        }
+
+        // Reset viewport
+        target->viewport = GPU_MakeRect(0, 0, target->context->window_w, target->context->window_h);
+        changeViewport(target);
+        
+        // Reset clip
+        GPU_UnsetClip(target);
+        
+        // Update camera
+        if(isCurrentTarget(renderer, target))
+            applyTargetCamera(target);
+    }
+    
+    return is_fullscreen;
 }
 
 
