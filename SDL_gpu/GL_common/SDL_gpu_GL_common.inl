@@ -1517,6 +1517,7 @@ static Uint8 SetFullscreen(GPU_Renderer* renderer, Uint8 enable_fullscreen, Uint
     }
     
 #else
+    GPU_Target* target = renderer->current_context_target;
     SDL_Surface* surf = SDL_GetVideoSurface();
 	Uint16 w, h;
 	Uint8 was_fullscreen = (surf->flags & SDL_FULLSCREEN);
