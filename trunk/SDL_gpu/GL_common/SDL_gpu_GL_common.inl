@@ -3103,6 +3103,31 @@ static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
 #define SET_INDEXED_VERTEX(offset) \
     index_buffer[cdata->index_buffer_num_vertices++] = blit_buffer_starting_index + (offset);
 
+#define SET_RELATIVE_INDEXED_VERTEX(offset) \
+    index_buffer[cdata->index_buffer_num_vertices++] = cdata->blit_buffer_num_vertices + (offset);
+    
+
+
+#define BEGIN_UNTEXTURED_SEGMENTS(x1, y1, x2, y2, r, g, b, a) \
+    SET_UNTEXTURED_VERTEX(x1, y1, r, g, b, a); \
+    SET_UNTEXTURED_VERTEX(x2, y2, r, g, b, a);
+
+// Finish previous triangles and start the next one
+#define SET_UNTEXTURED_SEGMENTS(x1, y1, x2, y2, r, g, b, a) \
+    SET_UNTEXTURED_VERTEX(x1, y1, r, g, b, a); \
+    SET_RELATIVE_INDEXED_VERTEX(-2); \
+    SET_UNTEXTURED_VERTEX(x2, y2, r, g, b, a); \
+    SET_RELATIVE_INDEXED_VERTEX(-2); \
+    SET_RELATIVE_INDEXED_VERTEX(-2); \
+    SET_RELATIVE_INDEXED_VERTEX(-1);
+
+// Finish previous triangles
+#define END_UNTEXTURED_SEGMENTS() \
+    SET_INDEXED_VERTEX(0); \
+    SET_RELATIVE_INDEXED_VERTEX(-1); \
+    SET_INDEXED_VERTEX(1); \
+    SET_INDEXED_VERTEX(0);
+
 
 
 static void Blit(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y)
