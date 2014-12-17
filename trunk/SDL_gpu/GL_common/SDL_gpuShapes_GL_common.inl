@@ -204,9 +204,8 @@ static void Arc(GPU_Renderer* renderer, GPU_Target* target, float x, float y, fl
         
         // Rotate to start
         start_angle *= M_PI/180;
-        tempx = cos(start_angle) * dx - sin(start_angle) * dy;
-        dy = sin(start_angle) * dx + cos(start_angle) * dy;
-        dx = tempx;
+        dx = cos(start_angle);
+        dy = sin(start_angle);
         
 		int i;
 		BEGIN_UNTEXTURED("GPU_Arc", GL_LINES, 1 + (numSegments - 1) + 1, 1 + (numSegments - 1) * 2 + 1);
@@ -223,9 +222,9 @@ static void Arc(GPU_Renderer* renderer, GPU_Target* target, float x, float y, fl
 		}
 
 		// Last point
-        tempx = c * dx - s * dy;
-        dy = s * dx + c * dy;
-        dx = tempx;
+        end_angle *= M_PI/180;
+        dx = cos(end_angle);
+        dy = sin(end_angle);
 		SET_UNTEXTURED_VERTEX(x + radius*dx, y + radius*dy, r, g, b, a);
 	}
 }
@@ -235,11 +234,14 @@ static void CircleFilled(GPU_Renderer* renderer, GPU_Target* target, float x, fl
 
 static void ArcFilled(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float radius, float start_angle, float end_angle, SDL_Color color)
 {
-	float t;
-	float dt;
-	float dx, dy;
-
-	int numSegments;
+    float dx, dy;
+    int i;
+    
+    float dt;
+    int numSegments;
+    
+    float tempx;
+    float c, s;
 
     if(start_angle > end_angle)
     {
@@ -269,10 +271,9 @@ static void ArcFilled(GPU_Renderer* renderer, GPU_Target* target, float x, float
         end_angle -= 360;
     }
     
-    t = start_angle;
-    dt = ((end_angle - start_angle)/360)*(1.25f/sqrtf(radius)) * DEGPERRAD;  // s = rA, so dA = ds/r.  ds of 1.25*sqrt(radius) is good, use A in degrees.
+    dt = ((end_angle - start_angle)/360)*(1.25f/sqrtf(radius));  // s = rA, so dA = ds/r.  ds of 1.25*sqrt(radius) is good, use A in degrees.
 
-    numSegments = fabs(end_angle - start_angle)/dt;
+    numSegments = (fabs(end_angle - start_angle)*M_PI/180)/dt;
     if(numSegments == 0)
 		return;
 
@@ -280,33 +281,44 @@ static void ArcFilled(GPU_Renderer* renderer, GPU_Target* target, float x, float
 		int i;
 		BEGIN_UNTEXTURED("GPU_ArcFilled", GL_TRIANGLES, 3 + (numSegments - 1) + 1, 3 + (numSegments - 1) * 3 + 3);
 
+        
+        c = cos(dt);
+        s = sin(dt);
+        
+        dx = 1.0f;
+        dy = 0.0f;
+        
+        // Rotate to start
+        start_angle *= M_PI/180;
+        dx = cos(start_angle);
+        dy = sin(start_angle);
+
 		// First triangle
 		SET_UNTEXTURED_VERTEX(x, y, r, g, b, a);
-		dx = radius*cos(t*RADPERDEG);
-		dy = radius*sin(t*RADPERDEG);
-		SET_UNTEXTURED_VERTEX(x + dx, y + dy, r, g, b, a); // first point
-		t += dt;
-		dx = radius*cos(t*RADPERDEG);
-		dy = radius*sin(t*RADPERDEG);
-		SET_UNTEXTURED_VERTEX(x + dx, y + dy, r, g, b, a); // new point
-		t += dt;
+		SET_UNTEXTURED_VERTEX(x + radius*dx, y + radius*dy, r, g, b, a); // first point
+		
+        tempx = c * dx - s * dy;
+        dy = s * dx + c * dy;
+        dx = tempx;
+		SET_UNTEXTURED_VERTEX(x + radius*dx, y + radius*dy, r, g, b, a); // new point
 
 		for (i = 2; i < numSegments + 1; i++)
 		{
-			dx = radius*cos(t*RADPERDEG);
-			dy = radius*sin(t*RADPERDEG);
+            tempx = c * dx - s * dy;
+            dy = s * dx + c * dy;
+            dx = tempx;
 			SET_INDEXED_VERTEX(0);  // center
 			SET_INDEXED_VERTEX(i);  // last point
-			SET_UNTEXTURED_VERTEX(x + dx, y + dy, r, g, b, a); // new point
-			t += dt;
+			SET_UNTEXTURED_VERTEX(x + radius*dx, y + radius*dy, r, g, b, a); // new point
 		}
 
 		// Last triangle
-		dx = radius*cos(end_angle*RADPERDEG);
-		dy = radius*sin(end_angle*RADPERDEG);
+        end_angle *= M_PI/180;
+        dx = cos(end_angle);
+        dy = sin(end_angle);
 		SET_INDEXED_VERTEX(0);  // center
 		SET_INDEXED_VERTEX(i);  // last point
-		SET_UNTEXTURED_VERTEX(x + dx, y + dy, r, g, b, a); // new point
+		SET_UNTEXTURED_VERTEX(x + radius*dx, y + radius*dy, r, g, b, a); // new point
 	}
 }
 
