@@ -199,9 +199,18 @@ int main(int argc, char* argv[])
                 }
                 else if(event.type == SDL_MOUSEBUTTONDOWN)
                 {
-                    shapeType++;
-                    if(shapeType >= numShapeTypes)
-                        shapeType = 0;
+                    if(event.button.button == SDL_BUTTON_LEFT)
+                    {
+                        shapeType++;
+                        if(shapeType >= numShapeTypes)
+                            shapeType = 0;
+                    }
+                    else if(event.button.button == SDL_BUTTON_RIGHT)
+                    {
+                        shapeType--;
+                        if(shapeType < 0)
+                            shapeType = numShapeTypes-1;
+                    }
                 }
             }
             
