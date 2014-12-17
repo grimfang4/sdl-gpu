@@ -3122,11 +3122,17 @@ static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
     SET_RELATIVE_INDEXED_VERTEX(-1);
 
 // Finish previous triangles
-#define END_UNTEXTURED_SEGMENTS() \
+#define LOOP_UNTEXTURED_SEGMENTS() \
     SET_INDEXED_VERTEX(0); \
     SET_RELATIVE_INDEXED_VERTEX(-1); \
     SET_INDEXED_VERTEX(1); \
     SET_INDEXED_VERTEX(0);
+
+#define END_UNTEXTURED_SEGMENTS(x1, y1, x2, y2, r, g, b, a) \
+    SET_UNTEXTURED_VERTEX(x1, y1, r, g, b, a); \
+    SET_RELATIVE_INDEXED_VERTEX(-2); \
+    SET_UNTEXTURED_VERTEX(x2, y2, r, g, b, a); \
+    SET_RELATIVE_INDEXED_VERTEX(-2);
 
 
 
