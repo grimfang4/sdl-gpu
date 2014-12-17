@@ -208,24 +208,23 @@ static void Arc(GPU_Renderer* renderer, GPU_Target* target, float x, float y, fl
         dy = sin(start_angle);
         
 		int i;
-		BEGIN_UNTEXTURED("GPU_Arc", GL_LINES, 1 + (numSegments - 1) + 1, 1 + (numSegments - 1) * 2 + 1);
+		BEGIN_UNTEXTURED("GPU_Arc", GL_TRIANGLES, 2*(numSegments), 6*(numSegments));
 
-		SET_UNTEXTURED_VERTEX(x + radius*dx, y + radius*dy, r, g, b, a); // first point
+        BEGIN_UNTEXTURED_SEGMENTS(x+inner_radius*dx, y+inner_radius*dy, x+outer_radius*dx, y+outer_radius*dy, r, g, b, a);
 
 		for (i = 1; i < numSegments; i++)
 		{
             tempx = c * dx - s * dy;
             dy = s * dx + c * dy;
             dx = tempx;
-			SET_UNTEXTURED_VERTEX(x + radius*dx, y + radius*dy, r, g, b, a);
-			SET_INDEXED_VERTEX(i);  // Double that vertex
+            SET_UNTEXTURED_SEGMENTS(x+inner_radius*dx, y+inner_radius*dy, x+outer_radius*dx, y+outer_radius*dy, r, g, b, a);
 		}
 
 		// Last point
         end_angle *= M_PI/180;
         dx = cos(end_angle);
         dy = sin(end_angle);
-		SET_UNTEXTURED_VERTEX(x + radius*dx, y + radius*dy, r, g, b, a);
+        END_UNTEXTURED_SEGMENTS(x+inner_radius*dx, y+inner_radius*dy, x+outer_radius*dx, y+outer_radius*dy, r, g, b, a);
 	}
 }
 
@@ -361,7 +360,7 @@ static void Circle(GPU_Renderer* renderer, GPU_Target* target, float x, float y,
         SET_UNTEXTURED_SEGMENTS(x+inner_radius*dx, y+inner_radius*dy, x+outer_radius*dx, y+outer_radius*dy, r, g, b, a);
     }
     
-    END_UNTEXTURED_SEGMENTS();  // back to the beginning
+    LOOP_UNTEXTURED_SEGMENTS();  // back to the beginning
 }
 
 static void CircleFilled(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float radius, SDL_Color color)
