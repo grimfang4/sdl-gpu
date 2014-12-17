@@ -623,19 +623,26 @@ static void Rectangle(GPU_Renderer* renderer, GPU_Target* target, float x1, floa
 		float thickness = GetLineThickness(renderer);
 
 		float t = thickness / 2;
+		float inner_t_x = t;
+		float inner_t_y = t;
 
 		// Thick lines via filled triangles
 
 		BEGIN_UNTEXTURED("GPU_Rectangle", GL_TRIANGLES, 10, 24);
+		
+		if(x1 + inner_t_x > x2 - inner_t_x)
+            inner_t_x = (x2 - x1)/2;
+		if(y1 + inner_t_y > y2 - inner_t_y)
+            inner_t_y = (y2 - y1)/2;
 
 		// First triangle
 		SET_UNTEXTURED_VERTEX(x1 - t, y1 - t, r, g, b, a);
-		SET_UNTEXTURED_VERTEX(x1 + t, y1 + t, r, g, b, a);
+		SET_UNTEXTURED_VERTEX(x1 + inner_t_x, y1 + inner_t_y, r, g, b, a);
 		SET_UNTEXTURED_VERTEX(x2 + t, y1 - t, r, g, b, a);
 
 		SET_INDEXED_VERTEX(1);
 		SET_INDEXED_VERTEX(2);
-		SET_UNTEXTURED_VERTEX(x2 - t, y1 + t, r, g, b, a);
+		SET_UNTEXTURED_VERTEX(x2 - inner_t_x, y1 + inner_t_y, r, g, b, a);
 
 		SET_INDEXED_VERTEX(2);
 		SET_INDEXED_VERTEX(3);
@@ -643,7 +650,7 @@ static void Rectangle(GPU_Renderer* renderer, GPU_Target* target, float x1, floa
 
 		SET_INDEXED_VERTEX(3);
 		SET_INDEXED_VERTEX(4);
-		SET_UNTEXTURED_VERTEX(x2 - t, y2 - t, r, g, b, a);
+		SET_UNTEXTURED_VERTEX(x2 - inner_t_x, y2 - inner_t_y, r, g, b, a);
 
 		SET_INDEXED_VERTEX(4);
 		SET_INDEXED_VERTEX(5);
@@ -651,7 +658,7 @@ static void Rectangle(GPU_Renderer* renderer, GPU_Target* target, float x1, floa
 
 		SET_INDEXED_VERTEX(5);
 		SET_INDEXED_VERTEX(6);
-		SET_UNTEXTURED_VERTEX(x1 + t, y2 - t, r, g, b, a);
+		SET_UNTEXTURED_VERTEX(x1 + inner_t_x, y2 - inner_t_y, r, g, b, a);
 
 		SET_INDEXED_VERTEX(6);
 		SET_INDEXED_VERTEX(7);
@@ -659,7 +666,7 @@ static void Rectangle(GPU_Renderer* renderer, GPU_Target* target, float x1, floa
 
 		SET_INDEXED_VERTEX(7);
 		SET_INDEXED_VERTEX(8);
-		SET_UNTEXTURED_VERTEX(x1 + t, y1 + t, r, g, b, a);
+		SET_UNTEXTURED_VERTEX(x1 + inner_t_x, y1 + inner_t_y, r, g, b, a);
 	}
 }
 
