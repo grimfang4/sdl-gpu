@@ -144,11 +144,21 @@ static void Circle(GPU_Renderer* renderer, GPU_Target* target, float x, float y,
 
 static void Arc(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float radius, float start_angle, float end_angle, SDL_Color color)
 {
-	float t;
-	float dt;
-	float dx, dy;
-
-	int numSegments;
+	float thickness = GetLineThickness(renderer);
+    float dx, dy;
+    int i;
+    float t = thickness/2;
+    float inner_radius = radius - t;
+    float outer_radius = radius + t;
+    
+    float dt;
+    int numSegments;
+    
+    float tempx;
+    float c, s;
+    
+    if(inner_radius < 0.0f)
+        inner_radius = 0.0f;
 
     if(start_angle > end_angle)
     {
@@ -179,35 +189,44 @@ static void Arc(GPU_Renderer* renderer, GPU_Target* target, float x, float y, fl
     }
 
 
-    t = start_angle;
-    dt = ((end_angle - start_angle)/360)*(1.25f/sqrtf(radius)) * DEGPERRAD;  // s = rA, so dA = ds/r.  ds of 1.25*sqrt(radius) is good, use A in degrees.
+    dt = ((end_angle - start_angle)/360)*(1.25f/sqrtf(outer_radius));  // s = rA, so dA = ds/r.  ds of 1.25*sqrt(radius) is good, use A in degrees.
 
-    numSegments = fabs(end_angle - start_angle)/dt;
+    numSegments = (fabs(end_angle - start_angle)*M_PI/180)/dt;
     if(numSegments == 0)
 		return;
-
+    
 	{
+        c = cos(dt);
+        s = sin(dt);
+        
+        dx = 1.0f;
+        dy = 0.0f;
+        
+        // Rotate to start
+        start_angle *= M_PI/180;
+        tempx = cos(start_angle) * dx - sin(start_angle) * dy;
+        dy = sin(start_angle) * dx + cos(start_angle) * dy;
+        dx = tempx;
+        
 		int i;
 		BEGIN_UNTEXTURED("GPU_Arc", GL_LINES, 1 + (numSegments - 1) + 1, 1 + (numSegments - 1) * 2 + 1);
 
-		dx = radius*cos(t*RADPERDEG);
-		dy = radius*sin(t*RADPERDEG);
-		SET_UNTEXTURED_VERTEX(x + dx, y + dy, r, g, b, a); // first point
-		t += dt;
+		SET_UNTEXTURED_VERTEX(x + radius*dx, y + radius*dy, r, g, b, a); // first point
 
 		for (i = 1; i < numSegments; i++)
 		{
-			dx = radius*cos(t*RADPERDEG);
-			dy = radius*sin(t*RADPERDEG);
-			SET_UNTEXTURED_VERTEX(x + dx, y + dy, r, g, b, a);
+            tempx = c * dx - s * dy;
+            dy = s * dx + c * dy;
+            dx = tempx;
+			SET_UNTEXTURED_VERTEX(x + radius*dx, y + radius*dy, r, g, b, a);
 			SET_INDEXED_VERTEX(i);  // Double that vertex
-			t += dt;
 		}
 
 		// Last point
-		dx = radius*cos(end_angle*RADPERDEG);
-		dy = radius*sin(end_angle*RADPERDEG);
-		SET_UNTEXTURED_VERTEX(x + dx, y + dy, r, g, b, a);
+        tempx = c * dx - s * dy;
+        dy = s * dx + c * dy;
+        dx = tempx;
+		SET_UNTEXTURED_VERTEX(x + radius*dx, y + radius*dy, r, g, b, a);
 	}
 }
 
