@@ -585,6 +585,7 @@ static Uint32 get_proper_program_id(GPU_Renderer* renderer, Uint32 program_objec
 
 static void applyTexturing(GPU_Renderer* renderer)
 {
+    #ifndef SDL_GPU_SKIP_ENABLE_TEXTURE_2D
     GPU_Context* context = renderer->current_context_target->context;
     if(context->use_texturing != ((GPU_CONTEXT_DATA*)context->data)->last_use_texturing)
     {
@@ -594,10 +595,12 @@ static void applyTexturing(GPU_Renderer* renderer)
         else
             glDisable(GL_TEXTURE_2D);
     }
+    #endif
 }
 
 static void changeTexturing(GPU_Renderer* renderer, Uint8 enable)
 {
+    #ifndef SDL_GPU_SKIP_ENABLE_TEXTURE_2D
     GPU_Context* context = renderer->current_context_target->context;
     if(enable != ((GPU_CONTEXT_DATA*)context->data)->last_use_texturing)
     {
@@ -609,6 +612,7 @@ static void changeTexturing(GPU_Renderer* renderer, Uint8 enable)
         else
             glDisable(GL_TEXTURE_2D);
     }
+    #endif
 }
 
 static void enableTexturing(GPU_Renderer* renderer)
@@ -1039,7 +1043,9 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     
     cdata->last_use_texturing = 1;
     cdata->last_shape = GL_TRIANGLES;
+    #ifndef SDL_GPU_SKIP_ENABLE_TEXTURE_2D
     glEnable(GL_TEXTURE_2D);
+    #endif
     
     cdata->last_use_blending = 0;
     cdata->last_blend_mode = GPU_GetBlendModeFromPreset(GPU_BLEND_NORMAL);
