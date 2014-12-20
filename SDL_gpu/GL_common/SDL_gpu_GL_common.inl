@@ -1841,14 +1841,14 @@ static Uint8 readImagePixels(GPU_Renderer* renderer, GPU_Image* source, GLint fo
     created_target = 0;
     if(source->target == NULL)
     {
-        renderer->LoadTarget(renderer, source);
+        renderer->impl->LoadTarget(renderer, source);
         created_target = 1;
     }
     // Get the data
     result = readTargetPixels(renderer, source->target, format, pixels);
     // Free the target
     if(created_target)
-        renderer->FreeTarget(renderer, source->target);
+        renderer->impl->FreeTarget(renderer, source->target);
     return result;
     #else
     // Bind the texture temporarily
