@@ -1043,9 +1043,6 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     
     cdata->last_use_texturing = 1;
     cdata->last_shape = GL_TRIANGLES;
-    #ifndef SDL_GPU_SKIP_ENABLE_TEXTURE_2D
-    glEnable(GL_TEXTURE_2D);
-    #endif
     
     cdata->last_use_blending = 0;
     cdata->last_blend_mode = GPU_GetBlendModeFromPreset(GPU_BLEND_NORMAL);
@@ -1146,7 +1143,9 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     target->context->matrix_mode = GPU_MODELVIEW;
     
     // Modes
-    glEnable( GL_TEXTURE_2D );
+    #ifndef SDL_GPU_SKIP_ENABLE_TEXTURE_2D
+    glEnable(GL_TEXTURE_2D);
+    #endif
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     glDisable(GL_BLEND);
@@ -1380,29 +1379,42 @@ static Uint8 SetWindowResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
     
 #ifdef SDL_GPU_USE_SDL2
     
-    SDL_SetWindowSize(SDL_GetWindowFromID(target->context->windowID), w, h);
+    // Don't need to resize (only update internals) when resolution isn't changing.
     SDL_GetWindowSize(SDL_GetWindowFromID(target->context->windowID), &target->context->window_w, &target->context->window_h);
+    if(target->context->window_w != w || target->context->window_h != h)
+    {
+        SDL_SetWindowSize(SDL_GetWindowFromID(target->context->windowID), w, h);
+        SDL_GetWindowSize(SDL_GetWindowFromID(target->context->windowID), &target->context->window_w, &target->context->window_h);
+    }
     
 #else
-    SDL_Surface* surf = SDL_GetVideoSurface();
-    Uint32 flags = surf->flags;
+    SDL_Surface* screen = SDL_GetVideoSurface();
+    Uint32 flags = screen->flags;
+    GPU_Context* context;
 
+    // Don't need to resize (only update internals) when resolution isn't changing.
+    if(screen->w != w || screen->h != h)
+    {
+        screen = SDL_SetVideoMode(w, h, 0, flags);
+        // There's a bug in SDL.  This is a workaround.  Let's resize again:
+        screen = SDL_SetVideoMode(w, h, 0, flags);
 
-    SDL_Surface* screen = SDL_SetVideoMode(w, h, 0, flags);
-    // There's a bug in SDL.  This is a workaround.  Let's resize again:
-    screen = SDL_SetVideoMode(w, h, 0, flags);
-
-    if(screen == NULL)
-        return 0;
+        if(screen == NULL)
+            return 0;
+    }
 
     target->context->window_w = screen->w;
     target->context->window_h = screen->h;
     
     // FIXME: Does the entire GL state need to be reset because the screen was recreated?
-    // FIXME: This interferes with context state
-    glEnable( GL_TEXTURE_2D );
+    
+    // Reset texturing state
+    context = renderer->current_context_target->context;
+    context->use_texturing = 1;
+    ((GPU_CONTEXT_DATA*)context->data)->last_use_texturing = 0;
+    
+    // Clear target (no state change)
     glClearColor( 0.0f, 0.0f, 0.0f, 0.0f );
-
     glClear( GL_COLOR_BUFFER_BIT );
 #endif
     
@@ -1825,7 +1837,23 @@ static Uint8 readTargetPixels(GPU_Renderer* renderer, GPU_Target* source, GLint 
     
     if(bindFramebuffer(renderer, source))
     {
-        glReadPixels(0, 0, source->w, source->h, format, GL_UNSIGNED_BYTE, pixels);
+        int w, h;
+        if(source->image != NULL)
+        {
+            w = source->image->w;
+            h = source->image->h;
+        }
+        else if(source->context != NULL)
+        {
+            w = source->context->window_w;
+            h = source->context->window_h;
+        }
+        else
+        {
+            w = source->w;
+            h = source->h;
+        }
+        glReadPixels(0, 0, w, h, format, GL_UNSIGNED_BYTE, pixels);
         return 1;
     }
     return 0;
