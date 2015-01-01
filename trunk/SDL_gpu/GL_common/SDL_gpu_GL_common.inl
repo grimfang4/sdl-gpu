@@ -585,34 +585,34 @@ static Uint32 get_proper_program_id(GPU_Renderer* renderer, Uint32 program_objec
 
 static void applyTexturing(GPU_Renderer* renderer)
 {
-    #ifndef SDL_GPU_SKIP_ENABLE_TEXTURE_2D
     GPU_Context* context = renderer->current_context_target->context;
     if(context->use_texturing != ((GPU_CONTEXT_DATA*)context->data)->last_use_texturing)
     {
         ((GPU_CONTEXT_DATA*)context->data)->last_use_texturing = context->use_texturing;
+        #ifndef SDL_GPU_SKIP_ENABLE_TEXTURE_2D
         if(context->use_texturing)
             glEnable(GL_TEXTURE_2D);
         else
             glDisable(GL_TEXTURE_2D);
+        #endif
     }
-    #endif
 }
 
 static void changeTexturing(GPU_Renderer* renderer, Uint8 enable)
 {
-    #ifndef SDL_GPU_SKIP_ENABLE_TEXTURE_2D
     GPU_Context* context = renderer->current_context_target->context;
     if(enable != ((GPU_CONTEXT_DATA*)context->data)->last_use_texturing)
     {
         renderer->impl->FlushBlitBuffer(renderer);
         
         ((GPU_CONTEXT_DATA*)context->data)->last_use_texturing = enable;
+        #ifndef SDL_GPU_SKIP_ENABLE_TEXTURE_2D
         if(enable)
             glEnable(GL_TEXTURE_2D);
         else
             glDisable(GL_TEXTURE_2D);
+        #endif
     }
-    #endif
 }
 
 static void enableTexturing(GPU_Renderer* renderer)
