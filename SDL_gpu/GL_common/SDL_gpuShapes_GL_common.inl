@@ -621,52 +621,54 @@ static void Rectangle(GPU_Renderer* renderer, GPU_Target* target, float x1, floa
     
 	{
 		float thickness = GetLineThickness(renderer);
-
-		float t = thickness / 2;
-		float inner_t_x = t;
-		float inner_t_y = t;
+        
+        // Thickness offsets
+		float outer = thickness / 2;
+		float inner_x = outer;
+		float inner_y = outer;
 
 		// Thick lines via filled triangles
 
-		BEGIN_UNTEXTURED("GPU_Rectangle", GL_TRIANGLES, 10, 24);
+		BEGIN_UNTEXTURED("GPU_Rectangle", GL_TRIANGLES, 12, 24);
 		
-		if(x1 + inner_t_x > x2 - inner_t_x)
-            inner_t_x = (x2 - x1)/2;
-		if(y1 + inner_t_y > y2 - inner_t_y)
-            inner_t_y = (y2 - y1)/2;
+		// Adjust inner thickness offsets to avoid overdraw on narrow/small rects
+		if(x1 + inner_x > x2 - inner_x)
+            inner_x = (x2 - x1)/2;
+		if(y1 + inner_y > y2 - inner_y)
+            inner_y = (y2 - y1)/2;
 
 		// First triangle
-		SET_UNTEXTURED_VERTEX(x1 - t, y1 - t, r, g, b, a);
-		SET_UNTEXTURED_VERTEX(x1 + inner_t_x, y1 + inner_t_y, r, g, b, a);
-		SET_UNTEXTURED_VERTEX(x2 + t, y1 - t, r, g, b, a);
+		SET_UNTEXTURED_VERTEX(x1 - outer, y1 - outer, r, g, b, a); // 0
+		SET_UNTEXTURED_VERTEX(x1 - outer, y1 + inner_y, r, g, b, a); // 1
+		SET_UNTEXTURED_VERTEX(x2 + outer, y1 - outer, r, g, b, a); // 2
+
+		SET_INDEXED_VERTEX(2);
+		SET_INDEXED_VERTEX(1);
+		SET_UNTEXTURED_VERTEX(x2 + outer, y1 + inner_y, r, g, b, a); // 3
+
+		SET_INDEXED_VERTEX(3);
+		SET_UNTEXTURED_VERTEX(x2 - inner_x, y1 + inner_y, r, g, b, a); // 4
+		SET_UNTEXTURED_VERTEX(x2 - inner_x, y2 - inner_y, r, g, b, a); // 5
+
+		SET_INDEXED_VERTEX(3);
+		SET_INDEXED_VERTEX(5);
+		SET_UNTEXTURED_VERTEX(x2 + outer, y2 - inner_y, r, g, b, a); // 6
+
+		SET_INDEXED_VERTEX(6);
+		SET_UNTEXTURED_VERTEX(x1 - outer, y2 - inner_y, r, g, b, a); // 7
+		SET_UNTEXTURED_VERTEX(x2 + outer, y2 + outer, r, g, b, a); // 8
+
+		SET_INDEXED_VERTEX(7);
+		SET_UNTEXTURED_VERTEX(x1 - outer, y2 + outer, r, g, b, a); // 9
+		SET_INDEXED_VERTEX(8);
+
+		SET_INDEXED_VERTEX(7);
+		SET_UNTEXTURED_VERTEX(x1 + inner_x, y2 - inner_y, r, g, b, a); // 10
+		SET_INDEXED_VERTEX(1);
 
 		SET_INDEXED_VERTEX(1);
-		SET_INDEXED_VERTEX(2);
-		SET_UNTEXTURED_VERTEX(x2 - inner_t_x, y1 + inner_t_y, r, g, b, a);
-
-		SET_INDEXED_VERTEX(2);
-		SET_INDEXED_VERTEX(3);
-		SET_UNTEXTURED_VERTEX(x2 + t, y2 + t, r, g, b, a);
-
-		SET_INDEXED_VERTEX(3);
-		SET_INDEXED_VERTEX(4);
-		SET_UNTEXTURED_VERTEX(x2 - inner_t_x, y2 - inner_t_y, r, g, b, a);
-
-		SET_INDEXED_VERTEX(4);
-		SET_INDEXED_VERTEX(5);
-		SET_UNTEXTURED_VERTEX(x1 - t, y2 + t, r, g, b, a);
-
-		SET_INDEXED_VERTEX(5);
-		SET_INDEXED_VERTEX(6);
-		SET_UNTEXTURED_VERTEX(x1 + inner_t_x, y2 - inner_t_y, r, g, b, a);
-
-		SET_INDEXED_VERTEX(6);
-		SET_INDEXED_VERTEX(7);
-		SET_UNTEXTURED_VERTEX(x1 - t, y1 - t, r, g, b, a);
-
-		SET_INDEXED_VERTEX(7);
-		SET_INDEXED_VERTEX(8);
-		SET_UNTEXTURED_VERTEX(x1 + inner_t_x, y1 + inner_t_y, r, g, b, a);
+		SET_INDEXED_VERTEX(10);
+		SET_UNTEXTURED_VERTEX(x1 + inner_x, y1 + inner_y, r, g, b, a); // 11
 	}
 }
 
