@@ -175,26 +175,39 @@ static void init_features(GPU_Renderer* renderer)
     renderer->enabled_features |= GPU_FEATURE_BLEND_EQUATIONS;
     renderer->enabled_features |= GPU_FEATURE_BLEND_FUNC_SEPARATE;
     
-    if(isExtensionSupported("GL_EXT_blend_equation_separate"))
+    #if SDL_GPU_GL_MAJOR_VERSION > 1
+        // Core in GL 2+
         renderer->enabled_features |= GPU_FEATURE_BLEND_EQUATIONS_SEPARATE;
-    else
-        renderer->enabled_features &= ~GPU_FEATURE_BLEND_EQUATIONS_SEPARATE;
+    #else
+        if(isExtensionSupported("GL_EXT_blend_equation_separate"))
+            renderer->enabled_features |= GPU_FEATURE_BLEND_EQUATIONS_SEPARATE;
+        else
+            renderer->enabled_features &= ~GPU_FEATURE_BLEND_EQUATIONS_SEPARATE;
+    #endif
     
 #elif defined(SDL_GPU_USE_GLES)
-    if(isExtensionSupported("GL_OES_blend_subtract"))
+
+    #if SDL_GPU_GLES_MAJOR_VERSION > 1
+        // Core in GLES 2+
         renderer->enabled_features |= GPU_FEATURE_BLEND_EQUATIONS;
-    else
-        renderer->enabled_features &= ~GPU_FEATURE_BLEND_EQUATIONS;
-    
-    if(isExtensionSupported("GL_OES_blend_func_separate"))
         renderer->enabled_features |= GPU_FEATURE_BLEND_FUNC_SEPARATE;
-    else
-        renderer->enabled_features &= ~GPU_FEATURE_BLEND_FUNC_SEPARATE;
-    
-    if(isExtensionSupported("GL_OES_blend_equation_separate"))
         renderer->enabled_features |= GPU_FEATURE_BLEND_EQUATIONS_SEPARATE;
-    else
-        renderer->enabled_features &= ~GPU_FEATURE_BLEND_EQUATIONS_SEPARATE;
+    #else
+        if(isExtensionSupported("GL_OES_blend_subtract"))
+            renderer->enabled_features |= GPU_FEATURE_BLEND_EQUATIONS;
+        else
+            renderer->enabled_features &= ~GPU_FEATURE_BLEND_EQUATIONS;
+    
+        if(isExtensionSupported("GL_OES_blend_func_separate"))
+            renderer->enabled_features |= GPU_FEATURE_BLEND_FUNC_SEPARATE;
+        else
+            renderer->enabled_features &= ~GPU_FEATURE_BLEND_FUNC_SEPARATE;
+        
+        if(isExtensionSupported("GL_OES_blend_equation_separate"))
+            renderer->enabled_features |= GPU_FEATURE_BLEND_EQUATIONS_SEPARATE;
+        else
+            renderer->enabled_features &= ~GPU_FEATURE_BLEND_EQUATIONS_SEPARATE;
+    #endif
 #endif
 
     // Wrap modes
