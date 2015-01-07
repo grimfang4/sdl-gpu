@@ -17,13 +17,29 @@ extern "C" {
 
 /* Auto-detect if we're using the SDL2 API by the headers available. */
 #if SDL_VERSION_ATLEAST(2,0,0)
-    #define SDL_GPU_USE_SDL2
+    #define SDL_GPU_USE_SDL2                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   
 #endif
 
 typedef struct GPU_Renderer GPU_Renderer;
 typedef struct GPU_Target GPU_Target;
 
-/*! A struct representing a rectangular area with floating point precision.
+/*!
+ * \defgroup Initialization Initialization
+ * \defgroup Logging Debugging, Logging, and Error Handling
+ * \defgroup RendererSetup Renderer Setup
+ * \defgroup RendererControls Renderer Controls
+ * \defgroup ContextControls Context Controls
+ * \defgroup TargetControls Target Controls
+ * \defgroup SurfaceControls Surface Controls
+ * \defgroup ImageControls Image Controls
+ * \defgroup Conversions Surface, Image, and Target Conversions
+ * \defgroup Rendering Rendering
+ * \defgroup Shapes Shapes
+ * \defgroup ShaderInterface Shader Interface
+ */
+
+/*! \ingroup Rendering
+ * A struct representing a rectangular area with floating point precision.
  * \see GPU_MakeRect() 
  */
 typedef struct GPU_Rect
@@ -48,7 +64,10 @@ static const GPU_RendererEnum GPU_RENDERER_D3D9 = 0x10000;
 static const GPU_RendererEnum GPU_RENDERER_D3D10 = 0x20000;
 static const GPU_RendererEnum GPU_RENDERER_D3D11 = 0x40000;
 
-/*! Renderer ID object for identifying a specific renderer.
+/*! \ingroup Initialization
+ * \ingroup RendererSetup
+ * \ingroup RendererControls
+ * Renderer ID object for identifying a specific renderer.
  * \see GPU_MakeRendererID()
  * \see GPU_InitRendererByID()
  */
@@ -62,7 +81,8 @@ typedef struct GPU_RendererID
 } GPU_RendererID;
 
 
-/*! Blend component functions
+/*! \ingroup ImageControls
+ * Blend component functions
  * \see GPU_SetBlendFunction()
  * Values chosen for direct OpenGL compatibility.
  */
@@ -79,7 +99,8 @@ typedef enum {
     GPU_FUNC_ONE_MINUS_DST_ALPHA = 0x0305
 } GPU_BlendFuncEnum;
 
-/*! Blend component equations
+/*! \ingroup ImageControls
+ * Blend component equations
  * \see GPU_SetBlendEquation()
  * Values chosen for direct OpenGL compatibility.
  */
@@ -89,7 +110,8 @@ typedef enum {
     GPU_EQ_REVERSE_SUBTRACT = 0x800B
 } GPU_BlendEqEnum;
 
-/*! Blend mode storage struct */
+/*! \ingroup ImageControls
+ * Blend mode storage struct */
 typedef struct GPU_BlendMode
 {
     GPU_BlendFuncEnum source_color;
@@ -101,7 +123,8 @@ typedef struct GPU_BlendMode
     GPU_BlendEqEnum alpha_equation;
 } GPU_BlendMode;
 
-/*! Blend mode presets 
+/*! \ingroup ImageControls
+ * Blend mode presets 
  * \see GPU_SetBlendMode()
  * \see GPU_GetBlendModeFromPreset()
  */
@@ -118,7 +141,8 @@ typedef enum {
     GPU_BLEND_NORMAL_ADD_ALPHA = 9
 } GPU_BlendPresetEnum;
 
-/*! Image filtering options.  These affect the quality/interpolation of colors when images are scaled. 
+/*! \ingroup ImageControls
+ * Image filtering options.  These affect the quality/interpolation of colors when images are scaled. 
  * \see GPU_SetImageFilter()
  */
 typedef enum {
@@ -127,7 +151,8 @@ typedef enum {
     GPU_FILTER_LINEAR_MIPMAP = 2
 } GPU_FilterEnum;
 
-/*! Snap modes.  Blitting with these modes will align the sprite with the target's pixel grid.
+/*! \ingroup ImageControls
+ * Snap modes.  Blitting with these modes will align the sprite with the target's pixel grid.
  * \see GPU_SetSnapMode()
  * \see GPU_GetSnapMode()
  */
@@ -139,7 +164,8 @@ typedef enum {
 } GPU_SnapEnum;
 
 
-/*! Image wrapping options.  These affect how images handle src_rect coordinates beyond their dimensions when blitted.
+/*! \ingroup ImageControls
+ * Image wrapping options.  These affect how images handle src_rect coordinates beyond their dimensions when blitted.
  * \see GPU_SetWrapMode()
  */
 typedef enum {
@@ -148,7 +174,8 @@ typedef enum {
     GPU_WRAP_MIRRORED = 2
 } GPU_WrapEnum;
 
-/*! Image format enum
+/*! \ingroup ImageControls
+ * Image format enum
  * \see GPU_CreateImage()
  */
 typedef enum {
@@ -164,7 +191,8 @@ typedef enum {
 
 
 
-/*! Image object for containing pixel/texture data.
+/*! \ingroup ImageControls
+ * Image object for containing pixel/texture data.
  * A GPU_Image can be created with GPU_CreateImage(), GPU_LoadImage(), GPU_CopyImage(), or GPU_CopyImageFromSurface().
  * Free the memory with GPU_FreeImage() when you're done.
  * \see GPU_CreateImage()
@@ -198,7 +226,8 @@ typedef struct GPU_Image
 } GPU_Image;
 
 
-/*! Camera object that determines viewing transform.
+/*! \ingroup TargetControls
+ * Camera object that determines viewing transform.
  * \see GPU_SetCamera() 
  * \see GPU_GetDefaultCamera() 
  * \see GPU_GetCamera()
@@ -211,7 +240,8 @@ typedef struct GPU_Camera
 } GPU_Camera;
 
 
-/*! Container for the built-in shader attribute and uniform locations (indices).
+/*! \ingroup ShaderInterface
+ * Container for the built-in shader attribute and uniform locations (indices).
  * \see GPU_LoadShaderBlock()
  * \see GPU_SetShaderBlock()
  */
@@ -232,7 +262,8 @@ typedef struct GPU_ShaderBlock
 #define GPU_MATRIX_STACK_MAX 5
 #endif
 
-/*! Matrix stack data structure for replacing the old OpenGL matrix stack.  */
+/*! \ingroup Rendering
+ * Matrix stack data structure for replacing the old OpenGL matrix stack.  */
 typedef struct GPU_MatrixStack
 {
     unsigned int size;
@@ -240,7 +271,8 @@ typedef struct GPU_MatrixStack
 } GPU_MatrixStack;
 
 
-/*! Rendering context data.  Only GPU_Targets which represent windows will store this. */
+/*! \ingroup ContextControls
+ * Rendering context data.  Only GPU_Targets which represent windows will store this. */
 typedef struct GPU_Context
 {
     /*! SDL_GLContext */
@@ -276,7 +308,8 @@ typedef struct GPU_Context
 } GPU_Context;
 
 
-/*! Render target object for use as a blitting destination.
+/*! \ingroup TargetControls
+ * Render target object for use as a blitting destination.
  * A GPU_Target can be created from a GPU_Image with GPU_LoadTarget().
  * A GPU_Target can also represent a separate window with GPU_CreateTargetFromWindow().  In that case, 'context' is allocated and filled in.
  * Note: You must have passed the SDL_WINDOW_OPENGL flag to SDL_CreateWindow() for OpenGL renderers to work with new windows.
@@ -308,7 +341,8 @@ struct GPU_Target
 	Uint8 is_alias;
 };
 
-/*! Important GPU features which may not be supported depending on a device's extension support.  Can be OR'd together.
+/*! \ingroup Initialization
+ * Important GPU features which may not be supported depending on a device's extension support.  Can be OR'd together.
  * \see GPU_IsFeatureEnabled()
  * \see GPU_SetPreInitFlags()
  * \see GPU_GetPreInitFlags()
@@ -341,7 +375,8 @@ static const GPU_FeatureEnum GPU_FEATURE_WRAP_REPEAT_MIRRORED = 0x800;
 
 typedef Uint32 GPU_WindowFlagEnum;
 
-/*! Initialization flags for changing default init parameters.  Can be bitwise OR'ed together with GPU_FeatureEnums.
+/*! \ingroup Initialization
+ * Initialization flags for changing default init parameters.  Can be bitwise OR'ed together with GPU_FeatureEnums.
  * Default (0) is to use late swap vsync and double buffering.
  * \see GPU_SetPreInitFlags()
  * \see GPU_GetPreInitFlags()
@@ -356,7 +391,8 @@ static const GPU_InitFlagEnum GPU_INIT_DISABLE_DOUBLE_BUFFER = 0x40000;
 
 static const Uint32 GPU_NONE = 0x0;
 
-/*! Bit flags for the blit batch functions.
+/*! \ingroup Rendering
+ * Bit flags for the blit batch functions.
  * \see GPU_BlitBatch()
  * \see GPU_BlitBatchSeparate()
  */
@@ -370,7 +406,9 @@ static const GPU_BlitFlagEnum GPU_USE_DEFAULT_COLORS = 0x20;
 
 #define GPU_PASSTHROUGH_ALL (GPU_PASSTHROUGH_VERTICES | GPU_PASSTHROUGH_TEXCOORDS | GPU_PASSTHROUGH_COLORS)
 
-/*! Type enumeration for GPU_AttributeFormat specifications. */
+/*! \ingroup ShaderInterface
+ * Type enumeration for GPU_AttributeFormat specifications.
+ */
 typedef Uint32 GPU_TypeEnum;
 // Use OpenGL's values for simpler translation
 static const GPU_TypeEnum GPU_TYPE_BYTE = 0x1400;
@@ -387,7 +425,8 @@ static const GPU_TypeEnum GPU_TYPE_DOUBLE = 0x140A;
 
 
 
-/*! Shader type enum.
+/*! \ingroup ShaderInterface
+ * Shader type enum.
  * \see GPU_LoadShader()
  * \see GPU_CompileShader()
  * \see GPU_CompileShader_RW()
@@ -401,7 +440,9 @@ typedef enum {
 
 
 
-/*! Type enumeration for the shader language used by the renderer. */
+/*! \ingroup ShaderInterface
+ * Type enumeration for the shader language used by the renderer.
+ */
 typedef enum {
     GPU_LANGUAGE_NONE = 0,
     GPU_LANGUAGE_ARB_ASSEMBLY = 1,
@@ -411,6 +452,7 @@ typedef enum {
     GPU_LANGUAGE_CG = 5
 } GPU_ShaderLanguageEnum;
 
+/*! \ingroup ShaderInterface */
 typedef struct GPU_AttributeFormat
 {
     Uint8 is_per_sprite;  // Per-sprite values are expanded to 4 vertices
@@ -421,6 +463,7 @@ typedef struct GPU_AttributeFormat
     int offset_bytes;  // Number of bytes to skip at the beginning of 'values'
 } GPU_AttributeFormat;
 
+/*! \ingroup ShaderInterface */
 typedef struct GPU_Attribute
 {
     int location;
@@ -428,6 +471,7 @@ typedef struct GPU_Attribute
     GPU_AttributeFormat format;
 } GPU_Attribute;
 
+/*! \ingroup ShaderInterface */
 typedef struct GPU_AttributeSource
 {
     Uint8 enabled;
@@ -442,7 +486,8 @@ typedef struct GPU_AttributeSource
 } GPU_AttributeSource;
 
 
-/*! Type enumeration for error codes.
+/*! \ingroup Logging
+ * Type enumeration for error codes.
  * \see GPU_PushErrorCode()
  * \see GPU_PopErrorCode()
  */
@@ -456,7 +501,7 @@ typedef enum {
     GPU_ERROR_FILE_NOT_FOUND = 6
 } GPU_ErrorEnum;
 
-
+/*! \ingroup Logging */
 typedef struct GPU_ErrorObject
 {
     char* function;
@@ -465,7 +510,8 @@ typedef struct GPU_ErrorObject
 } GPU_ErrorObject;
 
 
-/*! Type enumeration for debug levels.
+/*! \ingroup Logging
+ * Type enumeration for debug levels.
  * \see GPU_SetDebugLevel()
  * \see GPU_GetDebugLevel()
  */
@@ -505,7 +551,8 @@ struct GPU_Renderer
 
 
 
-// Setup calls
+/*! \ingroup Initialization
+ *  @{ */
 
 // Visual C does not support static inline
 #ifdef _MSC_VER
@@ -568,10 +615,15 @@ void GPU_CloseCurrentRenderer(void);
 /*! Clean up the renderer state and shut down SDL_gpu. */
 void GPU_Quit(void);
 
+// End of Initialization
+/*! @} */
 
 
 
 // Debugging, logging, and error handling
+
+/*! \ingroup Logging
+ *  @{ */
 
 /*! Sets the global debug level.
  * GPU_DEBUG_LEVEL_0: Normal
@@ -608,6 +660,8 @@ GPU_ErrorObject GPU_PopErrorCode(void);
 /*! Gets the string representation of an error code. */
 const char* GPU_GetErrorString(GPU_ErrorEnum error);
 
+// End of Logging
+/*! @} */
 
 
 
@@ -615,7 +669,8 @@ const char* GPU_GetErrorString(GPU_ErrorEnum error);
 
 
 
-// Renderer setup controls
+/*! \ingroup RendererSetup
+ *  @{ */
 
 /*! Translates a GPU_RendererEnum into a string. */
 const char* GPU_GetRendererEnumString(GPU_RendererEnum id);
@@ -638,9 +693,13 @@ GPU_Renderer* GPU_AddRenderer(GPU_RendererID id);
 /*! Deletes the renderer matching the given identifier. */
 void GPU_RemoveRenderer(GPU_RendererID id);
 
+// End of RendererSetup
+/*! @} */
 
 
-// Renderer controls
+
+/*! \ingroup RendererControls
+ *  @{ */
 
 /*! Gets the number of active (created) renderers. */
 int GPU_GetNumActiveRenderers(void);
@@ -663,11 +722,16 @@ void GPU_SetCurrentRenderer(GPU_RendererID id);
 /*! Reapplies the renderer state to the backend API (e.g. OpenGL, Direct3D).  Use this if you want SDL_gpu to be able to render after you've used direct backend calls. */
 void GPU_ResetRendererState(void);
 
+// End of RendererControls
+/*! @} */
 
 
 
 
 // Context / window controls
+
+/*! \ingroup ContextControls
+ *  @{ */
 
 /*! \return The renderer's current context target. */
 GPU_Target* GPU_GetContextTarget(void);
@@ -722,11 +786,14 @@ float GPU_SetLineThickness(float thickness);
 /*! Returns the current line thickness value. */
 float GPU_GetLineThickness(void);
 
+// End of ContextControls
+/*! @} */
 
 
 
 
-// Target controls
+/*! \ingroup TargetControls
+ *  @{ */
 
 /*! Creates a target that aliases the given target.  Aliases can be used to store target settings (e.g. viewports) for easy switching.
  * GPU_FreeTarget() frees the alias's memory, but does not affect the original. */
@@ -801,10 +868,13 @@ void GPU_SetTargetRGB(GPU_Target* target, Uint8 r, Uint8 g, Uint8 b);
  */
 void GPU_SetTargetRGBA(GPU_Target* target, Uint8 r, Uint8 g, Uint8 b, Uint8 a);
 
+// End of TargetControls
+/*! @} */
 
 
 
-// Surface controls
+/*! \ingroup SurfaceControls
+ *  @{ */
 
 /*! Load surface from an image file that is supported by this renderer.  Don't forget to SDL_FreeSurface() it. */
 SDL_Surface* GPU_LoadSurface(const char* filename);
@@ -812,11 +882,14 @@ SDL_Surface* GPU_LoadSurface(const char* filename);
 /*! Save surface to a file.  The file type is deduced from the extension.  Supported formats are: png, bmp, tga.  Returns 0 on failure. */
 Uint8 GPU_SaveSurface(SDL_Surface* surface, const char* filename);
 
+// End of SurfaceControls
+/*! @} */
 
 
 
 
-// Image controls
+/*! \ingroup ImageControls
+ *  @{ */
 
 /*! Create a new, blank image with the given format.  Don't forget to GPU_FreeImage() it.
 	 * \param w Image width in pixels
@@ -889,9 +962,13 @@ void GPU_SetSnapMode(GPU_Image* image, GPU_SnapEnum mode);
 /*! Sets the image wrapping mode, if supported by the renderer. */
 void GPU_SetWrapMode(GPU_Image* image, GPU_WrapEnum wrap_mode_x, GPU_WrapEnum wrap_mode_y);
 
+// End of ImageControls
+/*! @} */
 
 
 // Surface / Image / Target conversions
+/*! \ingroup Conversions
+ *  @{ */
 
 /*! Copy SDL_Surface data into a new GPU_Image.  Don't forget to SDL_FreeSurface() the surface and GPU_FreeImage() the image.*/
 GPU_Image* GPU_CopyImageFromSurface(SDL_Surface* surface);
@@ -905,9 +982,12 @@ SDL_Surface* GPU_CopySurfaceFromTarget(GPU_Target* target);
 /*! Copy GPU_Image data into a new SDL_Surface.  Don't forget to SDL_FreeSurface() the surface and GPU_FreeImage() the image.*/
 SDL_Surface* GPU_CopySurfaceFromImage(GPU_Image* image);
 
+// End of Conversions
+/*! @} */
 
 
-// Rendering
+/*! \ingroup Rendering
+ *  @{ */
 
 /*! Clears the contents of the given render target.  Fills the target with color {0, 0, 0, 0}. */
 void GPU_Clear(GPU_Target* target);
@@ -994,12 +1074,15 @@ void GPU_FlushBlitBuffer(void);
 /*! Updates the given target's associated window. */
 void GPU_Flip(GPU_Target* target);
 
+// End of Rendering
+/*! @} */
 
 
 
 
 
-// Shapes
+/*! \ingroup Shapes
+ *  @{ */
 
 /*! Renders a colored point.
  * \param target The destination render target
@@ -1165,12 +1248,15 @@ void GPU_Polygon(GPU_Target* target, unsigned int num_vertices, float* vertices,
  */
 void GPU_PolygonFilled(GPU_Target* target, unsigned int num_vertices, float* vertices, SDL_Color color);
 
+// End of Shapes
+/*! @} */
 
 
 
 
 
-// Shaders
+/*! \ingroup ShaderInterface
+ *  @{ */
 
 /*! Loads shader source from an SDL_RWops, compiles it, and returns the new shader object. */
 Uint32 GPU_CompileShader_RW(GPU_ShaderEnum shader_type, SDL_RWops* shader_source);
@@ -1295,7 +1381,8 @@ void GPU_SetAttributeuiv(int location, int num_elements, unsigned int* value);
 /*! Enables a shader attribute and sets its source data. */
 void GPU_SetAttributeSource(int num_values, GPU_Attribute source);
 
-
+// End of ShaderInterface
+/*! @} */
 
 
 #ifdef __cplusplus
