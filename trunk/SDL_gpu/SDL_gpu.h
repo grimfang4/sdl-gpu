@@ -660,6 +660,9 @@ GPU_Renderer* GPU_GetCurrentRenderer(void);
 /*! Switches the current renderer to the renderer matching the given identifier. */
 void GPU_SetCurrentRenderer(GPU_RendererID id);
 
+/*! Reapplies the renderer state to the backend API (e.g. OpenGL, Direct3D).  Use this if you want SDL_gpu to be able to render after you've used direct backend calls. */
+void GPU_ResetRendererState(void);
+
 
 
 

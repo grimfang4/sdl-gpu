@@ -61,6 +61,14 @@ void GPU_SetCurrentRenderer(GPU_RendererID id)
 		current_renderer->impl->SetAsCurrent(current_renderer);
 }
 
+void GPU_ResetRendererState(void)
+{
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
+		return;
+	
+	current_renderer->impl->ResetRendererState(current_renderer);
+}
+
 GPU_Renderer* GPU_GetCurrentRenderer(void)
 {
 	return current_renderer;
