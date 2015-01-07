@@ -535,16 +535,9 @@ static void changeBlending(GPU_Renderer* renderer, Uint8 enable)
     cdata->last_use_blending = enable;
 }
 
-static void changeBlendMode(GPU_Renderer* renderer, GPU_BlendMode mode)
+static void forceChangeBlendMode(GPU_Renderer* renderer, GPU_BlendMode mode)
 {
     GPU_CONTEXT_DATA* cdata = (GPU_CONTEXT_DATA*)renderer->current_context_target->context->data;
-    if(cdata->last_blend_mode.source_color == mode.source_color
-       && cdata->last_blend_mode.dest_color == mode.dest_color
-       && cdata->last_blend_mode.source_alpha == mode.source_alpha
-       && cdata->last_blend_mode.dest_alpha == mode.dest_alpha
-       && cdata->last_blend_mode.color_equation == mode.color_equation
-       && cdata->last_blend_mode.alpha_equation == mode.alpha_equation)
-        return;
     
     renderer->impl->FlushBlitBuffer(renderer);
 
@@ -578,6 +571,20 @@ static void changeBlendMode(GPU_Renderer* renderer, GPU_BlendMode mode)
     {
         GPU_PushErrorCode("(SDL_gpu internal)", GPU_ERROR_BACKEND_ERROR, "Could not set blend equation because GPU_FEATURE_BLEND_EQUATIONS is not supported.");
     }
+}
+
+static void changeBlendMode(GPU_Renderer* renderer, GPU_BlendMode mode)
+{
+    GPU_CONTEXT_DATA* cdata = (GPU_CONTEXT_DATA*)renderer->current_context_target->context->data;
+    if(cdata->last_blend_mode.source_color == mode.source_color
+       && cdata->last_blend_mode.dest_color == mode.dest_color
+       && cdata->last_blend_mode.source_alpha == mode.source_alpha
+       && cdata->last_blend_mode.dest_alpha == mode.dest_alpha
+       && cdata->last_blend_mode.color_equation == mode.color_equation
+       && cdata->last_blend_mode.alpha_equation == mode.alpha_equation)
+        return;
+    
+    forceChangeBlendMode(renderer, mode);
 }
 
 
@@ -700,14 +707,11 @@ static void prepareToRenderShapes(GPU_Renderer* renderer, unsigned int shape)
 
 
 
-static void changeViewport(GPU_Target* target)
+static void forceChangeViewport(GPU_Target* target, GPU_Rect viewport)
 {
-    GPU_CONTEXT_DATA* cdata = (GPU_CONTEXT_DATA*)(GPU_GetContextTarget()->context->data);
-    GPU_Rect viewport = target->viewport;
 	float y;
-
-    if(cdata->last_viewport.x == viewport.x && cdata->last_viewport.y == viewport.y && cdata->last_viewport.w == viewport.w && cdata->last_viewport.h == viewport.h)
-        return;
+    GPU_CONTEXT_DATA* cdata = (GPU_CONTEXT_DATA*)(GPU_GetContextTarget()->context->data);
+    
     cdata->last_viewport = viewport;
     
     // Need the real height to flip the y-coord (from OpenGL coord system)
@@ -718,6 +722,16 @@ static void changeViewport(GPU_Target* target)
         y = target->context->window_h - viewport.h - viewport.y;
     
     glViewport(viewport.x, y, viewport.w, viewport.h);
+}
+
+static void changeViewport(GPU_Target* target)
+{
+    GPU_CONTEXT_DATA* cdata = (GPU_CONTEXT_DATA*)(GPU_GetContextTarget()->context->data);
+
+    if(cdata->last_viewport.x == target->viewport.x && cdata->last_viewport.y == target->viewport.y && cdata->last_viewport.w == target->viewport.w && cdata->last_viewport.h == target->viewport.h)
+        return;
+    
+    forceChangeViewport(target, target->viewport);
 }
 
 static void applyTargetCamera(GPU_Target* target)
@@ -1380,6 +1394,53 @@ static void SetAsCurrent(GPU_Renderer* renderer)
         return;
     
     renderer->impl->MakeCurrent(renderer, renderer->current_context_target, renderer->current_context_target->context->windowID);
+}
+
+static void ResetRendererState(GPU_Renderer* renderer)
+{
+    GPU_Target* target;
+    GPU_CONTEXT_DATA* cdata;
+    
+    if(renderer->current_context_target == NULL)
+        return;
+    
+    target = renderer->current_context_target;
+    cdata = (GPU_CONTEXT_DATA*)target->context->data;
+    
+    
+    #ifndef SDL_GPU_DISABLE_SHADERS
+    if(renderer->impl->IsFeatureEnabled(renderer, GPU_FEATURE_BASIC_SHADERS))
+        glUseProgram(target->context->current_shader_program);
+    #endif
+    SDL_GL_MakeCurrent(SDL_GetWindowFromID(target->context->windowID), target->context->context);
+    
+    
+    #ifndef SDL_GPU_USE_BUFFER_PIPELINE
+    glColor4f(cdata->last_color.r/255.01f, cdata->last_color.g/255.01f, cdata->last_color.b/255.01f, GET_ALPHA(cdata->last_color)/255.01f);
+    #endif
+    #ifndef SDL_GPU_SKIP_ENABLE_TEXTURE_2D
+    if(cdata->last_use_texturing)
+        glEnable(GL_TEXTURE_2D);
+    else
+        glDisable(GL_TEXTURE_2D);
+    #endif
+    
+    if(cdata->last_use_blending)
+        glEnable(GL_BLEND);
+    else
+        glDisable(GL_BLEND);
+    
+    forceChangeBlendMode(renderer, cdata->last_blend_mode);
+    
+    forceChangeViewport(target, target->viewport);
+    
+    if(cdata->last_image != NULL)
+        glBindTexture(GL_TEXTURE_2D, ((GPU_IMAGE_DATA*)(cdata->last_image)->data)->handle);
+    
+    if(cdata->last_target != NULL)
+        extBindFramebuffer(renderer, ((GPU_TARGET_DATA*)cdata->last_target->data)->handle);
+    else
+        extBindFramebuffer(renderer, ((GPU_TARGET_DATA*)target->data)->handle);
 }
 
 static Uint8 SetWindowResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
@@ -5789,6 +5850,7 @@ static void SetAttributeSource(GPU_Renderer* renderer, int num_values, GPU_Attri
     impl->CreateAliasTarget = &CreateAliasTarget; \
     impl->MakeCurrent = &MakeCurrent; \
     impl->SetAsCurrent = &SetAsCurrent; \
+    impl->ResetRendererState = &ResetRendererState; \
     impl->SetWindowResolution = &SetWindowResolution; \
     impl->SetVirtualResolution = &SetVirtualResolution; \
     impl->UnsetVirtualResolution = &UnsetVirtualResolution; \

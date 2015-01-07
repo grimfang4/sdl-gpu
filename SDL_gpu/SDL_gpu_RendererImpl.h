@@ -28,6 +28,9 @@ typedef struct GPU_RendererImpl
 	/*! Sets up this renderer to act as the current renderer.  Called automatically by GPU_SetCurrentRenderer(). */
 	void (*SetAsCurrent)(GPU_Renderer* renderer);
 	
+	/*! \see GPU_ResetRendererState() */
+	void (*ResetRendererState)(GPU_Renderer* renderer);
+	
 	/*! \see GPU_SetWindowResolution() */
 	Uint8 (*SetWindowResolution)(GPU_Renderer* renderer, Uint16 w, Uint16 h);
 	
