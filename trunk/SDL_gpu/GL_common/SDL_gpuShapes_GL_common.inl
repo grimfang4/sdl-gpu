@@ -144,10 +144,10 @@ static void Circle(GPU_Renderer* renderer, GPU_Target* target, float x, float y,
 
 static void Arc(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float radius, float start_angle, float end_angle, SDL_Color color)
 {
-	float thickness = GetLineThickness(renderer);
     float dx, dy;
     int i;
-    float t = thickness/2;
+    
+    float t = GetLineThickness(renderer)/2;
     float inner_radius = radius - t;
     float outer_radius = radius + t;
     
@@ -196,6 +196,8 @@ static void Arc(GPU_Renderer* renderer, GPU_Target* target, float x, float y, fl
 		return;
     
 	{
+		BEGIN_UNTEXTURED("GPU_Arc", GL_TRIANGLES, 2*(numSegments), 6*(numSegments));
+		
         c = cos(dt);
         s = sin(dt);
         
@@ -206,9 +208,6 @@ static void Arc(GPU_Renderer* renderer, GPU_Target* target, float x, float y, fl
         start_angle *= M_PI/180;
         dx = cos(start_angle);
         dy = sin(start_angle);
-        
-		int i;
-		BEGIN_UNTEXTURED("GPU_Arc", GL_TRIANGLES, 2*(numSegments), 6*(numSegments));
 
         BEGIN_UNTEXTURED_SEGMENTS(x+inner_radius*dx, y+inner_radius*dy, x+outer_radius*dx, y+outer_radius*dy, r, g, b, a);
 
@@ -277,9 +276,7 @@ static void ArcFilled(GPU_Renderer* renderer, GPU_Target* target, float x, float
 		return;
 
 	{
-		int i;
 		BEGIN_UNTEXTURED("GPU_ArcFilled", GL_TRIANGLES, 3 + (numSegments - 1) + 1, 3 + (numSegments - 1) * 3 + 3);
-
         
         c = cos(dt);
         s = sin(dt);

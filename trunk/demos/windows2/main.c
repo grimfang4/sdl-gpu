@@ -35,7 +35,6 @@ Group create_first_group()
 {
     Group g;
 	SDL_Surface* surface;
-    Uint32 windowID = GPU_GetCurrentRenderer()->current_context_target->context->windowID;
     
     g.target = GPU_GetCurrentRenderer()->current_context_target;
     
