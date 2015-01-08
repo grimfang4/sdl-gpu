@@ -21,7 +21,7 @@ int main(int argc, char* argv[])
 		long frameCount;
 		Uint8 done;
 		SDL_Event event;
-		Uint8* keystates;
+		const Uint8* keystates;
         GPU_Camera camera;
 		float dt;
 		SDL_Surface* surface;
