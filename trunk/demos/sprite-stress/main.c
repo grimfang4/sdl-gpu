@@ -8,7 +8,7 @@ int main(int argc, char* argv[])
 	GPU_Target* screen;
 
 	printRenderers();
-	
+	GPU_SetPreInitFlags(GPU_INIT_DISABLE_VSYNC);
 	screen = GPU_Init(800, 600, GPU_DEFAULT_INIT_FLAGS);
 	if(screen == NULL)
 		return -1;
@@ -36,7 +36,7 @@ int main(int argc, char* argv[])
         if(image == NULL)
             return -1;
         
-        
+        GPU_SetSnapMode(image, GPU_SNAP_NONE);
         
         startTime = SDL_GetTicks();
         frameCount = 0;
