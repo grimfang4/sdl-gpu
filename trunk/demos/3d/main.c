@@ -1,70 +1,110 @@
 #include "SDL.h"
 #include "SDL_gpu.h"
 #include "SDL_gpu_OpenGL_1.h"
+#include "SDL_gpu_GL_matrix.h"
 #include "common.h"
 
+
+
+
+GLuint VAO;
+GLuint VBO;
+GLuint modelViewProjection_loc;
+GLuint vertex_loc;
+GLuint color_loc;
+Uint32 v, f, p;
 
 void begin_3d(GPU_Target* screen)
 {
     GPU_FlushBlitBuffer();
     
-    glMatrixMode( GL_PROJECTION );
-    glPushMatrix();
-    glLoadIdentity();
-    
-    glMatrixMode( GL_MODELVIEW );
-    glPushMatrix();
-    glLoadIdentity();
+    GPU_MatrixMode(GPU_MODELVIEW);
+    GPU_LoadIdentity();
+    GPU_MatrixMode(GPU_PROJECTION);
+    GPU_LoadIdentity();
 }
 
 void end_3d(GPU_Target* screen)
 {
-    glPopMatrix();
-    glMatrixMode( GL_PROJECTION );
-    glPopMatrix();
-    glMatrixMode( GL_MODELVIEW );
-    
-    //GPU_SetCamera(screen, NULL);
+    GPU_ResetRendererState();
 }
 
 void draw_spinning_triangle()
 {
-    GLfloat glverts[9];
-    GLfloat glcolors[9];
+    GLfloat gldata[21];
+    float mvp[16];
     float t = SDL_GetTicks()/1000.0f;
 
-    glRotatef(100*t, 0, 0.707, 0.707);
-    glRotatef(20*t, 0.707, 0.707, 0);
+    GPU_Rotate(100*t, 0, 0.707, 0.707);
+    GPU_Rotate(20*t, 0.707, 0.707, 0);
 
 
-    glverts[0] = 0;
-    glverts[1] = 0.2f;
-    glverts[2] = 0;
-    glcolors[0] = 1.0f;
-    glcolors[1] = 0.0f;
-    glcolors[2] = 0.0f;
+    gldata[0] = 0;
+    gldata[1] = 0.2f;
+    gldata[2] = 0;
     
-    glverts[3] = -0.2f;
-    glverts[4] = -0.2f;
-    glverts[5] = 0;
-    glcolors[3] = 0.0f;
-    glcolors[4] = 1.0f;
-    glcolors[5] = 0.0f;
+    gldata[3] = 1.0f;
+    gldata[4] = 0.0f;
+    gldata[5] = 0.0f;
+    gldata[6] = 1.0f;
     
-    glverts[6] = 0.2f;
-    glverts[7] = -0.2f;
-    glverts[8] = 0;
-    glcolors[6] = 0.0f;
-    glcolors[7] = 0.0f;
-    glcolors[8] = 1.0f;
     
-    glVertexPointer(3, GL_FLOAT, 0, glverts);
-    glColorPointer(3, GL_FLOAT, 0, glcolors);
-    glEnableClientState(GL_VERTEX_ARRAY);
-    glEnableClientState(GL_COLOR_ARRAY);
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 3);
-    glDisableClientState(GL_COLOR_ARRAY);
-    glDisableClientState(GL_VERTEX_ARRAY);
+    gldata[7] = -0.2f;
+    gldata[8] = -0.2f;
+    gldata[9] = 0;
+    
+    gldata[10] = 0.0f;
+    gldata[11] = 1.0f;
+    gldata[12] = 0.0f;
+    gldata[13] = 1.0f;
+    
+    gldata[14] = 0.2f;
+    gldata[15] = -0.2f;
+    gldata[16] = 0;
+    gldata[17] = 0.0f;
+    gldata[18] = 0.0f;
+    gldata[19] = 1.0f;
+    gldata[20] = 1.0f;
+    
+    
+    glUseProgram(p);
+    
+    glBindVertexArray(VAO);
+    
+    GPU_GetModelViewProjection(mvp);
+    glUniformMatrix4fv(modelViewProjection_loc, 1, 0, mvp);
+    
+    
+    glEnableVertexAttribArray(vertex_loc);
+    glEnableVertexAttribArray(color_loc);
+    
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(gldata), gldata, GL_STREAM_DRAW);
+    
+    glVertexAttribPointer(
+       vertex_loc,
+       3,                  // size
+       GL_FLOAT,           // type
+       GL_FALSE,           // normalize
+       sizeof(float)*7,    // stride
+       (void*)0            // offset
+    );
+    
+    glVertexAttribPointer(
+       color_loc,
+       4,                      // size
+       GL_FLOAT,               // type
+       GL_FALSE,               // normalize
+       sizeof(float)*7,        // stride
+       (void*)(sizeof(float)*3)  // offset
+    );
+    
+    glDrawArrays(GL_TRIANGLES, 0, 3);
+     
+    glDisableVertexAttribArray(color_loc);
+    glDisableVertexAttribArray(vertex_loc);
+    
+    glBindVertexArray(0);
 }
 
 void draw_3d_stuff(GPU_Target* screen)
@@ -82,8 +122,8 @@ void draw_more_3d_stuff(GPU_Target* screen)
     begin_3d(screen);
     
     t = SDL_GetTicks()/1000.0f;
-    glRotatef(t*60, 0, 0, 1);
-    glTranslatef(0.4f, 0.4f, 0);
+    GPU_Rotate(t*60, 0, 0, 1);
+    GPU_Translate(0.4f, 0.4f, 0);
     draw_spinning_triangle();
     
     end_3d(screen);
@@ -119,7 +159,21 @@ int main(int argc, char* argv[])
 		image = GPU_LoadImage("data/test.bmp");
 		if (image == NULL)
 			return -1;
-
+        
+        v = GPU_LoadShader(GPU_VERTEX_SHADER, "3d/untextured.vert");
+        f = GPU_LoadShader(GPU_FRAGMENT_SHADER, "3d/untextured.frag");
+        p = GPU_LinkShaders(v, f);
+        
+        glUseProgram(p);
+        vertex_loc = GPU_GetAttributeLocation(p, "gpu_Vertex");
+        color_loc = GPU_GetAttributeLocation(p, "gpu_Color");
+        modelViewProjection_loc = GPU_GetUniformLocation(p, "gpu_ModelViewProjectionMatrix");
+        
+        glGenVertexArrays(1, &VAO);
+        glBindVertexArray(VAO);
+        
+        glGenBuffers(1, &VBO);
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
 		dt = 0.010f;
 
