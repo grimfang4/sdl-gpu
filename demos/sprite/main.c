@@ -33,6 +33,8 @@ int main(int argc, char* argv[])
         if(image == NULL)
             return -1;
         
+        GPU_SetSnapMode(image, GPU_SNAP_NONE);
+        
         for(i = 0; i < MAX_SPRITES; i++)
         {
             x[i] = rand()%screen->w;
