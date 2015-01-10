@@ -1412,7 +1412,10 @@ static void ResetRendererState(GPU_Renderer* renderer)
     if(renderer->impl->IsFeatureEnabled(renderer, GPU_FEATURE_BASIC_SHADERS))
         glUseProgram(target->context->current_shader_program);
     #endif
+    
+    #ifdef SDL_GPU_USE_SDL2
     SDL_GL_MakeCurrent(SDL_GetWindowFromID(target->context->windowID), target->context->context);
+    #endif
     
     
     #ifndef SDL_GPU_USE_BUFFER_PIPELINE
@@ -1611,7 +1614,6 @@ static Uint8 SetFullscreen(GPU_Renderer* renderer, Uint8 enable_fullscreen, Uint
 #else
     GPU_Target* target = renderer->current_context_target;
     SDL_Surface* surf = SDL_GetVideoSurface();
-	Uint16 w, h;
 	Uint8 was_fullscreen = (surf->flags & SDL_FULLSCREEN);
 	Uint8 is_fullscreen = was_fullscreen;
     
