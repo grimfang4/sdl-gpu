@@ -1,7 +1,6 @@
 #include "SDL.h"
 #include "SDL_gpu.h"
 #include "SDL_gpu_OpenGL_1.h"
-#include "SDL_gpu_GL_matrix.h"
 #include "common.h"
 
 
