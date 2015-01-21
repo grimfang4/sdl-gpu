@@ -41,7 +41,6 @@ See a particular renderer's *.c file for specifics. */
 #endif
 
 
-#include "SDL_gpu_GL_matrix.h"
 #include "SDL_platform.h"
 
 #include "stb_image.h"

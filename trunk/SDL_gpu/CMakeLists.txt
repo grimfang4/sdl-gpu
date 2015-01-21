@@ -3,7 +3,7 @@ set(SDL_gpu_SRCS
 	SDL_gpu.c
 	SDL_gpuShapes.c
 	SDL_gpu_Renderer.c
-	GL_common/SDL_gpu_GL_matrix.c
+	SDL_gpu_matrix.c
 	OpenGL_1_BASE/SDL_gpu_OpenGL_1_BASE.c
 	OpenGL_1/SDL_gpu_OpenGL_1.c
 	OpenGL_2/SDL_gpu_OpenGL_2.c
@@ -16,7 +16,6 @@ set(SDL_gpu_HDRS
 	${SDL_gpu_HDRS}
 	SDL_gpu.h
 	SDL_gpu_RendererImpl.h
-	GL_common/SDL_gpu_GL_matrix.h
 	GL_common/SDL_gpu_GL_common.inl
 	GL_common/SDL_gpuShapes_GL_common.inl
 	OpenGL_1_BASE/SDL_gpu_OpenGL_1_BASE.h
@@ -46,7 +45,6 @@ endif(STBI_WRITE_FOUND)
 
 set(SDL_gpu_install_HDRS
 	SDL_gpu.h
-	GL_common/SDL_gpu_GL_matrix.h
 	OpenGL_1_BASE/SDL_gpu_OpenGL_1_BASE.h
 	OpenGL_1/SDL_gpu_OpenGL_1.h
 	OpenGL_2/SDL_gpu_OpenGL_2.h

@@ -1,5 +1,4 @@
 #include "SDL_gpu.h"
-#include "SDL_gpu_GL_matrix.h"
 #include <math.h>
 #include <string.h>
 

@@ -33,6 +33,7 @@ typedef struct GPU_Target GPU_Target;
  * \defgroup SurfaceControls Surface Controls
  * \defgroup ImageControls Image Controls
  * \defgroup Conversions Surface, Image, and Target Conversions
+ * \defgroup Matrix Matrix Controls
  * \defgroup Rendering Rendering
  * \defgroup Shapes Shapes
  * \defgroup ShaderInterface Shader Interface
@@ -258,12 +259,16 @@ typedef struct GPU_ShaderBlock
 
 
 
+
+#define GPU_MODELVIEW 0
+#define GPU_PROJECTION 1
+
 #ifndef GPU_MATRIX_STACK_MAX
 #define GPU_MATRIX_STACK_MAX 5
 #endif
 
-/*! \ingroup Rendering
- * Matrix stack data structure for replacing the old OpenGL matrix stack.  */
+/*! \ingroup Matrix
+ * Matrix stack data structure for global vertex transforms.  */
 typedef struct GPU_MatrixStack
 {
     unsigned int size;
@@ -984,6 +989,88 @@ SDL_Surface* GPU_CopySurfaceFromImage(GPU_Image* image);
 
 // End of Conversions
 /*! @} */
+
+
+
+
+
+/*! \ingroup Matrix
+ *  @{ */
+
+
+// Basic matrix operations (4x4)
+
+/*! Copy matrix A to the given 'result' matrix. */
+void GPU_MatrixCopy(float* result, const float* A);
+
+/*! Fills 'result' matrix with the identity matrix. */
+void GPU_MatrixIdentity(float* result);
+
+/*! Multiplies matrices A and B and stores the result in the given 'result' matrix (result = A*B).  Do not use A or B as 'result'.
+ * \see GPU_MultiplyAndAssign
+*/
+void GPU_Multiply4x4(float* result, float* A, float* B);
+
+/*! Multiplies matrices 'result' and A and stores the result in the given 'result' matrix (result = result * A). */
+void GPU_MultiplyAndAssign(float* result, float* A);
+
+
+// Matrix stack accessors
+
+/*! Returns an internal string that represents the contents of matrix A. */
+const char* GPU_GetMatrixString(float* A);
+
+/*! Returns the current matrix from the top of the matrix stack.  Returns NULL if stack is empty. */
+float* GPU_GetCurrentMatrix(void);
+
+/*! Returns the current modelview matrix from the top of the matrix stack.  Returns NULL if stack is empty. */
+float* GPU_GetModelView(void);
+
+/*! Returns the current projection matrix from the top of the matrix stack.  Returns NULL if stack is empty. */
+float* GPU_GetProjection(void);
+
+/*! Copies the current modelview-projection matrix into the given 'result' matrix (result = P*M). */
+void GPU_GetModelViewProjection(float* result);
+
+
+// Matrix stack manipulators
+
+/*! Changes matrix mode to either GPU_PROJECTION or GPU_MODELVIEW.  Further matrix stack operations manipulate that particular stack. */
+void GPU_MatrixMode(int matrix_mode);
+
+/*! Pushes the current matrix as a new matrix stack item. */
+void GPU_PushMatrix(void);
+
+/*! Removes the current matrix from the stack. */
+void GPU_PopMatrix(void);
+
+/*! Fills current matrix with the identity matrix. */
+void GPU_LoadIdentity(void);
+
+/*! Multiplies an orthographic projection matrix into the current matrix. */
+void GPU_Ortho(float left, float right, float bottom, float top, float near, float far);
+
+/*! Multiplies a perspective projection matrix into the current matrix. */
+void GPU_Frustum(float right, float left, float bottom, float top, float near, float far);
+
+/*! Adds a translation into the current matrix. */
+void GPU_Translate(float x, float y, float z);
+
+/*! Multiplies a scaling matrix into the current matrix. */
+void GPU_Scale(float sx, float sy, float sz);
+
+/*! Multiplies a rotation matrix into the current matrix. */
+void GPU_Rotate(float degrees, float x, float y, float z);
+
+/*! Multiplies a given matrix into the current matrix. */
+void GPU_MultMatrix(float* matrix4x4);
+
+// End of Matrix
+/*! @} */
+
+
+
+
 
 
 /*! \ingroup Rendering
