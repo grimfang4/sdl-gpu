@@ -3835,16 +3835,20 @@ static int get_lowest_attribute_num_values(GPU_CONTEXT_DATA* cdata, int cap)
 
 static_inline void submit_buffer_data(int bytes, float* values)
 {
-    #ifdef SDL_GPU_USE_MAP_BUFFER
-    float* data = (float*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-    if(data == NULL)
-        return;
+    #ifdef SDL_GPU_USE_BUFFER_PIPELINE
+        #ifdef SDL_GPU_USE_BUFFER_MAPPING
+        float* data = (float*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+        if(data == NULL)
+            return;
     
-    memcpy(data, values, bytes);
+        memcpy(data, values, bytes);
     
-    glUnmapBuffer(GL_ARRAY_BUFFER);
-    #else
-    glBufferSubData(GL_ARRAY_BUFFER, 0, bytes, values);
+        glUnmapBuffer(GL_ARRAY_BUFFER);
+        #elif defined(SDL_GPU_USE_BUFFER_RESET)
+        glBufferData(GL_ARRAY_BUFFER, bytes, values, GL_STREAM_DRAW);
+        #else
+        glBufferSubData(GL_ARRAY_BUFFER, 0, bytes, values);
+        #endif
     #endif
 }
 

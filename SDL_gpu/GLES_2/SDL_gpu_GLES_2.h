@@ -21,7 +21,10 @@
 	#define glVertexAttribI1ui glVertexAttrib1f
 	#define glVertexAttribI2ui glVertexAttrib2f
 	#define glVertexAttribI3ui glVertexAttrib3f
-	#define glVertexAttribI4ui glVertexAttrib4f
+    #define glVertexAttribI4ui glVertexAttrib4f
+    #define glMapBuffer glMapBufferOES
+    #define glUnmapBuffer glUnmapBufferOES
+    #define GL_WRITE_ONLY GL_WRITE_ONLY_OES
 #endif
 
 
