@@ -3833,6 +3833,20 @@ static int get_lowest_attribute_num_values(GPU_CONTEXT_DATA* cdata, int cap)
     return lowest;
 }
 
+static_inline void submit_buffer_data(int bytes, float* values)
+{
+    #ifdef SDL_GPU_USE_MAP_BUFFER
+    float* data = (float*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+    if(data == NULL)
+        return;
+    
+    memcpy(data, values, bytes);
+    
+    glUnmapBuffer(GL_ARRAY_BUFFER);
+    #else
+    glBufferSubData(GL_ARRAY_BUFFER, 0, bytes, values);
+    #endif
+}
 
 
 // Assumes the right format
@@ -4003,7 +4017,7 @@ static void BlitBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* targ
             cdata->blit_VBO_flop = !cdata->blit_VBO_flop;
             
             // Copy the whole blit buffer to the GPU
-            glBufferSubData(GL_ARRAY_BUFFER, 0, GPU_BLIT_BUFFER_STRIDE * (num_sprites*4), values);  // Fills GPU buffer with data.
+            submit_buffer_data(GPU_BLIT_BUFFER_STRIDE * (num_sprites*4), values);  // Fills GPU buffer with data.
             
             // Specify the formatting of the blit buffer
             if(cdata->current_shader_block.position_loc >= 0)
@@ -4221,7 +4235,7 @@ static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* 
             cdata->blit_VBO_flop = !cdata->blit_VBO_flop;
             
             // Copy the whole blit buffer to the GPU
-            glBufferSubData(GL_ARRAY_BUFFER, 0, stride * num_vertices, values);  // Fills GPU buffer with data.
+            submit_buffer_data(stride * num_vertices, values);  // Fills GPU buffer with data.
             
             // Specify the formatting of the blit buffer
             if(cdata->current_shader_block.position_loc >= 0)
@@ -4599,7 +4613,7 @@ static void DoPartialFlush(GPU_Renderer* renderer, GPU_CONTEXT_DATA* cdata, unsi
             cdata->blit_VBO_flop = !cdata->blit_VBO_flop;
             
             // Copy the whole blit buffer to the GPU
-            glBufferSubData(GL_ARRAY_BUFFER, 0, GPU_BLIT_BUFFER_STRIDE * num_vertices, blit_buffer);  // Fills GPU buffer with data.
+            submit_buffer_data(GPU_BLIT_BUFFER_STRIDE * num_vertices, blit_buffer);  // Fills GPU buffer with data.
             
             // Specify the formatting of the blit buffer
             if(cdata->current_shader_block.position_loc >= 0)
@@ -4699,7 +4713,7 @@ static void DoUntexturedFlush(GPU_Renderer* renderer, GPU_CONTEXT_DATA* cdata, u
         cdata->blit_VBO_flop = !cdata->blit_VBO_flop;
         
         // Copy the whole blit buffer to the GPU
-        glBufferSubData(GL_ARRAY_BUFFER, 0, GPU_BLIT_BUFFER_STRIDE * num_vertices, blit_buffer);  // Fills GPU buffer with data.
+        submit_buffer_data(GPU_BLIT_BUFFER_STRIDE * num_vertices, blit_buffer);  // Fills GPU buffer with data.
         
         // Specify the formatting of the blit buffer
         if(cdata->current_shader_block.position_loc >= 0)
