@@ -76,7 +76,7 @@ int main(int argc, char* argv[])
         frameCount = 0;
         
         shapeType = 0;
-        numShapeTypes = 16;
+        numShapeTypes = 18;
         
         for(i = 0; i < NUM_COLORS; i++)
         {
@@ -293,22 +293,34 @@ int main(int argc, char* argv[])
                 case 12:
                     for(i = 0; i < NUM_ARCS; i++)
                     {
-                        GPU_Sector(screen, ax[i], ay[i], ar[i], ar2[i], aa1[i], aa2[i], colors[i]);
+                        GPU_Ellipse(screen, ax[i], ay[i], ar[i], ar2[i], aa1[i], colors[i]);
                     }
                     break;
                 case 13:
                     for(i = 0; i < NUM_ARCS; i++)
                     {
-                        GPU_SectorFilled(screen, ax[i], ay[i], ar[i], ar2[i], aa1[i], aa2[i], colors[i]);
+                        GPU_EllipseFilled(screen, ax[i], ay[i], ar[i], ar2[i], aa1[i], colors[i]);
                     }
                     break;
                 case 14:
+                    for(i = 0; i < NUM_ARCS; i++)
+                    {
+                        GPU_Sector(screen, ax[i], ay[i], ar[i], ar2[i], aa1[i], aa2[i], colors[i]);
+                    }
+                    break;
+                case 15:
+                    for(i = 0; i < NUM_ARCS; i++)
+                    {
+                        GPU_SectorFilled(screen, ax[i], ay[i], ar[i], ar2[i], aa1[i], aa2[i], colors[i]);
+                    }
+                    break;
+                case 16:
                     for(i = 0; i < NUM_POLYS; i++)
                     {
                         GPU_Polygon(screen, pn[i], pv[i], colors[i]);
                     }
                     break;
-                case 15:
+                case 17:
                     for(i = 0; i < NUM_POLYS; i++)
                     {
                         GPU_PolygonFilled(screen, pn[i], pv[i], colors[i]);

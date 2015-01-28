@@ -27,7 +27,7 @@ int main(int argc, char* argv[])
         DemoFont* font;
         GPU_Rect rect1, rect2;
         
-        GPU_Image* image = GPU_LoadImage("data/small_test.bmp");
+        GPU_Image* image = GPU_LoadImage("data/happy_52x63.bmp");
         if(image == NULL)
             return -1;
         

@@ -1229,6 +1229,28 @@ void GPU_Circle(GPU_Target* target, float x, float y, float radius, SDL_Color co
  */
 void GPU_CircleFilled(GPU_Target* target, float x, float y, float radius, SDL_Color color);
 
+/*! Renders a colored ellipse outline.
+ * \param target The destination render target
+ * \param x x-coord of center point
+ * \param y y-coord of center point
+ * \param rx x-radius of ellipse
+ * \param ry y-radius of ellipse
+ * \param degrees The angle to rotate the ellipse
+ * \param color The color of the shape to render
+ */
+void GPU_Ellipse(GPU_Target* target, float x, float y, float rx, float ry, float degrees, SDL_Color color);
+
+/*! Renders a colored filled ellipse.
+ * \param target The destination render target
+ * \param x x-coord of center point
+ * \param y y-coord of center point
+ * \param rx x-radius of ellipse
+ * \param ry y-radius of ellipse
+ * \param degrees The angle to rotate the ellipse
+ * \param color The color of the shape to render
+ */
+void GPU_EllipseFilled(GPU_Target* target, float x, float y, float rx, float ry, float degrees, SDL_Color color);
+
 /*! Renders a colored annular sector outline (ring segment).
  * \param target The destination render target
  * \param x x-coord of center point
