@@ -4073,21 +4073,17 @@ static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* 
 {
 	GPU_CONTEXT_DATA* cdata;
 	int stride;
-
+    Uint8 using_texture = (image != NULL);
+    
     if(num_vertices == 0)
         return;
     
-    if(image == NULL)
-    {
-        GPU_PushErrorCode("GPU_TriangleBatch", GPU_ERROR_NULL_ARGUMENT, "image");
-        return;
-    }
     if(target == NULL)
     {
         GPU_PushErrorCode("GPU_TriangleBatch", GPU_ERROR_NULL_ARGUMENT, "target");
         return;
     }
-    if(renderer != image->renderer || renderer != target->renderer)
+    if((image != NULL && renderer != image->renderer) || renderer != target->renderer)
     {
         GPU_PushErrorCode("GPU_TriangleBatch", GPU_ERROR_USER_ERROR, "Mismatched renderer");
         return;
@@ -4096,7 +4092,8 @@ static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* 
     makeContextCurrent(renderer, target);
 
     // Bind the texture to which subsequent calls refer
-    bindTexture(renderer, image);
+    if(using_texture)
+        bindTexture(renderer, image);
 
     // Bind the FBO
     if(!bindFramebuffer(renderer, target))
@@ -4106,11 +4103,15 @@ static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* 
     }
     
     prepareToRenderToTarget(renderer, target);
-    prepareToRenderImage(renderer, target, image);
+    if(using_texture)
+        prepareToRenderImage(renderer, target, image);
+    else
+        prepareToRenderShapes(renderer, GL_TRIANGLES);
     changeViewport(target);
     changeCamera(target);
     
-    changeTexturing(renderer, 1);
+    if(using_texture)
+        changeTexturing(renderer, 1);
 
     setClipRect(renderer, target);
     
@@ -4164,12 +4165,18 @@ static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* 
 #ifdef SDL_GPU_USE_ARRAY_PIPELINE
 
     glEnableClientState(GL_VERTEX_ARRAY);
-    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+    if(using_texture)
+        glEnableClientState(GL_TEXTURE_COORD_ARRAY);
     glEnableClientState(GL_COLOR_ARRAY);
     
     glVertexPointer(2, GL_FLOAT, stride, values);
-    glTexCoordPointer(2, GL_FLOAT, stride, values + 2);
-    glColorPointer(4, GL_FLOAT, stride, values + 4);
+    if(using_texture)
+    {
+        glTexCoordPointer(2, GL_FLOAT, stride, values + 2);
+        glColorPointer(4, GL_FLOAT, stride, values + 4);
+    }
+    else
+        glColorPointer(4, GL_FLOAT, stride, values + 4);
 
     if(indices == NULL)
         glDrawArrays(GL_TRIANGLES, 0, num_indices);
@@ -4177,7 +4184,8 @@ static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* 
         glDrawElements(GL_TRIANGLES, num_indices, GL_UNSIGNED_SHORT, indices);
 
     glDisableClientState(GL_COLOR_ARRAY);
-    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+    if(using_texture)
+        glDisableClientState(GL_TEXTURE_COORD_ARRAY);
     glDisableClientState(GL_VERTEX_ARRAY);
 #endif
 
@@ -4195,6 +4203,8 @@ static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* 
             float* vertex_pointer = values;
             float* texcoord_pointer = values + 2;
             float* color_pointer = values + 4;
+            if(using_texture)
+                color_pointer = values + 2;
             
             glBegin(GL_TRIANGLES);
             for(i = 0; i < num_indices; i++)
@@ -4204,7 +4214,8 @@ static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* 
                 else
                     index = indices[i]*GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
                 glColor4f( color_pointer[index], color_pointer[index+1], color_pointer[index+2], color_pointer[index+3] );
-                glTexCoord2f( texcoord_pointer[index], texcoord_pointer[index+1] );
+                if(using_texture)
+                    glTexCoord2f( texcoord_pointer[index], texcoord_pointer[index+1] );
                 glVertex3f( vertex_pointer[index], vertex_pointer[index+1], 0.0f );
             }
             glEnd();
@@ -4247,7 +4258,7 @@ static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* 
                 glEnableVertexAttribArray(cdata->current_shader_block.position_loc);  // Tell GL to use client-side attribute data
                 glVertexAttribPointer(cdata->current_shader_block.position_loc, 2, GL_FLOAT, GL_FALSE, stride, 0);  // Tell how the data is formatted
             }
-            if(cdata->current_shader_block.texcoord_loc >= 0)
+            if(using_texture && cdata->current_shader_block.texcoord_loc >= 0)
             {
                 glEnableVertexAttribArray(cdata->current_shader_block.texcoord_loc);
                 glVertexAttribPointer(cdata->current_shader_block.texcoord_loc, 2, GL_FLOAT, GL_FALSE, stride, (void*)(2 * sizeof(float)));
@@ -4255,7 +4266,7 @@ static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* 
             if(cdata->current_shader_block.color_loc >= 0)
             {
                 glEnableVertexAttribArray(cdata->current_shader_block.color_loc);
-                glVertexAttribPointer(cdata->current_shader_block.color_loc, 4, GL_FLOAT, GL_FALSE, stride, (void*)(4 * sizeof(float)));
+                glVertexAttribPointer(cdata->current_shader_block.color_loc, 4, GL_FLOAT, GL_FALSE, stride, using_texture? (void*)(4 * sizeof(float)) : (void*)(2 * sizeof(float)));
             }
         }
         
@@ -4269,7 +4280,7 @@ static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* 
         // Disable the vertex arrays again
         if(cdata->current_shader_block.position_loc >= 0)
             glDisableVertexAttribArray(cdata->current_shader_block.position_loc);
-        if(cdata->current_shader_block.texcoord_loc >= 0)
+        if(using_texture && cdata->current_shader_block.texcoord_loc >= 0)
             glDisableVertexAttribArray(cdata->current_shader_block.texcoord_loc);
         if(cdata->current_shader_block.color_loc >= 0)
             glDisableVertexAttribArray(cdata->current_shader_block.color_loc);

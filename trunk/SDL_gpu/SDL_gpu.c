@@ -1686,14 +1686,14 @@ void GPU_TriangleBatch(GPU_Image* image, GPU_Target* target, unsigned short num_
 
 	float tex_w;
 	float tex_h;
+	
+	Uint8 using_texture = (image != NULL);
 
     if(!CHECK_RENDERER)
         RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL renderer");
     if(!CHECK_CONTEXT)
         RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL context");
     
-	if(image == NULL)
-        RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT, "image");
 	if(target == NULL)
         RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT, "target");
     
@@ -1718,7 +1718,7 @@ void GPU_TriangleBatch(GPU_Image* image, GPU_Target* target, unsigned short num_
 	src_color_floats_per_vertex = 4;
 	
 	no_positions = (flags & GPU_USE_DEFAULT_POSITIONS);
-	no_texcoords = (flags & GPU_USE_DEFAULT_SRC_RECTS);
+	no_texcoords = (flags & GPU_USE_DEFAULT_SRC_RECTS) || !using_texture;
 	no_colors = (flags & GPU_USE_DEFAULT_COLORS);
 	pass_texcoords = (flags & GPU_PASSTHROUGH_TEXCOORDS);
 	pass_colors = (flags & GPU_PASSTHROUGH_COLORS);
@@ -1748,8 +1748,11 @@ void GPU_TriangleBatch(GPU_Image* image, GPU_Target* target, unsigned short num_
 	// Dest indices
 	vert_i = 0;
 	
-	tex_w = image->texture_w;
-	tex_h = image->texture_h;
+	if(using_texture)
+    {
+        tex_w = image->texture_w;
+        tex_h = image->texture_h;
+    }
 	
     for(n = 0; n < num_vertices; n++)
     {
