@@ -58,6 +58,18 @@ void GPU_CircleFilled(GPU_Target* target, float x, float y, float radius, SDL_Co
 	renderer->impl->CircleFilled(renderer, target, x, y, radius, color);
 }
 
+void GPU_Ellipse(GPU_Target* target, float x, float y, float rx, float ry, float degrees, SDL_Color color)
+{
+	CHECK_RENDERER();
+	renderer->impl->Ellipse(renderer, target, x, y, rx, ry, degrees, color);
+}
+
+void GPU_EllipseFilled(GPU_Target* target, float x, float y, float rx, float ry, float degrees, SDL_Color color)
+{
+	CHECK_RENDERER();
+	renderer->impl->EllipseFilled(renderer, target, x, y, rx, ry, degrees, color);
+}
+
 void GPU_Sector(GPU_Target* target, float x, float y, float inner_radius, float outer_radius, float start_angle, float end_angle, SDL_Color color)
 {
 	CHECK_RENDERER();

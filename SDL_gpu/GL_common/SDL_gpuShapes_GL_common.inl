@@ -400,6 +400,113 @@ static void CircleFilled(GPU_Renderer* renderer, GPU_Target* target, float x, fl
     SET_INDEXED_VERTEX(1);  // first point
 }
 
+static void Ellipse(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float rx, float ry, float degrees, SDL_Color color)
+{
+	float thickness = GetLineThickness(renderer);
+    float dx, dy;
+    int i;
+    float t = thickness/2;
+    float rot_x = cos(degrees*M_PI/180);
+    float rot_y = sin(degrees*M_PI/180);
+    float inner_radius_x = rx - t;
+    float outer_radius_x = rx + t;
+    float inner_radius_y = ry - t;
+    float outer_radius_y = ry + t;
+    float dt = (1.25f/sqrtf(outer_radius_x > outer_radius_y? outer_radius_x : outer_radius_y));  // s = rA, so dA = ds/r.  ds of 1.25*sqrt(radius) is good, use A in degrees.
+    int numSegments = 2*M_PI/dt+1;
+    
+    float tempx;
+    float c = cos(dt);
+    float s = sin(dt);
+    float inner_trans_x, inner_trans_y;
+    float outer_trans_x, outer_trans_y;
+    
+    BEGIN_UNTEXTURED("GPU_Ellipse", GL_TRIANGLES, 2*(numSegments), 6*(numSegments));
+    
+    if(inner_radius_x < 0.0f)
+        inner_radius_x = 0.0f;
+    if(inner_radius_y < 0.0f)
+        inner_radius_y = 0.0f;
+    
+    dx = 1.0f;
+    dy = 0.0f;
+    
+    inner_trans_x = rot_x * inner_radius_x*dx - rot_y * inner_radius_y*dy;
+    inner_trans_y = rot_y * inner_radius_x*dx + rot_x * inner_radius_y*dy;
+    outer_trans_x = rot_x * outer_radius_x*dx - rot_y * outer_radius_y*dy;
+    outer_trans_y = rot_y * outer_radius_x*dx + rot_x * outer_radius_y*dy;
+    BEGIN_UNTEXTURED_SEGMENTS(x+inner_trans_x, y+inner_trans_y, x+outer_trans_x, y+outer_trans_y, r, g, b, a);
+    
+    for(i = 1; i < numSegments; i++)
+    {
+        tempx = c * dx - s * dy;
+        dy = (s * dx + c * dy);
+        dx = tempx;
+
+        inner_trans_x = rot_x * inner_radius_x*dx - rot_y * inner_radius_y*dy;
+        inner_trans_y = rot_y * inner_radius_x*dx + rot_x * inner_radius_y*dy;
+        outer_trans_x = rot_x * outer_radius_x*dx - rot_y * outer_radius_y*dy;
+        outer_trans_y = rot_y * outer_radius_x*dx + rot_x * outer_radius_y*dy;
+        SET_UNTEXTURED_SEGMENTS(x+inner_trans_x, y+inner_trans_y, x+outer_trans_x, y+outer_trans_y, r, g, b, a);
+    }
+    
+    LOOP_UNTEXTURED_SEGMENTS();  // back to the beginning
+}
+
+static void EllipseFilled(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float rx, float ry, float degrees, SDL_Color color)
+{
+	float thickness = GetLineThickness(renderer);
+    float dx, dy;
+    int i;
+    float t = thickness/2;
+    float rot_x = cos(degrees*M_PI/180);
+    float rot_y = sin(degrees*M_PI/180);
+    float dt = (1.25f/sqrtf(rx > ry? rx : ry));  // s = rA, so dA = ds/r.  ds of 1.25*sqrt(radius) is good, use A in degrees.
+    int numSegments = 2*M_PI/dt+1;
+    
+    float tempx;
+    float c = cos(dt);
+    float s = sin(dt);
+    float trans_x, trans_y;
+    
+    BEGIN_UNTEXTURED("GPU_EllipseFilled", GL_TRIANGLES, 3 + (numSegments-2), 3 + (numSegments-2)*3 + 3);
+    
+    // First triangle
+    SET_UNTEXTURED_VERTEX(x, y, r, g, b, a);  // Center
+    
+    dx = 1.0f;
+    dy = 0.0f;
+    trans_x = rot_x * rx*dx - rot_y * ry*dy;
+    trans_y = rot_y * rx*dx + rot_x * ry*dy;
+    SET_UNTEXTURED_VERTEX(x+trans_x, y+trans_y, r, g, b, a); // first point
+    
+    tempx = c * dx - s * dy;
+    dy = s * dx + c * dy;
+    dx = tempx;
+    
+    trans_x = rot_x * rx*dx - rot_y * ry*dy;
+    trans_y = rot_y * rx*dx + rot_x * ry*dy;
+    SET_UNTEXTURED_VERTEX(x+trans_x, y+trans_y, r, g, b, a); // new point
+    
+    for(i = 2; i < numSegments; i++)
+    {
+        tempx = c * dx - s * dy;
+        dy = (s * dx + c * dy);
+        dx = tempx;
+
+        trans_x = rot_x * rx*dx - rot_y * ry*dy;
+        trans_y = rot_y * rx*dx + rot_x * ry*dy;
+        
+        SET_INDEXED_VERTEX(0);  // center
+        SET_INDEXED_VERTEX(i);  // last point
+        SET_UNTEXTURED_VERTEX(x+trans_x, y+trans_y, r, g, b, a); // new point
+    }
+    
+    SET_INDEXED_VERTEX(0);  // center
+    SET_INDEXED_VERTEX(i);  // last point
+    SET_INDEXED_VERTEX(1);  // first point
+}
+
 static void Sector(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float inner_radius, float outer_radius, float start_angle, float end_angle, SDL_Color color)
 {
 	Uint8 circled;

@@ -274,6 +274,12 @@ typedef struct GPU_RendererImpl
 
     /*! \see GPU_CircleFilled() */
 	void (*CircleFilled)(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float radius, SDL_Color color);
+	
+	/*! \see GPU_Ellipse() */
+	void (*Ellipse)(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float rx, float ry, float degrees, SDL_Color color);
+	
+	/*! \see GPU_EllipseFilled() */
+	void (*EllipseFilled)(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float rx, float ry, float degrees, SDL_Color color);
 
     /*! \see GPU_Sector() */
     void (*Sector)(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float inner_radius, float outer_radius, float start_angle, float end_angle, SDL_Color color);
