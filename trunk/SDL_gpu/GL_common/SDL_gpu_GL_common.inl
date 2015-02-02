@@ -2104,6 +2104,8 @@ static SDL_Surface* CopySurfaceFromTarget(GPU_Renderer* renderer, GPU_Target* ta
     format = AllocFormat(((GPU_TARGET_DATA*)target->data)->format);
     
     result = SDL_CreateRGBSurfaceFrom(data, target->w, target->h, format->BitsPerPixel, target->w*format->BytesPerPixel, format->Rmask, format->Gmask, format->Bmask, format->Amask);
+    if(result != NULL)
+        result->flags &= ~SDL_PREALLOC;  // Make SDL take ownership of the data memory
     
     FreeFormat(format);
     return result;
@@ -2137,6 +2139,8 @@ static SDL_Surface* CopySurfaceFromImage(GPU_Renderer* renderer, GPU_Image* imag
     format = AllocFormat(((GPU_IMAGE_DATA*)image->data)->format);
     
     result = SDL_CreateRGBSurfaceFrom(data, image->w, image->h, format->BitsPerPixel, image->w*format->BytesPerPixel, format->Rmask, format->Gmask, format->Bmask, format->Amask);
+    if(result != NULL)
+        result->flags &= ~SDL_PREALLOC;  // Make SDL take ownership of the data memory
     
     FreeFormat(format);
     return result;
@@ -2468,7 +2472,7 @@ static SDL_Surface* copySurfaceIfNeeded(GPU_Renderer* renderer, GLenum glFormat,
         src = pixels;
         if(pitch != srcPitch)
         {
-            blob = (Uint8*)malloc(srcPitch * rect.h);
+            blob = (Uint8*)SDL_malloc(srcPitch * rect.h);
             if(blob == NULL)
             {
                 // Out of memory
@@ -2485,6 +2489,8 @@ static SDL_Surface* copySurfaceIfNeeded(GPU_Renderer* renderer, GLenum glFormat,
         }
         
         newSurface = SDL_CreateRGBSurfaceFrom(src, rect.w, rect.h, surface->format->BytesPerPixel, srcPitch, surface->format->Rmask, surface->format->Gmask, surface->format->Bmask, surface->format->Amask);
+        if(newSurface != NULL)
+            newSurface->flags &= ~SDL_PREALLOC;  // Make SDL take ownership of the src memory
     }
     
     // Copy it to a different format

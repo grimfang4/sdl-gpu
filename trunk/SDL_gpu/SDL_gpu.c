@@ -814,7 +814,9 @@ SDL_Surface* GPU_LoadSurface(const char* filename)
 	}
 	
 	result = SDL_CreateRGBSurfaceFrom(data, width, height, channels*8, width*channels, Rmask, Gmask, Bmask, Amask);
-	
+	if(result != NULL)
+        result->flags &= ~SDL_PREALLOC;  // Make SDL take ownership of the data memory
+    
 	if(result != NULL && result->format->palette != NULL)
     {
         // SDL_CreateRGBSurface has no idea what palette to use, so it uses a blank one.

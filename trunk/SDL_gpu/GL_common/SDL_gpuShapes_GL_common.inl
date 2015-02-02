@@ -455,10 +455,8 @@ static void Ellipse(GPU_Renderer* renderer, GPU_Target* target, float x, float y
 
 static void EllipseFilled(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float rx, float ry, float degrees, SDL_Color color)
 {
-	float thickness = GetLineThickness(renderer);
     float dx, dy;
     int i;
-    float t = thickness/2;
     float rot_x = cos(degrees*M_PI/180);
     float rot_y = sin(degrees*M_PI/180);
     float dt = (1.25f/sqrtf(rx > ry? rx : ry));  // s = rA, so dA = ds/r.  ds of 1.25*sqrt(radius) is good, use A in degrees.
