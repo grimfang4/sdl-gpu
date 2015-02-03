@@ -2565,14 +2565,14 @@ static GPU_Image* CopyImage(GPU_Renderer* renderer, GPU_Image* image)
 				SDL_Color color = image->color;
 				Uint8 use_blending = image->use_blending;
 				GPU_FilterEnum filter_mode = image->filter_mode;
-				GPU_SetColor(image, NULL);
+				GPU_UnsetColor(image);
 				GPU_SetBlending(image, 0);
 				GPU_SetImageFilter(image, GPU_FILTER_NEAREST);
 
 				renderer->impl->Blit(renderer, image, NULL, target, image->w / 2, image->h / 2);
 
 				// Restore the saved settings
-				GPU_SetColor(image, &color);
+				GPU_SetColor(image, color);
 				GPU_SetBlending(image, use_blending);
 				GPU_SetImageFilter(image, filter_mode);
 			}
@@ -2647,7 +2647,7 @@ static GPU_Image* CopyImage(GPU_Renderer* renderer, GPU_Image* image)
     if(result != NULL)
     {
         // Copy the image settings
-        GPU_SetColor(result, &image->color);
+        GPU_SetColor(result, image->color);
         GPU_SetBlending(result, image->use_blending);
         result->blend_mode = image->blend_mode;
         GPU_SetImageFilter(result, image->filter_mode);
