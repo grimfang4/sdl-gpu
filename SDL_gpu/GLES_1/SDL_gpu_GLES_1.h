@@ -70,6 +70,7 @@ typedef struct ContextData_GLES_1
 typedef struct ImageData_GLES_1
 {
     int refcount;
+    Uint8 owns_handle;
 	Uint32 handle;
 	Uint32 format;
 } ImageData_GLES_1;

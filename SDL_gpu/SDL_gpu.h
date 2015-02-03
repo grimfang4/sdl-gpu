@@ -913,7 +913,7 @@ Uint8 GPU_SaveSurface(SDL_Surface* surface, const char* filename);
 GPU_Image* GPU_CreateImage(Uint16 w, Uint16 h, GPU_FormatEnum format);
 
 /*! Create a new image that uses the given native texture handle as the image texture. */
-GPU_Image* GPU_CreateImageUsingTexture(Uint32 handle);
+GPU_Image* GPU_CreateImageUsingTexture(Uint32 handle, Uint8 take_ownership);
 
 /*! Load image from an image file that is supported by this renderer.  Don't forget to GPU_FreeImage() it. */
 GPU_Image* GPU_LoadImage(const char* filename);

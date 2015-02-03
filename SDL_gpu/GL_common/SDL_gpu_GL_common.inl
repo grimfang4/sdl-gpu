@@ -1788,6 +1788,7 @@ static GPU_Image* CreateUninitializedImage(GPU_Renderer* renderer, Uint16 w, Uin
     result->data = data;
     result->is_alias = 0;
     data->handle = handle;
+    data->owns_handle = 1;
     data->format = gl_format;
 
     result->w = w;
@@ -1865,7 +1866,7 @@ static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, GPU_Fo
 }
 
 
-static GPU_Image* CreateImageUsingTexture(GPU_Renderer* renderer, Uint32 handle)
+static GPU_Image* CreateImageUsingTexture(GPU_Renderer* renderer, Uint32 handle, Uint8 take_ownership)
 {
     GLint w, h;
     GLuint num_layers, bytes_per_pixel;
@@ -1994,6 +1995,7 @@ static GPU_Image* CreateImageUsingTexture(GPU_Renderer* renderer, Uint32 handle)
     data = (GPU_IMAGE_DATA*)malloc(sizeof(GPU_IMAGE_DATA));
     data->refcount = 1;
     data->handle = handle;
+    data->owns_handle = take_ownership;
     data->format = gl_format;
     
 
@@ -3150,7 +3152,8 @@ static void FreeImage(GPU_Renderer* renderer, GPU_Image* image)
     }
     else
     {
-        glDeleteTextures( 1, &data->handle);
+        if(data->owns_handle)
+            glDeleteTextures( 1, &data->handle);
         free(data);
     }
     
