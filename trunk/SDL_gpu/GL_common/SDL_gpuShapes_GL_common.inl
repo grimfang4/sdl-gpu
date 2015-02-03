@@ -787,6 +787,12 @@ static void RectangleFilled(GPU_Renderer* renderer, GPU_Target* target, float x1
     SET_UNTEXTURED_VERTEX(x2, y2, r, g, b, a);
 }
 
+#define INCREMENT_CIRCLE \
+    tempx = c * dx - s * dy; \
+    dy = s * dx + c * dy; \
+    dx = tempx; \
+    ++i;
+
 static void RectangleRound(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, float radius, SDL_Color color)
 {
     if(y2 < y1)
@@ -806,63 +812,93 @@ static void RectangleRound(GPU_Renderer* renderer, GPU_Target* target, float x1,
         radius = (x2-x1)/2;
     if(radius > (y2-y1)/2)
 		radius = (y2 - y1) / 2;
-
-	{
-		float tau = 2 * M_PI;
-
-		int verts_per_corner = 7;
-		float corner_angle_increment = (tau / 4) / (verts_per_corner - 1);  // 0, 15, 30, 45, 60, 75, 90
-		// Starting angle
-		float angle = tau*0.75f;
-		int last_index = 1;
-		int i;
-
-		BEGIN_UNTEXTURED("GPU_RectangleRound", GL_LINES, 4 + 4 * (verts_per_corner - 1), 8 + 4 * (verts_per_corner - 1) * 2);
-
-
-		// First point
-		SET_UNTEXTURED_VERTEX(x2 - radius + cos(angle)*radius, y1 + radius + sin(angle)*radius, r, g, b, a);
-
-		for (i = 1; i < verts_per_corner; i++)
-		{
-			SET_UNTEXTURED_VERTEX(x2 - radius + cos(angle)*radius, y1 + radius + sin(angle)*radius, r, g, b, a);
-			SET_INDEXED_VERTEX(last_index++);
-			angle += corner_angle_increment;
-		}
+    
+    {
+        float thickness = GetLineThickness(renderer);
+        float dx, dy;
+        int i = 0;
+        float t = thickness/2;
+        float inner_radius = radius - t;
+        float outer_radius = radius + t;
+        float dt = (1.25f/sqrtf(outer_radius));  // s = rA, so dA = ds/r.  ds of 1.25*sqrt(radius) is good, use A in degrees.
+        int numSegments = 2*M_PI/dt+1;
+        if(numSegments < 4)
+            numSegments = 4;
         
-        angle = tau;
-		SET_UNTEXTURED_VERTEX(x2 - radius + cos(angle)*radius, y2 - radius + sin(angle)*radius, r, g, b, a);
-		SET_INDEXED_VERTEX(last_index++);
-		for (i = 1; i < verts_per_corner; i++)
-		{
-			SET_UNTEXTURED_VERTEX(x2 - radius + cos(angle)*radius, y2 - radius + sin(angle)*radius, r, g, b, a);
-			SET_INDEXED_VERTEX(last_index++);
-			angle += corner_angle_increment;
-		}
+        // Make a multiple of 4 so we can have even corners
+        numSegments += numSegments % 4;
+        
+        dt = 2*M_PI/(numSegments-1);
+        
+        {
+            float x, y;
+            int go_to_second = numSegments / 4;
+            int go_to_third = numSegments / 2;
+            int go_to_fourth = 3*numSegments / 4;
+            
+            float tempx;
+            float c = cos(dt);
+            float s = sin(dt);
+            
+            // Add another 4 for the extra corner vertices
+            BEGIN_UNTEXTURED("GPU_RectangleRound", GL_TRIANGLES, 2*(numSegments + 4), 6*(numSegments + 4));
+            
+            if(inner_radius < 0.0f)
+                inner_radius = 0.0f;
+            
+            dx = 1.0f;
+            dy = 0.0f;
+            
+            x = x2;
+            y = y2;
+            BEGIN_UNTEXTURED_SEGMENTS(x+inner_radius, y, x+outer_radius, y, r, g, b, a);
+            while(i < go_to_second-1)
+            {
+                INCREMENT_CIRCLE;
 
-        angle = tau*5/4;
-		SET_UNTEXTURED_VERTEX(x1 + radius + cos(angle)*radius, y2 - radius + sin(angle)*radius, r, g, b, a);
-		SET_INDEXED_VERTEX(last_index++);
-		for (i = 1; i < verts_per_corner; i++)
-		{
-			SET_UNTEXTURED_VERTEX(x1 + radius + cos(angle)*radius, y2 - radius + sin(angle)*radius, r, g, b, a);
-			SET_INDEXED_VERTEX(last_index++);
-			angle += corner_angle_increment;
-		}
+                SET_UNTEXTURED_SEGMENTS(x+inner_radius*dx, y+inner_radius*dy, x+outer_radius*dx, y+outer_radius*dy, r, g, b, a);
+            }
+            INCREMENT_CIRCLE;
+            
+            SET_UNTEXTURED_SEGMENTS(x, y+inner_radius, x, y+outer_radius, r, g, b, a);
+            x = x1;
+            y = y2;
+            SET_UNTEXTURED_SEGMENTS(x, y+inner_radius, x, y+outer_radius, r, g, b, a);
+            while(i < go_to_third-1)
+            {
+                INCREMENT_CIRCLE;
 
-        angle = tau*3/2;
-		SET_UNTEXTURED_VERTEX(x1 + radius + cos(angle)*radius, y1 + radius + sin(angle)*radius, r, g, b, a);
-		SET_INDEXED_VERTEX(last_index++);
-		for (i = 1; i < verts_per_corner; i++)
-		{
-			SET_UNTEXTURED_VERTEX(x1 + radius + cos(angle)*radius, y1 + radius + sin(angle)*radius, r, g, b, a);
-			SET_INDEXED_VERTEX(last_index++);
-			angle += corner_angle_increment;
-		}
+                SET_UNTEXTURED_SEGMENTS(x+inner_radius*dx, y+inner_radius*dy, x+outer_radius*dx, y+outer_radius*dy, r, g, b, a);
+            }
+            INCREMENT_CIRCLE;
+            
+            SET_UNTEXTURED_SEGMENTS(x-inner_radius, y, x-outer_radius, y, r, g, b, a);
+            x = x1;
+            y = y1;
+            SET_UNTEXTURED_SEGMENTS(x-inner_radius, y, x-outer_radius, y, r, g, b, a);
+            while(i < go_to_fourth-1)
+            {
+                INCREMENT_CIRCLE;
 
-		// Last point
-		SET_INDEXED_VERTEX(0);
-	}
+                SET_UNTEXTURED_SEGMENTS(x+inner_radius*dx, y+inner_radius*dy, x+outer_radius*dx, y+outer_radius*dy, r, g, b, a);
+            }
+            INCREMENT_CIRCLE;
+            
+            SET_UNTEXTURED_SEGMENTS(x, y-inner_radius, x, y-outer_radius, r, g, b, a);
+            x = x2;
+            y = y1;
+            SET_UNTEXTURED_SEGMENTS(x, y-inner_radius, x, y-outer_radius, r, g, b, a);
+            while(i < numSegments-1)
+            {
+                INCREMENT_CIRCLE;
+
+                SET_UNTEXTURED_SEGMENTS(x+inner_radius*dx, y+inner_radius*dy, x+outer_radius*dx, y+outer_radius*dy, r, g, b, a);
+            }
+            SET_UNTEXTURED_SEGMENTS(x+inner_radius, y, x+outer_radius, y, r, g, b, a);
+            
+            LOOP_UNTEXTURED_SEGMENTS();  // back to the beginning
+        }
+    }
 }
 
 static void RectangleRoundFilled(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, float radius, SDL_Color color)
