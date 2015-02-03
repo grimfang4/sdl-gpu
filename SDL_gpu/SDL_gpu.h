@@ -390,6 +390,7 @@ typedef Uint32 GPU_InitFlagEnum;
 static const GPU_InitFlagEnum GPU_INIT_ENABLE_VSYNC = 0x10000;
 static const GPU_InitFlagEnum GPU_INIT_DISABLE_VSYNC = 0x20000;
 static const GPU_InitFlagEnum GPU_INIT_DISABLE_DOUBLE_BUFFER = 0x40000;
+static const GPU_InitFlagEnum GPU_INIT_DISABLE_AUTO_VIRTUAL_RESOLUTION = 0x80000;
 
 #define GPU_DEFAULT_INIT_FLAGS 0
 

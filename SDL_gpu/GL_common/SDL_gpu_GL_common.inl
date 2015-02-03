@@ -902,7 +902,7 @@ static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request,
     #endif
     
     // If the dimensions of the window don't match what we asked for, then set up a virtual resolution to pretend like they are.
-    if(w != 0 && h != 0 && (w != renderer->current_context_target->w || h != renderer->current_context_target->h))
+    if(!(GPU_flags & GPU_INIT_DISABLE_AUTO_VIRTUAL_RESOLUTION) && w != 0 && h != 0 && (w != renderer->current_context_target->w || h != renderer->current_context_target->h))
         renderer->impl->SetVirtualResolution(renderer, renderer->current_context_target, w, h);
     
     // Init glVertexAttrib workaround
