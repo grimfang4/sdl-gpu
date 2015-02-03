@@ -254,6 +254,7 @@ typedef struct ContextData_OpenGL_1
 typedef struct ImageData_OpenGL_1
 {
     int refcount;
+    Uint8 owns_handle;
 	Uint32 handle;
 	Uint32 format;
 } ImageData_OpenGL_1;
