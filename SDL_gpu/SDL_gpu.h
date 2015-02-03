@@ -347,10 +347,9 @@ struct GPU_Target
 };
 
 /*! \ingroup Initialization
- * Important GPU features which may not be supported depending on a device's extension support.  Can be OR'd together.
+ * Important GPU features which may not be supported depending on a device's extension support.  Can be bitwise OR'd together.
  * \see GPU_IsFeatureEnabled()
- * \see GPU_SetPreInitFlags()
- * \see GPU_GetPreInitFlags()
+ * \see GPU_SetRequiredFeatures()
  */
 typedef Uint32 GPU_FeatureEnum;
 static const GPU_FeatureEnum GPU_FEATURE_NON_POWER_OF_TWO = 0x1;
@@ -374,23 +373,20 @@ static const GPU_FeatureEnum GPU_FEATURE_WRAP_REPEAT_MIRRORED = 0x800;
 #define GPU_FEATURE_BASIC_SHADERS (GPU_FEATURE_FRAGMENT_SHADER | GPU_FEATURE_VERTEX_SHADER)
 #define GPU_FEATURE_ALL_SHADERS (GPU_FEATURE_FRAGMENT_SHADER | GPU_FEATURE_VERTEX_SHADER | GPU_FEATURE_GEOMETRY_SHADER)
 
-/*! For separating combined feature flags from init flags. */
-#define GPU_FEATURE_MASK 0x00FFFF
-#define GPU_INIT_MASK 0xFF0000
 
 typedef Uint32 GPU_WindowFlagEnum;
 
 /*! \ingroup Initialization
- * Initialization flags for changing default init parameters.  Can be bitwise OR'ed together with GPU_FeatureEnums.
+ * Initialization flags for changing default init parameters.  Can be bitwise OR'ed together.
  * Default (0) is to use late swap vsync and double buffering.
  * \see GPU_SetPreInitFlags()
  * \see GPU_GetPreInitFlags()
  */
 typedef Uint32 GPU_InitFlagEnum;
-static const GPU_InitFlagEnum GPU_INIT_ENABLE_VSYNC = 0x10000;
-static const GPU_InitFlagEnum GPU_INIT_DISABLE_VSYNC = 0x20000;
-static const GPU_InitFlagEnum GPU_INIT_DISABLE_DOUBLE_BUFFER = 0x40000;
-static const GPU_InitFlagEnum GPU_INIT_DISABLE_AUTO_VIRTUAL_RESOLUTION = 0x80000;
+static const GPU_InitFlagEnum GPU_INIT_ENABLE_VSYNC = 0x1;
+static const GPU_InitFlagEnum GPU_INIT_DISABLE_VSYNC = 0x2;
+static const GPU_InitFlagEnum GPU_INIT_DISABLE_DOUBLE_BUFFER = 0x4;
+static const GPU_InitFlagEnum GPU_INIT_DISABLE_AUTO_VIRTUAL_RESOLUTION = 0x8;
 
 #define GPU_DEFAULT_INIT_FLAGS 0
 
@@ -580,11 +576,18 @@ void GPU_SetInitWindow(Uint32 windowID);
 Uint32 GPU_GetInitWindow(void);
 
 /*! Set special flags to use for initialization. Set these before calling GPU_Init().
- * \param GPU_flags An OR'ed combination of GPU_InitFlagEnum flags and GPU_FeatureEnum flags.  GPU_FeatureEnum flags will force GPU_Init() to create a renderer that supports all of the given flags or else fail.  Default flags (0) enable late swap vsync and double buffering. */
+ * \param GPU_flags An OR'ed combination of GPU_InitFlagEnum flags.  Default flags (0) enable late swap vsync and double buffering. */
 void GPU_SetPreInitFlags(GPU_InitFlagEnum GPU_flags);
 
 /*! Returns the current special flags to use for initialization. */
 GPU_InitFlagEnum GPU_GetPreInitFlags(void);
+
+/*! Set required features to use for initialization. Set these before calling GPU_Init().
+ * \param features An OR'ed combination of GPU_FeatureEnum flags.  Required features will force GPU_Init() to create a renderer that supports all of the given flags or else fail. */
+void GPU_SetRequiredFeatures(GPU_FeatureEnum features);
+
+/*! Returns the current required features to use for initialization. */
+GPU_FeatureEnum GPU_GetRequiredFeatures(void);
 
 /*! Gets the default initialization renderer IDs for the current platform copied into the 'order' array and the number of renderer IDs into 'order_size'.  Pass NULL for 'order' to just get the size of the renderer order array.  Will return at most GPU_RENDERER_ORDER_MAX renderers. */
 void GPU_GetDefaultRendererOrder(int* order_size, GPU_RendererID* order);
