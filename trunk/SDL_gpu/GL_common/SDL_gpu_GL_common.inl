@@ -940,7 +940,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
 	GLenum err;
 #endif
 	const char* version_string;
-	GPU_FeatureEnum required_features;
+	GPU_FeatureEnum required_features = GPU_GetRequiredFeatures();
 
     if(target == NULL)
 	{
@@ -1136,7 +1136,6 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
 
     init_features(renderer);
     
-    required_features = (renderer->GPU_init_flags & GPU_FEATURE_MASK);
     if(!renderer->impl->IsFeatureEnabled(renderer, required_features))
     {
         GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Renderer does not support required features.");

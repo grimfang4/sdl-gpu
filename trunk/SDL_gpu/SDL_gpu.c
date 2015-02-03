@@ -161,6 +161,7 @@ Uint32 GPU_GetInitWindow(void)
 }
 
 static GPU_InitFlagEnum preinit_flags = GPU_DEFAULT_INIT_FLAGS;
+static GPU_InitFlagEnum required_features = 0;
 
 void GPU_SetPreInitFlags(GPU_InitFlagEnum GPU_flags)
 {
@@ -170,6 +171,16 @@ void GPU_SetPreInitFlags(GPU_InitFlagEnum GPU_flags)
 GPU_InitFlagEnum GPU_GetPreInitFlags(void)
 {
     return preinit_flags;
+}
+
+void GPU_SetRequiredFeatures(GPU_FeatureEnum features)
+{
+    required_features = features;
+}
+
+GPU_FeatureEnum GPU_GetRequiredFeatures(void)
+{
+    return required_features;
 }
 
 static void init_error_stack()
