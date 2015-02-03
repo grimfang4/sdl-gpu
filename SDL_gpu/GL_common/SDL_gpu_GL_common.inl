@@ -4667,29 +4667,6 @@ static void SetWrapMode(GPU_Renderer* renderer, GPU_Image* image, GPU_WrapEnum w
 
 
 
-static void Clear(GPU_Renderer* renderer, GPU_Target* target)
-{
-    if(target == NULL)
-        return;
-    if(renderer != target->renderer)
-        return;
-
-    makeContextCurrent(renderer, target);
-    
-    if(isCurrentTarget(renderer, target))
-        renderer->impl->FlushBlitBuffer(renderer);
-    if(bindFramebuffer(renderer, target))
-    {
-        setClipRect(renderer, target);
-
-        glClearColor(0,0,0,0);
-        glClear(GL_COLOR_BUFFER_BIT);
-
-        unsetClipRect(renderer, target);
-    }
-}
-
-
 static void ClearRGBA(GPU_Renderer* renderer, GPU_Target* target, Uint8 r, Uint8 g, Uint8 b, Uint8 a)
 {
     if(target == NULL)
@@ -6078,7 +6055,6 @@ static void SetAttributeSource(GPU_Renderer* renderer, int num_values, GPU_Attri
     impl->SetImageFilter = &SetImageFilter; \
     impl->SetWrapMode = &SetWrapMode; \
  \
-    impl->Clear = &Clear; \
     impl->ClearRGBA = &ClearRGBA; \
     impl->FlushBlitBuffer = &FlushBlitBuffer; \
     impl->Flip = &Flip; \

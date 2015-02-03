@@ -136,8 +136,6 @@ typedef struct GPU_RendererImpl
 	/*! \see GPU_SetWrapMode() */
 	void (*SetWrapMode)(GPU_Renderer* renderer, GPU_Image* image, GPU_WrapEnum wrap_mode_x, GPU_WrapEnum wrap_mode_y);
 
-	/*! \see GPU_Clear() */
-	void (*Clear)(GPU_Renderer* renderer, GPU_Target* target);
 	/*! \see GPU_ClearRGBA() */
 	void (*ClearRGBA)(GPU_Renderer* renderer, GPU_Target* target, Uint8 r, Uint8 g, Uint8 b, Uint8 a);
 	/*! \see GPU_FlushBlitBuffer() */

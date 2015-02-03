@@ -2198,7 +2198,7 @@ void GPU_Clear(GPU_Target* target)
 	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return;
 	
-	current_renderer->impl->Clear(current_renderer, target);
+	current_renderer->impl->ClearRGBA(current_renderer, target, 0, 0, 0, 0);
 }
 
 void GPU_ClearColor(GPU_Target* target, SDL_Color color)
