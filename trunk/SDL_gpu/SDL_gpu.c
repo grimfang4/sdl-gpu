@@ -407,8 +407,8 @@ Uint8 GPU_IsFeatureEnabled(GPU_FeatureEnum feature)
 {
 	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return 0;
-	
-	return current_renderer->impl->IsFeatureEnabled(current_renderer, feature);
+    
+	return ((current_renderer->enabled_features & feature) == feature);
 }
 
 GPU_Target* GPU_CreateTargetFromWindow(Uint32 windowID)

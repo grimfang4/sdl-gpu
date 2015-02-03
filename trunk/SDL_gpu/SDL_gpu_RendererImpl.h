@@ -12,9 +12,6 @@ typedef struct GPU_RendererImpl
 	 */
 	GPU_Target* (*Init)(GPU_Renderer* renderer, GPU_RendererID renderer_request, Uint16 w, Uint16 h, GPU_WindowFlagEnum SDL_flags);
 	
-	/*! \see GPU_IsFeatureEnabled() */
-	Uint8 (*IsFeatureEnabled)(GPU_Renderer* renderer, GPU_FeatureEnum feature);
-	
     /*! \see GPU_CreateTargetFromWindow
      * The extra parameter is used internally to reuse/reinit a target. */
     GPU_Target* (*CreateTargetFromWindow)(GPU_Renderer* renderer, Uint32 windowID, GPU_Target* target);
