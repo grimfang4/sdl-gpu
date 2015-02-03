@@ -813,6 +813,11 @@ static void RectangleRound(GPU_Renderer* renderer, GPU_Target* target, float x1,
     if(radius > (y2-y1)/2)
 		radius = (y2 - y1) / 2;
     
+    x1 += radius;
+    y1 += radius;
+    x2 -= radius;
+    y2 -= radius;
+    
     {
         float thickness = GetLineThickness(renderer);
         float dx, dy;
