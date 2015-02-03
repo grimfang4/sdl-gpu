@@ -1883,18 +1883,12 @@ void GPU_UnsetClip(GPU_Target* target)
 
 
 
-void GPU_SetColor(GPU_Image* image, SDL_Color* color)
+void GPU_SetColor(GPU_Image* image, SDL_Color color)
 {
 	if(image == NULL)
 		return;
 	
-	if(color == NULL)
-    {
-        SDL_Color c = {255, 255, 255, 255};
-        image->color = c;
-    }
-    else
-        image->color = *color;
+	image->color = color;
 }
 
 void GPU_SetRGB(GPU_Image* image, Uint8 r, Uint8 g, Uint8 b)
@@ -1917,48 +1911,52 @@ void GPU_SetRGBA(GPU_Image* image, Uint8 r, Uint8 g, Uint8 b, Uint8 a)
 	image->color = c;
 }
 
-void GPU_SetTargetColor(GPU_Target* target, SDL_Color* color)
+void GPU_UnsetColor(GPU_Image* image)
+{
+    SDL_Color c = {255, 255, 255, 255};
+	if(image == NULL)
+		return;
+	
+    image->color = c;
+}
+
+void GPU_SetTargetColor(GPU_Target* target, SDL_Color color)
 {
 	if(target == NULL)
 		return;
 	
-	if(color == NULL)
-        target->use_color = 0;
-    else
-    {
-        target->use_color = 1;
-        target->color = *color;
-    }
+    target->use_color = 1;
+    target->color = color;
 }
 
 void GPU_SetTargetRGB(GPU_Target* target, Uint8 r, Uint8 g, Uint8 b)
 {
+    SDL_Color c = {r, g, b, 255};
 	if(target == NULL)
 		return;
 	
-	if(r == 255 && g == 255 && b == 255)
-        target->use_color = 0;
-    else
-    {
-        SDL_Color c = {r, g, b, 255};
-        target->use_color = 1;
-        target->color = c;
-    }
+    target->use_color = !(r == 255 && g == 255 && b == 255);
+    target->color = c;
 }
 
 void GPU_SetTargetRGBA(GPU_Target* target, Uint8 r, Uint8 g, Uint8 b, Uint8 a)
 {
+    SDL_Color c = {r, g, b, a};
 	if(target == NULL)
 		return;
 	
-	if(r == 255 && g == 255 && b == 255 && a == 255)
-        target->use_color = 0;
-    else
-    {
-        SDL_Color c = {r, g, b, a};
-        target->use_color = 1;
-        target->color = c;
-    }
+    target->use_color = !(r == 255 && g == 255 && b == 255 && a == 255);
+    target->color = c;
+}
+
+void GPU_UnsetTargetColor(GPU_Target* target)
+{
+    SDL_Color c = {255, 255, 255, 255};
+	if(target == NULL)
+		return;
+    
+    target->use_color = 0;
+    target->color = c;
 }
 
 Uint8 GPU_GetBlending(GPU_Image* image)
@@ -2195,15 +2193,20 @@ void GPU_Clear(GPU_Target* target)
 	current_renderer->impl->Clear(current_renderer, target);
 }
 
-void GPU_ClearColor(GPU_Target* target, SDL_Color* color)
+void GPU_ClearColor(GPU_Target* target, SDL_Color color)
 {
 	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return;
 	
-	if(color == NULL)
-        current_renderer->impl->ClearRGBA(current_renderer, target, 0, 0, 0, 0);
-    else
-        current_renderer->impl->ClearRGBA(current_renderer, target, color->r, color->g, color->b, GET_ALPHA(*color));
+    current_renderer->impl->ClearRGBA(current_renderer, target, color.r, color.g, color.b, GET_ALPHA(color));
+}
+
+void GPU_ClearRGB(GPU_Target* target, Uint8 r, Uint8 g, Uint8 b)
+{
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
+		return;
+	
+	current_renderer->impl->ClearRGBA(current_renderer, target, r, g, b, 255);
 }
 
 void GPU_ClearRGBA(GPU_Target* target, Uint8 r, Uint8 g, Uint8 b, Uint8 a)

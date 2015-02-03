@@ -861,7 +861,7 @@ void GPU_UnsetClip(GPU_Target* target);
  *  e.g. GPU_SetRGB(image, 255, 128, 0); GPU_SetTargetRGB(target, 128, 128, 128);
  *  Would make the image draw with color of roughly (128, 64, 0).
  */
-void GPU_SetTargetColor(GPU_Target* target, SDL_Color* color);
+void GPU_SetTargetColor(GPU_Target* target, SDL_Color color);
 
 /*! Sets the modulation color for subsequent drawing of images and shapes on the given target. 
  *  This has a cumulative effect with the image coloring functions.
@@ -876,6 +876,11 @@ void GPU_SetTargetRGB(GPU_Target* target, Uint8 r, Uint8 g, Uint8 b);
  *  Would make the image draw with color of roughly (128, 64, 0).
  */
 void GPU_SetTargetRGBA(GPU_Target* target, Uint8 r, Uint8 g, Uint8 b, Uint8 a);
+
+/*! Unsets the modulation color for subsequent drawing of images and shapes on the given target. 
+ *  This has the same effect as coloring with pure opaque white (255, 255, 255, 255).
+ */
+void GPU_UnsetTargetColor(GPU_Target* target);
 
 // End of TargetControls
 /*! @} */
@@ -936,13 +941,17 @@ Uint8 GPU_SaveImage(GPU_Image* image, const char* filename);
 void GPU_GenerateMipmaps(GPU_Image* image);
 
 /*! Sets the modulation color for subsequent drawing of the given image. */
-void GPU_SetColor(GPU_Image* image, SDL_Color* color);
+void GPU_SetColor(GPU_Image* image, SDL_Color color);
 
 /*! Sets the modulation color for subsequent drawing of the given image. */
 void GPU_SetRGB(GPU_Image* image, Uint8 r, Uint8 g, Uint8 b);
 
 /*! Sets the modulation color for subsequent drawing of the given image. */
 void GPU_SetRGBA(GPU_Image* image, Uint8 r, Uint8 g, Uint8 b, Uint8 a);
+
+/*! Unsets the modulation color for subsequent drawing of the given image.
+ *  This is equivalent to coloring with pure opaque white (255, 255, 255, 255). */
+void GPU_UnsetColor(GPU_Image* image);
 
 /*! Gets the current alpha blending setting. */
 Uint8 GPU_GetBlending(GPU_Image* image);
@@ -1083,8 +1092,11 @@ void GPU_MultMatrix(float* matrix4x4);
 /*! Clears the contents of the given render target.  Fills the target with color {0, 0, 0, 0}. */
 void GPU_Clear(GPU_Target* target);
 
-/*! Fills the given render target with a color.  If 'color' is NULL, {0, 0, 0, 0} is used. */
-void GPU_ClearColor(GPU_Target* target, SDL_Color* color);
+/*! Fills the given render target with a color. */
+void GPU_ClearColor(GPU_Target* target, SDL_Color color);
+
+/*! Fills the given render target with a color (alpha is 255, fully opaque). */
+void GPU_ClearRGB(GPU_Target* target, Uint8 r, Uint8 g, Uint8 b);
 
 /*! Fills the given render target with a color. */
 void GPU_ClearRGBA(GPU_Target* target, Uint8 r, Uint8 g, Uint8 b, Uint8 a);
