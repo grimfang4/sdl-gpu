@@ -12,7 +12,7 @@ int main(int argc, char* argv[])
 		return -1;
 	
 	printCurrentRenderer();
-
+	
 	{
 		GPU_Image* image;
 		float dt;
@@ -49,8 +49,6 @@ int main(int argc, char* argv[])
 			vely[i] = 10 + rand() % screen->h / 10;
 		}
 
-		GPU_SetClip(screen, 40, 40, 600, 300);
-
 
 		done = 0;
 		while (!done)
@@ -73,6 +71,13 @@ int main(int argc, char* argv[])
 						if (numSprites > 0)
 							numSprites--;
 					}
+					else if (event.key.keysym.sym == SDLK_SPACE)
+					{
+					    if(screen->using_virtual_resolution)
+                            GPU_UnsetVirtualResolution(screen);
+                        else
+                            GPU_SetVirtualResolution(screen, 400, 400);
+					}
 				}
 			}
 
@@ -85,9 +90,9 @@ int main(int argc, char* argv[])
 					x[i] = 0;
 					velx[i] = -velx[i];
 				}
-				else if (x[i] + image->w > screen->w)
+				else if (x[i] + image->w > 800)
 				{
-					x[i] = screen->w - image->w;
+					x[i] = 800 - image->w;
 					velx[i] = -velx[i];
 				}
 
@@ -96,15 +101,16 @@ int main(int argc, char* argv[])
 					y[i] = 0;
 					vely[i] = -vely[i];
 				}
-				else if (y[i] + image->h > screen->h)
+				else if (y[i] + image->h > 600)
 				{
-					y[i] = screen->h - image->h;
+					y[i] = 600 - image->h;
 					vely[i] = -vely[i];
 				}
 			}
 
 			GPU_Clear(screen);
 
+            GPU_SetClip(screen, 40, 40, 600, 300);
 			for (i = 0; i < numSprites; i++)
 			{
 				GPU_Blit(image, NULL, screen, x[i], y[i]);
@@ -112,6 +118,9 @@ int main(int argc, char* argv[])
 
 			GPU_Line(screen, 0, 0, screen->w, screen->h, lineColor);
 			GPU_Line(screen, 0, screen->h, screen->w, 0, lineColor);
+			
+            GPU_UnsetClip(screen);
+            GPU_Rectangle(screen, 40, 40, 40 + 600, 40 + 300, lineColor);
 
 			GPU_Flip(screen);
 
