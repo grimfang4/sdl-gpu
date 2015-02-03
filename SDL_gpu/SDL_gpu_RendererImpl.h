@@ -52,6 +52,9 @@ typedef struct GPU_RendererImpl
     /*! \see GPU_CreateImage() */
 	GPU_Image* (*CreateImage)(GPU_Renderer* renderer, Uint16 w, Uint16 h, GPU_FormatEnum format);
 	
+    /*! \see GPU_CreateImageUsingTexture() */
+	GPU_Image* (*CreateImageUsingTexture)(GPU_Renderer* renderer, Uint32 handle);
+	
 	/*! \see GPU_LoadImage() */
 	GPU_Image* (*LoadImage)(GPU_Renderer* renderer, const char* filename);
 	
