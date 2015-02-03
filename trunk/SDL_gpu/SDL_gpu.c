@@ -691,6 +691,14 @@ GPU_Image* GPU_CreateImage(Uint16 w, Uint16 h, GPU_FormatEnum format)
 	return current_renderer->impl->CreateImage(current_renderer, w, h, format);
 }
 
+GPU_Image* GPU_CreateImageUsingTexture(Uint32 handle)
+{
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
+		return NULL;
+	
+	return current_renderer->impl->CreateImageUsingTexture(current_renderer, handle);
+}
+
 GPU_Image* GPU_LoadImage(const char* filename)
 {
 	if(current_renderer == NULL || current_renderer->current_context_target == NULL)

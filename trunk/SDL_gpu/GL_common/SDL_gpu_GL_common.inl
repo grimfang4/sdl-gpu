@@ -1864,6 +1864,168 @@ static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, GPU_Fo
     return result;
 }
 
+
+static GPU_Image* CreateImageUsingTexture(GPU_Renderer* renderer, Uint32 handle)
+{
+    GLint w, h;
+    GLuint num_layers, bytes_per_pixel;
+    GLint gl_format;
+    GLint wrap_s, wrap_t;
+    GLint min_filter;
+    
+    GPU_FormatEnum format;
+    GPU_WrapEnum wrap_x, wrap_y;
+    GPU_FilterEnum filter_mode;
+	SDL_Color white = { 255, 255, 255, 255 };
+    
+	GPU_Image* result;
+	GPU_IMAGE_DATA* data;
+
+    flushAndBindTexture(renderer, handle);
+    
+	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &gl_format);
+
+    switch(gl_format)
+    {
+        case GL_LUMINANCE:
+            format = GPU_FORMAT_LUMINANCE;
+            num_layers = 1;
+            bytes_per_pixel = 1;
+            break;
+        case GL_LUMINANCE_ALPHA:
+            format = GPU_FORMAT_LUMINANCE_ALPHA;
+            num_layers = 1;
+            bytes_per_pixel = 2;
+            break;
+        case GL_RGB:
+            format = GPU_FORMAT_RGB;
+            num_layers = 1;
+            bytes_per_pixel = 3;
+            break;
+        case GL_RGBA:
+            format = GPU_FORMAT_RGBA;
+            num_layers = 1;
+            bytes_per_pixel = 4;
+            break;
+        case GL_ALPHA:
+            format = GPU_FORMAT_ALPHA;
+            num_layers = 1;
+            bytes_per_pixel = 1;
+            break;
+        #ifndef SDL_GPU_USE_GLES
+        case GL_RG:
+            format = GPU_FORMAT_RG;
+            num_layers = 1;
+            bytes_per_pixel = 2;
+            break;
+        #endif
+        default:
+            GPU_PushErrorCode("GPU_CreateImageUsingTexture", GPU_ERROR_DATA_ERROR, "Unsupported GL image format (0x%x)", gl_format);
+            return NULL;
+    }
+    
+	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &w);
+	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &h);
+	
+	
+	glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, &min_filter);
+	// Ignore mag filter...  Maybe the wrong thing to do?
+	
+	// Let the user use one that we don't support and pretend that we're okay with that.
+    switch(min_filter)
+    {
+        case GL_NEAREST:
+            filter_mode = GPU_FILTER_NEAREST;
+            break;
+        case GL_LINEAR:
+        case GL_LINEAR_MIPMAP_NEAREST:
+            filter_mode = GPU_FILTER_LINEAR;
+            break;
+        case GL_LINEAR_MIPMAP_LINEAR:
+            filter_mode = GPU_FILTER_LINEAR_MIPMAP;
+            break;
+        default:
+            GPU_PushErrorCode("GPU_CreateImageUsingTexture", GPU_ERROR_USER_ERROR, "Unsupported value for GL_TEXTURE_MIN_FILTER (0x%x)", min_filter);
+            filter_mode = GPU_FILTER_LINEAR;
+            return;
+    }
+	
+	
+	glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, &wrap_s);
+	glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, &wrap_t);
+	
+	// Let the user use one that we don't support and pretend that we're okay with that.
+	switch(wrap_s)
+	{
+    case GL_CLAMP_TO_EDGE:
+        wrap_x = GPU_WRAP_NONE;
+        break;
+    case GL_REPEAT:
+        wrap_x = GPU_WRAP_REPEAT;
+        break;
+    case GL_MIRRORED_REPEAT:
+        wrap_x = GPU_WRAP_MIRRORED;
+        break;
+    default:
+        GPU_PushErrorCode("GPU_CreateImageUsingTexture", GPU_ERROR_USER_ERROR, "Unsupported value for GL_TEXTURE_WRAP_S (0x%x)", wrap_s);
+        wrap_x = GPU_WRAP_NONE;
+        return;
+	}
+	
+	switch(wrap_t)
+	{
+    case GL_CLAMP_TO_EDGE:
+        wrap_y = GPU_WRAP_NONE;
+        break;
+    case GL_REPEAT:
+        wrap_y = GPU_WRAP_REPEAT;
+        break;
+    case GL_MIRRORED_REPEAT:
+        wrap_y = GPU_WRAP_MIRRORED;
+        break;
+    default:
+        GPU_PushErrorCode("GPU_CreateImageUsingTexture", GPU_ERROR_USER_ERROR, "Unsupported value for GL_TEXTURE_WRAP_T (0x%x)", wrap_t);
+        wrap_y = GPU_WRAP_NONE;
+        return;
+	}
+	
+	// Finally create the image
+    
+    data = (GPU_IMAGE_DATA*)malloc(sizeof(GPU_IMAGE_DATA));
+    data->refcount = 1;
+    data->handle = handle;
+    data->format = gl_format;
+    
+
+    result = (GPU_Image*)malloc(sizeof(GPU_Image));
+    result->refcount = 1;
+    result->target = NULL;
+    result->renderer = renderer;
+    result->format = format;
+    result->num_layers = num_layers;
+    result->bytes_per_pixel = bytes_per_pixel;
+    result->has_mipmaps = 0;
+    
+    result->color = white;
+    result->use_blending = ((format == GPU_FORMAT_LUMINANCE_ALPHA || format == GPU_FORMAT_RGBA)? 1 : 0);
+    result->blend_mode = GPU_GetBlendModeFromPreset(GPU_BLEND_NORMAL);
+    result->snap_mode = GPU_SNAP_POSITION_AND_DIMENSIONS;
+    result->filter_mode = filter_mode;
+    result->wrap_mode_x = wrap_x;
+    result->wrap_mode_y = wrap_y;
+    
+    result->data = data;
+    result->is_alias = 0;
+
+    result->w = w;
+    result->h = h;
+    
+    result->texture_w = w;
+    result->texture_h = h;
+
+    return result;
+}
+
 static GPU_Image* LoadImage(GPU_Renderer* renderer, const char* filename)
 {
 	GPU_Image* result;
@@ -5895,6 +6057,7 @@ static void SetAttributeSource(GPU_Renderer* renderer, int num_values, GPU_Attri
     impl->SetCamera = &SetCamera; \
  \
     impl->CreateImage = &CreateImage; \
+    impl->CreateImageUsingTexture = &CreateImageUsingTexture; \
     impl->LoadImage = &LoadImage; \
     impl->CreateAliasImage = &CreateAliasImage; \
     impl->SaveImage = &SaveImage; \
