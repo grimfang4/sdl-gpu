@@ -1179,8 +1179,8 @@ void GPU_BlitBatch(GPU_Image* image, GPU_Target* target, unsigned int num_sprite
 	w2 = 0.5f*image->w;  // texcoord helpers for position expansion
 	h2 = 0.5f*image->h;
 	
-	tex_w = image->texture_w;
-	tex_h = image->texture_h;
+	tex_w = image->base_w;
+	tex_h = image->base_h;
 	
     for(n = 0; n < num_sprites; n++)
     {
@@ -1468,8 +1468,8 @@ void GPU_BlitBatchSeparate(GPU_Image* image, GPU_Target* target, unsigned int nu
 	w2 = 0.5f*image->w;  // texcoord helpers for position expansion
 	h2 = 0.5f*image->h;
 	
-	tex_w = image->texture_w;
-	tex_h = image->texture_h;
+	tex_w = image->base_w;
+	tex_h = image->base_h;
     
 	for(n = 0; n < num_sprites; n++)
     {
@@ -1771,8 +1771,8 @@ void GPU_TriangleBatch(GPU_Image* image, GPU_Target* target, unsigned short num_
 	
 	if(using_texture)
     {
-        tex_w = image->texture_w;
-        tex_h = image->texture_h;
+        tex_w = image->base_w;
+        tex_h = image->base_h;
     }
 	
     for(n = 0; n < num_vertices; n++)

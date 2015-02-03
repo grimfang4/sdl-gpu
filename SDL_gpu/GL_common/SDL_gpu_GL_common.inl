@@ -1049,6 +1049,8 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     target->renderer = renderer;
     target->w = target->context->window_w;
     target->h = target->context->window_h;
+    target->base_w = target->context->window_w;
+    target->base_h = target->context->window_h;
 
     target->use_clip_rect = 0;
     target->clip_rect.x = 0;
@@ -1497,9 +1499,13 @@ static Uint8 SetWindowResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
     target->context->stored_window_w = target->context->window_w;
     target->context->stored_window_h = target->context->window_h;
     
+    // Update base dimensions
+    target->base_w = target->context->window_w;
+    target->base_h = target->context->window_h;
+    
     // Resets virtual resolution
-    target->w = target->context->window_w;
-    target->h = target->context->window_h;
+    target->w = target->base_w;
+    target->h = target->base_h;
     target->using_virtual_resolution = 0;
 
     // Resets viewport
@@ -1544,16 +1550,8 @@ static void UnsetVirtualResolution(GPU_Renderer* renderer, GPU_Target* target)
     if(isCurrent)
         renderer->impl->FlushBlitBuffer(renderer);
     
-    if(target->image != NULL)
-    {
-        target->w = target->image->w;
-        target->h = target->image->h;
-    }
-    else if(target->context != NULL)
-    {
-        target->w = target->context->window_w;
-        target->h = target->context->window_h;
-    }
+    target->w = target->base_w;
+    target->h = target->base_h;
     
     target->using_virtual_resolution = 0;
     
@@ -1794,8 +1792,8 @@ static GPU_Image* CreateUninitializedImage(GPU_Renderer* renderer, Uint16 w, Uin
     result->w = w;
     result->h = h;
     // POT textures will change this later
-    result->texture_w = w;
-    result->texture_h = h;
+    result->base_w = w;
+    result->base_h = h;
 
     return result;
 }
@@ -1853,8 +1851,8 @@ static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, GPU_Fo
     glTexImage2D(GL_TEXTURE_2D, 0, internal_format, w, h, 0,
                  internal_format, GL_UNSIGNED_BYTE, zero_buffer);
     // Tell SDL_gpu what we got.
-    result->texture_w = w;
-    result->texture_h = h;
+    result->base_w = w;
+    result->base_h = h;
     
     // Restore GL defaults
     glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
@@ -1948,7 +1946,7 @@ static GPU_Image* CreateImageUsingTexture(GPU_Renderer* renderer, Uint32 handle,
         default:
             GPU_PushErrorCode("GPU_CreateImageUsingTexture", GPU_ERROR_USER_ERROR, "Unsupported value for GL_TEXTURE_MIN_FILTER (0x%x)", min_filter);
             filter_mode = GPU_FILTER_LINEAR;
-            return;
+            break;
     }
 	
 	
@@ -1970,7 +1968,7 @@ static GPU_Image* CreateImageUsingTexture(GPU_Renderer* renderer, Uint32 handle,
     default:
         GPU_PushErrorCode("GPU_CreateImageUsingTexture", GPU_ERROR_USER_ERROR, "Unsupported value for GL_TEXTURE_WRAP_S (0x%x)", wrap_s);
         wrap_x = GPU_WRAP_NONE;
-        return;
+        break;
 	}
 	
 	switch(wrap_t)
@@ -1987,7 +1985,7 @@ static GPU_Image* CreateImageUsingTexture(GPU_Renderer* renderer, Uint32 handle,
     default:
         GPU_PushErrorCode("GPU_CreateImageUsingTexture", GPU_ERROR_USER_ERROR, "Unsupported value for GL_TEXTURE_WRAP_T (0x%x)", wrap_t);
         wrap_y = GPU_WRAP_NONE;
-        return;
+        break;
 	}
 	
 	// Finally create the image
@@ -2022,8 +2020,8 @@ static GPU_Image* CreateImageUsingTexture(GPU_Renderer* renderer, Uint32 handle,
     result->w = w;
     result->h = h;
     
-    result->texture_w = w;
-    result->texture_h = h;
+    result->base_w = w;
+    result->base_h = h;
 
     return result;
 }
@@ -2075,23 +2073,7 @@ static Uint8 readTargetPixels(GPU_Renderer* renderer, GPU_Target* source, GLint 
     
     if(bindFramebuffer(renderer, source))
     {
-        int w, h;
-        if(source->image != NULL)
-        {
-            w = source->image->w;
-            h = source->image->h;
-        }
-        else if(source->context != NULL)
-        {
-            w = source->context->window_w;
-            h = source->context->window_h;
-        }
-        else
-        {
-            w = source->w;
-            h = source->h;
-        }
-        glReadPixels(0, 0, w, h, format, GL_UNSIGNED_BYTE, pixels);
+        glReadPixels(0, 0, source->base_w, source->base_h, format, GL_UNSIGNED_BYTE, pixels);
         return 1;
     }
     return 0;
@@ -2791,8 +2773,8 @@ static GPU_Image* CopyImage(GPU_Renderer* renderer, GPU_Image* image)
             glTexImage2D(GL_TEXTURE_2D, 0, internal_format, w, h, 0,
                          internal_format, GL_UNSIGNED_BYTE, texture_data);
             // Tell SDL_gpu what we got.
-            result->texture_w = w;
-            result->texture_h = h;
+            result->base_w = w;
+            result->base_h = h;
             
             // Restore GL defaults
             glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
@@ -3207,6 +3189,8 @@ static GPU_Target* LoadTarget(GPU_Renderer* renderer, GPU_Image* image)
     result->image = image;
     result->w = image->w;
     result->h = image->h;
+    result->base_w = image->base_w;
+    result->base_h = image->base_h;
     
     result->viewport = GPU_MakeRect(0, 0, result->w, result->h);
     
@@ -3215,8 +3199,8 @@ static GPU_Target* LoadTarget(GPU_Renderer* renderer, GPU_Image* image)
     result->use_clip_rect = 0;
     result->clip_rect.x = 0;
     result->clip_rect.y = 0;
-    result->clip_rect.w = image->w;
-    result->clip_rect.h = image->h;
+    result->clip_rect.w = result->w;
+    result->clip_rect.h = result->h;
     result->use_color = 0;
 
     image->target = result;
@@ -3467,8 +3451,8 @@ static void Blit(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, G
         return;
     }
     
-    tex_w = image->texture_w;
-    tex_h = image->texture_h;
+    tex_w = image->base_w;
+    tex_h = image->base_h;
     
     if(image->snap_mode == GPU_SNAP_POSITION || image->snap_mode == GPU_SNAP_POSITION_AND_DIMENSIONS)
     {
@@ -3674,8 +3658,8 @@ static void BlitTransformX(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* s
         return;
     }
     
-    tex_w = image->texture_w;
-    tex_h = image->texture_h;
+    tex_w = image->base_w;
+    tex_h = image->base_h;
     
     if(image->snap_mode == GPU_SNAP_POSITION || image->snap_mode == GPU_SNAP_POSITION_AND_DIMENSIONS)
     {
