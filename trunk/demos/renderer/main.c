@@ -89,7 +89,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     
     if(target == NULL)
     {
-        target = (GPU_Target*)malloc(sizeof(GPU_Target*));
+        target = (GPU_Target*)malloc(sizeof(GPU_Target));
         memset(target, 0, sizeof(GPU_Target));
         
         target->refcount = 1;

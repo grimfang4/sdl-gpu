@@ -23,6 +23,8 @@
 #define RETURN_ERROR(code, details) do{ GPU_PushErrorCode(__func__, code, "%s", details); return; } while(0)
 
 void GPU_InitRendererRegister(void);
+GPU_Renderer* GPU_AddRenderer(GPU_RendererID id);
+void GPU_RemoveRenderer(GPU_RendererID id);
 
 static GPU_Renderer* current_renderer = NULL;
 

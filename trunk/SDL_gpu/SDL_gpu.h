@@ -27,7 +27,18 @@ typedef struct GPU_Target GPU_Target;
 
 /*!
  * \defgroup Initialization Initialization
+ * SDL_gpu has a fairly simple initialization process.  If you need nothing more than the default initialization, call:
+ * <pre>GPU_Target* screen = GPU_Init(width, height, GPU_DEFAULT_INIT_FLAGS);</pre>
+ * Then when you're done, clean up with:
+ * <pre>GPU_Quit();</pre>
+ * 
+ * Other functions in the Initialization module control how initialization is performed.
+ * 
  * \defgroup Logging Debugging, Logging, and Error Handling
+ * Use GPU_Log() for normal logging output (e.g. to replace printf).  Other logging priorities are handled by GPU_LogWarning() and GPU_LogError().
+ * 
+ * SDL_gpu stores an error stack that you can read and manipulate using GPU_PopErrorCode() and GPU_PushErrorCode().  If you set the debug level using GPU_SetDebugLevel(), you can have any errors automatically logged as they are generated.
+ * 
  * \defgroup RendererSetup Renderer Setup
  * \defgroup RendererControls Renderer Controls
  * \defgroup ContextControls Context Controls
@@ -635,6 +646,7 @@ void GPU_Quit(void);
 
 // Debugging, logging, and error handling
 
+#define GPU_Log GPU_LogInfo
 /*! \ingroup Logging
  *  @{ */
 
@@ -657,8 +669,6 @@ void GPU_LogWarning(const char* format, ...);
 
 /*! Prints an error log message. */
 void GPU_LogError(const char* format, ...);
-
-#define GPU_Log GPU_LogInfo
 
 /*! Pushes a new error code onto the error stack.  If the stack is full, this function does nothing.
  * \param function The name of the function that pushed the error
