@@ -2285,7 +2285,7 @@ Uint32 GPU_CompileShader(GPU_ShaderEnum shader_type, const char* shader_source)
 	return current_renderer->impl->CompileShader(current_renderer, shader_type, shader_source);
 }
 
-Uint32 GPU_LinkShaderProgram(Uint32 program_object)
+Uint8 GPU_LinkShaderProgram(Uint32 program_object)
 {
 	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return 0;
@@ -2293,12 +2293,34 @@ Uint32 GPU_LinkShaderProgram(Uint32 program_object)
 	return current_renderer->impl->LinkShaderProgram(current_renderer, program_object);
 }
 
-Uint32 GPU_LinkShaders(Uint32 shader_object1, Uint32 shader_object2)
+Uint32 GPU_CreateShaderProgram(void)
 {
 	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return 0;
+    
+	return current_renderer->impl->CreateShaderProgram(current_renderer);
+}
+
+Uint32 GPU_LinkShaders(Uint32 shader_object1, Uint32 shader_object2)
+{
+    Uint32 p;
+    
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
+		return 0;
 	
-	return current_renderer->impl->LinkShaders(current_renderer, shader_object1, shader_object2);
+    if((current_renderer->enabled_features & GPU_FEATURE_BASIC_SHADERS) != GPU_FEATURE_BASIC_SHADERS)
+        return 0;
+    
+    p = current_renderer->impl->CreateShaderProgram(current_renderer);
+
+	current_renderer->impl->AttachShader(current_renderer, p, shader_object1);
+	current_renderer->impl->AttachShader(current_renderer, p, shader_object2);
+	
+	if(current_renderer->impl->LinkShaderProgram(current_renderer, p))
+        return p;
+    
+    current_renderer->impl->FreeShaderProgram(current_renderer, p);
+    return 0;
 }
 
 void GPU_FreeShader(Uint32 shader_object)
@@ -2335,10 +2357,13 @@ void GPU_DetachShader(Uint32 program_object, Uint32 shader_object)
 
 Uint8 GPU_IsDefaultShaderProgram(Uint32 program_object)
 {
+    GPU_Context* context;
+    
 	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return 0;
-		
-	return current_renderer->impl->IsDefaultShaderProgram(current_renderer, program_object);
+    
+    context = current_renderer->current_context_target->context;
+    return (program_object == context->default_textured_shader_program || program_object == context->default_untextured_shader_program);
 }
 
 void GPU_ActivateShaderProgram(Uint32 program_object, GPU_ShaderBlock* block)

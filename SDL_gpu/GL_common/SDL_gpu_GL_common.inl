@@ -94,10 +94,6 @@ See a particular renderer's *.c file for specifics. */
 #endif
 
 
-// Internal API for managing window mappings
-void GPU_AddWindowMapping(GPU_Target* target);
-void GPU_RemoveWindowMapping(Uint32 windowID);
-void GPU_RemoveWindowMappingByTarget(GPU_Target* target);
 
 
 static SDL_PixelFormat* AllocFormat(GLenum glFormat);
@@ -1222,7 +1218,10 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
             return NULL;
         }
         
-        p = renderer->impl->LinkShaders(renderer, v, f);
+        p = renderer->impl->CreateShaderProgram(renderer);
+        renderer->impl->AttachShader(renderer, p, v);
+        renderer->impl->AttachShader(renderer, p, f);
+        renderer->impl->LinkShaderProgram(renderer, p);
         
         if(!p)
         {
@@ -1256,7 +1255,10 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
             return NULL;
         }
         
-        p = renderer->impl->LinkShaders(renderer, v, f);
+        p = renderer->impl->CreateShaderProgram(renderer);
+        renderer->impl->AttachShader(renderer, p, v);
+        renderer->impl->AttachShader(renderer, p, f);
+        renderer->impl->LinkShaderProgram(renderer, p);
         
         if(!p)
         {
@@ -1387,6 +1389,8 @@ static void MakeCurrent(GPU_Renderer* renderer, GPU_Target* target, Uint32 windo
     {
         target->context->window_w = screen->w;
         target->context->window_h = screen->h;
+        target->base_w = target->context->window_w;
+        target->base_h = target->context->window_h;
     }
     #endif
 }
@@ -2137,7 +2141,7 @@ static unsigned char* getRawTargetData(GPU_Renderer* renderer, GPU_Target* targe
     bytes_per_pixel = 4;
     if(target->image != NULL)
         bytes_per_pixel = target->image->bytes_per_pixel;
-    data = (unsigned char*)malloc(target->w * target->h * bytes_per_pixel);
+    data = (unsigned char*)malloc(target->base_w * target->base_h * bytes_per_pixel);
     
     if(!readTargetPixels(renderer, target, ((GPU_TARGET_DATA*)target->data)->format, data))
     {
@@ -2146,13 +2150,13 @@ static unsigned char* getRawTargetData(GPU_Renderer* renderer, GPU_Target* targe
     }
     
     // Flip the data vertically (OpenGL framebuffer is read upside down)
-    pitch = target->w * bytes_per_pixel;
+    pitch = target->base_w * bytes_per_pixel;
     copy = (unsigned char*)malloc(pitch);
     
-    for(y = 0; y < target->h/2; y++)
+    for(y = 0; y < target->base_h/2; y++)
     {
-        unsigned char* top = &data[target->w * y * bytes_per_pixel];
-        unsigned char* bottom = &data[target->w * (target->h - y - 1) * bytes_per_pixel];
+        unsigned char* top = &data[target->base_w * y * bytes_per_pixel];
+        unsigned char* bottom = &data[target->base_w * (target->base_h - y - 1) * bytes_per_pixel];
         memcpy(copy, top, pitch);
         memcpy(top, bottom, pitch);
         memcpy(bottom, copy, pitch);
@@ -2169,7 +2173,7 @@ static unsigned char* getRawImageData(GPU_Renderer* renderer, GPU_Image* image)
     if(image->target != NULL && isCurrentTarget(renderer, image->target))
         renderer->impl->FlushBlitBuffer(renderer);
     
-    data = (unsigned char*)malloc(image->w * image->h * image->bytes_per_pixel);
+    data = (unsigned char*)malloc(image->base_w * image->base_h * image->bytes_per_pixel);
     
     // FIXME: Sometimes the texture is stored and read in RGBA even when I specify RGB.  getRawImageData() might need to return the stored format or Bpp.
     if(!readImagePixels(renderer, image, ((GPU_IMAGE_DATA*)image->data)->format, data))
@@ -2197,7 +2201,7 @@ static Uint8 SaveImage(GPU_Renderer* renderer, GPU_Image* image, const char* fil
     unsigned char* data;
 
     if(image == NULL || filename == NULL ||
-            image->w < 1 || image->h < 1 || image->bytes_per_pixel < 1 || image->bytes_per_pixel > 4)
+            image->base_w < 1 || image->base_h < 1 || image->bytes_per_pixel < 1 || image->bytes_per_pixel > 4)
     {
         return 0;
     }
@@ -2213,11 +2217,11 @@ static Uint8 SaveImage(GPU_Renderer* renderer, GPU_Image* image, const char* fil
     }
 
     if(SDL_strcasecmp(extension, "png") == 0)
-        result = stbi_write_png(filename, image->w, image->h, image->bytes_per_pixel, (const unsigned char *const)data, 0);
+        result = stbi_write_png(filename, image->base_w, image->base_h, image->bytes_per_pixel, (const unsigned char *const)data, 0);
     else if(SDL_strcasecmp(extension, "bmp") == 0)
-        result = stbi_write_bmp(filename, image->w, image->h, image->bytes_per_pixel, (void*)data);
+        result = stbi_write_bmp(filename, image->base_w, image->base_h, image->bytes_per_pixel, (void*)data);
     else if(SDL_strcasecmp(extension, "tga") == 0)
-        result = stbi_write_tga(filename, image->w, image->h, image->bytes_per_pixel, (void*)data);
+        result = stbi_write_tga(filename, image->base_w, image->base_h, image->bytes_per_pixel, (void*)data);
     else
     {
         GPU_PushErrorCode("GPU_SaveImage", GPU_ERROR_DATA_ERROR, "Unsupported output file format (%s)", extension);
@@ -2239,9 +2243,9 @@ static SDL_Surface* CopySurfaceFromTarget(GPU_Renderer* renderer, GPU_Target* ta
         GPU_PushErrorCode("GPU_CopySurfaceFromTarget", GPU_ERROR_NULL_ARGUMENT, "target");
         return NULL;
     }
-    if(target->w < 1 || target->h < 1)
+    if(target->base_w < 1 || target->base_h < 1)
     {
-        GPU_PushErrorCode("GPU_CopySurfaceFromTarget", GPU_ERROR_DATA_ERROR, "Invalid target dimensions (%dx%d)", target->w, target->h);
+        GPU_PushErrorCode("GPU_CopySurfaceFromTarget", GPU_ERROR_DATA_ERROR, "Invalid target dimensions (%dx%d)", target->base_w, target->base_h);
         return NULL;
     }
 
@@ -2255,7 +2259,7 @@ static SDL_Surface* CopySurfaceFromTarget(GPU_Renderer* renderer, GPU_Target* ta
     
     format = AllocFormat(((GPU_TARGET_DATA*)target->data)->format);
     
-    result = SDL_CreateRGBSurfaceFrom(data, target->w, target->h, format->BitsPerPixel, target->w*format->BytesPerPixel, format->Rmask, format->Gmask, format->Bmask, format->Amask);
+    result = SDL_CreateRGBSurfaceFrom(data, target->base_w, target->base_h, format->BitsPerPixel, target->base_w*format->BytesPerPixel, format->Rmask, format->Gmask, format->Bmask, format->Amask);
     if(result != NULL)
         result->flags &= ~SDL_PREALLOC;  // Make SDL take ownership of the data memory
     
@@ -2274,9 +2278,9 @@ static SDL_Surface* CopySurfaceFromImage(GPU_Renderer* renderer, GPU_Image* imag
         GPU_PushErrorCode("GPU_CopySurfaceFromImage", GPU_ERROR_NULL_ARGUMENT, "image");
         return NULL;
     }
-    if(image->w < 1 || image->h < 1)
+    if(image->base_w < 1 || image->base_h < 1)
     {
-        GPU_PushErrorCode("GPU_CopySurfaceFromImage", GPU_ERROR_DATA_ERROR, "Invalid image dimensions (%dx%d)", image->w, image->h);
+        GPU_PushErrorCode("GPU_CopySurfaceFromImage", GPU_ERROR_DATA_ERROR, "Invalid image dimensions (%dx%d)", image->base_w, image->base_h);
         return NULL;
     }
 
@@ -2290,7 +2294,7 @@ static SDL_Surface* CopySurfaceFromImage(GPU_Renderer* renderer, GPU_Image* imag
     
     format = AllocFormat(((GPU_IMAGE_DATA*)image->data)->format);
     
-    result = SDL_CreateRGBSurfaceFrom(data, image->w, image->h, format->BitsPerPixel, image->w*format->BytesPerPixel, format->Rmask, format->Gmask, format->Bmask, format->Amask);
+    result = SDL_CreateRGBSurfaceFrom(data, image->base_w, image->base_h, format->BitsPerPixel, image->base_w*format->BytesPerPixel, format->Rmask, format->Gmask, format->Bmask, format->Amask);
     if(result != NULL)
         result->flags &= ~SDL_PREALLOC;  // Make SDL take ownership of the data memory
     
@@ -5299,7 +5303,23 @@ static Uint32 CompileShader(GPU_Renderer* renderer, GPU_ShaderEnum shader_type, 
     return size;
 }
 
-static Uint32 LinkShaderProgram(GPU_Renderer* renderer, Uint32 program_object)
+static Uint32 CreateShaderProgram(GPU_Renderer* renderer)
+{
+    #ifndef SDL_GPU_DISABLE_SHADERS
+    GLuint p;
+    
+    if(!IsFeatureEnabled(renderer, GPU_FEATURE_BASIC_SHADERS))
+        return 0;
+    
+    p = glCreateProgram();
+    
+    return p;
+	#else
+	return 0;
+	#endif
+}
+
+static Uint8 LinkShaderProgram(GPU_Renderer* renderer, Uint32 program_object)
 {
     #ifndef SDL_GPU_DISABLE_SHADERS
 	int linked;
@@ -5319,31 +5339,12 @@ static Uint32 LinkShaderProgram(GPU_Renderer* renderer, Uint32 program_object)
         return 0;
     }
     
-	return program_object;
+	return 1;
 	
     #else
     
     return 0;
     
-	#endif
-}
-
-static Uint32 LinkShaders(GPU_Renderer* renderer, Uint32 shader_object1, Uint32 shader_object2)
-{
-    #ifndef SDL_GPU_DISABLE_SHADERS
-    GLuint p;
-    
-    if(!IsFeatureEnabled(renderer, GPU_FEATURE_BASIC_SHADERS))
-        return 0;
-    
-    p = glCreateProgram();
-
-	glAttachShader(p, shader_object1);
-	glAttachShader(p, shader_object2);
-	
-	return renderer->impl->LinkShaderProgram(renderer, p);
-	#else
-	return 0;
 	#endif
 }
 
@@ -5377,12 +5378,6 @@ static void DetachShader(GPU_Renderer* renderer, Uint32 program_object, Uint32 s
     if(IsFeatureEnabled(renderer, GPU_FEATURE_BASIC_SHADERS))
         glDetachShader(program_object, shader_object);
     #endif
-}
-
-static Uint8 IsDefaultShaderProgram(GPU_Renderer* renderer, Uint32 program_object)
-{
-    GPU_Context* context = renderer->current_context_target->context;
-    return (program_object == context->default_textured_shader_program || program_object == context->default_untextured_shader_program);
 }
 
 static void ActivateShaderProgram(GPU_Renderer* renderer, Uint32 program_object, GPU_ShaderBlock* block)
@@ -6068,13 +6063,12 @@ static void SetAttributeSource(GPU_Renderer* renderer, int num_values, GPU_Attri
      \
     impl->CompileShader_RW = &CompileShader_RW; \
     impl->CompileShader = &CompileShader; \
+    impl->CreateShaderProgram = &CreateShaderProgram; \
     impl->LinkShaderProgram = &LinkShaderProgram; \
-    impl->LinkShaders = &LinkShaders; \
     impl->FreeShader = &FreeShader; \
     impl->FreeShaderProgram = &FreeShaderProgram; \
     impl->AttachShader = &AttachShader; \
     impl->DetachShader = &DetachShader; \
-    impl->IsDefaultShaderProgram = &IsDefaultShaderProgram; \
     impl->ActivateShaderProgram = &ActivateShaderProgram; \
     impl->DeactivateShaderProgram = &DeactivateShaderProgram; \
     impl->GetShaderMessage = &GetShaderMessage; \

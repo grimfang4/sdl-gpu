@@ -45,6 +45,7 @@ endif(STBI_WRITE_FOUND)
 
 set(SDL_gpu_install_HDRS
 	SDL_gpu.h
+	SDL_gpu_RendererImpl.h
 	OpenGL_1_BASE/SDL_gpu_OpenGL_1_BASE.h
 	OpenGL_1/SDL_gpu_OpenGL_1.h
 	OpenGL_2/SDL_gpu_OpenGL_2.h
