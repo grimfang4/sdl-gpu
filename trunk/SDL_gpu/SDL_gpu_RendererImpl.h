@@ -3,6 +3,15 @@
 
 #include "SDL_gpu.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+// Internal API for managing window mappings
+void GPU_AddWindowMapping(GPU_Target* target);
+void GPU_RemoveWindowMapping(Uint32 windowID);
+void GPU_RemoveWindowMappingByTarget(GPU_Target* target);
+
 /*! Private implementation of renderer members. */
 typedef struct GPU_RendererImpl
 {
@@ -144,32 +153,29 @@ typedef struct GPU_RendererImpl
 	void (*Flip)(GPU_Renderer* renderer, GPU_Target* target);
 	
 	
+    /*! \see GPU_CreateShaderProgram() */
+    Uint32 (*CreateShaderProgram)(GPU_Renderer* renderer);
+
+    /*! \see GPU_FreeShaderProgram() */
+    void (*FreeShaderProgram)(GPU_Renderer* renderer, Uint32 program_object);
+	
     /*! \see GPU_CompileShader_RW() */
 	Uint32 (*CompileShader_RW)(GPU_Renderer* renderer, GPU_ShaderEnum shader_type, SDL_RWops* shader_source);
 	
     /*! \see GPU_CompileShader() */
     Uint32 (*CompileShader)(GPU_Renderer* renderer, GPU_ShaderEnum shader_type, const char* shader_source);
 
-    /*! \see GPU_LinkShaderProgram() */
-    Uint32 (*LinkShaderProgram)(GPU_Renderer* renderer, Uint32 program_object);
-
-    /*! \see GPU_LinkShaders() */
-    Uint32 (*LinkShaders)(GPU_Renderer* renderer, Uint32 shader_object1, Uint32 shader_object2);
-
     /*! \see GPU_FreeShader() */
     void (*FreeShader)(GPU_Renderer* renderer, Uint32 shader_object);
-
-    /*! \see GPU_FreeShaderProgram() */
-    void (*FreeShaderProgram)(GPU_Renderer* renderer, Uint32 program_object);
 
     /*! \see GPU_AttachShader() */
     void (*AttachShader)(GPU_Renderer* renderer, Uint32 program_object, Uint32 shader_object);
 
     /*! \see GPU_DetachShader() */
     void (*DetachShader)(GPU_Renderer* renderer, Uint32 program_object, Uint32 shader_object);
-    
-    /*! \see GPU_IsDefaultShaderProgram() */
-    Uint8 (*IsDefaultShaderProgram)(GPU_Renderer* renderer, Uint32 program_object);
+
+    /*! \see GPU_LinkShaderProgram() */
+    Uint8 (*LinkShaderProgram)(GPU_Renderer* renderer, Uint32 program_object);
 
     /*! \see GPU_ActivateShaderProgram() */
     void (*ActivateShaderProgram)(GPU_Renderer* renderer, Uint32 program_object, GPU_ShaderBlock* block);
@@ -311,5 +317,8 @@ typedef struct GPU_RendererImpl
 	
 } GPU_RendererImpl;
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif

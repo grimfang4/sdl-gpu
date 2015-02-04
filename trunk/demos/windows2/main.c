@@ -2,7 +2,7 @@
 #include "SDL_gpu.h"
 #include "common.h"
 
-#ifndef SDL_GPU_USE_SDL2
+#ifdef SDL_GPU_USE_SDL1
 // This demo doesn't work for SDL 1.2 because of the missing windowing features in that version.
 int main(int argc, char* argv[])
 {

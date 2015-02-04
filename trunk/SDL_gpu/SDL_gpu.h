@@ -17,7 +17,9 @@ extern "C" {
 
 /* Auto-detect if we're using the SDL2 API by the headers available. */
 #if SDL_VERSION_ATLEAST(2,0,0)
-    #define SDL_GPU_USE_SDL2                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   
+    #define SDL_GPU_USE_SDL2
+#else
+    #define SDL_GPU_USE_SDL1
 #endif
 
 typedef struct GPU_Renderer GPU_Renderer;
@@ -52,18 +54,19 @@ typedef struct GPU_Rect
 #define GPU_RENDERER_ORDER_MAX 10
 
 typedef Uint32 GPU_RendererEnum;
-static const GPU_RendererEnum GPU_RENDERER_UNKNOWN = 0x0;  // invalid value
-static const GPU_RendererEnum GPU_RENDERER_OPENGL_1_BASE = 0x1;
-static const GPU_RendererEnum GPU_RENDERER_OPENGL_1 = 0x2;
-static const GPU_RendererEnum GPU_RENDERER_OPENGL_2 = 0x4;
-static const GPU_RendererEnum GPU_RENDERER_OPENGL_3 = 0x8;
-static const GPU_RendererEnum GPU_RENDERER_OPENGL_4 = 0x10;
-static const GPU_RendererEnum GPU_RENDERER_GLES_1 = 0x100;
-static const GPU_RendererEnum GPU_RENDERER_GLES_2 = 0x200;
-static const GPU_RendererEnum GPU_RENDERER_GLES_3 = 0x400;
-static const GPU_RendererEnum GPU_RENDERER_D3D9 = 0x10000;
-static const GPU_RendererEnum GPU_RENDERER_D3D10 = 0x20000;
-static const GPU_RendererEnum GPU_RENDERER_D3D11 = 0x40000;
+static const GPU_RendererEnum GPU_RENDERER_UNKNOWN = 0;  // invalid value
+static const GPU_RendererEnum GPU_RENDERER_OPENGL_1_BASE = 1;
+static const GPU_RendererEnum GPU_RENDERER_OPENGL_1 = 2;
+static const GPU_RendererEnum GPU_RENDERER_OPENGL_2 = 3;
+static const GPU_RendererEnum GPU_RENDERER_OPENGL_3 = 4;
+static const GPU_RendererEnum GPU_RENDERER_OPENGL_4 = 5;
+static const GPU_RendererEnum GPU_RENDERER_GLES_1 = 11;
+static const GPU_RendererEnum GPU_RENDERER_GLES_2 = 12;
+static const GPU_RendererEnum GPU_RENDERER_GLES_3 = 13;
+static const GPU_RendererEnum GPU_RENDERER_D3D9 = 21;
+static const GPU_RendererEnum GPU_RENDERER_D3D10 = 22;
+static const GPU_RendererEnum GPU_RENDERER_D3D11 = 23;
+#define GPU_RENDERER_CUSTOM_0 1000
 
 /*! \ingroup Initialization
  * \ingroup RendererSetup
@@ -697,11 +700,8 @@ int GPU_GetNumRegisteredRenderers(void);
 /*! Gets an array of identifiers for the registered (available) renderers. */
 void GPU_GetRegisteredRendererList(GPU_RendererID* renderers_array);
 
-/*! Creates a new renderer matching the given identifier. */
-GPU_Renderer* GPU_AddRenderer(GPU_RendererID id);
-
-/*! Deletes the renderer matching the given identifier. */
-void GPU_RemoveRenderer(GPU_RendererID id);
+/*! Prepares a renderer for use by SDL_gpu. */
+void GPU_RegisterRenderer(GPU_RendererID id, GPU_Renderer* (*create_renderer)(GPU_RendererID request), void (*free_renderer)(GPU_Renderer* renderer));
 
 // End of RendererSetup
 /*! @} */
@@ -710,6 +710,9 @@ void GPU_RemoveRenderer(GPU_RendererID id);
 
 /*! \ingroup RendererControls
  *  @{ */
+
+/*! Gets the next enum ID that can be used for a custom renderer. */
+GPU_RendererEnum GPU_ReserveNextRendererEnum(void);
 
 /*! Gets the number of active (created) renderers. */
 int GPU_GetNumActiveRenderers(void);
@@ -1387,17 +1390,23 @@ void GPU_PolygonFilled(GPU_Target* target, unsigned int num_vertices, float* ver
 /*! \ingroup ShaderInterface
  *  @{ */
 
+/*! Creates a new, empty shader program.  You will need to compile shaders, attach them to the program, then link the program.
+ * \see GPU_AttachShader
+ * \see GPU_LinkShaderProgram
+ */
+Uint32 GPU_CreateShaderProgram(void);
+
+/*! Deletes a shader program. */
+void GPU_FreeShaderProgram(Uint32 program_object);
+
 /*! Loads shader source from an SDL_RWops, compiles it, and returns the new shader object. */
 Uint32 GPU_CompileShader_RW(GPU_ShaderEnum shader_type, SDL_RWops* shader_source);
-
-/*! Loads shader source from a file, compiles it, and returns the new shader object. */
-Uint32 GPU_LoadShader(GPU_ShaderEnum shader_type, const char* filename);
 
 /*! Compiles shader source and returns the new shader object. */
 Uint32 GPU_CompileShader(GPU_ShaderEnum shader_type, const char* shader_source);
 
-/*! Links a shader program with any attached shader objects. */
-Uint32 GPU_LinkShaderProgram(Uint32 program_object);
+/*! Loads shader source from a file, compiles it, and returns the new shader object. */
+Uint32 GPU_LoadShader(GPU_ShaderEnum shader_type, const char* filename);
 
 /*! Creates and links a shader program with the given shader objects. */
 Uint32 GPU_LinkShaders(Uint32 shader_object1, Uint32 shader_object2);
@@ -1405,14 +1414,14 @@ Uint32 GPU_LinkShaders(Uint32 shader_object1, Uint32 shader_object2);
 /*! Deletes a shader object. */
 void GPU_FreeShader(Uint32 shader_object);
 
-/*! Deletes a shader program. */
-void GPU_FreeShaderProgram(Uint32 program_object);
-
 /*! Attaches a shader object to a shader program for future linking. */
 void GPU_AttachShader(Uint32 program_object, Uint32 shader_object);
 
 /*! Detaches a shader object from a shader program. */
 void GPU_DetachShader(Uint32 program_object, Uint32 shader_object);
+
+/*! Links a shader program with any attached shader objects. */
+Uint8 GPU_LinkShaderProgram(Uint32 program_object);
 
 /*! \return The current shader program */
 Uint32 GPU_GetCurrentShaderProgram(void);

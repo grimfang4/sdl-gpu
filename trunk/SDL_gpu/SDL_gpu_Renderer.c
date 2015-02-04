@@ -34,6 +34,13 @@ static GPU_RendererID makeRendererID(GPU_RendererEnum id, int major_version, int
 
 void GPU_InitRendererRegister(void);
 
+
+GPU_RendererEnum GPU_ReserveNextRendererEnum(void)
+{
+    static GPU_RendererEnum last_enum = GPU_RENDERER_CUSTOM_0;
+    return last_enum++;
+}
+
 int GPU_GetNumActiveRenderers(void)
 {
 	int count;
@@ -125,73 +132,57 @@ void GPU_FreeRenderer_GLES_1(GPU_Renderer* renderer);
 GPU_Renderer* GPU_CreateRenderer_GLES_2(GPU_RendererID request);
 void GPU_FreeRenderer_GLES_2(GPU_Renderer* renderer);
 
-void GPU_RegisterRenderers()
+void GPU_RegisterRenderer(GPU_RendererID id, GPU_Renderer* (*create_renderer)(GPU_RendererID request), void (*free_renderer)(GPU_Renderer* renderer))
 {
-	int i = 0;
-	
+    int i = GPU_GetNumRegisteredRenderers();
+    
 	if(i >= MAX_REGISTERED_RENDERERS)
 		return;
-	
+    
+    id.index = i;
+    rendererRegister[i].id = id;
+    rendererRegister[i].createFn = create_renderer;
+    rendererRegister[i].freeFn = free_renderer;
+}
+
+void GPU_RegisterRenderers()
+{
 	#ifndef SDL_GPU_DISABLE_OPENGL
         #ifndef SDL_GPU_DISABLE_OPENGL_1_BASE
-        rendererRegister[i].id = makeRendererID(GPU_RENDERER_OPENGL_1_BASE, 1, 1, i);
-        rendererRegister[i].createFn = &GPU_CreateRenderer_OpenGL_1_BASE;
-        rendererRegister[i].freeFn = &GPU_FreeRenderer_OpenGL_1_BASE;
-        
-        i++;
-        if(i >= MAX_REGISTERED_RENDERERS)
-            return;
+        GPU_RegisterRenderer(GPU_MakeRendererID(GPU_RENDERER_OPENGL_1_BASE, 1, 1),
+                             &GPU_CreateRenderer_OpenGL_1_BASE,
+                             &GPU_FreeRenderer_OpenGL_1_BASE);
         #endif
         
         #ifndef SDL_GPU_DISABLE_OPENGL_1
-        rendererRegister[i].id = makeRendererID(GPU_RENDERER_OPENGL_1, 1, 1, i);
-        rendererRegister[i].createFn = &GPU_CreateRenderer_OpenGL_1;
-        rendererRegister[i].freeFn = &GPU_FreeRenderer_OpenGL_1;
-        
-        i++;
-        if(i >= MAX_REGISTERED_RENDERERS)
-            return;
+        GPU_RegisterRenderer(GPU_MakeRendererID(GPU_RENDERER_OPENGL_1, 1, 1),
+                             &GPU_CreateRenderer_OpenGL_1,
+                             &GPU_FreeRenderer_OpenGL_1);
         #endif
 	
         #ifndef SDL_GPU_DISABLE_OPENGL_2
-        rendererRegister[i].id = makeRendererID(GPU_RENDERER_OPENGL_2, 2, 0, i);
-        rendererRegister[i].createFn = &GPU_CreateRenderer_OpenGL_2;
-        rendererRegister[i].freeFn = &GPU_FreeRenderer_OpenGL_2;
-        
-        i++;
-        if(i >= MAX_REGISTERED_RENDERERS)
-            return;
+        GPU_RegisterRenderer(GPU_MakeRendererID(GPU_RENDERER_OPENGL_2, 2, 0),
+                             &GPU_CreateRenderer_OpenGL_2,
+                             &GPU_FreeRenderer_OpenGL_2);
         #endif
 	
         #ifndef SDL_GPU_DISABLE_OPENGL_3
-        rendererRegister[i].id = makeRendererID(GPU_RENDERER_OPENGL_3, 3, 0, i);
-        rendererRegister[i].createFn = &GPU_CreateRenderer_OpenGL_3;
-        rendererRegister[i].freeFn = &GPU_FreeRenderer_OpenGL_3;
-        
-        i++;
-        if(i >= MAX_REGISTERED_RENDERERS)
-            return;
+        GPU_RegisterRenderer(GPU_MakeRendererID(GPU_RENDERER_OPENGL_3, 3, 0),
+                             &GPU_CreateRenderer_OpenGL_3,
+                             &GPU_FreeRenderer_OpenGL_3);
         #endif
     #endif
 	
 	#ifndef SDL_GPU_DISABLE_GLES
         #ifndef SDL_GPU_DISABLE_GLES_1
-        rendererRegister[i].id = makeRendererID(GPU_RENDERER_GLES_1, 1, 1, i);
-        rendererRegister[i].createFn = &GPU_CreateRenderer_GLES_1;
-        rendererRegister[i].freeFn = &GPU_FreeRenderer_GLES_1;
-        
-        i++;
-        if(i >= MAX_REGISTERED_RENDERERS)
-            return;
+        GPU_RegisterRenderer(GPU_MakeRendererID(GPU_RENDERER_GLES_1, 1, 1),
+                             &GPU_CreateRenderer_GLES_1,
+                             &GPU_FreeRenderer_GLES_1);
         #endif
         #ifndef SDL_GPU_DISABLE_GLES_2
-        rendererRegister[i].id = makeRendererID(GPU_RENDERER_GLES_2, 2, 0, i);
-        rendererRegister[i].createFn = &GPU_CreateRenderer_GLES_2;
-        rendererRegister[i].freeFn = &GPU_FreeRenderer_GLES_2;
-        
-        i++;
-        if(i >= MAX_REGISTERED_RENDERERS)
-            return;
+        GPU_RegisterRenderer(GPU_MakeRendererID(GPU_RENDERER_GLES_2, 2, 0),
+                             &GPU_CreateRenderer_GLES_2,
+                             &GPU_FreeRenderer_GLES_2);
         #endif
     #endif
 	
