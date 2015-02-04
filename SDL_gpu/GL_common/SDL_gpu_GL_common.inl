@@ -1364,7 +1364,11 @@ static void MakeCurrent(GPU_Renderer* renderer, GPU_Target* target, Uint32 windo
             // Update target's window size
             window = SDL_GetWindowFromID(windowID);
             if(window != NULL)
+            {
                 SDL_GetWindowSize(window, &target->context->window_w, &target->context->window_h);
+                target->base_w = target->context->window_w;
+                target->base_h = target->context->window_h;
+            }
             
             // Reset the camera for this window
             applyTargetCamera(((GPU_CONTEXT_DATA*)renderer->current_context_target->context->data)->last_target);
@@ -1569,8 +1573,9 @@ static void Quit(GPU_Renderer* renderer)
 
 static Uint8 SetFullscreen(GPU_Renderer* renderer, Uint8 enable_fullscreen, Uint8 use_desktop_resolution)
 {
-#ifdef SDL_GPU_USE_SDL2
     GPU_Target* target = renderer->current_context_target;
+    
+#ifdef SDL_GPU_USE_SDL2
     Uint32 old_flags = SDL_GetWindowFlags(SDL_GetWindowFromID(target->context->windowID));
     Uint8 was_fullscreen = (old_flags & SDL_WINDOW_FULLSCREEN);
     Uint8 is_fullscreen = was_fullscreen;
@@ -1608,7 +1613,6 @@ static Uint8 SetFullscreen(GPU_Renderer* renderer, Uint8 enable_fullscreen, Uint
     }
     
 #else
-    GPU_Target* target = renderer->current_context_target;
     SDL_Surface* surf = SDL_GetVideoSurface();
 	Uint8 was_fullscreen = (surf->flags & SDL_FULLSCREEN);
 	Uint8 is_fullscreen = was_fullscreen;
@@ -1646,6 +1650,9 @@ static Uint8 SetFullscreen(GPU_Renderer* renderer, Uint8 enable_fullscreen, Uint
         if(isCurrentTarget(renderer, target))
             applyTargetCamera(target);
     }
+    
+    target->base_w = target->context->window_w;
+    target->base_h = target->context->window_h;
     
     return is_fullscreen;
 }
