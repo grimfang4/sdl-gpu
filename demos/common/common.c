@@ -1,4 +1,6 @@
 #include "SDL_gpu.h"
+#include <string.h>
+#include <strings.h>
 
 void printRenderers(void)
 {
@@ -24,14 +26,14 @@ void printRenderers(void)
 	GPU_Log("\nAvailable renderers:\n");
 	for(i = 0; i < GPU_GetNumRegisteredRenderers(); i++)
 	{
-		GPU_Log("* %s (%d.%d)\n", GPU_GetRendererEnumString(renderers[i].id), renderers[i].major_version, renderers[i].minor_version);
+		GPU_Log("* %s (%d.%d)\n", renderers[i].name, renderers[i].major_version, renderers[i].minor_version);
 	}
 	GPU_Log("Renderer init order:\n");
 	
 	GPU_GetRendererOrder(&order_size, order);
 	for(i = 0; i < order_size; i++)
 	{
-		GPU_Log("%d) %s (%d.%d)\n", i+1, GPU_GetRendererEnumString(order[i].id), order[i].major_version, order[i].minor_version);
+		GPU_Log("%d) %s (%d.%d)\n", i+1, order[i].name, order[i].major_version, order[i].minor_version);
 	}
 	GPU_Log("\n");
 
@@ -41,9 +43,8 @@ void printRenderers(void)
 void printCurrentRenderer(void)
 {
     GPU_RendererID id = GPU_GetCurrentRenderer()->id;
-    const char* renderer_string = GPU_GetRendererEnumString(id.id);
     
-	GPU_Log("Using renderer: %s (%d.%d)\n\n", renderer_string, id.major_version, id.minor_version);
+	GPU_Log("Using renderer: %s (%d.%d)\n\n", id.name, id.major_version, id.minor_version);
 }
 
 GPU_Target* initialize_demo(int argc, char** argv, int w, int h)
@@ -68,15 +69,15 @@ GPU_Target* initialize_demo(int argc, char** argv, int w, int h)
                         break;
                     
                     s = argv[i];
-                    if(strcasecmp(s, "BASE") == 0 || strcasecmp(s, "OpenGL_BASE") == 0 || strcasecmp(s, "OpenGL_1_BASE") == 0)
+                    if(SDL_strcasecmp(s, "BASE") == 0 || SDL_strcasecmp(s, "OpenGL_BASE") == 0 || SDL_strcasecmp(s, "OpenGL_1_BASE") == 0)
                         renderer = GPU_RENDERER_OPENGL_1_BASE;
-                    else if(strcasecmp(s, "OpenGL_1") == 0)
+                    else if(SDL_strcasecmp(s, "OpenGL_1") == 0)
                         renderer = GPU_RENDERER_OPENGL_1;
-                    else if(strcasecmp(s, "OpenGL_2") == 0)
+                    else if(SDL_strcasecmp(s, "OpenGL_2") == 0)
                         renderer = GPU_RENDERER_OPENGL_2;
-                    else if(strcasecmp(s, "OpenGL_3") == 0)
+                    else if(SDL_strcasecmp(s, "OpenGL_3") == 0)
                         renderer = GPU_RENDERER_OPENGL_3;
-                    else if(strcasecmp(s, "OpenGL_4") == 0)
+                    else if(SDL_strcasecmp(s, "OpenGL_4") == 0)
                         renderer = GPU_RENDERER_OPENGL_4;
                 }
             }

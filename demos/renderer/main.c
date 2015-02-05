@@ -1306,7 +1306,7 @@ GPU_Renderer* create_dummy_renderer(GPU_RendererID request)
 
     memset(renderer, 0, sizeof(GPU_Renderer));
 
-    renderer->id = GPU_MakeRendererID(request.id, 1, 0);
+    renderer->id = request;
     renderer->shader_language = GPU_LANGUAGE_NONE;
     renderer->shader_version = 0;
     
@@ -1332,13 +1332,13 @@ int main(int argc, char* argv[])
 	GPU_Target* screen;
 	
 	// Prepare renderer for SDL_gpu to use
-	GPU_RendererID rendererID = GPU_MakeRendererID(GPU_ReserveNextRendererEnum(), 1, 0);
+	GPU_RendererID rendererID = GPU_MakeRendererID("Dummy", GPU_ReserveNextRendererEnum(), 1, 0);
 	GPU_RegisterRenderer(rendererID, &create_dummy_renderer, &free_dummy_renderer);
 
 	printRenderers();
 	
 	// Request this specific renderer
-	screen = GPU_InitRenderer(rendererID.id, 800, 600, GPU_DEFAULT_INIT_FLAGS);
+	screen = GPU_InitRenderer(rendererID.renderer, 800, 600, GPU_DEFAULT_INIT_FLAGS);
 	if(screen == NULL)
 		return -1;
 	
@@ -1349,6 +1349,10 @@ int main(int argc, char* argv[])
 		long frameCount;
 		Uint8 done;
 		SDL_Event event;
+		
+		GPU_Image* image = GPU_LoadImage("data/test.bmp");
+		if(image == NULL)
+            GPU_Log("Failed to load image.\n");
 		
         startTime = SDL_GetTicks();
         frameCount = 0;
@@ -1368,15 +1372,16 @@ int main(int argc, char* argv[])
             }
             
             GPU_Clear(screen);
+        
+            GPU_Blit(image, NULL, screen, screen->w/2, screen->h/2);
             
             GPU_Flip(screen);
             
-            frameCount++;
-            if(frameCount%500 == 0)
-                printf("Average FPS: %.2f\n", 1000.0f*frameCount/(SDL_GetTicks() - startTime));
+            // Long delay to keep the logging from piling up too much
+            SDL_Delay(500);
         }
         
-        printf("Average FPS: %.2f\n", 1000.0f*frameCount/(SDL_GetTicks() - startTime));
+        GPU_FreeImage(image);
 	}
 	
 	GPU_Quit();

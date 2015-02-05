@@ -31,7 +31,7 @@ GPU_Renderer* GPU_CreateRenderer_OpenGL_2(GPU_RendererID request)
     memset(renderer, 0, sizeof(GPU_Renderer));
 
     renderer->id = request;
-    renderer->id.id = GPU_RENDERER_OPENGL_2;
+    renderer->id.renderer = GPU_RENDERER_OPENGL_2;
     renderer->shader_language = GPU_LANGUAGE_GLSL;
     renderer->shader_version = SDL_GPU_GLSL_VERSION;
     

@@ -88,7 +88,8 @@ static const GPU_RendererEnum GPU_RENDERER_D3D11 = 23;
  */
 typedef struct GPU_RendererID
 {
-    GPU_RendererEnum id;
+    const char* name;
+    GPU_RendererEnum renderer;
     int major_version;
     int minor_version;
     
@@ -695,14 +696,14 @@ const char* GPU_GetErrorString(GPU_ErrorEnum error);
 /*! \ingroup RendererSetup
  *  @{ */
 
-/*! Translates a GPU_RendererEnum into a string. */
-const char* GPU_GetRendererEnumString(GPU_RendererEnum id);
-
 /*! Returns an initialized GPU_RendererID. */
-GPU_RendererID GPU_MakeRendererID(GPU_RendererEnum id, int major_version, int minor_version);
+GPU_RendererID GPU_MakeRendererID(const char* name, GPU_RendererEnum renderer, int major_version, int minor_version);
+
+/*! Gets the first registered renderer identifier for the given enum value. */
+GPU_RendererID GPU_GetRendererID(GPU_RendererEnum renderer);
 
 /*! Gets the renderer identifier for the given registration index. */
-GPU_RendererID GPU_GetRendererID(unsigned int index);
+GPU_RendererID GPU_GetRendererIDByIndex(unsigned int index);
 
 /*! Gets the number of registered (available) renderers. */
 int GPU_GetNumRegisteredRenderers(void);
