@@ -1345,17 +1345,12 @@ int main(int argc, char* argv[])
 	printCurrentRenderer();
 	
 	{
-		Uint32 startTime;
-		long frameCount;
 		Uint8 done;
 		SDL_Event event;
 		
 		GPU_Image* image = GPU_LoadImage("data/test.bmp");
 		if(image == NULL)
             GPU_Log("Failed to load image.\n");
-		
-        startTime = SDL_GetTicks();
-        frameCount = 0;
         
         done = 0;
         while(!done)
