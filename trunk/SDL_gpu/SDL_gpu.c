@@ -372,7 +372,8 @@ GPU_Target* GPU_Init(Uint16 w, Uint16 h, GPU_WindowFlagEnum SDL_flags)
 
 GPU_Target* GPU_InitRenderer(GPU_RendererEnum renderer_enum, Uint16 w, Uint16 h, GPU_WindowFlagEnum SDL_flags)
 {
-    return GPU_InitRendererByID(GPU_MakeRendererID(renderer_enum, 0, 0), w, h, SDL_flags);
+    // Search registry for this renderer and use that id
+    return GPU_InitRendererByID(GPU_GetRendererID(renderer_enum), w, h, SDL_flags);
 }
 
 GPU_Target* GPU_InitRendererByID(GPU_RendererID renderer_request, Uint16 w, Uint16 h, GPU_WindowFlagEnum SDL_flags)
@@ -652,9 +653,9 @@ SDL_Color GPU_MakeColor(Uint8 r, Uint8 g, Uint8 b, Uint8 a)
     return c;
 }
 
-GPU_RendererID GPU_MakeRendererID(GPU_RendererEnum id, int major_version, int minor_version)
+GPU_RendererID GPU_MakeRendererID(const char* name, GPU_RendererEnum renderer, int major_version, int minor_version)
 {
-    GPU_RendererID r = {id, major_version, minor_version, -1};
+    GPU_RendererID r = {name, renderer, major_version, minor_version, -1};
     return r;
 }
 
