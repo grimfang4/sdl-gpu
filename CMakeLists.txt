@@ -27,7 +27,7 @@ option(SDL_gpu_DISABLE_GLES_1 "Disable OpenGLES 1.X renderer" OFF)
 option(SDL_gpu_DISABLE_GLES_2 "Disable OpenGLES 2.X renderer" OFF)
 option(SDL_gpu_DISABLE_GLES_3 "Disable OpenGLES 3.X renderer" OFF)
 
-set(SDL_gpu_VERSION 0.9.0)
+set(SDL_gpu_VERSION 0.10.0)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/scripts)
 
@@ -150,21 +150,15 @@ if(NOT WIN32)
 endif (NOT WIN32)
 
 # Make local includes look in the right places
-include_directories(SDL_gpu)
-include_directories(SDL_gpu/GL_common)
-include_directories(SDL_gpu/OpenGL_1_BASE)
-include_directories(SDL_gpu/OpenGL_1)
-include_directories(SDL_gpu/OpenGL_2)
-include_directories(SDL_gpu/OpenGL_3)
-include_directories(SDL_gpu/GLES_1)
-include_directories(SDL_gpu/GLES_2)
+include_directories(include)
+include_directories(src)
 
 if(NOT GLEW_FOUND)
-  include_directories(SDL_gpu/externals/glew)
+  include_directories(src/externals/glew)
 endif(NOT GLEW_FOUND)
 
 if(NOT STBI_FOUND)
-  include_directories(SDL_gpu/externals/stb_image)
+  include_directories(src/externals/stb_image)
   add_definitions("-DSTBI_FAILURE_USERMSG")
 endif(NOT STBI_FOUND)
 
@@ -172,7 +166,7 @@ endif(NOT STBI_FOUND)
 add_definitions("-Wall -std=c99 -pedantic")
 
 # Build the SDL_gpu library.
-add_subdirectory(SDL_gpu)
+add_subdirectory(src)
 
 # Build the demos
 if(SDL_gpu_BUILD_DEMOS)

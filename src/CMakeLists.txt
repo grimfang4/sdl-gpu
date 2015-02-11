@@ -1,29 +1,29 @@
 set(SDL_gpu_SRCS
 	${SDL_gpu_SRCS}
 	SDL_gpu.c
-	SDL_gpuShapes.c
-	SDL_gpu_Renderer.c
 	SDL_gpu_matrix.c
-	OpenGL_1_BASE/SDL_gpu_OpenGL_1_BASE.c
-	OpenGL_1/SDL_gpu_OpenGL_1.c
-	OpenGL_2/SDL_gpu_OpenGL_2.c
-	OpenGL_3/SDL_gpu_OpenGL_3.c
-	GLES_1/SDL_gpu_GLES_1.c
-	GLES_2/SDL_gpu_GLES_2.c
+	SDL_gpu_renderer.c
+	SDL_gpu_shapes.c
+	renderer_OpenGL_1_BASE.c
+	renderer_OpenGL_1.c
+	renderer_OpenGL_2.c
+	renderer_OpenGL_3.c
+	renderer_GLES_1.c
+	renderer_GLES_2.c
 )
 
 set(SDL_gpu_HDRS
 	${SDL_gpu_HDRS}
-	SDL_gpu.h
-	SDL_gpu_RendererImpl.h
-	GL_common/SDL_gpu_GL_common.inl
-	GL_common/SDL_gpuShapes_GL_common.inl
-	OpenGL_1_BASE/SDL_gpu_OpenGL_1_BASE.h
-	OpenGL_1/SDL_gpu_OpenGL_1.h
-	OpenGL_2/SDL_gpu_OpenGL_2.h
-	OpenGL_3/SDL_gpu_OpenGL_3.h
-	GLES_1/SDL_gpu_GLES_1.h
-	GLES_2/SDL_gpu_GLES_2.h
+	../include/SDL_gpu.h
+	../include/SDL_gpu_RendererImpl.h
+	../include/SDL_gpu_OpenGL_1_BASE.h
+	../include/SDL_gpu_OpenGL_1.h
+	../include/SDL_gpu_OpenGL_2.h
+	../include/SDL_gpu_OpenGL_3.h
+	../include/SDL_gpu_GLES_1.h
+	../include/SDL_gpu_GLES_2.h
+	renderer_GL_common.inl
+	renderer_shapes_GL_common.inl
 )
 
 if(STBI_FOUND)
@@ -44,17 +44,17 @@ endif(STBI_WRITE_FOUND)
 
 
 set(SDL_gpu_install_HDRS
-	SDL_gpu.h
-	SDL_gpu_RendererImpl.h
-	OpenGL_1_BASE/SDL_gpu_OpenGL_1_BASE.h
-	OpenGL_1/SDL_gpu_OpenGL_1.h
-	OpenGL_2/SDL_gpu_OpenGL_2.h
-	OpenGL_3/SDL_gpu_OpenGL_3.h
-	GLES_1/SDL_gpu_GLES_1.h
-	GLES_2/SDL_gpu_GLES_2.h
+	../include/SDL_gpu.h
+	../include/SDL_gpu_RendererImpl.h
+	../include/SDL_gpu_OpenGL_1_BASE.h
+	../include/SDL_gpu_OpenGL_1.h
+	../include/SDL_gpu_OpenGL_2.h
+	../include/SDL_gpu_OpenGL_3.h
+	../include/SDL_gpu_GLES_1.h
+	../include/SDL_gpu_GLES_2.h
 )
 
-# Set the appropriate library name so SDL_gpu and SDL2_gpu can co-exist.
+# Set the appropriate library name for the version of SDL used
 if ( SDL_gpu_USE_SDL1)
 	set (SDL_gpu_OUTPUT_NAME "SDL_gpu")
 else ( SDL_gpu_USE_SDL1)
@@ -75,7 +75,7 @@ if(SDL_gpu_BUILD_SHARED)
 	set_target_properties(SDL_gpu_shared PROPERTIES LINKER_LANGUAGE C)
 endif()
 
-# Build the static library (.a)
+# Build the static library (.a or .lib)
 if(SDL_gpu_BUILD_STATIC)
 	add_library(SDL_gpu STATIC
 		${SDL_gpu_HDRS}
@@ -92,12 +92,10 @@ endif()
 # These are used to create visual studio folders.
 source_group(Common FILES ${SDL_gpu_SRCS} ${SDL_gpu_HDRS})
 
-# Install the library
+# Install the headers and library
 if(SDL_gpu_INSTALL)
-	# install headers
 	install(FILES ${SDL_gpu_install_HDRS} DESTINATION include/SDL)
 
-	# install libraries
 	if(SDL_gpu_BUILD_SHARED)
 		install(TARGETS SDL_gpu_shared EXPORT SDL_gpu-targets DESTINATION lib)
 	endif()
@@ -105,7 +103,4 @@ if(SDL_gpu_INSTALL)
 		install(TARGETS SDL_gpu EXPORT SDL_gpu-targets DESTINATION lib)
 	endif()
 
-	# install build system hooks for third-party apps
-	#install(EXPORT SDL_gpu-targets DESTINATION ./SDL_gpu)
-	#install(FILES SDL_gpuConfig.cmake DESTINATION ./SDL_gpu)
 endif(SDL_gpu_INSTALL)
