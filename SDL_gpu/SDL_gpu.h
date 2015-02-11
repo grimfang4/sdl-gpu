@@ -714,7 +714,7 @@ DECLSPEC int SDLCALL GPU_GetNumRegisteredRenderers(void);
 DECLSPEC void SDLCALL GPU_GetRegisteredRendererList(GPU_RendererID* renderers_array);
 
 /*! Prepares a renderer for use by SDL_gpu. */
-DECLSPEC void SDLCALL GPU_RegisterRenderer(GPU_RendererID id, GPU_Renderer* (*create_renderer)(GPU_RendererID request), void(*free_renderer)(GPU_Renderer* renderer));
+DECLSPEC void SDLCALL GPU_RegisterRenderer(GPU_RendererID id, GPU_Renderer* (SDLCALL *create_renderer)(GPU_RendererID request), void (SDLCALL *free_renderer)(GPU_Renderer* renderer));
 
 // End of RendererSetup
 /*! @} */
