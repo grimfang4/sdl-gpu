@@ -227,7 +227,7 @@ typedef struct GPU_Image
 	GPU_FormatEnum format;
 	int num_layers;
 	int bytes_per_pixel;
-	Uint32 base_w, base_h;  // Underlying texture dimensions
+	Uint16 base_w, base_h;  // Underlying texture dimensions
 	Uint8 has_mipmaps;
 	
 	SDL_Color color;

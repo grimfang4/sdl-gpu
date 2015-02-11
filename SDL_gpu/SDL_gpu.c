@@ -8,6 +8,9 @@
 
 #ifdef _MSC_VER
 	#define __func__ __FUNCTION__
+	#pragma warning(push)
+	// Visual Studio wants to complain about while(0)
+	#pragma warning(disable: 4127)
 #endif
 
 #include "stb_image.h"
@@ -454,7 +457,7 @@ Uint8 GPU_GetFullscreen(void)
     GPU_Target* target = GPU_GetContextTarget();
     if(target == NULL)
         return 0;
-    return (SDL_GetWindowFlags(SDL_GetWindowFromID(target->context->windowID))
+    return (Uint8)(SDL_GetWindowFlags(SDL_GetWindowFromID(target->context->windowID))
              & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP));
 #else
     SDL_Surface* surf = SDL_GetVideoSurface();
@@ -2644,4 +2647,9 @@ void GPU_SetAttributeSource(int num_values, GPU_Attribute source)
 	
 	current_renderer->impl->SetAttributeSource(current_renderer, num_values, source);
 }
+
+
+#ifdef _MSC_VER
+	#pragma warning(pop) 
+#endif
 
