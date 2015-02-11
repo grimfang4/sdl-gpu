@@ -27,7 +27,13 @@ static RendererRegistration rendererRegister[MAX_REGISTERED_RENDERERS];
 
 static GPU_RendererID makeRendererID(const char* name, GPU_RendererEnum renderer, int major_version, int minor_version, int index)
 {
-    GPU_RendererID r = {name, renderer, major_version, minor_version, index};
+	GPU_RendererID r;
+	r.name = name;
+	r.renderer = renderer;
+	r.major_version = major_version;
+	r.minor_version = minor_version;
+	r.index = index;
+
     return r;
 }
 
@@ -160,7 +166,7 @@ void GPU_RegisterRenderer(GPU_RendererID id, GPU_Renderer* (*create_renderer)(GP
     rendererRegister[i].freeFn = free_renderer;
 }
 
-void GPU_RegisterRenderers()
+void GPU_RegisterRenderers(void)
 {
 	#ifndef SDL_GPU_DISABLE_OPENGL
         #ifndef SDL_GPU_DISABLE_OPENGL_1_BASE

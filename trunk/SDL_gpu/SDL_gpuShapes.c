@@ -2,7 +2,12 @@
 #include "SDL_gpu_RendererImpl.h"
 #include <string.h>
 
-#define CHECK_RENDERER(ret) \
+#define CHECK_RENDERER() \
+GPU_Renderer* renderer = GPU_GetCurrentRenderer(); \
+if(renderer == NULL) \
+    return;
+
+#define CHECK_RENDERER_1(ret) \
 GPU_Renderer* renderer = GPU_GetCurrentRenderer(); \
 if(renderer == NULL) \
     return ret;
@@ -10,13 +15,13 @@ if(renderer == NULL) \
 
 float GPU_SetLineThickness(float thickness)
 {
-	CHECK_RENDERER(1.0f);
+	CHECK_RENDERER_1(1.0f);
 	return renderer->impl->SetLineThickness(renderer, thickness);
 }
 
 float GPU_GetLineThickness(void)
 {
-	CHECK_RENDERER(1.0f);
+	CHECK_RENDERER_1(1.0f);
 	return renderer->impl->GetLineThickness(renderer);
 }
 

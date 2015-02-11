@@ -55,6 +55,24 @@ static_inline int c99_snprintf(char* str, size_t size, const char* format, ...)
 // Column-major
 #define INDEX(row,col) ((col)*4 + (row))
 
+#define FILL_MATRIX_4x4(A, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15) \
+	A[0] = a0; \
+	A[1] = a1; \
+	A[2] = a2; \
+	A[3] = a3; \
+	A[4] = a4; \
+	A[5] = a5; \
+	A[6] = a6; \
+	A[7] = a7; \
+	A[8] = a8; \
+	A[9] = a9; \
+	A[10] = a10; \
+	A[11] = a11; \
+	A[12] = a12; \
+	A[13] = a13; \
+	A[14] = a14; \
+	A[15] = a15;
+
 void GPU_MatrixCopy(float* result, const float* A)
 {
     memcpy(result, A, 16*sizeof(float));
@@ -168,7 +186,7 @@ float* GPU_GetCurrentMatrix(void)
     return stack->matrix[stack->size-1];
 }
 
-void GPU_PushMatrix()
+void GPU_PushMatrix(void)
 {
     GPU_Target* target = GPU_GetContextTarget();
 	GPU_MatrixStack* stack;
@@ -186,7 +204,7 @@ void GPU_PushMatrix()
     stack->size++;
 }
 
-void GPU_PopMatrix()
+void GPU_PopMatrix(void)
 {
     GPU_Target* target = GPU_GetContextTarget();
 	GPU_MatrixStack* stack;
@@ -219,15 +237,21 @@ void GPU_Ortho(float left, float right, float bottom, float top, float near, flo
 
 	{
 #ifdef ROW_MAJOR
-		float A[16] = {2/(right - left), 0,  0, -(right + left)/(right - left),
-			0, 2/(top - bottom), 0, -(top + bottom)/(top - bottom),
-			0, 0, -2/(far - near), -(far + near)/(far - near),
-			0, 0, 0, 1};
+		float A[16];
+		FILL_MATRIX_4x4(A,
+				2/(right - left), 0,  0, -(right + left)/(right - left),
+				0, 2/(top - bottom), 0, -(top + bottom)/(top - bottom),
+				0, 0, -2/(far - near), -(far + near)/(far - near),
+				0, 0, 0, 1
+			);
 #else
-		float A[16] = { 2 / (right - left), 0, 0, 0,
-			0, 2 / (top - bottom), 0, 0,
-			0, 0, -2 / (far - near), 0,
-			-(right + left) / (right - left), -(top + bottom) / (top - bottom), -(far + near) / (far - near), 1 };
+		float A[16];
+		FILL_MATRIX_4x4(A,
+				2 / (right - left), 0, 0, 0,
+				0, 2 / (top - bottom), 0, 0,
+				0, 0, -2 / (far - near), 0,
+				-(right + left) / (right - left), -(top + bottom) / (top - bottom), -(far + near) / (far - near), 1
+			);
 #endif
 
 		GPU_MultiplyAndAssign(result, A);
@@ -242,15 +266,21 @@ void GPU_Frustum(float right, float left, float bottom, float top, float near, f
 
 	{
 #ifdef ROW_MAJOR
-		float A[16] = {2 * near / (right - left), 0, 0, 0,
-			0, 2 * near / (top - bottom), 0, 0,
-			(right + left) / (right - left), (top + bottom) / (top - bottom), -(far + near) / (far - near), -1,
-			0, 0, -(2 * far * near) / (far - near), 0};
+		float A[16];
+		FILL_MATRIX_4x4(A, 
+				2 * near / (right - left), 0, 0, 0,
+				0, 2 * near / (top - bottom), 0, 0,
+				(right + left) / (right - left), (top + bottom) / (top - bottom), -(far + near) / (far - near), -1,
+				0, 0, -(2 * far * near) / (far - near), 0
+			);
 #else
-		float A[16] = { 2 * near / (right - left), 0, (right + left) / (right - left), 0,
-			0, 2 * near / (top - bottom), (top + bottom) / (top - bottom), 0,
-			0, 0, -(far + near) / (far - near), -(2 * far * near) / (far - near),
-			0, 0, -1, 0 };
+		float A[16];
+		FILL_MATRIX_4x4(A,
+				2 * near / (right - left), 0, (right + left) / (right - left), 0,
+				0, 2 * near / (top - bottom), (top + bottom) / (top - bottom), 0,
+				0, 0, -(far + near) / (far - near), -(2 * far * near) / (far - near),
+				0, 0, -1, 0
+			);
 #endif
 
 		GPU_MultiplyAndAssign(result, A);
@@ -265,15 +295,21 @@ void GPU_Translate(float x, float y, float z)
 
 	{
 #ifdef ROW_MAJOR
-		float A[16] = {1, 0, 0, x,
-			0, 1, 0, y,
-			0, 0, 1, z,
-			0, 0, 0, 1};
+		float A[16];
+		FILL_MATRIX_4x4(A,
+				1, 0, 0, x,
+				0, 1, 0, y,
+				0, 0, 1, z,
+				0, 0, 0, 1
+			);
 #else
-		float A[16] = { 1, 0, 0, 0,
-			0, 1, 0, 0,
-			0, 0, 1, 0,
-			x, y, z, 1 };
+		float A[16];
+		FILL_MATRIX_4x4(A,
+				1, 0, 0, 0,
+				0, 1, 0, 0,
+				0, 0, 1, 0,
+				x, y, z, 1
+			);
 #endif
 
 		GPU_MultiplyAndAssign(result, A);
@@ -287,10 +323,13 @@ void GPU_Scale(float sx, float sy, float sz)
 		return;
 
 	{
-		float A[16] = { sx, 0, 0, 0,
-			0, sy, 0, 0,
-			0, 0, sz, 0,
-			0, 0, 0, 1 };
+		float A[16];
+		FILL_MATRIX_4x4(A,
+				sx, 0, 0, 0,
+				0, sy, 0, 0,
+				0, 0, sz, 0,
+				0, 0, 0, 1
+			);
 
 		GPU_MultiplyAndAssign(result, A);
 	}
@@ -322,15 +361,21 @@ void GPU_Rotate(float degrees, float x, float y, float z)
 
 	{
 #ifdef ROW_MAJOR
-		float A[16] = {x*x*c_ + c,  xyc_ - zs,   xzc_ + ys, 0,
-			xyc_ + zs,   y*yc_ + c,   yzc_ - xs, 0,
-			xzc_ - ys,   yzc_ + xs,   z*zc_ + c, 0,
-			0,           0,           0,         1};
+		float A[16];
+		FILL_MATRIX_4x4(A,
+				x*x*c_ + c,  xyc_ - zs,   xzc_ + ys, 0,
+				xyc_ + zs,   y*yc_ + c,   yzc_ - xs, 0,
+				xzc_ - ys,   yzc_ + xs,   z*zc_ + c, 0,
+				0,           0,           0,         1
+			);
 #else
-		float A[16] = { x*x*c_ + c, xyc_ + zs, xzc_ - ys, 0,
-			xyc_ - zs, y*yc_ + c, yzc_ + xs, 0,
-			xzc_ + ys, yzc_ - xs, z*zc_ + c, 0,
-			0, 0, 0, 1 };
+		float A[16];
+		FILL_MATRIX_4x4(A,
+				x*x*c_ + c, xyc_ + zs, xzc_ - ys, 0,
+				xyc_ - zs, y*yc_ + c, yzc_ + xs, 0,
+				xzc_ + ys, yzc_ - xs, z*zc_ + c, 0,
+				0, 0, 0, 1
+			);
 #endif
 
 		GPU_MultiplyAndAssign(result, A);
