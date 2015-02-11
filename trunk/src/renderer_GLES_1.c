@@ -18,8 +18,9 @@ void GPU_FreeRenderer_GLES_1(GPU_Renderer* renderer) {}
 #define SDL_GPU_DISABLE_SHADERS
 #define SDL_GPU_APPLY_TRANSFORMS_TO_GL_STACK
 #define SDL_GPU_NO_VAO
-#include "../GL_common/SDL_gpu_GL_common.inl"
-#include "../GL_common/SDL_gpuShapes_GL_common.inl"
+
+#include "renderer_GL_common.inl"
+#include "renderer_shapes_GL_common.inl"
 
 
 GPU_Renderer* GPU_CreateRenderer_GLES_1(GPU_RendererID request)

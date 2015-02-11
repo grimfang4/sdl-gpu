@@ -5,16 +5,16 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := SDL2_gpu
 
 SDL_GPU_DIR := ./
-STB_IMAGE_DIR := $(SDL_GPU_DIR)/externals/stb_image
+STB_IMAGE_DIR := $(SDL_GPU_DIR)/src/externals/stb_image
 
-LOCAL_CFLAGS := -I$(LOCAL_PATH)/../SDL/include -I$(LOCAL_PATH)/$(SDL_GPU_DIR) -I$(LOCAL_PATH)/$(RENDERER_DIR) -I$(LOCAL_PATH)/$(STB_IMAGE_DIR)
+LOCAL_CFLAGS := -I$(LOCAL_PATH)/../SDL/include -I$(LOCAL_PATH)/$(SDL_GPU_DIR)/include -I$(LOCAL_PATH)/$(STB_IMAGE_DIR)
 
 LOCAL_SRC_FILES := $(SDL_GPU_DIR)/SDL_gpu.c \
-				   $(SDL_GPU_DIR)/SDL_gpu_Renderer.c \
-				   $(SDL_GPU_DIR)/SDL_gpuShapes.c \
-				   $(SDL_GPU_DIR)/GL_common/SDL_gpu_GL_matrix.c \
-				   $(SDL_GPU_DIR)/GLES_1/SDL_gpu_GLES_1.c \
-				   $(SDL_GPU_DIR)/GLES_2/SDL_gpu_GLES_2.c \
+				   $(SDL_GPU_DIR)/SDL_gpu_matrix.c \
+				   $(SDL_GPU_DIR)/SDL_gpu_renderer.c \
+				   $(SDL_GPU_DIR)/SDL_gpu_shapes.c \
+				   $(SDL_GPU_DIR)/renderer_GLES_1.c \
+				   $(SDL_GPU_DIR)/renderer_GLES_2.c \
 				   $(STB_IMAGE_DIR)/stb_image.c \
 				   $(STB_IMAGE_DIR)/stb_image_write.c
 
