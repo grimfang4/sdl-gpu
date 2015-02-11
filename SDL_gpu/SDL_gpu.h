@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+// Use SDL's DLL defines
+#include "begin_code.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -574,71 +576,71 @@ struct GPU_Renderer
 
 // Visual C does not support static inline
 #ifdef _MSC_VER
-static SDL_version GPU_GetCompiledVersion(void)
+static SDL_version SDLCALL GPU_GetCompiledVersion(void)
 #else
-static inline SDL_version GPU_GetCompiledVersion(void)
+static inline SDL_version SDLCALL GPU_GetCompiledVersion(void)
 #endif
 {
     SDL_version v = {SDL_GPU_VERSION_MAJOR, SDL_GPU_VERSION_MINOR, SDL_GPU_VERSION_PATCH};
     return v;
 }
 
-SDL_version GPU_GetLinkedVersion(void);
+DECLSPEC SDL_version SDLCALL GPU_GetLinkedVersion(void);
 
 /*! The window corresponding to 'windowID' will be used to create the rendering context instead of creating a new window. */
-void GPU_SetInitWindow(Uint32 windowID);
+DECLSPEC void SDLCALL GPU_SetInitWindow(Uint32 windowID);
 
 /*! Returns the window ID that has been set via GPU_SetInitWindow(). */
-Uint32 GPU_GetInitWindow(void);
+DECLSPEC Uint32 SDLCALL GPU_GetInitWindow(void);
 
 /*! Set special flags to use for initialization. Set these before calling GPU_Init().
  * \param GPU_flags An OR'ed combination of GPU_InitFlagEnum flags.  Default flags (0) enable late swap vsync and double buffering. */
-void GPU_SetPreInitFlags(GPU_InitFlagEnum GPU_flags);
+DECLSPEC void SDLCALL GPU_SetPreInitFlags(GPU_InitFlagEnum GPU_flags);
 
 /*! Returns the current special flags to use for initialization. */
-GPU_InitFlagEnum GPU_GetPreInitFlags(void);
+DECLSPEC GPU_InitFlagEnum SDLCALL GPU_GetPreInitFlags(void);
 
 /*! Set required features to use for initialization. Set these before calling GPU_Init().
  * \param features An OR'ed combination of GPU_FeatureEnum flags.  Required features will force GPU_Init() to create a renderer that supports all of the given flags or else fail. */
-void GPU_SetRequiredFeatures(GPU_FeatureEnum features);
+DECLSPEC void SDLCALL GPU_SetRequiredFeatures(GPU_FeatureEnum features);
 
 /*! Returns the current required features to use for initialization. */
-GPU_FeatureEnum GPU_GetRequiredFeatures(void);
+DECLSPEC GPU_FeatureEnum SDLCALL GPU_GetRequiredFeatures(void);
 
 /*! Gets the default initialization renderer IDs for the current platform copied into the 'order' array and the number of renderer IDs into 'order_size'.  Pass NULL for 'order' to just get the size of the renderer order array.  Will return at most GPU_RENDERER_ORDER_MAX renderers. */
-void GPU_GetDefaultRendererOrder(int* order_size, GPU_RendererID* order);
+DECLSPEC void SDLCALL GPU_GetDefaultRendererOrder(int* order_size, GPU_RendererID* order);
 
 /*! Gets the current renderer ID order for initialization copied into the 'order' array and the number of renderer IDs into 'order_size'.  Pass NULL for 'order' to just get the size of the renderer order array. */
-void GPU_GetRendererOrder(int* order_size, GPU_RendererID* order);
+DECLSPEC void SDLCALL GPU_GetRendererOrder(int* order_size, GPU_RendererID* order);
 
 /*! Sets the renderer ID order to use for initialization.  If 'order' is NULL, it will restore the default order. */
-void GPU_SetRendererOrder(int order_size, GPU_RendererID* order);
+DECLSPEC void SDLCALL GPU_SetRendererOrder(int order_size, GPU_RendererID* order);
 
 /*! Initializes SDL and SDL_gpu.  Creates a window and goes through the renderer order to create a renderer context.
  * \see GPU_SetRendererOrder()
  */
-GPU_Target* GPU_Init(Uint16 w, Uint16 h, GPU_WindowFlagEnum SDL_flags);
+DECLSPEC GPU_Target* SDLCALL GPU_Init(Uint16 w, Uint16 h, GPU_WindowFlagEnum SDL_flags);
 
 /*! Initializes SDL and SDL_gpu.  Creates a window and the requested renderer context. */
-GPU_Target* GPU_InitRenderer(GPU_RendererEnum renderer_enum, Uint16 w, Uint16 h, GPU_WindowFlagEnum SDL_flags);
+DECLSPEC GPU_Target* SDLCALL GPU_InitRenderer(GPU_RendererEnum renderer_enum, Uint16 w, Uint16 h, GPU_WindowFlagEnum SDL_flags);
 
 /*! Initializes SDL and SDL_gpu.  Creates a window and the requested renderer context.
  * By requesting a renderer via ID, you can specify the major and minor versions of an individual renderer backend.
  * \see GPU_MakeRendererID
  */
-GPU_Target* GPU_InitRendererByID(GPU_RendererID renderer_request, Uint16 w, Uint16 h, GPU_WindowFlagEnum SDL_flags);
+DECLSPEC GPU_Target* SDLCALL GPU_InitRendererByID(GPU_RendererID renderer_request, Uint16 w, Uint16 h, GPU_WindowFlagEnum SDL_flags);
 
 /*! Checks for important GPU features which may not be supported depending on a device's extension support.  Feature flags (GPU_FEATURE_*) can be bitwise OR'd together. 
  * \return 1 if all of the passed features are enabled/supported
  * \return 0 if any of the passed features are disabled/unsupported
  */
-Uint8 GPU_IsFeatureEnabled(GPU_FeatureEnum feature);
+DECLSPEC Uint8 SDLCALL GPU_IsFeatureEnabled(GPU_FeatureEnum feature);
 
 /*! Clean up the renderer state. */
-void GPU_CloseCurrentRenderer(void);
+DECLSPEC void SDLCALL GPU_CloseCurrentRenderer(void);
 
 /*! Clean up the renderer state and shut down SDL_gpu. */
-void GPU_Quit(void);
+DECLSPEC void SDLCALL GPU_Quit(void);
 
 // End of Initialization
 /*! @} */
@@ -657,32 +659,32 @@ void GPU_Quit(void);
  * GPU_DEBUG_LEVEL_2: Elevates warning logs to error priority
  * GPU_DEBUG_LEVEL_3: Elevates info logs to error priority
  */
-void GPU_SetDebugLevel(GPU_DebugLevelEnum level);
+DECLSPEC void SDLCALL GPU_SetDebugLevel(GPU_DebugLevelEnum level);
 
 /*! Returns the current global debug level. */
-GPU_DebugLevelEnum GPU_GetDebugLevel(void);
+DECLSPEC GPU_DebugLevelEnum SDLCALL GPU_GetDebugLevel(void);
 
 /*! Prints an informational log message. */
-void GPU_LogInfo(const char* format, ...);
+DECLSPEC void SDLCALL GPU_LogInfo(const char* format, ...);
 
 /*! Prints a warning log message. */
-void GPU_LogWarning(const char* format, ...);
+DECLSPEC void SDLCALL GPU_LogWarning(const char* format, ...);
 
 /*! Prints an error log message. */
-void GPU_LogError(const char* format, ...);
+DECLSPEC void SDLCALL GPU_LogError(const char* format, ...);
 
 /*! Pushes a new error code onto the error stack.  If the stack is full, this function does nothing.
  * \param function The name of the function that pushed the error
  * \param error The error code to push on the error stack
  * \param details Additional information string, can be NULL.
  */
-void GPU_PushErrorCode(const char* function, GPU_ErrorEnum error, const char* details, ...);
+DECLSPEC void SDLCALL GPU_PushErrorCode(const char* function, GPU_ErrorEnum error, const char* details, ...);
 
 /*! Pops an error object from the error stack and returns it.  If the error stack is empty, it returns an error object with NULL function, GPU_ERROR_NONE error, and NULL details. */
-GPU_ErrorObject GPU_PopErrorCode(void);
+DECLSPEC GPU_ErrorObject SDLCALL GPU_PopErrorCode(void);
 
 /*! Gets the string representation of an error code. */
-const char* GPU_GetErrorString(GPU_ErrorEnum error);
+DECLSPEC const char* SDLCALL GPU_GetErrorString(GPU_ErrorEnum error);
 
 // End of Logging
 /*! @} */
@@ -697,22 +699,22 @@ const char* GPU_GetErrorString(GPU_ErrorEnum error);
  *  @{ */
 
 /*! Returns an initialized GPU_RendererID. */
-GPU_RendererID GPU_MakeRendererID(const char* name, GPU_RendererEnum renderer, int major_version, int minor_version);
+DECLSPEC GPU_RendererID SDLCALL GPU_MakeRendererID(const char* name, GPU_RendererEnum renderer, int major_version, int minor_version);
 
 /*! Gets the first registered renderer identifier for the given enum value. */
-GPU_RendererID GPU_GetRendererID(GPU_RendererEnum renderer);
+DECLSPEC GPU_RendererID SDLCALL GPU_GetRendererID(GPU_RendererEnum renderer);
 
 /*! Gets the renderer identifier for the given registration index. */
-GPU_RendererID GPU_GetRendererIDByIndex(unsigned int index);
+DECLSPEC GPU_RendererID SDLCALL GPU_GetRendererIDByIndex(unsigned int index);
 
 /*! Gets the number of registered (available) renderers. */
-int GPU_GetNumRegisteredRenderers(void);
+DECLSPEC int SDLCALL GPU_GetNumRegisteredRenderers(void);
 
 /*! Gets an array of identifiers for the registered (available) renderers. */
-void GPU_GetRegisteredRendererList(GPU_RendererID* renderers_array);
+DECLSPEC void SDLCALL GPU_GetRegisteredRendererList(GPU_RendererID* renderers_array);
 
 /*! Prepares a renderer for use by SDL_gpu. */
-void GPU_RegisterRenderer(GPU_RendererID id, GPU_Renderer* (*create_renderer)(GPU_RendererID request), void (*free_renderer)(GPU_Renderer* renderer));
+DECLSPEC void SDLCALL GPU_RegisterRenderer(GPU_RendererID id, GPU_Renderer* (*create_renderer)(GPU_RendererID request), void(*free_renderer)(GPU_Renderer* renderer));
 
 // End of RendererSetup
 /*! @} */
@@ -723,28 +725,28 @@ void GPU_RegisterRenderer(GPU_RendererID id, GPU_Renderer* (*create_renderer)(GP
  *  @{ */
 
 /*! Gets the next enum ID that can be used for a custom renderer. */
-GPU_RendererEnum GPU_ReserveNextRendererEnum(void);
+DECLSPEC GPU_RendererEnum SDLCALL GPU_ReserveNextRendererEnum(void);
 
 /*! Gets the number of active (created) renderers. */
-int GPU_GetNumActiveRenderers(void);
+DECLSPEC int SDLCALL GPU_GetNumActiveRenderers(void);
 
 /*! Gets an array of identifiers for the active renderers. */
-void GPU_GetActiveRendererList(GPU_RendererID* renderers_array);
+DECLSPEC void SDLCALL GPU_GetActiveRendererList(GPU_RendererID* renderers_array);
 
 /*! Gets the renderer for the given renderer index. */
-GPU_Renderer* GPU_GetRenderer(unsigned int index);
+DECLSPEC GPU_Renderer* SDLCALL GPU_GetRenderer(unsigned int index);
 
 /*! \return The renderer matching the given identifier. */
-GPU_Renderer* GPU_GetRendererByID(GPU_RendererID id);
+DECLSPEC GPU_Renderer* SDLCALL GPU_GetRendererByID(GPU_RendererID id);
 
 /*! \return The current renderer */
-GPU_Renderer* GPU_GetCurrentRenderer(void);
+DECLSPEC GPU_Renderer* SDLCALL GPU_GetCurrentRenderer(void);
 
 /*! Switches the current renderer to the renderer matching the given identifier. */
-void GPU_SetCurrentRenderer(GPU_RendererID id);
+DECLSPEC void SDLCALL GPU_SetCurrentRenderer(GPU_RendererID id);
 
 /*! Reapplies the renderer state to the backend API (e.g. OpenGL, Direct3D).  Use this if you want SDL_gpu to be able to render after you've used direct backend calls. */
-void GPU_ResetRendererState(void);
+DECLSPEC void SDLCALL GPU_ResetRendererState(void);
 
 // End of RendererControls
 /*! @} */
@@ -758,57 +760,57 @@ void GPU_ResetRendererState(void);
  *  @{ */
 
 /*! \return The renderer's current context target. */
-GPU_Target* GPU_GetContextTarget(void);
+DECLSPEC GPU_Target* SDLCALL GPU_GetContextTarget(void);
 
 /*! \return The target that is associated with the given windowID. */
-GPU_Target* GPU_GetWindowTarget(Uint32 windowID);
+DECLSPEC GPU_Target* SDLCALL GPU_GetWindowTarget(Uint32 windowID);
 
 /*! Creates a separate context for the given window using the current renderer and returns a GPU_Target that represents it. */
-GPU_Target* GPU_CreateTargetFromWindow(Uint32 windowID);
+DECLSPEC GPU_Target* SDLCALL GPU_CreateTargetFromWindow(Uint32 windowID);
 
 /*! Makes the given window the current rendering destination for the given context target.
  * This also makes the target the current context for image loading and window operations.
  * If the target does not represent a window, this does nothing.
  */
-void GPU_MakeCurrent(GPU_Target* target, Uint32 windowID);
+DECLSPEC void SDLCALL GPU_MakeCurrent(GPU_Target* target, Uint32 windowID);
 
 /*! Change the actual size of the current context target's window.  This resets the virtual resolution and viewport of the context target.
  * Aside from direct resolution changes, this should also be called in response to SDL_WINDOWEVENT_RESIZED window events for resizable windows. */
-Uint8 GPU_SetWindowResolution(Uint16 w, Uint16 h);
+DECLSPEC Uint8 SDLCALL GPU_SetWindowResolution(Uint16 w, Uint16 h);
 
 /*! Enable/disable fullscreen mode for the current context target's window.
  * On some platforms, this may destroy the renderer context and require that textures be reloaded.  Unfortunately, SDL does not provide a notification mechanism for this.
  * \param enable_fullscreen If true, make the application go fullscreen.  If false, make the application go to windowed mode.
  * \param use_desktop_resolution If true, lets the window change its resolution when it enters fullscreen mode (via SDL_WINDOW_FULLSCREEN_DESKTOP).
  * \return 0 if the new mode is windowed, 1 if the new mode is fullscreen.  */
-Uint8 GPU_SetFullscreen(Uint8 enable_fullscreen, Uint8 use_desktop_resolution);
+DECLSPEC Uint8 SDLCALL GPU_SetFullscreen(Uint8 enable_fullscreen, Uint8 use_desktop_resolution);
 
 /*! Returns true if the current context target's window is in fullscreen mode. */
-Uint8 GPU_GetFullscreen(void);
+DECLSPEC Uint8 SDLCALL GPU_GetFullscreen(void);
 
 /*! Enables/disables alpha blending for shape rendering on the current window. */
-void GPU_SetShapeBlending(Uint8 enable);
+DECLSPEC void SDLCALL GPU_SetShapeBlending(Uint8 enable);
 
 /*! Translates a blend preset into a blend mode. */
-GPU_BlendMode GPU_GetBlendModeFromPreset(GPU_BlendPresetEnum preset);
+DECLSPEC GPU_BlendMode SDLCALL GPU_GetBlendModeFromPreset(GPU_BlendPresetEnum preset);
 
 /*! Sets the blending component functions for shape rendering. */
-void GPU_SetShapeBlendFunction(GPU_BlendFuncEnum source_color, GPU_BlendFuncEnum dest_color, GPU_BlendFuncEnum source_alpha, GPU_BlendFuncEnum dest_alpha);
+DECLSPEC void SDLCALL GPU_SetShapeBlendFunction(GPU_BlendFuncEnum source_color, GPU_BlendFuncEnum dest_color, GPU_BlendFuncEnum source_alpha, GPU_BlendFuncEnum dest_alpha);
 
 /*! Sets the blending component equations for shape rendering. */
-void GPU_SetShapeBlendEquation(GPU_BlendEqEnum color_equation, GPU_BlendEqEnum alpha_equation);
+DECLSPEC void SDLCALL GPU_SetShapeBlendEquation(GPU_BlendEqEnum color_equation, GPU_BlendEqEnum alpha_equation);
 	
 /*! Sets the blending mode for shape rendering on the current window, if supported by the renderer. */
-void GPU_SetShapeBlendMode(GPU_BlendPresetEnum mode);
+DECLSPEC void SDLCALL GPU_SetShapeBlendMode(GPU_BlendPresetEnum mode);
 
 /*! Sets the thickness of lines for the current context. 
  * \param thickness New line thickness in pixels measured across the line.  Default is 1.0f.
  * \return The old thickness value
  */
-float GPU_SetLineThickness(float thickness);
+DECLSPEC float SDLCALL GPU_SetLineThickness(float thickness);
 
 /*! Returns the current line thickness value. */
-float GPU_GetLineThickness(void);
+DECLSPEC float SDLCALL GPU_GetLineThickness(void);
 
 // End of ContextControls
 /*! @} */
@@ -821,81 +823,81 @@ float GPU_GetLineThickness(void);
 
 /*! Creates a target that aliases the given target.  Aliases can be used to store target settings (e.g. viewports) for easy switching.
  * GPU_FreeTarget() frees the alias's memory, but does not affect the original. */
-GPU_Target* GPU_CreateAliasTarget(GPU_Target* target);
+DECLSPEC GPU_Target* SDLCALL GPU_CreateAliasTarget(GPU_Target* target);
 
 /*! Creates a new render target from the given image.  It can then be accessed from image->target. */
-GPU_Target* GPU_LoadTarget(GPU_Image* image);
+DECLSPEC GPU_Target* SDLCALL GPU_LoadTarget(GPU_Image* image);
 
 /*! Deletes a render target in the proper way for this renderer. */
-void GPU_FreeTarget(GPU_Target* target);
+DECLSPEC void SDLCALL GPU_FreeTarget(GPU_Target* target);
 
 /*! Change the logical size of the given target.  Rendering to this target will be scaled as if the dimensions were actually the ones given. */
-void GPU_SetVirtualResolution(GPU_Target* target, Uint16 w, Uint16 h);
+DECLSPEC void SDLCALL GPU_SetVirtualResolution(GPU_Target* target, Uint16 w, Uint16 h);
 
 /*! Converts screen space coordinates (such as from mouse input) to logical drawing coordinates. */
-void GPU_GetVirtualCoords(GPU_Target* target, float* x, float* y, float displayX, float displayY);
+DECLSPEC void SDLCALL GPU_GetVirtualCoords(GPU_Target* target, float* x, float* y, float displayX, float displayY);
 
 /*! Reset the logical size of the given target to its original value. */
-void GPU_UnsetVirtualResolution(GPU_Target* target);
+DECLSPEC void SDLCALL GPU_UnsetVirtualResolution(GPU_Target* target);
 
 /*! \return A GPU_Rect with the given values. */
-GPU_Rect GPU_MakeRect(float x, float y, float w, float h);
+DECLSPEC GPU_Rect SDLCALL GPU_MakeRect(float x, float y, float w, float h);
 
 /*! \return An SDL_Color with the given values. */
-SDL_Color GPU_MakeColor(Uint8 r, Uint8 g, Uint8 b, Uint8 a);
+DECLSPEC SDL_Color SDLCALL GPU_MakeColor(Uint8 r, Uint8 g, Uint8 b, Uint8 a);
 
 /*! Sets the given target's viewport. */
-void GPU_SetViewport(GPU_Target* target, GPU_Rect viewport);
+DECLSPEC void SDLCALL GPU_SetViewport(GPU_Target* target, GPU_Rect viewport);
 
 /*! \return A GPU_Camera with position (0, 0, -10), angle of 0, and zoom of 1. */
-GPU_Camera GPU_GetDefaultCamera(void);
+DECLSPEC GPU_Camera SDLCALL GPU_GetDefaultCamera(void);
 
 /*! \return The camera of the given render target.  If target is NULL, returns the default camera. */
-GPU_Camera GPU_GetCamera(GPU_Target* target);
+DECLSPEC GPU_Camera SDLCALL GPU_GetCamera(GPU_Target* target);
 
 /*! Sets the current render target's current camera.
  * \param target A pointer to the target that will copy this camera.
  * \param cam A pointer to the camera data to use or NULL to use the default camera.
  * \return The old camera. */
-GPU_Camera GPU_SetCamera(GPU_Target* target, GPU_Camera* cam);
+DECLSPEC GPU_Camera SDLCALL GPU_SetCamera(GPU_Target* target, GPU_Camera* cam);
 
 /*! \return The RGBA color of a pixel. */
-SDL_Color GPU_GetPixel(GPU_Target* target, Sint16 x, Sint16 y);
+DECLSPEC SDL_Color SDLCALL GPU_GetPixel(GPU_Target* target, Sint16 x, Sint16 y);
 
 /*! Sets the clipping rect for the given render target. */
-GPU_Rect GPU_SetClipRect(GPU_Target* target, GPU_Rect rect);
+DECLSPEC GPU_Rect SDLCALL GPU_SetClipRect(GPU_Target* target, GPU_Rect rect);
 
 /*! Sets the clipping rect for the given render target. */
-GPU_Rect GPU_SetClip(GPU_Target* target, Sint16 x, Sint16 y, Uint16 w, Uint16 h);
+DECLSPEC GPU_Rect SDLCALL GPU_SetClip(GPU_Target* target, Sint16 x, Sint16 y, Uint16 w, Uint16 h);
 
 /*! Turns off clipping for the given target. */
-void GPU_UnsetClip(GPU_Target* target);
+DECLSPEC void SDLCALL GPU_UnsetClip(GPU_Target* target);
 
 /*! Sets the modulation color for subsequent drawing of images and shapes on the given target. 
  *  This has a cumulative effect with the image coloring functions.
  *  e.g. GPU_SetRGB(image, 255, 128, 0); GPU_SetTargetRGB(target, 128, 128, 128);
  *  Would make the image draw with color of roughly (128, 64, 0).
  */
-void GPU_SetTargetColor(GPU_Target* target, SDL_Color color);
+DECLSPEC void SDLCALL GPU_SetTargetColor(GPU_Target* target, SDL_Color color);
 
 /*! Sets the modulation color for subsequent drawing of images and shapes on the given target. 
  *  This has a cumulative effect with the image coloring functions.
  *  e.g. GPU_SetRGB(image, 255, 128, 0); GPU_SetTargetRGB(target, 128, 128, 128);
  *  Would make the image draw with color of roughly (128, 64, 0).
  */
-void GPU_SetTargetRGB(GPU_Target* target, Uint8 r, Uint8 g, Uint8 b);
+DECLSPEC void SDLCALL GPU_SetTargetRGB(GPU_Target* target, Uint8 r, Uint8 g, Uint8 b);
 
 /*! Sets the modulation color for subsequent drawing of images and shapes on the given target. 
  *  This has a cumulative effect with the image coloring functions.
  *  e.g. GPU_SetRGB(image, 255, 128, 0); GPU_SetTargetRGB(target, 128, 128, 128);
  *  Would make the image draw with color of roughly (128, 64, 0).
  */
-void GPU_SetTargetRGBA(GPU_Target* target, Uint8 r, Uint8 g, Uint8 b, Uint8 a);
+DECLSPEC void SDLCALL GPU_SetTargetRGBA(GPU_Target* target, Uint8 r, Uint8 g, Uint8 b, Uint8 a);
 
 /*! Unsets the modulation color for subsequent drawing of images and shapes on the given target. 
  *  This has the same effect as coloring with pure opaque white (255, 255, 255, 255).
  */
-void GPU_UnsetTargetColor(GPU_Target* target);
+DECLSPEC void SDLCALL GPU_UnsetTargetColor(GPU_Target* target);
 
 // End of TargetControls
 /*! @} */
@@ -906,10 +908,10 @@ void GPU_UnsetTargetColor(GPU_Target* target);
  *  @{ */
 
 /*! Load surface from an image file that is supported by this renderer.  Don't forget to SDL_FreeSurface() it. */
-SDL_Surface* GPU_LoadSurface(const char* filename);
+DECLSPEC SDL_Surface* SDLCALL GPU_LoadSurface(const char* filename);
 
 /*! Save surface to a file.  The file type is deduced from the extension.  Supported formats are: png, bmp, tga.  Returns 0 on failure. */
-Uint8 GPU_SaveSurface(SDL_Surface* surface, const char* filename);
+DECLSPEC Uint8 SDLCALL GPU_SaveSurface(SDL_Surface* surface, const char* filename);
 
 // End of SurfaceControls
 /*! @} */
@@ -925,78 +927,78 @@ Uint8 GPU_SaveSurface(SDL_Surface* surface, const char* filename);
 	 * \param h Image height in pixels
 	 * \param format Format of color channels.
 	 */
-GPU_Image* GPU_CreateImage(Uint16 w, Uint16 h, GPU_FormatEnum format);
+DECLSPEC GPU_Image* SDLCALL GPU_CreateImage(Uint16 w, Uint16 h, GPU_FormatEnum format);
 
 /*! Create a new image that uses the given native texture handle as the image texture. */
-GPU_Image* GPU_CreateImageUsingTexture(Uint32 handle, Uint8 take_ownership);
+DECLSPEC GPU_Image* SDLCALL GPU_CreateImageUsingTexture(Uint32 handle, Uint8 take_ownership);
 
 /*! Load image from an image file that is supported by this renderer.  Don't forget to GPU_FreeImage() it. */
-GPU_Image* GPU_LoadImage(const char* filename);
+DECLSPEC GPU_Image* SDLCALL GPU_LoadImage(const char* filename);
 
 /*! Creates an image that aliases the given image.  Aliases can be used to store image settings (e.g. modulation color) for easy switching.
  * GPU_FreeImage() frees the alias's memory, but does not affect the original. */
-GPU_Image* GPU_CreateAliasImage(GPU_Image* image);
+DECLSPEC GPU_Image* SDLCALL GPU_CreateAliasImage(GPU_Image* image);
 
 /*! Copy an image to a new image.  Don't forget to GPU_FreeImage() both. */
-GPU_Image* GPU_CopyImage(GPU_Image* image);
+DECLSPEC GPU_Image* SDLCALL GPU_CopyImage(GPU_Image* image);
 
 /*! Deletes an image in the proper way for this renderer.  Also deletes the corresponding GPU_Target if applicable.  Be careful not to use that target afterward! */
-void GPU_FreeImage(GPU_Image* image);
+DECLSPEC void SDLCALL GPU_FreeImage(GPU_Image* image);
 
 /*! Update an image from surface data. */
-void GPU_UpdateImage(GPU_Image* image, SDL_Surface* surface, const GPU_Rect* surface_rect);
+DECLSPEC void SDLCALL GPU_UpdateImage(GPU_Image* image, SDL_Surface* surface, const GPU_Rect* surface_rect);
 
 /*! Update an image from surface data. */
-void GPU_UpdateSubImage(GPU_Image* image, const GPU_Rect* image_rect, SDL_Surface* surface, const GPU_Rect* surface_rect);
+DECLSPEC void SDLCALL GPU_UpdateSubImage(GPU_Image* image, const GPU_Rect* image_rect, SDL_Surface* surface, const GPU_Rect* surface_rect);
 
 /*! Update an image from an array of pixel data. */
-void GPU_UpdateImageBytes(GPU_Image* image, const GPU_Rect* image_rect, const unsigned char* bytes, int bytes_per_row);
+DECLSPEC void SDLCALL GPU_UpdateImageBytes(GPU_Image* image, const GPU_Rect* image_rect, const unsigned char* bytes, int bytes_per_row);
 
 /*! Save image to a file.  The file type is deduced from the extension.  Supported formats are: png, bmp, tga.  Returns 0 on failure. */
-Uint8 GPU_SaveImage(GPU_Image* image, const char* filename);
+DECLSPEC Uint8 SDLCALL GPU_SaveImage(GPU_Image* image, const char* filename);
 
 /*! Loads mipmaps for the given image, if supported by the renderer. */
-void GPU_GenerateMipmaps(GPU_Image* image);
+DECLSPEC void SDLCALL GPU_GenerateMipmaps(GPU_Image* image);
 
 /*! Sets the modulation color for subsequent drawing of the given image. */
-void GPU_SetColor(GPU_Image* image, SDL_Color color);
+DECLSPEC void SDLCALL GPU_SetColor(GPU_Image* image, SDL_Color color);
 
 /*! Sets the modulation color for subsequent drawing of the given image. */
-void GPU_SetRGB(GPU_Image* image, Uint8 r, Uint8 g, Uint8 b);
+DECLSPEC void SDLCALL GPU_SetRGB(GPU_Image* image, Uint8 r, Uint8 g, Uint8 b);
 
 /*! Sets the modulation color for subsequent drawing of the given image. */
-void GPU_SetRGBA(GPU_Image* image, Uint8 r, Uint8 g, Uint8 b, Uint8 a);
+DECLSPEC void SDLCALL GPU_SetRGBA(GPU_Image* image, Uint8 r, Uint8 g, Uint8 b, Uint8 a);
 
 /*! Unsets the modulation color for subsequent drawing of the given image.
  *  This is equivalent to coloring with pure opaque white (255, 255, 255, 255). */
-void GPU_UnsetColor(GPU_Image* image);
+DECLSPEC void SDLCALL GPU_UnsetColor(GPU_Image* image);
 
 /*! Gets the current alpha blending setting. */
-Uint8 GPU_GetBlending(GPU_Image* image);
+DECLSPEC Uint8 SDLCALL GPU_GetBlending(GPU_Image* image);
 
 /*! Enables/disables alpha blending for the given image. */
-void GPU_SetBlending(GPU_Image* image, Uint8 enable);
+DECLSPEC void SDLCALL GPU_SetBlending(GPU_Image* image, Uint8 enable);
 
 /*! Sets the blending component functions. */
-void GPU_SetBlendFunction(GPU_Image* image, GPU_BlendFuncEnum source_color, GPU_BlendFuncEnum dest_color, GPU_BlendFuncEnum source_alpha, GPU_BlendFuncEnum dest_alpha);
+DECLSPEC void SDLCALL GPU_SetBlendFunction(GPU_Image* image, GPU_BlendFuncEnum source_color, GPU_BlendFuncEnum dest_color, GPU_BlendFuncEnum source_alpha, GPU_BlendFuncEnum dest_alpha);
 
 /*! Sets the blending component equations. */
-void GPU_SetBlendEquation(GPU_Image* image, GPU_BlendEqEnum color_equation, GPU_BlendEqEnum alpha_equation);
+DECLSPEC void SDLCALL GPU_SetBlendEquation(GPU_Image* image, GPU_BlendEqEnum color_equation, GPU_BlendEqEnum alpha_equation);
 
 /*! Sets the blending mode, if supported by the renderer. */
-void GPU_SetBlendMode(GPU_Image* image, GPU_BlendPresetEnum mode);
+DECLSPEC void SDLCALL GPU_SetBlendMode(GPU_Image* image, GPU_BlendPresetEnum mode);
 
 /*! Sets the image filtering mode, if supported by the renderer. */
-void GPU_SetImageFilter(GPU_Image* image, GPU_FilterEnum filter);
+DECLSPEC void SDLCALL GPU_SetImageFilter(GPU_Image* image, GPU_FilterEnum filter);
 
 /*! Gets the current pixel snap setting.  The default value is GPU_SNAP_POSITION_AND_DIMENSIONS.  */
-GPU_SnapEnum GPU_GetSnapMode(GPU_Image* image);
+DECLSPEC GPU_SnapEnum SDLCALL GPU_GetSnapMode(GPU_Image* image);
 
 /*! Sets the pixel grid snapping mode for the given image. */
-void GPU_SetSnapMode(GPU_Image* image, GPU_SnapEnum mode);
+DECLSPEC void SDLCALL GPU_SetSnapMode(GPU_Image* image, GPU_SnapEnum mode);
 
 /*! Sets the image wrapping mode, if supported by the renderer. */
-void GPU_SetWrapMode(GPU_Image* image, GPU_WrapEnum wrap_mode_x, GPU_WrapEnum wrap_mode_y);
+DECLSPEC void SDLCALL GPU_SetWrapMode(GPU_Image* image, GPU_WrapEnum wrap_mode_x, GPU_WrapEnum wrap_mode_y);
 
 // End of ImageControls
 /*! @} */
@@ -1007,16 +1009,16 @@ void GPU_SetWrapMode(GPU_Image* image, GPU_WrapEnum wrap_mode_x, GPU_WrapEnum wr
  *  @{ */
 
 /*! Copy SDL_Surface data into a new GPU_Image.  Don't forget to SDL_FreeSurface() the surface and GPU_FreeImage() the image.*/
-GPU_Image* GPU_CopyImageFromSurface(SDL_Surface* surface);
+DECLSPEC GPU_Image* SDLCALL GPU_CopyImageFromSurface(SDL_Surface* surface);
 
 /*! Copy GPU_Target data into a new GPU_Image.  Don't forget to GPU_FreeImage() the image.*/
-GPU_Image* GPU_CopyImageFromTarget(GPU_Target* target);
+DECLSPEC GPU_Image* SDLCALL GPU_CopyImageFromTarget(GPU_Target* target);
 
 /*! Copy GPU_Target data into a new SDL_Surface.  Don't forget to SDL_FreeSurface() the surface.*/
-SDL_Surface* GPU_CopySurfaceFromTarget(GPU_Target* target);
+DECLSPEC SDL_Surface* SDLCALL GPU_CopySurfaceFromTarget(GPU_Target* target);
 
 /*! Copy GPU_Image data into a new SDL_Surface.  Don't forget to SDL_FreeSurface() the surface and GPU_FreeImage() the image.*/
-SDL_Surface* GPU_CopySurfaceFromImage(GPU_Image* image);
+DECLSPEC SDL_Surface* SDLCALL GPU_CopySurfaceFromImage(GPU_Image* image);
 
 // End of Conversions
 /*! @} */
@@ -1032,69 +1034,69 @@ SDL_Surface* GPU_CopySurfaceFromImage(GPU_Image* image);
 // Basic matrix operations (4x4)
 
 /*! Copy matrix A to the given 'result' matrix. */
-void GPU_MatrixCopy(float* result, const float* A);
+DECLSPEC void SDLCALL GPU_MatrixCopy(float* result, const float* A);
 
 /*! Fills 'result' matrix with the identity matrix. */
-void GPU_MatrixIdentity(float* result);
+DECLSPEC void SDLCALL GPU_MatrixIdentity(float* result);
 
 /*! Multiplies matrices A and B and stores the result in the given 'result' matrix (result = A*B).  Do not use A or B as 'result'.
  * \see GPU_MultiplyAndAssign
 */
-void GPU_Multiply4x4(float* result, float* A, float* B);
+DECLSPEC void SDLCALL GPU_Multiply4x4(float* result, float* A, float* B);
 
 /*! Multiplies matrices 'result' and A and stores the result in the given 'result' matrix (result = result * A). */
-void GPU_MultiplyAndAssign(float* result, float* A);
+DECLSPEC void SDLCALL GPU_MultiplyAndAssign(float* result, float* A);
 
 
 // Matrix stack accessors
 
 /*! Returns an internal string that represents the contents of matrix A. */
-const char* GPU_GetMatrixString(float* A);
+DECLSPEC const char* SDLCALL GPU_GetMatrixString(float* A);
 
 /*! Returns the current matrix from the top of the matrix stack.  Returns NULL if stack is empty. */
-float* GPU_GetCurrentMatrix(void);
+DECLSPEC float* SDLCALL GPU_GetCurrentMatrix(void);
 
 /*! Returns the current modelview matrix from the top of the matrix stack.  Returns NULL if stack is empty. */
-float* GPU_GetModelView(void);
+DECLSPEC float* SDLCALL GPU_GetModelView(void);
 
 /*! Returns the current projection matrix from the top of the matrix stack.  Returns NULL if stack is empty. */
-float* GPU_GetProjection(void);
+DECLSPEC float* SDLCALL GPU_GetProjection(void);
 
 /*! Copies the current modelview-projection matrix into the given 'result' matrix (result = P*M). */
-void GPU_GetModelViewProjection(float* result);
+DECLSPEC void SDLCALL GPU_GetModelViewProjection(float* result);
 
 
 // Matrix stack manipulators
 
 /*! Changes matrix mode to either GPU_PROJECTION or GPU_MODELVIEW.  Further matrix stack operations manipulate that particular stack. */
-void GPU_MatrixMode(int matrix_mode);
+DECLSPEC void SDLCALL GPU_MatrixMode(int matrix_mode);
 
 /*! Pushes the current matrix as a new matrix stack item. */
-void GPU_PushMatrix(void);
+DECLSPEC void SDLCALL GPU_PushMatrix(void);
 
 /*! Removes the current matrix from the stack. */
-void GPU_PopMatrix(void);
+DECLSPEC void SDLCALL GPU_PopMatrix(void);
 
 /*! Fills current matrix with the identity matrix. */
-void GPU_LoadIdentity(void);
+DECLSPEC void SDLCALL GPU_LoadIdentity(void);
 
 /*! Multiplies an orthographic projection matrix into the current matrix. */
-void GPU_Ortho(float left, float right, float bottom, float top, float near, float far);
+DECLSPEC void SDLCALL GPU_Ortho(float left, float right, float bottom, float top, float near, float far);
 
 /*! Multiplies a perspective projection matrix into the current matrix. */
-void GPU_Frustum(float right, float left, float bottom, float top, float near, float far);
+DECLSPEC void SDLCALL GPU_Frustum(float right, float left, float bottom, float top, float near, float far);
 
 /*! Adds a translation into the current matrix. */
-void GPU_Translate(float x, float y, float z);
+DECLSPEC void SDLCALL GPU_Translate(float x, float y, float z);
 
 /*! Multiplies a scaling matrix into the current matrix. */
-void GPU_Scale(float sx, float sy, float sz);
+DECLSPEC void SDLCALL GPU_Scale(float sx, float sy, float sz);
 
 /*! Multiplies a rotation matrix into the current matrix. */
-void GPU_Rotate(float degrees, float x, float y, float z);
+DECLSPEC void SDLCALL GPU_Rotate(float degrees, float x, float y, float z);
 
 /*! Multiplies a given matrix into the current matrix. */
-void GPU_MultMatrix(float* matrix4x4);
+DECLSPEC void SDLCALL GPU_MultMatrix(float* matrix4x4);
 
 // End of Matrix
 /*! @} */
@@ -1108,29 +1110,29 @@ void GPU_MultMatrix(float* matrix4x4);
  *  @{ */
 
 /*! Clears the contents of the given render target.  Fills the target with color {0, 0, 0, 0}. */
-void GPU_Clear(GPU_Target* target);
+DECLSPEC void SDLCALL GPU_Clear(GPU_Target* target);
 
 /*! Fills the given render target with a color. */
-void GPU_ClearColor(GPU_Target* target, SDL_Color color);
+DECLSPEC void SDLCALL GPU_ClearColor(GPU_Target* target, SDL_Color color);
 
 /*! Fills the given render target with a color (alpha is 255, fully opaque). */
-void GPU_ClearRGB(GPU_Target* target, Uint8 r, Uint8 g, Uint8 b);
+DECLSPEC void SDLCALL GPU_ClearRGB(GPU_Target* target, Uint8 r, Uint8 g, Uint8 b);
 
 /*! Fills the given render target with a color. */
-void GPU_ClearRGBA(GPU_Target* target, Uint8 r, Uint8 g, Uint8 b, Uint8 a);
+DECLSPEC void SDLCALL GPU_ClearRGBA(GPU_Target* target, Uint8 r, Uint8 g, Uint8 b, Uint8 a);
 
 /*! Draws the given image to the given render target.
     * \param src_rect The region of the source image to use.
     * \param x Destination x-position
     * \param y Destination y-position */
-void GPU_Blit(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y);
+DECLSPEC void SDLCALL GPU_Blit(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y);
 
 /*! Rotates and draws the given image to the given render target.
     * \param src_rect The region of the source image to use.
     * \param x Destination x-position
     * \param y Destination y-position
     * \param degrees Rotation angle (in degrees) */
-void GPU_BlitRotate(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float degrees);
+DECLSPEC void SDLCALL GPU_BlitRotate(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float degrees);
 
 /*! Scales and draws the given image to the given render target.
     * \param src_rect The region of the source image to use.
@@ -1138,7 +1140,7 @@ void GPU_BlitRotate(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, fl
     * \param y Destination y-position
     * \param scaleX Horizontal stretch factor
     * \param scaleY Vertical stretch factor */
-void GPU_BlitScale(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float scaleX, float scaleY);
+DECLSPEC void SDLCALL GPU_BlitScale(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float scaleX, float scaleY);
 
 /*! Scales, rotates, and draws the given image to the given render target.
     * \param src_rect The region of the source image to use.
@@ -1147,7 +1149,7 @@ void GPU_BlitScale(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, flo
     * \param degrees Rotation angle (in degrees)
     * \param scaleX Horizontal stretch factor
     * \param scaleY Vertical stretch factor */
-void GPU_BlitTransform(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float degrees, float scaleX, float scaleY);
+DECLSPEC void SDLCALL GPU_BlitTransform(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float degrees, float scaleX, float scaleY);
 
 /*! Scales, rotates around a pivot point, and draws the given image to the given render target.  The drawing point (x, y) coincides with the pivot point on the src image (pivot_x, pivot_y).
 	* \param src_rect The region of the source image to use.
@@ -1158,21 +1160,21 @@ void GPU_BlitTransform(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target,
 	* \param degrees Rotation angle (in degrees)
 	* \param scaleX Horizontal stretch factor
 	* \param scaleY Vertical stretch factor */
-void GPU_BlitTransformX(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float pivot_x, float pivot_y, float degrees, float scaleX, float scaleY);
+DECLSPEC void SDLCALL GPU_BlitTransformX(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float pivot_x, float pivot_y, float degrees, float scaleX, float scaleY);
 
 /*! Transforms and draws the given image to the given render target.
 	* \param src_rect The region of the source image to use.
 	* \param x Destination x-position
 	* \param y Destination y-position
 	* \param matrix3x3 3x3 matrix in column-major order (index = row + column*numColumns) */
-void GPU_BlitTransformMatrix(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float* matrix3x3);
+DECLSPEC void SDLCALL GPU_BlitTransformMatrix(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float* matrix3x3);
 
 /*! Performs 'num_sprites' blits of the given image to the given target.
  * Note: GPU_BlitBatch() cannot interpret a mix of normal values and "passthrough" values due to format ambiguity.
  * \param values A tightly-packed array of position (x,y), src_rect (x,y,w,h) values in image coordinates, and color (r,g,b,a) values with a range from 0-255.  Pass NULL to render with only custom shader attributes.
  * \param flags Bit flags to control the interpretation of the array parameters.  The only passthrough option accepted is GPU_PASSTHROUGH_ALL.
  */
-void GPU_BlitBatch(GPU_Image* image, GPU_Target* target, unsigned int num_sprites, float* values, GPU_BlitFlagEnum flags);
+DECLSPEC void SDLCALL GPU_BlitBatch(GPU_Image* image, GPU_Target* target, unsigned int num_sprites, float* values, GPU_BlitFlagEnum flags);
 
 /*! Performs 'num_sprites' blits of the given image to the given target.
  * \param positions A tightly-packed array of (x,y) values
@@ -1180,20 +1182,20 @@ void GPU_BlitBatch(GPU_Image* image, GPU_Target* target, unsigned int num_sprite
  * \param colors A tightly-packed array of (r,g,b,a) values with a range from 0-255
  * \param flags Bit flags to control the interpretation of the array parameters
  */
-void GPU_BlitBatchSeparate(GPU_Image* image, GPU_Target* target, unsigned int num_sprites, float* positions, float* src_rects, float* colors, GPU_BlitFlagEnum flags);
+DECLSPEC void SDLCALL GPU_BlitBatchSeparate(GPU_Image* image, GPU_Target* target, unsigned int num_sprites, float* positions, float* src_rects, float* colors, GPU_BlitFlagEnum flags);
 
 /*! Renders triangles from the given set of vertices.  This lets you render arbitrary 2D geometry.
  * \param values A tightly-packed array of vertex position (x,y), image coordinates (s,t), and color (r,g,b,a) values with a range from 0-255.  Pass NULL to render with only custom shader attributes.
  * \param indices If not NULL, this is used to specify which vertices to use and in what order (i.e. it indexes the vertices in the 'values' array).
  * \param flags Bit flags to control the interpretation of the array parameters.  Since 'values' contains per-vertex data, GPU_PASSTHROUGH_VERTICES is ignored.  Texture coordinates are scaled down using the image dimensions and color components are normalized to [0.0, 1.0].
  */
-void GPU_TriangleBatch(GPU_Image* image, GPU_Target* target, unsigned short num_vertices, float* values, unsigned int num_indices, unsigned short* indices, GPU_BlitFlagEnum flags);
+DECLSPEC void SDLCALL GPU_TriangleBatch(GPU_Image* image, GPU_Target* target, unsigned short num_vertices, float* values, unsigned int num_indices, unsigned short* indices, GPU_BlitFlagEnum flags);
 
 /*! Send all buffered blitting data to the current context target. */
-void GPU_FlushBlitBuffer(void);
+DECLSPEC void SDLCALL GPU_FlushBlitBuffer(void);
 
 /*! Updates the given target's associated window. */
-void GPU_Flip(GPU_Target* target);
+DECLSPEC void SDLCALL GPU_Flip(GPU_Target* target);
 
 // End of Rendering
 /*! @} */
@@ -1211,7 +1213,7 @@ void GPU_Flip(GPU_Target* target);
  * \param y y-coord of the point
  * \param color The color of the shape to render
  */
-void GPU_Pixel(GPU_Target* target, float x, float y, SDL_Color color);
+DECLSPEC void SDLCALL GPU_Pixel(GPU_Target* target, float x, float y, SDL_Color color);
 
 /*! Renders a colored line.
  * \param target The destination render target
@@ -1221,7 +1223,7 @@ void GPU_Pixel(GPU_Target* target, float x, float y, SDL_Color color);
  * \param y2 y-coord of ending point
  * \param color The color of the shape to render
  */
-void GPU_Line(GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color);
+DECLSPEC void SDLCALL GPU_Line(GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color);
 
 /*! Renders a colored arc curve (circle segment).
  * \param target The destination render target
@@ -1232,7 +1234,7 @@ void GPU_Line(GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Co
  * \param end_angle The angle to end at, in degrees.  Measured clockwise from the positive x-axis.
  * \param color The color of the shape to render
  */
-void GPU_Arc(GPU_Target* target, float x, float y, float radius, float start_angle, float end_angle, SDL_Color color);
+DECLSPEC void SDLCALL GPU_Arc(GPU_Target* target, float x, float y, float radius, float start_angle, float end_angle, SDL_Color color);
 
 /*! Renders a colored filled arc (circle segment / pie piece).
  * \param target The destination render target
@@ -1243,7 +1245,7 @@ void GPU_Arc(GPU_Target* target, float x, float y, float radius, float start_ang
  * \param end_angle The angle to end at, in degrees.  Measured clockwise from the positive x-axis.
  * \param color The color of the shape to render
  */
-void GPU_ArcFilled(GPU_Target* target, float x, float y, float radius, float start_angle, float end_angle, SDL_Color color);
+DECLSPEC void SDLCALL GPU_ArcFilled(GPU_Target* target, float x, float y, float radius, float start_angle, float end_angle, SDL_Color color);
 
 /*! Renders a colored circle outline.
  * \param target The destination render target
@@ -1252,7 +1254,7 @@ void GPU_ArcFilled(GPU_Target* target, float x, float y, float radius, float sta
  * \param radius The radius of the circle / distance from the center point that rendering will occur
  * \param color The color of the shape to render
  */
-void GPU_Circle(GPU_Target* target, float x, float y, float radius, SDL_Color color);
+DECLSPEC void SDLCALL GPU_Circle(GPU_Target* target, float x, float y, float radius, SDL_Color color);
 
 /*! Renders a colored filled circle.
  * \param target The destination render target
@@ -1261,7 +1263,7 @@ void GPU_Circle(GPU_Target* target, float x, float y, float radius, SDL_Color co
  * \param radius The radius of the circle / distance from the center point that rendering will occur
  * \param color The color of the shape to render
  */
-void GPU_CircleFilled(GPU_Target* target, float x, float y, float radius, SDL_Color color);
+DECLSPEC void SDLCALL GPU_CircleFilled(GPU_Target* target, float x, float y, float radius, SDL_Color color);
 
 /*! Renders a colored ellipse outline.
  * \param target The destination render target
@@ -1272,7 +1274,7 @@ void GPU_CircleFilled(GPU_Target* target, float x, float y, float radius, SDL_Co
  * \param degrees The angle to rotate the ellipse
  * \param color The color of the shape to render
  */
-void GPU_Ellipse(GPU_Target* target, float x, float y, float rx, float ry, float degrees, SDL_Color color);
+DECLSPEC void SDLCALL GPU_Ellipse(GPU_Target* target, float x, float y, float rx, float ry, float degrees, SDL_Color color);
 
 /*! Renders a colored filled ellipse.
  * \param target The destination render target
@@ -1283,7 +1285,7 @@ void GPU_Ellipse(GPU_Target* target, float x, float y, float rx, float ry, float
  * \param degrees The angle to rotate the ellipse
  * \param color The color of the shape to render
  */
-void GPU_EllipseFilled(GPU_Target* target, float x, float y, float rx, float ry, float degrees, SDL_Color color);
+DECLSPEC void SDLCALL GPU_EllipseFilled(GPU_Target* target, float x, float y, float rx, float ry, float degrees, SDL_Color color);
 
 /*! Renders a colored annular sector outline (ring segment).
  * \param target The destination render target
@@ -1295,7 +1297,7 @@ void GPU_EllipseFilled(GPU_Target* target, float x, float y, float rx, float ry,
  * \param end_angle The angle to end at, in degrees.  Measured clockwise from the positive x-axis.
  * \param color The color of the shape to render
  */
-void GPU_Sector(GPU_Target* target, float x, float y, float inner_radius, float outer_radius, float start_angle, float end_angle, SDL_Color color);
+DECLSPEC void SDLCALL GPU_Sector(GPU_Target* target, float x, float y, float inner_radius, float outer_radius, float start_angle, float end_angle, SDL_Color color);
 
 /*! Renders a colored filled annular sector (ring segment).
  * \param target The destination render target
@@ -1307,7 +1309,7 @@ void GPU_Sector(GPU_Target* target, float x, float y, float inner_radius, float 
  * \param end_angle The angle to end at, in degrees.  Measured clockwise from the positive x-axis.
  * \param color The color of the shape to render
  */
-void GPU_SectorFilled(GPU_Target* target, float x, float y, float inner_radius, float outer_radius, float start_angle, float end_angle, SDL_Color color);
+DECLSPEC void SDLCALL GPU_SectorFilled(GPU_Target* target, float x, float y, float inner_radius, float outer_radius, float start_angle, float end_angle, SDL_Color color);
 
 /*! Renders a colored triangle outline.
  * \param target The destination render target
@@ -1319,7 +1321,7 @@ void GPU_SectorFilled(GPU_Target* target, float x, float y, float inner_radius, 
  * \param y3 y-coord of third point
  * \param color The color of the shape to render
  */
-void GPU_Tri(GPU_Target* target, float x1, float y1, float x2, float y2, float x3, float y3, SDL_Color color);
+DECLSPEC void SDLCALL GPU_Tri(GPU_Target* target, float x1, float y1, float x2, float y2, float x3, float y3, SDL_Color color);
 
 /*! Renders a colored filled triangle.
  * \param target The destination render target
@@ -1331,7 +1333,7 @@ void GPU_Tri(GPU_Target* target, float x1, float y1, float x2, float y2, float x
  * \param y3 y-coord of third point
  * \param color The color of the shape to render
  */
-void GPU_TriFilled(GPU_Target* target, float x1, float y1, float x2, float y2, float x3, float y3, SDL_Color color);
+DECLSPEC void SDLCALL GPU_TriFilled(GPU_Target* target, float x1, float y1, float x2, float y2, float x3, float y3, SDL_Color color);
 
 /*! Renders a colored rectangle outline.
  * \param target The destination render target
@@ -1341,7 +1343,7 @@ void GPU_TriFilled(GPU_Target* target, float x1, float y1, float x2, float y2, f
  * \param y2 y-coord of bottom-right corner
  * \param color The color of the shape to render
  */
-void GPU_Rectangle(GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color);
+DECLSPEC void SDLCALL GPU_Rectangle(GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color);
 
 /*! Renders a colored filled rectangle.
  * \param target The destination render target
@@ -1351,7 +1353,7 @@ void GPU_Rectangle(GPU_Target* target, float x1, float y1, float x2, float y2, S
  * \param y2 y-coord of bottom-right corner
  * \param color The color of the shape to render
  */
-void GPU_RectangleFilled(GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color);
+DECLSPEC void SDLCALL GPU_RectangleFilled(GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color);
 
 /*! Renders a colored rounded (filleted) rectangle outline.
  * \param target The destination render target
@@ -1362,7 +1364,7 @@ void GPU_RectangleFilled(GPU_Target* target, float x1, float y1, float x2, float
  * \param radius The radius of the corners
  * \param color The color of the shape to render
  */
-void GPU_RectangleRound(GPU_Target* target, float x1, float y1, float x2, float y2, float radius, SDL_Color color);
+DECLSPEC void SDLCALL GPU_RectangleRound(GPU_Target* target, float x1, float y1, float x2, float y2, float radius, SDL_Color color);
 
 /*! Renders a colored filled rounded (filleted) rectangle.
  * \param target The destination render target
@@ -1373,7 +1375,7 @@ void GPU_RectangleRound(GPU_Target* target, float x1, float y1, float x2, float 
  * \param radius The radius of the corners
  * \param color The color of the shape to render
  */
-void GPU_RectangleRoundFilled(GPU_Target* target, float x1, float y1, float x2, float y2, float radius, SDL_Color color);
+DECLSPEC void SDLCALL GPU_RectangleRoundFilled(GPU_Target* target, float x1, float y1, float x2, float y2, float radius, SDL_Color color);
 
 /*! Renders a colored polygon outline.  The vertices are expected to define a convex polygon.
  * \param target The destination render target
@@ -1381,7 +1383,7 @@ void GPU_RectangleRoundFilled(GPU_Target* target, float x1, float y1, float x2, 
  * \param vertices An array of vertex positions stored as interlaced x and y coords, e.g. {x1, y1, x2, y2, ...}
  * \param color The color of the shape to render
  */
-void GPU_Polygon(GPU_Target* target, unsigned int num_vertices, float* vertices, SDL_Color color);
+DECLSPEC void SDLCALL GPU_Polygon(GPU_Target* target, unsigned int num_vertices, float* vertices, SDL_Color color);
 
 /*! Renders a colored filled polygon.  The vertices are expected to define a convex polygon.
  * \param target The destination render target
@@ -1389,7 +1391,7 @@ void GPU_Polygon(GPU_Target* target, unsigned int num_vertices, float* vertices,
  * \param vertices An array of vertex positions stored as interlaced x and y coords, e.g. {x1, y1, x2, y2, ...}
  * \param color The color of the shape to render
  */
-void GPU_PolygonFilled(GPU_Target* target, unsigned int num_vertices, float* vertices, SDL_Color color);
+DECLSPEC void SDLCALL GPU_PolygonFilled(GPU_Target* target, unsigned int num_vertices, float* vertices, SDL_Color color);
 
 // End of Shapes
 /*! @} */
@@ -1405,130 +1407,130 @@ void GPU_PolygonFilled(GPU_Target* target, unsigned int num_vertices, float* ver
  * \see GPU_AttachShader
  * \see GPU_LinkShaderProgram
  */
-Uint32 GPU_CreateShaderProgram(void);
+DECLSPEC Uint32 SDLCALL GPU_CreateShaderProgram(void);
 
 /*! Deletes a shader program. */
-void GPU_FreeShaderProgram(Uint32 program_object);
+DECLSPEC void SDLCALL GPU_FreeShaderProgram(Uint32 program_object);
 
 /*! Loads shader source from an SDL_RWops, compiles it, and returns the new shader object. */
-Uint32 GPU_CompileShader_RW(GPU_ShaderEnum shader_type, SDL_RWops* shader_source);
+DECLSPEC Uint32 SDLCALL GPU_CompileShader_RW(GPU_ShaderEnum shader_type, SDL_RWops* shader_source);
 
 /*! Compiles shader source and returns the new shader object. */
-Uint32 GPU_CompileShader(GPU_ShaderEnum shader_type, const char* shader_source);
+DECLSPEC Uint32 SDLCALL GPU_CompileShader(GPU_ShaderEnum shader_type, const char* shader_source);
 
 /*! Loads shader source from a file, compiles it, and returns the new shader object. */
-Uint32 GPU_LoadShader(GPU_ShaderEnum shader_type, const char* filename);
+DECLSPEC Uint32 SDLCALL GPU_LoadShader(GPU_ShaderEnum shader_type, const char* filename);
 
 /*! Creates and links a shader program with the given shader objects. */
-Uint32 GPU_LinkShaders(Uint32 shader_object1, Uint32 shader_object2);
+DECLSPEC Uint32 SDLCALL GPU_LinkShaders(Uint32 shader_object1, Uint32 shader_object2);
 
 /*! Deletes a shader object. */
-void GPU_FreeShader(Uint32 shader_object);
+DECLSPEC void SDLCALL GPU_FreeShader(Uint32 shader_object);
 
 /*! Attaches a shader object to a shader program for future linking. */
-void GPU_AttachShader(Uint32 program_object, Uint32 shader_object);
+DECLSPEC void SDLCALL GPU_AttachShader(Uint32 program_object, Uint32 shader_object);
 
 /*! Detaches a shader object from a shader program. */
-void GPU_DetachShader(Uint32 program_object, Uint32 shader_object);
+DECLSPEC void SDLCALL GPU_DetachShader(Uint32 program_object, Uint32 shader_object);
 
 /*! Links a shader program with any attached shader objects. */
-Uint8 GPU_LinkShaderProgram(Uint32 program_object);
+DECLSPEC Uint8 SDLCALL GPU_LinkShaderProgram(Uint32 program_object);
 
 /*! \return The current shader program */
-Uint32 GPU_GetCurrentShaderProgram(void);
+DECLSPEC Uint32 SDLCALL GPU_GetCurrentShaderProgram(void);
 
 /*! Returns 1 if the given shader program is a default shader for the current context, 0 otherwise. */
-Uint8 GPU_IsDefaultShaderProgram(Uint32 program_object);
+DECLSPEC Uint8 SDLCALL GPU_IsDefaultShaderProgram(Uint32 program_object);
 
 /*! Activates the given shader program.  Passing NULL for 'block' will disable the built-in shader variables for custom shaders until a GPU_ShaderBlock is set again. */
-void GPU_ActivateShaderProgram(Uint32 program_object, GPU_ShaderBlock* block);
+DECLSPEC void SDLCALL GPU_ActivateShaderProgram(Uint32 program_object, GPU_ShaderBlock* block);
 
 /*! Deactivates the current shader program (activates program 0). */
-void GPU_DeactivateShaderProgram(void);
+DECLSPEC void SDLCALL GPU_DeactivateShaderProgram(void);
 
 /*! Returns the last shader log message. */
-const char* GPU_GetShaderMessage(void);
+DECLSPEC const char* SDLCALL GPU_GetShaderMessage(void);
 
 /*! Returns an integer representing the location of the specified attribute shader variable. */
-int GPU_GetAttributeLocation(Uint32 program_object, const char* attrib_name);
+DECLSPEC int SDLCALL GPU_GetAttributeLocation(Uint32 program_object, const char* attrib_name);
 
 /*! Returns a filled GPU_AttributeFormat object. */
-GPU_AttributeFormat GPU_MakeAttributeFormat(int num_elems_per_vertex, GPU_TypeEnum type, Uint8 normalize, int stride_bytes, int offset_bytes);
+DECLSPEC GPU_AttributeFormat SDLCALL GPU_MakeAttributeFormat(int num_elems_per_vertex, GPU_TypeEnum type, Uint8 normalize, int stride_bytes, int offset_bytes);
 
 /*! Returns a filled GPU_Attribute object. */
-GPU_Attribute GPU_MakeAttribute(int location, void* values, GPU_AttributeFormat format);
+DECLSPEC GPU_Attribute SDLCALL GPU_MakeAttribute(int location, void* values, GPU_AttributeFormat format);
 
 /*! Returns an integer representing the location of the specified uniform shader variable. */
-int GPU_GetUniformLocation(Uint32 program_object, const char* uniform_name);
+DECLSPEC int SDLCALL GPU_GetUniformLocation(Uint32 program_object, const char* uniform_name);
 
 /*! Loads the given shader program's built-in attribute and uniform locations. */
-GPU_ShaderBlock GPU_LoadShaderBlock(Uint32 program_object, const char* position_name, const char* texcoord_name, const char* color_name, const char* modelViewMatrix_name);
+DECLSPEC GPU_ShaderBlock SDLCALL GPU_LoadShaderBlock(Uint32 program_object, const char* position_name, const char* texcoord_name, const char* color_name, const char* modelViewMatrix_name);
 
 /*! Sets the current shader block to use the given attribute and uniform locations. */
-void GPU_SetShaderBlock(GPU_ShaderBlock block);
+DECLSPEC void SDLCALL GPU_SetShaderBlock(GPU_ShaderBlock block);
 
 /*! Sets the given image unit to the given image so that a custom shader can sample multiple textures.
     \param image The source image/texture.  Pass NULL to disable the image unit.
     \param location The uniform location of a texture sampler
     \param image_unit The index of the texture unit to set.  0 is the first unit, which is used by SDL_gpu's blitting functions.  1 would be the second unit. */
-void GPU_SetShaderImage(GPU_Image* image, int location, int image_unit);
+DECLSPEC void SDLCALL GPU_SetShaderImage(GPU_Image* image, int location, int image_unit);
 
 /*! Fills "values" with the value of the uniform shader variable at the given location. */
-void GPU_GetUniformiv(Uint32 program_object, int location, int* values);
+DECLSPEC void SDLCALL GPU_GetUniformiv(Uint32 program_object, int location, int* values);
 
 /*! Sets the value of the integer uniform shader variable at the given location.
     This is equivalent to calling GPU_SetUniformiv(location, 1, 1, &value). */
-void GPU_SetUniformi(int location, int value);
+DECLSPEC void SDLCALL GPU_SetUniformi(int location, int value);
 
 /*! Sets the value of the integer uniform shader variable at the given location. */
-void GPU_SetUniformiv(int location, int num_elements_per_value, int num_values, int* values);
+DECLSPEC void SDLCALL GPU_SetUniformiv(int location, int num_elements_per_value, int num_values, int* values);
 
 /*! Fills "values" with the value of the uniform shader variable at the given location. */
-void GPU_GetUniformuiv(Uint32 program_object, int location, unsigned int* values);
+DECLSPEC void SDLCALL GPU_GetUniformuiv(Uint32 program_object, int location, unsigned int* values);
 
 /*! Sets the value of the unsigned integer uniform shader variable at the given location.
     This is equivalent to calling GPU_SetUniformuiv(location, 1, 1, &value). */
-void GPU_SetUniformui(int location, unsigned int value);
+DECLSPEC void SDLCALL GPU_SetUniformui(int location, unsigned int value);
 
 /*! Sets the value of the unsigned integer uniform shader variable at the given location. */
-void GPU_SetUniformuiv(int location, int num_elements_per_value, int num_values, unsigned int* values);
+DECLSPEC void SDLCALL GPU_SetUniformuiv(int location, int num_elements_per_value, int num_values, unsigned int* values);
 
 /*! Fills "values" with the value of the uniform shader variable at the given location. */
-void GPU_GetUniformfv(Uint32 program_object, int location, float* values);
+DECLSPEC void SDLCALL GPU_GetUniformfv(Uint32 program_object, int location, float* values);
 
 /*! Sets the value of the floating point uniform shader variable at the given location.
     This is equivalent to calling GPU_SetUniformfv(location, 1, 1, &value). */
-void GPU_SetUniformf(int location, float value);
+DECLSPEC void SDLCALL GPU_SetUniformf(int location, float value);
 
 /*! Sets the value of the floating point uniform shader variable at the given location. */
-void GPU_SetUniformfv(int location, int num_elements_per_value, int num_values, float* values);
+DECLSPEC void SDLCALL GPU_SetUniformfv(int location, int num_elements_per_value, int num_values, float* values);
 
 /*! Fills "values" with the value of the uniform shader variable at the given location.  The results are identical to calling GPU_GetUniformfv().  Matrices are gotten in column-major order. */
-void GPU_GetUniformMatrixfv(Uint32 program_object, int location, float* values);
+DECLSPEC void SDLCALL GPU_GetUniformMatrixfv(Uint32 program_object, int location, float* values);
 
 /*! Sets the value of the matrix uniform shader variable at the given location.  The size of the matrices sent is specified by num_rows and num_columns.  Rows and columns must be between 2 and 4. */
-void GPU_SetUniformMatrixfv(int location, int num_matrices, int num_rows, int num_columns, Uint8 transpose, float* values);
+DECLSPEC void SDLCALL GPU_SetUniformMatrixfv(int location, int num_matrices, int num_rows, int num_columns, Uint8 transpose, float* values);
 
 /*! Sets a constant-value shader attribute that will be used for each rendered vertex. */
-void GPU_SetAttributef(int location, float value);
+DECLSPEC void SDLCALL GPU_SetAttributef(int location, float value);
 
 /*! Sets a constant-value shader attribute that will be used for each rendered vertex. */
-void GPU_SetAttributei(int location, int value);
+DECLSPEC void SDLCALL GPU_SetAttributei(int location, int value);
 
 /*! Sets a constant-value shader attribute that will be used for each rendered vertex. */
-void GPU_SetAttributeui(int location, unsigned int value);
+DECLSPEC void SDLCALL GPU_SetAttributeui(int location, unsigned int value);
 
 /*! Sets a constant-value shader attribute that will be used for each rendered vertex. */
-void GPU_SetAttributefv(int location, int num_elements, float* value);
+DECLSPEC void SDLCALL GPU_SetAttributefv(int location, int num_elements, float* value);
 
 /*! Sets a constant-value shader attribute that will be used for each rendered vertex. */
-void GPU_SetAttributeiv(int location, int num_elements, int* value);
+DECLSPEC void SDLCALL GPU_SetAttributeiv(int location, int num_elements, int* value);
 
 /*! Sets a constant-value shader attribute that will be used for each rendered vertex. */
-void GPU_SetAttributeuiv(int location, int num_elements, unsigned int* value);
+DECLSPEC void SDLCALL GPU_SetAttributeuiv(int location, int num_elements, unsigned int* value);
 
 /*! Enables a shader attribute and sets its source data. */
-void GPU_SetAttributeSource(int num_values, GPU_Attribute source);
+DECLSPEC void SDLCALL GPU_SetAttributeSource(int num_values, GPU_Attribute source);
 
 // End of ShaderInterface
 /*! @} */
@@ -1538,6 +1540,7 @@ void GPU_SetAttributeSource(int num_values, GPU_Attribute source);
 }
 #endif
 
+#include "close_code.h"
 
 
 #endif

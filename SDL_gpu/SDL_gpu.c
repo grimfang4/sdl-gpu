@@ -185,7 +185,7 @@ GPU_FeatureEnum GPU_GetRequiredFeatures(void)
     return required_features;
 }
 
-static void init_error_stack()
+static void init_error_stack(void)
 {
     if(!inited_error_code_stack)
     {
@@ -199,7 +199,7 @@ static void init_error_stack()
     }
 }
 
-static void init_window_mappings()
+static void init_window_mappings(void)
 {
     if(window_mappings == NULL)
     {
@@ -249,7 +249,9 @@ void GPU_AddWindowMapping(GPU_Target* target)
     
     // Add to end of list
 	{
-		GPU_WindowMapping m = { windowID, target };
+		GPU_WindowMapping m;
+		m.windowID = windowID;
+		m.target = target;
 		window_mappings[num_window_mappings] = m;
 	}
     num_window_mappings++;
@@ -643,19 +645,35 @@ void GPU_GetVirtualCoords(GPU_Target* target, float* x, float* y, float displayX
 
 GPU_Rect GPU_MakeRect(float x, float y, float w, float h)
 {
-    GPU_Rect r = {x, y, w, h};
+	GPU_Rect r;
+	r.x = x;
+	r.y = y;
+	r.w = w;
+	r.h = h;
+
     return r;
 }
 
 SDL_Color GPU_MakeColor(Uint8 r, Uint8 g, Uint8 b, Uint8 a)
 {
-    SDL_Color c = {r, g, b, a};
+	SDL_Color c;
+	c.r = r;
+	c.g = g;
+	c.b = b;
+	c.a = a;
+
     return c;
 }
 
 GPU_RendererID GPU_MakeRendererID(const char* name, GPU_RendererEnum renderer, int major_version, int minor_version)
 {
-    GPU_RendererID r = {name, renderer, major_version, minor_version, -1};
+	GPU_RendererID r;
+	r.name = name;
+	r.renderer = renderer;
+	r.major_version = major_version;
+	r.minor_version = minor_version;
+	r.index = -1;
+	
     return r;
 }
 
@@ -849,7 +867,7 @@ SDL_Surface* GPU_LoadSurface(const char* filename)
         
         for(i = 0; i < 256; i++)
         {
-            colors[i].r = colors[i].g = colors[i].b = i;
+            colors[i].r = colors[i].g = colors[i].b = (Uint8)i;
         }
 
         /* Set palette */
@@ -892,11 +910,11 @@ Uint8 GPU_SaveSurface(SDL_Surface* surface, const char* filename)
     data = surface->pixels;
 
     if(SDL_strcasecmp(extension, "png") == 0)
-        result = stbi_write_png(filename, surface->w, surface->h, surface->format->BytesPerPixel, (const unsigned char *const)data, 0);
+        result = (stbi_write_png(filename, surface->w, surface->h, surface->format->BytesPerPixel, (const unsigned char *const)data, 0) > 0);
     else if(SDL_strcasecmp(extension, "bmp") == 0)
-        result = stbi_write_bmp(filename, surface->w, surface->h, surface->format->BytesPerPixel, (void*)data);
+		result = (stbi_write_bmp(filename, surface->w, surface->h, surface->format->BytesPerPixel, (void*)data) > 0);
     else if(SDL_strcasecmp(extension, "tga") == 0)
-        result = stbi_write_tga(filename, surface->w, surface->h, surface->format->BytesPerPixel, (void*)data);
+		result = (stbi_write_tga(filename, surface->w, surface->h, surface->format->BytesPerPixel, (void*)data) > 0);
     else
     {
         GPU_PushErrorCode(__func__, GPU_ERROR_DATA_ERROR, "Unsupported output file format");
@@ -1088,7 +1106,7 @@ void GPU_BlitBatch(GPU_Image* image, GPU_Target* target, unsigned int num_sprite
 	int size;
 	float* new_values;
 
-	int n;  // The sprite number iteration variable.
+	unsigned int n;  // The sprite number iteration variable.
 	// Source indices (per sprite)
 	int pos_n;
 	int rect_n;
@@ -1103,8 +1121,8 @@ void GPU_BlitBatch(GPU_Image* image, GPU_Target* target, unsigned int num_sprite
 	float w2;  // texcoord helpers for position expansion
 	float h2;
 
-	float tex_w;
-	float tex_h;
+	Uint32 tex_w;
+	Uint32 tex_h;
 
     if(!CHECK_RENDERER)
         RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL renderer");
@@ -1136,12 +1154,12 @@ void GPU_BlitBatch(GPU_Image* image, GPU_Target* target, unsigned int num_sprite
 	src_rect_floats_per_sprite = 4;
 	src_color_floats_per_sprite = 4;
 	
-	no_positions = (flags & GPU_USE_DEFAULT_POSITIONS);
-	no_rects = (flags & GPU_USE_DEFAULT_SRC_RECTS);
-	no_colors = (flags & GPU_USE_DEFAULT_COLORS);
-	pass_vertices = (flags & GPU_PASSTHROUGH_VERTICES);
-	pass_texcoords = (flags & GPU_PASSTHROUGH_TEXCOORDS);
-	pass_colors = (flags & GPU_PASSTHROUGH_COLORS);
+	no_positions = (Uint8)(flags & GPU_USE_DEFAULT_POSITIONS);
+	no_rects = (Uint8)(flags & GPU_USE_DEFAULT_SRC_RECTS);
+	no_colors = (Uint8)(flags & GPU_USE_DEFAULT_COLORS);
+	pass_vertices = (Uint8)(flags & GPU_PASSTHROUGH_VERTICES);
+	pass_texcoords = (Uint8)(flags & GPU_PASSTHROUGH_TEXCOORDS);
+	pass_colors = (Uint8)(flags & GPU_PASSTHROUGH_COLORS);
 	
 	// Passthrough data is per-vertex.  Non-passthrough is per-sprite.  They can't interleave cleanly.
 	if(flags & GPU_PASSTHROUGH_ALL && (flags & GPU_PASSTHROUGH_ALL) != GPU_PASSTHROUGH_ALL)
@@ -1409,7 +1427,7 @@ void GPU_BlitBatchSeparate(GPU_Image* image, GPU_Target* target, unsigned int nu
 	int size;  // 4 vertices of x, y...  s, t...  r, g, b, a
 	float* values;
 
-	int n;  // The sprite number iteration variable.
+	unsigned int n;  // The sprite number iteration variable.
 	// Source indices
 	int pos_n;
 	int rect_n;
@@ -1424,8 +1442,8 @@ void GPU_BlitBatchSeparate(GPU_Image* image, GPU_Target* target, unsigned int nu
 	float w2;  // texcoord helpers for position expansion
 	float h2;
 
-	float tex_w;
-	float tex_h;
+	Uint32 tex_w;
+	Uint32 tex_h;
 
     if(!CHECK_RENDERER)
         RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL renderer");
@@ -1450,9 +1468,9 @@ void GPU_BlitBatchSeparate(GPU_Image* image, GPU_Target* target, unsigned int nu
 	// Repack the given arrays into an interleaved array for more efficient access
 	// Default values: Each sprite is defined by a position, a rect, and a color.
 	
-	pass_vertices = (flags & GPU_PASSTHROUGH_VERTICES);
-	pass_texcoords = (flags & GPU_PASSTHROUGH_TEXCOORDS);
-	pass_colors = (flags & GPU_PASSTHROUGH_COLORS);
+	pass_vertices = (Uint8)(flags & GPU_PASSTHROUGH_VERTICES);
+	pass_texcoords = (Uint8)(flags & GPU_PASSTHROUGH_TEXCOORDS);
+	pass_colors = (Uint8)(flags & GPU_PASSTHROUGH_COLORS);
 	
 	size = num_sprites*(8 + 8 + 16);  // 4 vertices of x, y...  s, t...  r, g, b, a
 	values = (float*)malloc(sizeof(float)*size);
@@ -1700,7 +1718,7 @@ void GPU_TriangleBatch(GPU_Image* image, GPU_Target* target, unsigned short num_
 	int size;
 	float* new_values;
 
-	int n; // Vertex number iteration variable
+	unsigned int n; // Vertex number iteration variable
 	// Source indices
 	int pos_n;
 	int texcoord_n;
@@ -1708,8 +1726,8 @@ void GPU_TriangleBatch(GPU_Image* image, GPU_Target* target, unsigned short num_
 	// Dest indices
 	int vert_i;
 
-	float tex_w;
-	float tex_h;
+	Uint32 tex_w;
+	Uint32 tex_h;
 	
 	Uint8 using_texture = (image != NULL);
 
@@ -1741,11 +1759,11 @@ void GPU_TriangleBatch(GPU_Image* image, GPU_Target* target, unsigned short num_
 	src_texcoord_floats_per_vertex = 2;
 	src_color_floats_per_vertex = 4;
 	
-	no_positions = (flags & GPU_USE_DEFAULT_POSITIONS);
-	no_texcoords = (flags & GPU_USE_DEFAULT_SRC_RECTS) || !using_texture;
-	no_colors = (flags & GPU_USE_DEFAULT_COLORS);
-	pass_texcoords = (flags & GPU_PASSTHROUGH_TEXCOORDS);
-	pass_colors = (flags & GPU_PASSTHROUGH_COLORS);
+	no_positions = (Uint8)(flags & GPU_USE_DEFAULT_POSITIONS);
+	no_texcoords = (Uint8)(flags & GPU_USE_DEFAULT_SRC_RECTS) || !using_texture;
+	no_colors = (Uint8)(flags & GPU_USE_DEFAULT_COLORS);
+	pass_texcoords = (Uint8)(flags & GPU_PASSTHROUGH_TEXCOORDS);
+	pass_colors = (Uint8)(flags & GPU_PASSTHROUGH_COLORS);
 	
 	// Vertex position passthrough is ignored (we're not positioning triangles, we're positioning vertices already)
 	src_position_floats_per_vertex = 2; // x, y
@@ -1801,7 +1819,7 @@ void GPU_TriangleBatch(GPU_Image* image, GPU_Target* target, unsigned short num_
         }
         else
         {
-            if(!pass_texcoords)
+            if(!pass_texcoords && using_texture)
             {
                 new_values[vert_i++] = values[texcoord_n]/tex_w;
                 new_values[vert_i++] = values[texcoord_n+1]/tex_h;
@@ -1869,7 +1887,7 @@ GPU_Rect GPU_SetClipRect(GPU_Target* target, GPU_Rect rect)
 		return r;
 	}
 	
-	return current_renderer->impl->SetClip(current_renderer, target, rect.x, rect.y, rect.w, rect.h);
+	return current_renderer->impl->SetClip(current_renderer, target, (Sint16)rect.x, (Sint16)rect.y, (Uint16)rect.w, (Uint16)rect.h);
 }
 
 GPU_Rect GPU_SetClip(GPU_Target* target, Sint16 x, Sint16 y, Uint16 w, Uint16 h)
@@ -1904,7 +1922,11 @@ void GPU_SetColor(GPU_Image* image, SDL_Color color)
 
 void GPU_SetRGB(GPU_Image* image, Uint8 r, Uint8 g, Uint8 b)
 {
-	SDL_Color c = {r, g, b, 255};
+	SDL_Color c;
+	c.r = r;
+	c.g = g;
+	c.b = b;
+	c.a = 255;
 
 	if(image == NULL)
 		return;
@@ -1914,7 +1936,11 @@ void GPU_SetRGB(GPU_Image* image, Uint8 r, Uint8 g, Uint8 b)
 
 void GPU_SetRGBA(GPU_Image* image, Uint8 r, Uint8 g, Uint8 b, Uint8 a)
 {
-	SDL_Color c = {r, g, b, a};
+	SDL_Color c;
+	c.r = r;
+	c.g = g;
+	c.b = b;
+	c.a = a;
 
 	if(image == NULL)
 		return;
@@ -1942,7 +1968,12 @@ void GPU_SetTargetColor(GPU_Target* target, SDL_Color color)
 
 void GPU_SetTargetRGB(GPU_Target* target, Uint8 r, Uint8 g, Uint8 b)
 {
-    SDL_Color c = {r, g, b, 255};
+	SDL_Color c;
+	c.r = r;
+	c.g = g;
+	c.b = b;
+	c.a = 255;
+
 	if(target == NULL)
 		return;
 	
@@ -1952,7 +1983,12 @@ void GPU_SetTargetRGB(GPU_Target* target, Uint8 r, Uint8 g, Uint8 b)
 
 void GPU_SetTargetRGBA(GPU_Target* target, Uint8 r, Uint8 g, Uint8 b, Uint8 a)
 {
-    SDL_Color c = {r, g, b, a};
+	SDL_Color c;
+	c.r = r;
+	c.g = g;
+	c.b = b;
+	c.a = a;
+
 	if(target == NULL)
 		return;
 	
@@ -2403,7 +2439,13 @@ int GPU_GetAttributeLocation(Uint32 program_object, const char* attrib_name)
 
 GPU_AttributeFormat GPU_MakeAttributeFormat(int num_elems_per_vertex, GPU_TypeEnum type, Uint8 normalize, int stride_bytes, int offset_bytes)
 {
-    GPU_AttributeFormat f = {0, num_elems_per_vertex, type, normalize, stride_bytes, offset_bytes};
+	GPU_AttributeFormat f;
+	f.is_per_sprite = 0;
+	f.num_elems_per_value = num_elems_per_vertex;
+	f.type = type;
+	f.normalize = normalize;
+	f.stride_bytes = stride_bytes;
+	f.offset_bytes = offset_bytes;
     return f;
 }
 
