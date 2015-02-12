@@ -17,7 +17,7 @@
 0.0.0 (1/4/12)
     Public project created.  Basic fixed-function OpenGL renderer to render to screen with rotation and scaling.
 
-= To Do (Big ones) =
+= Wishlist =
 
  * Direct3D renderer(s)
  * Wrapping modes for image atlases and power-of-two based textures
