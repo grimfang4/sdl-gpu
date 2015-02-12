@@ -3,7 +3,7 @@
 = Versions =
 
 1.0.0 (future)
-    Needs your help!
+    Needs your help!  Feedback on the current version is great!  Patches welcome!
 
 0.10.0 (2/5/14)
     Better native API call integration.  Custom renderer support.
