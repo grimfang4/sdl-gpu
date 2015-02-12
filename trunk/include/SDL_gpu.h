@@ -14,7 +14,7 @@ extern "C" {
 
 // Compile-time versions
 #define SDL_GPU_VERSION_MAJOR 0
-#define SDL_GPU_VERSION_MINOR 10
+#define SDL_GPU_VERSION_MINOR 11
 #define SDL_GPU_VERSION_PATCH 0
 
 /* Auto-detect if we're using the SDL2 API by the headers available. */
