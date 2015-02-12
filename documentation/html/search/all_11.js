@@ -1,0 +1,12 @@
+var searchData=
+[
+  ['uint32',['Uint32',['../structGPU__RendererImpl_a1ff13ce53cbe5f27a26cbbce9ec1e21f.html#a1ff13ce53cbe5f27a26cbbce9ec1e21f',1,'GPU_RendererImpl::Uint32(SDLCALL *CreateShaderProgram)(GPU_Renderer *renderer)'],['../structGPU__RendererImpl_a44d59c536aa40ac08fb235a8d9e27708.html#a44d59c536aa40ac08fb235a8d9e27708',1,'GPU_RendererImpl::Uint32(SDLCALL *CompileShader_RW)(GPU_Renderer *renderer'],['../structGPU__RendererImpl_ad81be6665c4d20290ef03295a311b16f.html#ad81be6665c4d20290ef03295a311b16f',1,'GPU_RendererImpl::Uint32(SDLCALL *CompileShader)(GPU_Renderer *renderer']]],
+  ['uint8',['Uint8',['../structGPU__RendererImpl_a8a649bcab3438c8329c4163c692f0b85.html#a8a649bcab3438c8329c4163c692f0b85',1,'GPU_RendererImpl::Uint8(SDLCALL *SetWindowResolution)(GPU_Renderer *renderer'],['../structGPU__RendererImpl_a89e19a8c34fac848a07f1c55f152f8d1.html#a89e19a8c34fac848a07f1c55f152f8d1',1,'GPU_RendererImpl::Uint8(SDLCALL *SetFullscreen)(GPU_Renderer *renderer'],['../structGPU__RendererImpl_ad00d1a845864d49cac479440f4b2d736.html#ad00d1a845864d49cac479440f4b2d736',1,'GPU_RendererImpl::Uint8(SDLCALL *SaveImage)(GPU_Renderer *renderer'],['../structGPU__RendererImpl_a7fb2b9dfca80a3039162973151fbf7b3.html#a7fb2b9dfca80a3039162973151fbf7b3',1,'GPU_RendererImpl::Uint8(SDLCALL *LinkShaderProgram)(GPU_Renderer *renderer']]],
+  ['uniform_5fname',['uniform_name',['../structGPU__RendererImpl_a682dc4985f134cc2562dade5db0ff3ef.html#a682dc4985f134cc2562dade5db0ff3ef',1,'GPU_RendererImpl']]],
+  ['use_5fblending',['use_blending',['../structGPU__Image_ad3b3a1e27ebe788414d0359d259f8edd.html#ad3b3a1e27ebe788414d0359d259f8edd',1,'GPU_Image']]],
+  ['use_5fclip_5frect',['use_clip_rect',['../structGPU__Target_ae6b449ea6b5e18be949a31e5a2390d16.html#ae6b449ea6b5e18be949a31e5a2390d16',1,'GPU_Target']]],
+  ['use_5fcolor',['use_color',['../structGPU__Target_a520a4eded6a7f6c5d7001b3da5dc54ad.html#a520a4eded6a7f6c5d7001b3da5dc54ad',1,'GPU_Target']]],
+  ['use_5fdesktop_5fresolution',['use_desktop_resolution',['../structGPU__RendererImpl_a80c2be88e150ecbe2fd44cd4cf5810d3.html#a80c2be88e150ecbe2fd44cd4cf5810d3',1,'GPU_RendererImpl']]],
+  ['use_5ftexturing',['use_texturing',['../structGPU__Context_a19c8785c332f588f494c87543cd8451e.html#a19c8785c332f588f494c87543cd8451e',1,'GPU_Context']]],
+  ['using_5fvirtual_5fresolution',['using_virtual_resolution',['../structGPU__Target_a2d208c35eb48202c8e766d5e828f4deb.html#a2d208c35eb48202c8e766d5e828f4deb',1,'GPU_Target']]]
+];

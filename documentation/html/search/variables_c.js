@@ -1,0 +1,6 @@
+var searchData=
+[
+  ['offset_5fbytes',['offset_bytes',['../structGPU__AttributeFormat_aac0cb9805d8349aa56c8621d5f5a8cde.html#aac0cb9805d8349aa56c8621d5f5a8cde',1,'GPU_AttributeFormat']]],
+  ['outer_5fradius',['outer_radius',['../structGPU__RendererImpl_a72f1fb23bc3b6c35c908bc43c38cb103.html#a72f1fb23bc3b6c35c908bc43c38cb103',1,'GPU_RendererImpl']]],
+  ['owns_5fhandle',['owns_handle',['../structImageData__GLES__1_af501f11bc0ca928f5ca472f58eb877c4.html#af501f11bc0ca928f5ca472f58eb877c4',1,'ImageData_GLES_1::owns_handle()'],['../structImageData__GLES__2_a77feb4068559234bde5b5baa469922e2.html#a77feb4068559234bde5b5baa469922e2',1,'ImageData_GLES_2::owns_handle()'],['../structImageData__OpenGL__1_ae2bb730cc20f342089057b1335bedd47.html#ae2bb730cc20f342089057b1335bedd47',1,'ImageData_OpenGL_1::owns_handle()'],['../structImageData__OpenGL__1__BASE_a4ba4739caf007f8c156f1dd67a907d45.html#a4ba4739caf007f8c156f1dd67a907d45',1,'ImageData_OpenGL_1_BASE::owns_handle()'],['../structImageData__OpenGL__2_ad08fe58e62a36a4ee084378dccde7af5.html#ad08fe58e62a36a4ee084378dccde7af5',1,'ImageData_OpenGL_2::owns_handle()'],['../structImageData__OpenGL__3_a2593ca7b696d8dd42b16d1c7301925ab.html#a2593ca7b696d8dd42b16d1c7301925ab',1,'ImageData_OpenGL_3::owns_handle()']]]
+];
