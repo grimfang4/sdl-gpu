@@ -1,7 +1,6 @@
 #include "SDL.h"
 #include "SDL_gpu.h"
 #include "SDL_gpu_OpenGL_1.h"
-#include "common.h"
 
 
 
@@ -131,14 +130,10 @@ void draw_more_3d_stuff(GPU_Target* screen)
 int main(int argc, char* argv[])
 {
 	GPU_Target* screen;
-
-	printRenderers();
 	
 	screen = GPU_InitRenderer(GPU_RENDERER_OPENGL_1, 800, 600, GPU_DEFAULT_INIT_FLAGS);
 	if(screen == NULL)
 		return -1;
-	
-	printCurrentRenderer();
 
 	{
 		GPU_Image* image;

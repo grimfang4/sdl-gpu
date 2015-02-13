@@ -498,7 +498,7 @@ static GPU_Image* CreateAliasImage(GPU_Renderer* renderer, GPU_Image* image)
 }
 
 
-static Uint8 SaveImage(GPU_Renderer* renderer, GPU_Image* image, const char* filename)
+static Uint8 SaveImage(GPU_Renderer* renderer, GPU_Image* image, const char* filename, GPU_FileFormatEnum format)
 {
     GPU_Log(" %s (dummy)\n", __func__);
     
