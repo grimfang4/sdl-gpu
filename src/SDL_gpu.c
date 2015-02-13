@@ -25,6 +25,8 @@
 #define CHECK_CONTEXT (current_renderer->current_context_target != NULL)
 #define RETURN_ERROR(code, details) do{ GPU_PushErrorCode(__func__, code, "%s", details); return; } while(0)
 
+int GPU_strcasecmp(const char* s1, const char* s2);
+
 void GPU_InitRendererRegister(void);
 GPU_Renderer* GPU_AddRenderer(GPU_RendererID id);
 void GPU_RemoveRenderer(GPU_RendererID id);
@@ -739,12 +741,12 @@ GPU_Image* GPU_CreateAliasImage(GPU_Image* image)
 	return current_renderer->impl->CreateAliasImage(current_renderer, image);
 }
 
-Uint8 GPU_SaveImage(GPU_Image* image, const char* filename)
+Uint8 GPU_SaveImage(GPU_Image* image, const char* filename, GPU_FileFormatEnum format)
 {
 	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return 0;
 	
-	return current_renderer->impl->SaveImage(current_renderer, image, filename);
+	return current_renderer->impl->SaveImage(current_renderer, image, filename, format);
 }
 
 GPU_Image* GPU_CopyImage(GPU_Image* image)
@@ -896,9 +898,8 @@ static const char *get_filename_ext(const char *filename)
     return dot + 1;
 }
 
-Uint8 GPU_SaveSurface(SDL_Surface* surface, const char* filename)
+Uint8 GPU_SaveSurface(SDL_Surface* surface, const char* filename, GPU_FileFormatEnum format)
 {
-    const char* extension;
     Uint8 result;
     unsigned char* data;
 
@@ -908,20 +909,40 @@ Uint8 GPU_SaveSurface(SDL_Surface* surface, const char* filename)
         return 0;
     }
 
-    extension = get_filename_ext(filename);
 
     data = surface->pixels;
-
-    if(SDL_strcasecmp(extension, "png") == 0)
-        result = (stbi_write_png(filename, surface->w, surface->h, surface->format->BytesPerPixel, (const unsigned char *const)data, 0) > 0);
-    else if(SDL_strcasecmp(extension, "bmp") == 0)
-		result = (stbi_write_bmp(filename, surface->w, surface->h, surface->format->BytesPerPixel, (void*)data) > 0);
-    else if(SDL_strcasecmp(extension, "tga") == 0)
-		result = (stbi_write_tga(filename, surface->w, surface->h, surface->format->BytesPerPixel, (void*)data) > 0);
-    else
+    
+    if(format == GPU_FILE_AUTO)
     {
-        GPU_PushErrorCode(__func__, GPU_ERROR_DATA_ERROR, "Unsupported output file format");
-        result = 0;
+        const char* extension = get_filename_ext(filename);
+        if(GPU_strcasecmp(extension, "png") == 0)
+            format = GPU_FILE_PNG;
+        else if(GPU_strcasecmp(extension, "bmp") == 0)
+            format = GPU_FILE_BMP;
+        else if(GPU_strcasecmp(extension, "tga") == 0)
+            format = GPU_FILE_TGA;
+        else
+        {
+            GPU_PushErrorCode(__func__, GPU_ERROR_DATA_ERROR, "Could not detect output file format from file name");
+            return 0;
+        }
+    }
+    
+    switch(format)
+    {
+        case GPU_FILE_PNG:
+            result = (stbi_write_png(filename, surface->w, surface->h, surface->format->BytesPerPixel, (const unsigned char *const)data, 0) > 0);
+            break;
+        case GPU_FILE_BMP:
+            result = (stbi_write_bmp(filename, surface->w, surface->h, surface->format->BytesPerPixel, (void*)data) > 0);
+            break;
+        case GPU_FILE_TGA:
+            result = (stbi_write_tga(filename, surface->w, surface->h, surface->format->BytesPerPixel, (void*)data) > 0);
+            break;
+        default:
+            GPU_PushErrorCode(__func__, GPU_ERROR_DATA_ERROR, "Unsupported output file format");
+            result = 0;
+            break;
     }
 
     return result;
@@ -2646,6 +2667,79 @@ void GPU_SetAttributeSource(int num_values, GPU_Attribute source)
 		return;
 	
 	current_renderer->impl->SetAttributeSource(current_renderer, num_values, source);
+}
+
+
+
+
+// GPU_strcasecmp()
+// A portable strcasecmp() from UC Berkeley
+/*
+ * Copyright (c) 1987 Regents of the University of California.
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms are permitted
+ * provided that this notice is preserved and that due credit is given
+ * to the University of California at Berkeley. The name of the University
+ * may not be used to endorse or promote products derived from this
+ * software without specific written prior permission. This software
+ * is provided ``as is'' without express or implied warranty.
+ */
+
+/*
+ * This array is designed for mapping upper and lower case letter
+ * together for a case independent comparison.  The mappings are
+ * based upon ascii character sequences.
+ */
+static const unsigned char caseless_charmap[] = {
+	'\000', '\001', '\002', '\003', '\004', '\005', '\006', '\007',
+	'\010', '\011', '\012', '\013', '\014', '\015', '\016', '\017',
+	'\020', '\021', '\022', '\023', '\024', '\025', '\026', '\027',
+	'\030', '\031', '\032', '\033', '\034', '\035', '\036', '\037',
+	'\040', '\041', '\042', '\043', '\044', '\045', '\046', '\047',
+	'\050', '\051', '\052', '\053', '\054', '\055', '\056', '\057',
+	'\060', '\061', '\062', '\063', '\064', '\065', '\066', '\067',
+	'\070', '\071', '\072', '\073', '\074', '\075', '\076', '\077',
+	'\100', '\141', '\142', '\143', '\144', '\145', '\146', '\147',
+	'\150', '\151', '\152', '\153', '\154', '\155', '\156', '\157',
+	'\160', '\161', '\162', '\163', '\164', '\165', '\166', '\167',
+	'\170', '\171', '\172', '\133', '\134', '\135', '\136', '\137',
+	'\140', '\141', '\142', '\143', '\144', '\145', '\146', '\147',
+	'\150', '\151', '\152', '\153', '\154', '\155', '\156', '\157',
+	'\160', '\161', '\162', '\163', '\164', '\165', '\166', '\167',
+	'\170', '\171', '\172', '\173', '\174', '\175', '\176', '\177',
+	'\200', '\201', '\202', '\203', '\204', '\205', '\206', '\207',
+	'\210', '\211', '\212', '\213', '\214', '\215', '\216', '\217',
+	'\220', '\221', '\222', '\223', '\224', '\225', '\226', '\227',
+	'\230', '\231', '\232', '\233', '\234', '\235', '\236', '\237',
+	'\240', '\241', '\242', '\243', '\244', '\245', '\246', '\247',
+	'\250', '\251', '\252', '\253', '\254', '\255', '\256', '\257',
+	'\260', '\261', '\262', '\263', '\264', '\265', '\266', '\267',
+	'\270', '\271', '\272', '\273', '\274', '\275', '\276', '\277',
+	'\300', '\341', '\342', '\343', '\344', '\345', '\346', '\347',
+	'\350', '\351', '\352', '\353', '\354', '\355', '\356', '\357',
+	'\360', '\361', '\362', '\363', '\364', '\365', '\366', '\367',
+	'\370', '\371', '\372', '\333', '\334', '\335', '\336', '\337',
+	'\340', '\341', '\342', '\343', '\344', '\345', '\346', '\347',
+	'\350', '\351', '\352', '\353', '\354', '\355', '\356', '\357',
+	'\360', '\361', '\362', '\363', '\364', '\365', '\366', '\367',
+	'\370', '\371', '\372', '\373', '\374', '\375', '\376', '\377',
+};
+
+int GPU_strcasecmp(const char* s1, const char* s2)
+{
+    unsigned char u1, u2;
+
+    for (;;)
+    {
+        u1 = (unsigned char) *s1++;
+        u2 = (unsigned char) *s2++;
+        if (caseless_charmap[u1] != caseless_charmap[u2])
+            return caseless_charmap[u1] - caseless_charmap[u2];
+        if (u1 == '\0')
+            return 0;
+    }
+    return 0;
 }
 
 

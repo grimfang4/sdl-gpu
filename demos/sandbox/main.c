@@ -29,15 +29,6 @@ int main(int argc, char* argv[])
 		int y;
 		Uint8 done;
 		SDL_Event event;
-		
-		GPU_Image* image[5];
-		int i;
-		
-		for(i = 0; i < 5; i++)
-		{
-            image[i] = GPU_CreateImage(200, 200, GPU_FORMAT_RGBA);
-            GPU_LoadTarget(image[i]);
-		}
 
 		font_surface = GPU_LoadSurface("data/comic14.png");
 		font = FONT_Alloc(font_surface);
@@ -92,22 +83,7 @@ int main(int argc, char* argv[])
             GPU_RectangleRound(screen, 200, 20, 250, 50, 5, white);
             GPU_SetLineThickness(1);
             
-            for(i = 0; i < 5; i++)
-            {
-                GPU_Clear(image[i]->target);
-                GPU_CircleFilled(image[i]->target, 40 + i*10, 40 + i*10, 30, GPU_MakeColor(255/5 * (i+1), 255, 255/5 * (i+1), 255));
-            }
-            
-            GPU_Blit(image[0], NULL, image[1]->target, 100, 100);
-            GPU_Blit(image[2], NULL, image[3]->target, 100, 100);
-            GPU_Blit(image[1], NULL, image[4]->target, 100, 100);
-            GPU_Blit(image[3], NULL, image[4]->target, 100, 100);
-            
-            for(i = 0; i < 5; i++)
-            {
-                GPU_Blit(image[i], NULL, screen, 100 + image[i]->w * i, 100);
-            }
-            
+            GPU_RectangleRound(screen, 20 + x/7.0f, 100 + y/13.0f, 90 + x*1.101f, 300 + y*1.005f, 5, white);
             
 			GPU_Flip(screen);
 

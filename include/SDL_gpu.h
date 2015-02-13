@@ -207,6 +207,18 @@ typedef enum {
     GPU_FORMAT_YCbCr420P = 8
 } GPU_FormatEnum;
 
+/*! \ingroup ImageControls
+ * File format enum
+ * \see GPU_SaveSurface()
+ * \see GPU_SaveImage()
+ */
+typedef enum {
+    GPU_FILE_AUTO = 0,
+    GPU_FILE_PNG,
+    GPU_FILE_BMP,
+    GPU_FILE_TGA
+} GPU_FileFormatEnum;
+
 
 
 /*! \ingroup ImageControls
@@ -910,8 +922,10 @@ DECLSPEC void SDLCALL GPU_UnsetTargetColor(GPU_Target* target);
 /*! Load surface from an image file that is supported by this renderer.  Don't forget to SDL_FreeSurface() it. */
 DECLSPEC SDL_Surface* SDLCALL GPU_LoadSurface(const char* filename);
 
-/*! Save surface to a file.  The file type is deduced from the extension.  Supported formats are: png, bmp, tga.  Returns 0 on failure. */
-DECLSPEC Uint8 SDLCALL GPU_SaveSurface(SDL_Surface* surface, const char* filename);
+/*! Save surface to a file.
+ * With a format of GPU_FILE_AUTO, the file type is deduced from the extension.  Supported formats are: png, bmp, tga.
+ * Returns 0 on failure. */
+DECLSPEC Uint8 SDLCALL GPU_SaveSurface(SDL_Surface* surface, const char* filename, GPU_FileFormatEnum format);
 
 // End of SurfaceControls
 /*! @} */
@@ -954,8 +968,10 @@ DECLSPEC void SDLCALL GPU_UpdateSubImage(GPU_Image* image, const GPU_Rect* image
 /*! Update an image from an array of pixel data. */
 DECLSPEC void SDLCALL GPU_UpdateImageBytes(GPU_Image* image, const GPU_Rect* image_rect, const unsigned char* bytes, int bytes_per_row);
 
-/*! Save image to a file.  The file type is deduced from the extension.  Supported formats are: png, bmp, tga.  Returns 0 on failure. */
-DECLSPEC Uint8 SDLCALL GPU_SaveImage(GPU_Image* image, const char* filename);
+/*! Save image to a file.
+ * With a format of GPU_FILE_AUTO, the file type is deduced from the extension.  Supported formats are: png, bmp, tga.
+ * Returns 0 on failure. */
+DECLSPEC Uint8 SDLCALL GPU_SaveImage(GPU_Image* image, const char* filename, GPU_FileFormatEnum format);
 
 /*! Loads mipmaps for the given image, if supported by the renderer. */
 DECLSPEC void SDLCALL GPU_GenerateMipmaps(GPU_Image* image);

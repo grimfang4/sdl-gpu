@@ -68,7 +68,7 @@ typedef struct GPU_RendererImpl
 	GPU_Image* (SDLCALL *CreateAliasImage)(GPU_Renderer* renderer, GPU_Image* image);
 	
 	/*! \see GPU_SaveImage() */
-	Uint8 (SDLCALL *SaveImage)(GPU_Renderer* renderer, GPU_Image* image, const char* filename);
+	Uint8 (SDLCALL *SaveImage)(GPU_Renderer* renderer, GPU_Image* image, const char* filename, GPU_FileFormatEnum format);
 	
 	/*! \see GPU_CopyImage() */
 	GPU_Image* (SDLCALL *CopyImage)(GPU_Renderer* renderer, GPU_Image* image);

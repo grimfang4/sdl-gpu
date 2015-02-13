@@ -40,6 +40,7 @@ See a particular renderer's *.c file for specifics. */
 	}
 #endif
 
+int GPU_strcasecmp(const char* s1, const char* s2);
 
 #include "SDL_platform.h"
 
@@ -2203,9 +2204,8 @@ static const char *get_filename_ext(const char *filename)
     return dot + 1;
 }
 
-static Uint8 SaveImage(GPU_Renderer* renderer, GPU_Image* image, const char* filename)
+static Uint8 SaveImage(GPU_Renderer* renderer, GPU_Image* image, const char* filename, GPU_FileFormatEnum format)
 {
-    const char* extension;
     Uint8 result;
     unsigned char* data;
 
@@ -2215,8 +2215,6 @@ static Uint8 SaveImage(GPU_Renderer* renderer, GPU_Image* image, const char* fil
         return 0;
     }
 
-    extension = get_filename_ext(filename);
-
     data = getRawImageData(renderer, image);
 
     if(data == NULL)
@@ -2225,16 +2223,38 @@ static Uint8 SaveImage(GPU_Renderer* renderer, GPU_Image* image, const char* fil
         return 0;
     }
 
-    if(SDL_strcasecmp(extension, "png") == 0)
-        result = stbi_write_png(filename, image->base_w, image->base_h, image->bytes_per_pixel, (const unsigned char *const)data, 0);
-    else if(SDL_strcasecmp(extension, "bmp") == 0)
-        result = stbi_write_bmp(filename, image->base_w, image->base_h, image->bytes_per_pixel, (void*)data);
-    else if(SDL_strcasecmp(extension, "tga") == 0)
-        result = stbi_write_tga(filename, image->base_w, image->base_h, image->bytes_per_pixel, (void*)data);
-    else
+    if(format == GPU_FILE_AUTO)
     {
-        GPU_PushErrorCode("GPU_SaveImage", GPU_ERROR_DATA_ERROR, "Unsupported output file format (%s)", extension);
-        result = 0;
+        const char* extension = get_filename_ext(filename);
+        if(GPU_strcasecmp(extension, "png") == 0)
+            format = GPU_FILE_PNG;
+        else if(GPU_strcasecmp(extension, "bmp") == 0)
+            format = GPU_FILE_BMP;
+        else if(GPU_strcasecmp(extension, "tga") == 0)
+            format = GPU_FILE_TGA;
+        else
+        {
+            GPU_PushErrorCode("GPU_SaveImage", GPU_ERROR_DATA_ERROR, "Could not detect output file format from file name");
+            free(data);
+            return 0;
+        }
+    }
+    
+    switch(format)
+    {
+        case GPU_FILE_PNG:
+            result = (stbi_write_png(filename, image->base_w, image->base_h, image->bytes_per_pixel, (const unsigned char *const)data, 0) > 0);
+            break;
+        case GPU_FILE_BMP:
+            result = (stbi_write_bmp(filename, image->base_w, image->base_h, image->bytes_per_pixel, (void*)data) > 0);
+            break;
+        case GPU_FILE_TGA:
+            result = (stbi_write_tga(filename, image->base_w, image->base_h, image->bytes_per_pixel, (void*)data) > 0);
+            break;
+        default:
+            GPU_PushErrorCode("GPU_SaveImage", GPU_ERROR_DATA_ERROR, "Unsupported output file format");
+            result = 0;
+            break;
     }
 
     free(data);

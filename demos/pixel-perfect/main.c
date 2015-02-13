@@ -45,7 +45,7 @@ int main(int argc, char* argv[])
             SDL_Color color = (i%2 == 0? GPU_MakeColor(255, 255, 255, 255) : GPU_MakeColor(0, 0, 255, 255));
             GPU_Rectangle(gen->target, i, i, gen->w-i-1, gen->h-1-i, color);
         }
-        GPU_SaveImage(gen, "data/pixel_perfect_odd.png");*/
+        GPU_SaveImage(gen, "data/pixel_perfect_odd.png", GPU_FILE_AUTO);*/
 
         image2 = GPU_LoadImage("data/pixel_perfect_odd.png");
         if(image2 == NULL)
