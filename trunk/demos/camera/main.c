@@ -134,17 +134,13 @@ int main(int argc, char* argv[])
                         else
                             target = screen;
                     }
-                    else if(event.key.keysym.sym == SDLK_SPACE)
-                    {
-                        int mx, my;
-                        float x, y;
-                        SDL_GetMouseState(&mx, &my);
-                        GPU_GetVirtualCoords(screen, &x, &y, mx, my);
-
-                        printf("Angle: %.1f\n", camera.angle);
-                        printScreenToWorld(x, y);
-                        printWorldToScreen(50, 50);
-                    }
+					else if (event.key.keysym.sym == SDLK_SPACE)
+					{
+					    if(screen->using_virtual_resolution)
+                            GPU_UnsetVirtualResolution(screen);
+                        else
+                            GPU_SetVirtualResolution(screen, 400, 400);
+					}
                     else if(event.key.keysym.sym == SDLK_w)
                     {
                         camera.y -= 100;
@@ -161,6 +157,17 @@ int main(int argc, char* argv[])
                     {
                         camera.x += 100;
                     }
+                }
+                else if(event.type == SDL_MOUSEBUTTONDOWN)
+                {
+                    int mx, my;
+                    float x, y;
+                    SDL_GetMouseState(&mx, &my);
+                    GPU_GetVirtualCoords(screen, &x, &y, mx, my);
+
+                    printf("Angle: %.1f\n", camera.angle);
+                    printScreenToWorld(x, y);
+                    printWorldToScreen(50, 50);
                 }
             }
 

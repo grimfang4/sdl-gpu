@@ -47,7 +47,7 @@ int main(int argc, char* argv[])
 
         // Copying from a surface dump
         surface = GPU_CopySurfaceFromImage(image);
-        //GPU_SaveSurface(surface, "save_surf1.bmp");
+        //GPU_SaveSurface(surface, "save_surf1.bmp", GPU_FILE_AUTO);
         image3 = GPU_CopyImageFromSurface(surface);
         SDL_FreeSurface(surface);
 

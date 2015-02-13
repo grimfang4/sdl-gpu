@@ -40,7 +40,7 @@ int main(int argc, char* argv[])
         }
         
         GPU_LogError("Saving image\n");
-        GPU_SaveImage(image, SAVE_FILE);
+        GPU_SaveImage(image, SAVE_FILE, GPU_FILE_AUTO);
         
         GPU_LogError("Reloading image\n");
         image1 = GPU_LoadImage(SAVE_FILE);
