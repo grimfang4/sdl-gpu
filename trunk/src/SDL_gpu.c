@@ -62,7 +62,7 @@ SDL_version GPU_GetLinkedVersion(void)
 
 void GPU_SetCurrentRenderer(GPU_RendererID id)
 {
-	current_renderer = GPU_GetRendererByID(id);
+	current_renderer = GPU_GetRenderer(id);
 	
 	if(current_renderer != NULL)
 		current_renderer->impl->SetAsCurrent(current_renderer);
@@ -677,7 +677,6 @@ GPU_RendererID GPU_MakeRendererID(const char* name, GPU_RendererEnum renderer, i
 	r.renderer = renderer;
 	r.major_version = major_version;
 	r.minor_version = minor_version;
-	r.index = -1;
 	
     return r;
 }

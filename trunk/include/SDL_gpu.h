@@ -94,8 +94,6 @@ typedef struct GPU_RendererID
     GPU_RendererEnum renderer;
     int major_version;
     int minor_version;
-    
-    int index;
 } GPU_RendererID;
 
 
@@ -716,9 +714,6 @@ DECLSPEC GPU_RendererID SDLCALL GPU_MakeRendererID(const char* name, GPU_Rendere
 /*! Gets the first registered renderer identifier for the given enum value. */
 DECLSPEC GPU_RendererID SDLCALL GPU_GetRendererID(GPU_RendererEnum renderer);
 
-/*! Gets the renderer identifier for the given registration index. */
-DECLSPEC GPU_RendererID SDLCALL GPU_GetRendererIDByIndex(unsigned int index);
-
 /*! Gets the number of registered (available) renderers. */
 DECLSPEC int SDLCALL GPU_GetNumRegisteredRenderers(void);
 
@@ -745,11 +740,8 @@ DECLSPEC int SDLCALL GPU_GetNumActiveRenderers(void);
 /*! Gets an array of identifiers for the active renderers. */
 DECLSPEC void SDLCALL GPU_GetActiveRendererList(GPU_RendererID* renderers_array);
 
-/*! Gets the renderer for the given renderer index. */
-DECLSPEC GPU_Renderer* SDLCALL GPU_GetRenderer(unsigned int index);
-
 /*! \return The renderer matching the given identifier. */
-DECLSPEC GPU_Renderer* SDLCALL GPU_GetRendererByID(GPU_RendererID id);
+DECLSPEC GPU_Renderer* SDLCALL GPU_GetRenderer(GPU_RendererID id);
 
 /*! \return The current renderer */
 DECLSPEC GPU_Renderer* SDLCALL GPU_GetCurrentRenderer(void);
