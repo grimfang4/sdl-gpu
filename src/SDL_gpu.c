@@ -28,8 +28,7 @@
 int GPU_strcasecmp(const char* s1, const char* s2);
 
 void GPU_InitRendererRegister(void);
-GPU_Renderer* GPU_AddRenderer(GPU_RendererID id);
-void GPU_RemoveRenderer(GPU_RendererID id);
+GPU_Renderer* GPU_CreateAndAddRenderer(GPU_RendererID id);
 
 static GPU_Renderer* current_renderer = NULL;
 
@@ -394,7 +393,7 @@ GPU_Target* GPU_InitRendererByID(GPU_RendererID renderer_request, Uint16 w, Uint
 	if(!init_SDL())
         return NULL;
 	
-	renderer = GPU_AddRenderer(renderer_request);
+	renderer = GPU_CreateAndAddRenderer(renderer_request);
 	if(renderer == NULL)
 		return NULL;
     
@@ -500,8 +499,7 @@ void GPU_CloseCurrentRenderer(void)
 		return;
 	
 	current_renderer->impl->Quit(current_renderer);
-	GPU_RemoveRenderer(current_renderer->id);
-	current_renderer = NULL;
+	GPU_FreeRenderer(current_renderer);
 }
 
 void GPU_Quit(void)
@@ -520,13 +518,12 @@ void GPU_Quit(void)
     }
     inited_error_code_stack = 0;
     
-	// FIXME: Remove all renderers
 	if(current_renderer == NULL)
 		return;
 	
 	current_renderer->impl->Quit(current_renderer);
-	GPU_RemoveRenderer(current_renderer->id);
-	current_renderer = NULL;
+	GPU_FreeRenderer(current_renderer);
+	// FIXME: Free all renderers
 	
 	if(GPU_GetNumActiveRenderers() == 0)
 		SDL_Quit();

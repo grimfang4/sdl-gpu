@@ -740,14 +740,16 @@ DECLSPEC int SDLCALL GPU_GetNumActiveRenderers(void);
 /*! Gets an array of identifiers for the active renderers. */
 DECLSPEC void SDLCALL GPU_GetActiveRendererList(GPU_RendererID* renderers_array);
 
-/*! \return The renderer matching the given identifier. */
-DECLSPEC GPU_Renderer* SDLCALL GPU_GetRenderer(GPU_RendererID id);
-
 /*! \return The current renderer */
 DECLSPEC GPU_Renderer* SDLCALL GPU_GetCurrentRenderer(void);
 
 /*! Switches the current renderer to the renderer matching the given identifier. */
 DECLSPEC void SDLCALL GPU_SetCurrentRenderer(GPU_RendererID id);
+
+/*! \return The renderer matching the given identifier. */
+DECLSPEC GPU_Renderer* SDLCALL GPU_GetRenderer(GPU_RendererID id);
+
+DECLSPEC void SDLCALL GPU_FreeRenderer(GPU_Renderer* renderer);
 
 /*! Reapplies the renderer state to the backend API (e.g. OpenGL, Direct3D).  Use this if you want SDL_gpu to be able to render after you've used direct backend calls. */
 DECLSPEC void SDLCALL GPU_ResetRendererState(void);
