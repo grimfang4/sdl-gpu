@@ -416,8 +416,8 @@ int do_attributes(GPU_Target* screen)
         offset_y1 = rand()%(image->h/2);
         x1 = vertex_values[val_n++] = rand()%screen->w + offset_x1;
         y1 = vertex_values[val_n++] = rand()%screen->h + offset_y1;
-        vertex_values[val_n++] = offset_x1/image->base_w;
-        vertex_values[val_n++] = offset_y1/image->base_h;
+        vertex_values[val_n++] = offset_x1/image->texture_w;
+        vertex_values[val_n++] = offset_y1/image->texture_h;
         vertex_values[val_n++] = rand()%101/100.0f;
         vertex_values[val_n++] = rand()%101/100.0f;
         vertex_values[val_n++] = rand()%101/100.0f;
@@ -427,8 +427,8 @@ int do_attributes(GPU_Target* screen)
         offset_y2 = 5 + rand()%(image->h/2);
         vertex_values[val_n++] = x1 + offset_x2;
         vertex_values[val_n++] = y1 + offset_y2;
-        vertex_values[val_n++] = (offset_x1 + offset_x2)/image->base_w;
-        vertex_values[val_n++] = (offset_y1 + offset_y2)/image->base_h;
+        vertex_values[val_n++] = (offset_x1 + offset_x2)/image->texture_w;
+        vertex_values[val_n++] = (offset_y1 + offset_y2)/image->texture_h;
         vertex_values[val_n++] = rand()%101/100.0f;
         vertex_values[val_n++] = rand()%101/100.0f;
         vertex_values[val_n++] = rand()%101/100.0f;
@@ -438,8 +438,8 @@ int do_attributes(GPU_Target* screen)
         offset_y3 = 5 + rand()%(image->h/2);
         vertex_values[val_n++] = x1 + offset_x3;
         vertex_values[val_n++] = y1 + offset_y3;
-        vertex_values[val_n++] = (offset_x1 + offset_x3)/image->base_w;
-        vertex_values[val_n++] = (offset_y1 + offset_y3)/image->base_h;
+        vertex_values[val_n++] = (offset_x1 + offset_x3)/image->texture_w;
+        vertex_values[val_n++] = (offset_y1 + offset_y3)/image->texture_h;
         vertex_values[val_n++] = rand()%101/100.0f;
         vertex_values[val_n++] = rand()%101/100.0f;
         vertex_values[val_n++] = rand()%101/100.0f;
