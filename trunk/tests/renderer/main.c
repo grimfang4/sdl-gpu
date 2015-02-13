@@ -453,9 +453,10 @@ static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, GPU_Fo
 
     result->w = w;
     result->h = h;
-    
     result->base_w = w;
     result->base_h = h;
+    result->texture_w = w;
+    result->texture_h = h;
 
     return result;
 }
@@ -575,7 +576,7 @@ static SDL_Surface* CopySurfaceFromImage(GPU_Renderer* renderer, GPU_Image* imag
     if(image == NULL)
         return NULL;
     
-    return SDL_CreateRGBSurface(SDL_SWSURFACE, image->base_w, image->base_h, 32, 0, 0, 0, 0);
+    return SDL_CreateRGBSurface(SDL_SWSURFACE, image->texture_w, image->texture_h, 32, 0, 0, 0, 0);
 }
 
 
@@ -632,8 +633,8 @@ static GPU_Target* LoadTarget(GPU_Renderer* renderer, GPU_Image* image)
     result->image = image;
     result->w = image->w;
     result->h = image->h;
-    result->base_w = image->base_w;
-    result->base_h = image->base_h;
+    result->base_w = image->texture_w;
+    result->base_h = image->texture_h;
     
     result->viewport = GPU_MakeRect(0, 0, result->w, result->h);
     

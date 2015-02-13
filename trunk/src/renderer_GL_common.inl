@@ -1811,9 +1811,11 @@ static GPU_Image* CreateUninitializedImage(GPU_Renderer* renderer, Uint16 w, Uin
 
     result->w = w;
     result->h = h;
-    // POT textures will change this later
     result->base_w = w;
     result->base_h = h;
+    // POT textures will change this later
+    result->texture_w = w;
+    result->texture_h = h;
 
     return result;
 }
@@ -1870,9 +1872,9 @@ static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, GPU_Fo
     
     glTexImage2D(GL_TEXTURE_2D, 0, internal_format, w, h, 0,
                  internal_format, GL_UNSIGNED_BYTE, zero_buffer);
-    // Tell SDL_gpu what we got.
-    result->base_w = w;
-    result->base_h = h;
+    // Tell SDL_gpu what we got (power-of-two requirements have made this change)
+    result->texture_w = w;
+    result->texture_h = h;
     
     // Restore GL defaults
     glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
@@ -2042,6 +2044,8 @@ static GPU_Image* CreateImageUsingTexture(GPU_Renderer* renderer, Uint32 handle,
     
     result->base_w = w;
     result->base_h = h;
+    result->texture_w = w;
+    result->texture_h = h;
 
     return result;
 }
@@ -2120,6 +2124,8 @@ static Uint8 readImagePixels(GPU_Renderer* renderer, GPU_Image* source, GLint fo
         created_target = 1;
     }
     // Get the data
+    // FIXME: This may use different dimensions than the OpenGL code... (base_w vs texture_w)
+    // FIXME: I should force it to use the texture dims.
     result = readTargetPixels(renderer, source->target, format, pixels);
     // Free the target
     if(created_target)
@@ -2153,6 +2159,7 @@ static unsigned char* getRawTargetData(GPU_Renderer* renderer, GPU_Target* targe
         bytes_per_pixel = target->image->bytes_per_pixel;
     data = (unsigned char*)malloc(target->base_w * target->base_h * bytes_per_pixel);
     
+    // This can take regions of pixels, so using base_w and base_h with an image target should be fine.
     if(!readTargetPixels(renderer, target, ((GPU_TARGET_DATA*)target->data)->format, data))
     {
         free(data);
@@ -2183,7 +2190,7 @@ static unsigned char* getRawImageData(GPU_Renderer* renderer, GPU_Image* image)
     if(image->target != NULL && isCurrentTarget(renderer, image->target))
         renderer->impl->FlushBlitBuffer(renderer);
     
-    data = (unsigned char*)malloc(image->base_w * image->base_h * image->bytes_per_pixel);
+    data = (unsigned char*)malloc(image->texture_w * image->texture_h * image->bytes_per_pixel);
     
     // FIXME: Sometimes the texture is stored and read in RGBA even when I specify RGB.  getRawImageData() might need to return the stored format or Bpp.
     if(!readImagePixels(renderer, image, ((GPU_IMAGE_DATA*)image->data)->format, data))
@@ -2210,7 +2217,7 @@ static Uint8 SaveImage(GPU_Renderer* renderer, GPU_Image* image, const char* fil
     unsigned char* data;
 
     if(image == NULL || filename == NULL ||
-            image->base_w < 1 || image->base_h < 1 || image->bytes_per_pixel < 1 || image->bytes_per_pixel > 4)
+            image->texture_w < 1 || image->texture_h < 1 || image->bytes_per_pixel < 1 || image->bytes_per_pixel > 4)
     {
         return 0;
     }
@@ -2243,13 +2250,13 @@ static Uint8 SaveImage(GPU_Renderer* renderer, GPU_Image* image, const char* fil
     switch(format)
     {
         case GPU_FILE_PNG:
-            result = (stbi_write_png(filename, image->base_w, image->base_h, image->bytes_per_pixel, (const unsigned char *const)data, 0) > 0);
+            result = (stbi_write_png(filename, image->texture_w, image->texture_h, image->bytes_per_pixel, (const unsigned char *const)data, 0) > 0);
             break;
         case GPU_FILE_BMP:
-            result = (stbi_write_bmp(filename, image->base_w, image->base_h, image->bytes_per_pixel, (void*)data) > 0);
+            result = (stbi_write_bmp(filename, image->texture_w, image->texture_h, image->bytes_per_pixel, (void*)data) > 0);
             break;
         case GPU_FILE_TGA:
-            result = (stbi_write_tga(filename, image->base_w, image->base_h, image->bytes_per_pixel, (void*)data) > 0);
+            result = (stbi_write_tga(filename, image->texture_w, image->texture_h, image->bytes_per_pixel, (void*)data) > 0);
             break;
         default:
             GPU_PushErrorCode("GPU_SaveImage", GPU_ERROR_DATA_ERROR, "Unsupported output file format");
@@ -2307,7 +2314,7 @@ static SDL_Surface* CopySurfaceFromImage(GPU_Renderer* renderer, GPU_Image* imag
         GPU_PushErrorCode("GPU_CopySurfaceFromImage", GPU_ERROR_NULL_ARGUMENT, "image");
         return NULL;
     }
-    if(image->base_w < 1 || image->base_h < 1)
+    if(image->texture_w < 1 || image->texture_h < 1)
     {
         GPU_PushErrorCode("GPU_CopySurfaceFromImage", GPU_ERROR_DATA_ERROR, "Invalid image dimensions (%dx%d)", image->base_w, image->base_h);
         return NULL;
@@ -2323,7 +2330,7 @@ static SDL_Surface* CopySurfaceFromImage(GPU_Renderer* renderer, GPU_Image* imag
     
     format = AllocFormat(((GPU_IMAGE_DATA*)image->data)->format);
     
-    result = SDL_CreateRGBSurfaceFrom(data, image->base_w, image->base_h, format->BitsPerPixel, image->base_w*format->BytesPerPixel, format->Rmask, format->Gmask, format->Bmask, format->Amask);
+    result = SDL_CreateRGBSurfaceFrom(data, image->texture_w, image->texture_h, format->BitsPerPixel, image->base_w*format->BytesPerPixel, format->Rmask, format->Gmask, format->Bmask, format->Amask);
     if(result != NULL)
         result->flags &= ~SDL_PREALLOC;  // Make SDL take ownership of the data memory
     
@@ -2813,8 +2820,8 @@ static GPU_Image* CopyImage(GPU_Renderer* renderer, GPU_Image* image)
             glTexImage2D(GL_TEXTURE_2D, 0, internal_format, w, h, 0,
                          internal_format, GL_UNSIGNED_BYTE, texture_data);
             // Tell SDL_gpu what we got.
-            result->base_w = w;
-            result->base_h = h;
+            result->texture_w = w;
+            result->texture_h = h;
             
             // Restore GL defaults
             glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
@@ -3229,8 +3236,8 @@ static GPU_Target* LoadTarget(GPU_Renderer* renderer, GPU_Image* image)
     result->image = image;
     result->w = image->w;
     result->h = image->h;
-    result->base_w = image->base_w;
-    result->base_h = image->base_h;
+    result->base_w = image->texture_w;
+    result->base_h = image->texture_h;
     
     result->viewport = GPU_MakeRect(0, 0, result->w, result->h);
     
@@ -3491,8 +3498,8 @@ static void Blit(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, G
         return;
     }
     
-    tex_w = image->base_w;
-    tex_h = image->base_h;
+    tex_w = image->texture_w;
+    tex_h = image->texture_h;
     
     if(image->snap_mode == GPU_SNAP_POSITION || image->snap_mode == GPU_SNAP_POSITION_AND_DIMENSIONS)
     {
@@ -3698,8 +3705,8 @@ static void BlitTransformX(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* s
         return;
     }
     
-    tex_w = image->base_w;
-    tex_h = image->base_h;
+    tex_w = image->texture_w;
+    tex_h = image->texture_h;
     
     if(image->snap_mode == GPU_SNAP_POSITION || image->snap_mode == GPU_SNAP_POSITION_AND_DIMENSIONS)
     {
