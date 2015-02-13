@@ -1,11 +1,11 @@
 #include "SDL.h"
 #include "SDL_gpu.h"
 
-#ifndef SDL_GPU_BUILD_VIDEO_DEMO
+#ifndef SDL_GPU_BUILD_VIDEO_TEST
 
 int main(int argc, char* argv[])
 {
-    GPU_LogError("Sorry, this demo needs to be specifically enabled because it requires FFMPEG.\n\nEither enable the SDL_gpu_BUILD_VIDEO_DEMO CMake flag or else define SDL_GPU_BUILD_VIDEO_DEMO to build this demo manually.\n");
+    GPU_LogError("Sorry, this demo needs to be specifically enabled because it requires FFMPEG.\n\nEither enable the SDL_gpu_BUILD_VIDEO_TEST CMake flag or else define SDL_GPU_BUILD_VIDEO_TEST to build this demo manually.\n");
     return 0;
 }
 
