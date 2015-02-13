@@ -140,12 +140,28 @@ void GPU_RegisterRenderer(GPU_RendererID id, GPU_Renderer* (*create_renderer)(GP
 	if(i >= MAX_REGISTERED_RENDERERS)
 		return;
     
+    if(id.renderer == GPU_RENDERER_UNKNOWN)
+    {
+        GPU_PushErrorCode(__func__, GPU_ERROR_USER_ERROR, "Invalid renderer ID");
+        return;
+    }
+    if(create_renderer == NULL)
+    {
+        GPU_PushErrorCode(__func__, GPU_ERROR_USER_ERROR, "NULL renderer create callback");
+        return;
+    }
+    if(free_renderer == NULL)
+    {
+        GPU_PushErrorCode(__func__, GPU_ERROR_USER_ERROR, "NULL renderer free callback");
+        return;
+    }
+    
     rendererRegister[i].id = id;
     rendererRegister[i].createFn = create_renderer;
     rendererRegister[i].freeFn = free_renderer;
 }
 
-void GPU_RegisterRenderers(void)
+void GPU_RegisterBuiltInRenderers(void)
 {
 	#ifndef SDL_GPU_DISABLE_OPENGL
         #ifndef SDL_GPU_DISABLE_OPENGL_1_BASE
@@ -215,7 +231,7 @@ void GPU_InitRendererRegister(void)
 	
 	initialized = 1;
 	
-	GPU_RegisterRenderers();
+	GPU_RegisterBuiltInRenderers();
 }
 
 
@@ -324,7 +340,7 @@ GPU_Renderer* GPU_GetRenderer(GPU_RendererID id)
 }
 
 // Create a new renderer based on a registered id and store it in the map.
-GPU_Renderer* GPU_AddRenderer(GPU_RendererID id)
+GPU_Renderer* GPU_CreateAndAddRenderer(GPU_RendererID id)
 {
 	int i;
 	for(i = 0; i < MAX_ACTIVE_RENDERERS; i++)
@@ -349,9 +365,13 @@ GPU_Renderer* GPU_AddRenderer(GPU_RendererID id)
 	return NULL;
 }
 
-void GPU_FreeRenderer(GPU_Renderer* renderer)
+// Free renderer memory according to how the registry instructs
+void GPU_FreeRendererMemory(GPU_Renderer* renderer)
 {
 	int i;
+	if(renderer == NULL)
+        return;
+	
 	for(i = 0; i < MAX_REGISTERED_RENDERERS; i++)
 	{
 		if(rendererRegister[i].id.renderer == GPU_RENDERER_UNKNOWN)
@@ -365,18 +385,24 @@ void GPU_FreeRenderer(GPU_Renderer* renderer)
 	}
 }
 
-// Remove a renderer from the map and free it.
-void GPU_RemoveRenderer(GPU_RendererID id)
+// Remove a renderer from the active map and free it.
+void GPU_FreeRenderer(GPU_Renderer* renderer)
 {
 	int i;
+	GPU_Renderer* current_renderer;
+	
+	if(renderer == NULL)
+        return;
+	
+    current_renderer = GPU_GetCurrentRenderer();
+    if(current_renderer == renderer)
+        current_renderer = NULL;
+        
 	for(i = 0; i < MAX_ACTIVE_RENDERERS; i++)
 	{
-		if(rendererMap[i] == NULL)
-			continue;
-		
-		if(id.renderer == rendererMap[i]->id.renderer)
+		if(renderer == rendererMap[i])
 		{
-			GPU_FreeRenderer(rendererMap[i]);
+			GPU_FreeRendererMemory(renderer);
 			rendererMap[i] = NULL;
 			return;
 		}
