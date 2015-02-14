@@ -9,7 +9,7 @@ int main(int argc, char* argv[])
 	
 	screen = initialize_demo(argc, argv, 800, 600);
 	if(screen == NULL)
-		return -1;
+		return 1;
 	
 	{
 		Uint32 startTime;
@@ -31,7 +31,7 @@ int main(int argc, char* argv[])
         
         GPU_Image* image = GPU_LoadImage("data/test.bmp");
         if(image == NULL)
-            return -1;
+            return 2;
         
         GPU_SetSnapMode(image, GPU_SNAP_NONE);
         

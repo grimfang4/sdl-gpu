@@ -662,7 +662,7 @@ SDL_Color GPU_MakeColor(Uint8 r, Uint8 g, Uint8 b, Uint8 a)
 	c.r = r;
 	c.g = g;
 	c.b = b;
-	c.a = a;
+	GET_ALPHA(c) = a;
 
     return c;
 }
@@ -1946,7 +1946,7 @@ void GPU_SetRGB(GPU_Image* image, Uint8 r, Uint8 g, Uint8 b)
 	c.r = r;
 	c.g = g;
 	c.b = b;
-	c.a = 255;
+	GET_ALPHA(c) = 255;
 
 	if(image == NULL)
 		return;
@@ -1960,7 +1960,7 @@ void GPU_SetRGBA(GPU_Image* image, Uint8 r, Uint8 g, Uint8 b, Uint8 a)
 	c.r = r;
 	c.g = g;
 	c.b = b;
-	c.a = a;
+	GET_ALPHA(c) = a;
 
 	if(image == NULL)
 		return;
@@ -1992,7 +1992,7 @@ void GPU_SetTargetRGB(GPU_Target* target, Uint8 r, Uint8 g, Uint8 b)
 	c.r = r;
 	c.g = g;
 	c.b = b;
-	c.a = 255;
+	GET_ALPHA(c) = 255;
 
 	if(target == NULL)
 		return;
@@ -2007,7 +2007,7 @@ void GPU_SetTargetRGBA(GPU_Target* target, Uint8 r, Uint8 g, Uint8 b, Uint8 a)
 	c.r = r;
 	c.g = g;
 	c.b = b;
-	c.a = a;
+	GET_ALPHA(c) = a;
 
 	if(target == NULL)
 		return;
