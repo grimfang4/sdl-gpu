@@ -234,6 +234,7 @@ typedef struct GPU_Image
 	struct GPU_Renderer* renderer;
 	GPU_Target* target;
 	Uint16 w, h;
+	Uint8 using_virtual_resolution;
 	GPU_FormatEnum format;
 	int num_layers;
 	int bytes_per_pixel;
@@ -954,13 +955,16 @@ DECLSPEC GPU_Image* SDLCALL GPU_CopyImage(GPU_Image* image);
 /*! Deletes an image in the proper way for this renderer.  Also deletes the corresponding GPU_Target if applicable.  Be careful not to use that target afterward! */
 DECLSPEC void SDLCALL GPU_FreeImage(GPU_Image* image);
 
-/*! Update an image from surface data. */
-DECLSPEC void SDLCALL GPU_UpdateImage(GPU_Image* image, SDL_Surface* surface, const GPU_Rect* surface_rect);
+/*! Change the logical size of the given image.  Rendering this image will scaled it as if the dimensions were actually the ones given. */
+DECLSPEC void SDLCALL GPU_SetImageVirtualResolution(GPU_Image* image, Uint16 w, Uint16 h);
 
-/*! Update an image from surface data. */
-DECLSPEC void SDLCALL GPU_UpdateSubImage(GPU_Image* image, const GPU_Rect* image_rect, SDL_Surface* surface, const GPU_Rect* surface_rect);
+/*! Reset the logical size of the given image to its original value. */
+DECLSPEC void SDLCALL GPU_UnsetImageVirtualResolution(GPU_Image* image);
 
-/*! Update an image from an array of pixel data. */
+/*! Update an image from surface data.  Ignores virtual resolution on the image so the number of pixels needed from the surface is known. */
+DECLSPEC void SDLCALL GPU_UpdateImage(GPU_Image* image, const GPU_Rect* image_rect, SDL_Surface* surface, const GPU_Rect* surface_rect);
+
+/*! Update an image from an array of pixel data.  Ignores virtual resolution on the image so the number of pixels needed from the surface is known. */
 DECLSPEC void SDLCALL GPU_UpdateImageBytes(GPU_Image* image, const GPU_Rect* image_rect, const unsigned char* bytes, int bytes_per_row);
 
 /*! Save image to a file.

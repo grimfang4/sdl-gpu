@@ -1809,6 +1809,7 @@ static GPU_Image* CreateUninitializedImage(GPU_Renderer* renderer, Uint16 w, Uin
     data->owns_handle = 1;
     data->format = gl_format;
 
+    result->using_virtual_resolution = 0;
     result->w = w;
     result->h = h;
     result->base_w = w;
@@ -2039,6 +2040,7 @@ static GPU_Image* CreateImageUsingTexture(GPU_Renderer* renderer, Uint32 handle,
     result->data = data;
     result->is_alias = 0;
 
+    result->using_virtual_resolution = 0;
     result->w = w;
     result->h = h;
     
@@ -2735,7 +2737,7 @@ static GPU_Image* CopyImage(GPU_Renderer* renderer, GPU_Image* image)
 		{
 			GPU_Target* target;
 			
-            result = renderer->impl->CreateImage(renderer, image->w, image->h, image->format);
+            result = renderer->impl->CreateImage(renderer, image->texture_w, image->texture_h, image->format);
             if(result == NULL)
             {
                 GPU_PushErrorCode("GPU_CopyImage", GPU_ERROR_BACKEND_ERROR, "Failed to create new image.");
@@ -2758,9 +2760,17 @@ static GPU_Image* CopyImage(GPU_Renderer* renderer, GPU_Image* image)
 				SDL_Color color = image->color;
 				Uint8 use_blending = image->use_blending;
 				GPU_FilterEnum filter_mode = image->filter_mode;
+				Uint8 use_virtual = image->using_virtual_resolution;
+				Uint16 w, h;
 				GPU_UnsetColor(image);
 				GPU_SetBlending(image, 0);
 				GPU_SetImageFilter(image, GPU_FILTER_NEAREST);
+				if(use_virtual)
+                {
+                    w = image->w;
+                    h = image->h;
+                    GPU_UnsetImageVirtualResolution(image);
+                }
 
 				renderer->impl->Blit(renderer, image, NULL, target, image->w / 2, image->h / 2);
 
@@ -2768,6 +2778,10 @@ static GPU_Image* CopyImage(GPU_Renderer* renderer, GPU_Image* image)
 				GPU_SetColor(image, color);
 				GPU_SetBlending(image, use_blending);
 				GPU_SetImageFilter(image, filter_mode);
+				if(use_virtual)
+                {
+                    GPU_SetImageVirtualResolution(image, w, h);
+                }
 			}
             
             // Don't free the target yet (a waste of perf), but let it be freed next time...
@@ -2790,7 +2804,7 @@ static GPU_Image* CopyImage(GPU_Renderer* renderer, GPU_Image* image)
                 return NULL;
             }
             
-            result = CreateUninitializedImage(renderer, image->w, image->h, image->format);
+            result = CreateUninitializedImage(renderer, image->texture_w, image->texture_h, image->format);
             if(result == NULL)
             {
                 free(texture_data);
@@ -2848,6 +2862,8 @@ static GPU_Image* CopyImage(GPU_Renderer* renderer, GPU_Image* image)
         GPU_SetWrapMode(result, image->wrap_mode_x, image->wrap_mode_y);
         if(image->has_mipmaps)
             GPU_GenerateMipmaps(result);
+        if(image->using_virtual_resolution)
+            GPU_SetImageVirtualResolution(result, image->w, image->h);
     }
     
     return result;
@@ -2855,14 +2871,7 @@ static GPU_Image* CopyImage(GPU_Renderer* renderer, GPU_Image* image)
 
 
 
-
-static void UpdateImage(GPU_Renderer* renderer, GPU_Image* image, SDL_Surface* surface, const GPU_Rect* surface_rect)
-{
-    renderer->impl->UpdateSubImage(renderer, image, NULL, surface, surface_rect);
-}
-
-
-static void UpdateSubImage(GPU_Renderer* renderer, GPU_Image* image, const GPU_Rect* image_rect, SDL_Surface* surface, const GPU_Rect* surface_rect)
+static void UpdateImage(GPU_Renderer* renderer, GPU_Image* image, const GPU_Rect* image_rect, SDL_Surface* surface, const GPU_Rect* surface_rect)
 {
 	GPU_IMAGE_DATA* data;
 	GLenum original_format;
@@ -2882,7 +2891,7 @@ static void UpdateSubImage(GPU_Renderer* renderer, GPU_Image* image, const GPU_R
     newSurface = copySurfaceIfNeeded(renderer, data->format, surface, &original_format);
     if(newSurface == NULL)
     {
-        GPU_PushErrorCode("GPU_UpdateSubImage", GPU_ERROR_BACKEND_ERROR, "Failed to convert surface to proper pixel format.");
+        GPU_PushErrorCode("GPU_UpdateImage", GPU_ERROR_BACKEND_ERROR, "Failed to convert surface to proper pixel format.");
         return;
     }
 
@@ -2899,10 +2908,10 @@ static void UpdateSubImage(GPU_Renderer* renderer, GPU_Image* image, const GPU_R
             updateRect.h += updateRect.y;
             updateRect.y = 0;
         }
-        if(updateRect.x + updateRect.w > image->w)
-            updateRect.w += image->w - (updateRect.x + updateRect.w);
-        if(updateRect.y + updateRect.h > image->h)
-            updateRect.h += image->h - (updateRect.y + updateRect.h);
+        if(updateRect.x + updateRect.w > image->base_w)
+            updateRect.w += image->base_w - (updateRect.x + updateRect.w);
+        if(updateRect.y + updateRect.h > image->base_h)
+            updateRect.h += image->base_h - (updateRect.y + updateRect.h);
         
         if(updateRect.w <= 0)
             updateRect.w = 0;
@@ -2913,11 +2922,11 @@ static void UpdateSubImage(GPU_Renderer* renderer, GPU_Image* image, const GPU_R
     {
         updateRect.x = 0;
         updateRect.y = 0;
-        updateRect.w = image->w;
-        updateRect.h = image->h;
+        updateRect.w = image->base_w;
+        updateRect.h = image->base_h;
         if(updateRect.w < 0.0f || updateRect.h < 0.0f)
         {
-            GPU_PushErrorCode("GPU_UpdateSubImage", GPU_ERROR_USER_ERROR, "Given negative image rectangle.");
+            GPU_PushErrorCode("GPU_UpdateImage", GPU_ERROR_USER_ERROR, "Given negative image rectangle.");
             return;
         }
     }
@@ -3019,10 +3028,10 @@ static void UpdateImageBytes(GPU_Renderer* renderer, GPU_Image* image, const GPU
             updateRect.h += updateRect.y;
             updateRect.y = 0;
         }
-        if(updateRect.x + updateRect.w > image->w)
-            updateRect.w += image->w - (updateRect.x + updateRect.w);
-        if(updateRect.y + updateRect.h > image->h)
-            updateRect.h += image->h - (updateRect.y + updateRect.h);
+        if(updateRect.x + updateRect.w > image->base_w)
+            updateRect.w += image->base_w - (updateRect.x + updateRect.w);
+        if(updateRect.y + updateRect.h > image->base_h)
+            updateRect.h += image->base_h - (updateRect.y + updateRect.h);
         
         if(updateRect.w <= 0)
             updateRect.w = 0;
@@ -3033,11 +3042,11 @@ static void UpdateImageBytes(GPU_Renderer* renderer, GPU_Image* image, const GPU
     {
         updateRect.x = 0;
         updateRect.y = 0;
-        updateRect.w = image->w;
-        updateRect.h = image->h;
+        updateRect.w = image->base_w;
+        updateRect.h = image->base_h;
         if(updateRect.w < 0.0f || updateRect.h < 0.0f)
         {
-            GPU_PushErrorCode("GPU_UpdateSubImage", GPU_ERROR_USER_ERROR, "Given negative image rectangle.");
+            GPU_PushErrorCode("GPU_UpdateImage", GPU_ERROR_USER_ERROR, "Given negative image rectangle.");
             return;
         }
     }
@@ -3128,7 +3137,7 @@ static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surf
     if(image == NULL)
         return NULL;
 
-    renderer->impl->UpdateImage(renderer, image, surface, NULL);
+    renderer->impl->UpdateImage(renderer, image, NULL, surface, NULL);
 
     return image;
 }
@@ -3238,6 +3247,7 @@ static GPU_Target* LoadTarget(GPU_Renderer* renderer, GPU_Image* image)
     result->h = image->h;
     result->base_w = image->texture_w;
     result->base_h = image->texture_h;
+    result->using_virtual_resolution = image->using_virtual_resolution;
     
     result->viewport = GPU_MakeRect(0, 0, result->w, result->h);
     
@@ -3529,6 +3539,15 @@ static void Blit(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, G
         h = src_rect->h;
     }
     
+    if(image->using_virtual_resolution)
+    {
+        // Scale texture coords to fit the original dims
+        x1 *= image->base_w/(float)image->w;
+        y1 *= image->base_h/(float)image->h;
+        x2 *= image->base_w/(float)image->w;
+        y2 *= image->base_h/(float)image->h;
+    }
+    
     // Center the image on the given coords
     dx1 = x - w/2.0f;
     dy1 = y - h/2.0f;
@@ -3740,6 +3759,15 @@ static void BlitTransformX(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* s
         y2 = (src_rect->y + src_rect->h)/(float)tex_h;
         w = src_rect->w;
         h = src_rect->h;
+    }
+    
+    if(image->using_virtual_resolution)
+    {
+        // Scale texture coords to fit the original dims
+        x1 *= image->base_w/(float)image->w;
+        y1 *= image->base_h/(float)image->h;
+        x2 *= image->base_w/(float)image->w;
+        y2 *= image->base_h/(float)image->h;
     }
     
     // Center the image on the given coords (offset later)
@@ -6196,7 +6224,6 @@ static void SetAttributeSource(GPU_Renderer* renderer, int num_values, GPU_Attri
     impl->SaveImage = &SaveImage; \
     impl->CopyImage = &CopyImage; \
     impl->UpdateImage = &UpdateImage; \
-    impl->UpdateSubImage = &UpdateSubImage; \
     impl->UpdateImageBytes = &UpdateImageBytes; \
     impl->CopyImageFromSurface = &CopyImageFromSurface; \
     impl->CopyImageFromTarget = &CopyImageFromTarget; \

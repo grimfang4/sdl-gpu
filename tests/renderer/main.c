@@ -451,6 +451,7 @@ static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, GPU_Fo
     result->data = NULL;  // Allocate a data structure as needed for other image data
     result->is_alias = 0;
 
+    result->using_virtual_resolution = 0;
     result->w = w;
     result->h = h;
     result->base_w = w;
@@ -501,8 +502,14 @@ static GPU_Image* CreateAliasImage(GPU_Renderer* renderer, GPU_Image* image)
 
 static Uint8 SaveImage(GPU_Renderer* renderer, GPU_Image* image, const char* filename, GPU_FileFormatEnum format)
 {
+    SDL_Surface* surface;
+    
     GPU_Log(" %s (dummy)\n", __func__);
     
+    surface = GPU_CopySurfaceFromImage(image);
+    GPU_SaveSurface(surface, filename, format);
+    
+    SDL_FreeSurface(surface);
     return 1;
 }
 
@@ -518,13 +525,7 @@ static GPU_Image* CopyImage(GPU_Renderer* renderer, GPU_Image* image)
 }
 
 
-static void UpdateImage(GPU_Renderer* renderer, GPU_Image* image, SDL_Surface* surface, const GPU_Rect* surface_rect)
-{
-    GPU_Log(" %s (dummy)\n", __func__);
-}
-
-
-static void UpdateSubImage(GPU_Renderer* renderer, GPU_Image* image, const GPU_Rect* image_rect, SDL_Surface* surface, const GPU_Rect* surface_rect)
+static void UpdateImage(GPU_Renderer* renderer, GPU_Image* image, const GPU_Rect* image_rect, SDL_Surface* surface, const GPU_Rect* surface_rect)
 {
     GPU_Log(" %s (dummy)\n", __func__);
 }
@@ -1207,7 +1208,6 @@ void set_renderer_functions(GPU_RendererImpl* impl)
     impl->SaveImage = &SaveImage;
     impl->CopyImage = &CopyImage;
     impl->UpdateImage = &UpdateImage;
-    impl->UpdateSubImage = &UpdateSubImage;
     impl->UpdateImageBytes = &UpdateImageBytes;
     impl->CopyImageFromSurface = &CopyImageFromSurface;
     impl->CopyImageFromTarget = &CopyImageFromTarget;

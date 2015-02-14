@@ -19,7 +19,7 @@ void makeColorTransparent(GPU_Image* image, SDL_Color color)
         }
     }
     
-    GPU_UpdateImage(image, surface, NULL);
+    GPU_UpdateImage(image, NULL, surface, NULL);
     SDL_FreeSurface(surface);
 }
 
@@ -43,7 +43,7 @@ void replaceColor(GPU_Image* image, SDL_Color from, SDL_Color to)
         }
     }
     
-    GPU_UpdateImage(image, surface, NULL);
+    GPU_UpdateImage(image, NULL, surface, NULL);
     SDL_FreeSurface(surface);
 }
 
@@ -192,7 +192,7 @@ void shiftHSV(GPU_Image* image, int hue, int saturation, int value)
         }
     }
     
-    GPU_UpdateImage(image, surface, NULL);
+    GPU_UpdateImage(image, NULL, surface, NULL);
     SDL_FreeSurface(surface);
 }
 
@@ -242,7 +242,7 @@ void shiftHSVExcept(GPU_Image* image, int hue, int saturation, int value, int no
         }
     }
     
-    GPU_UpdateImage(image, surface, NULL);
+    GPU_UpdateImage(image, NULL, surface, NULL);
     SDL_FreeSurface(surface);
 }
 
