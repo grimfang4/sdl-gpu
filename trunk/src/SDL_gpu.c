@@ -493,6 +493,32 @@ void GPU_UnsetVirtualResolution(GPU_Target* target)
 	current_renderer->impl->UnsetVirtualResolution(current_renderer, target);
 }
 
+void GPU_SetImageVirtualResolution(GPU_Image* image, Uint16 w, Uint16 h)
+{
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL || w == 0 || h == 0)
+		return;
+	
+	if(image == NULL)
+        return;
+    
+    image->w = w;
+    image->h = h;
+    image->using_virtual_resolution = 1;
+}
+
+void GPU_UnsetImageVirtualResolution(GPU_Image* image)
+{
+	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
+		return;
+	
+	if(image == NULL)
+        return;
+	
+    image->w = image->base_w;
+    image->h = image->base_h;
+    image->using_virtual_resolution = 0;
+}
+
 void GPU_CloseCurrentRenderer(void)
 {
 	if(current_renderer == NULL)
@@ -753,20 +779,12 @@ GPU_Image* GPU_CopyImage(GPU_Image* image)
 	return current_renderer->impl->CopyImage(current_renderer, image);
 }
 
-void GPU_UpdateImage(GPU_Image* image, SDL_Surface* surface, const GPU_Rect* surface_rect)
+void GPU_UpdateImage(GPU_Image* image, const GPU_Rect* image_rect, SDL_Surface* surface, const GPU_Rect* surface_rect)
 {
 	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
 		return;
 	
-	current_renderer->impl->UpdateImage(current_renderer, image, surface, surface_rect);
-}
-
-void GPU_UpdateSubImage(GPU_Image* image, const GPU_Rect* image_rect, SDL_Surface* surface, const GPU_Rect* surface_rect)
-{
-	if(current_renderer == NULL || current_renderer->current_context_target == NULL)
-		return;
-	
-	current_renderer->impl->UpdateSubImage(current_renderer, image, image_rect, surface, surface_rect);
+	current_renderer->impl->UpdateImage(current_renderer, image, image_rect, surface, surface_rect);
 }
 
 void GPU_UpdateImageBytes(GPU_Image* image, const GPU_Rect* image_rect, const unsigned char* bytes, int bytes_per_row)

@@ -196,7 +196,7 @@ int main(int argc, char* argv[])
 
             GPU_Clear(screen);
 
-            GPU_UpdateSubImage(image, &image_rect, surface, &surface_rect);
+            GPU_UpdateImage(image, &image_rect, surface, &surface_rect);
 
             GPU_Blit(image, NULL, screen, screen->w/2, screen->h/2);
             GPU_Rectangle(screen, screen->w/2 - image->w/2, screen->h/2 - image->h/2,
