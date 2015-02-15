@@ -1889,6 +1889,11 @@ static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, GPU_Fo
 
 static GPU_Image* CreateImageUsingTexture(GPU_Renderer* renderer, Uint32 handle, Uint8 take_ownership)
 {
+    #ifdef SDL_GPU_DISABLE_TEXTURE_GETS
+    GPU_PushErrorCode("GPU_CreateImageUsingTexture", GPU_ERROR_UNSUPPORTED_FUNCTION, "Renderer %s does not support this function", renderer->id.name);
+    return NULL;
+    #else
+    
     GLint w, h;
     GLuint num_layers, bytes_per_pixel;
     GLint gl_format;
@@ -2050,6 +2055,7 @@ static GPU_Image* CreateImageUsingTexture(GPU_Renderer* renderer, Uint32 handle,
     result->texture_h = h;
 
     return result;
+    #endif
 }
 
 static GPU_Image* LoadImage(GPU_Renderer* renderer, const char* filename)
