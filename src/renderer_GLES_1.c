@@ -12,9 +12,11 @@ void GPU_FreeRenderer_GLES_1(GPU_Renderer* renderer) {}
 
 // Most of the code pulled in from here...
 #define SDL_GPU_USE_GLES
-#define SDL_GPU_USE_ARRAY_PIPELINE
 #define SDL_GPU_GL_TIER 2
 #define SDL_GPU_GLES_MAJOR_VERSION 1
+
+#define SDL_GPU_USE_ARRAY_PIPELINE
+#define SDL_GPU_DISABLE_TEXTURE_GETS
 #define SDL_GPU_DISABLE_SHADERS
 #define SDL_GPU_APPLY_TRANSFORMS_TO_GL_STACK
 #define SDL_GPU_NO_VAO
