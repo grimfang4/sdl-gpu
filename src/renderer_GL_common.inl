@@ -4103,230 +4103,19 @@ static_inline void submit_buffer_data(int bytes, float* values)
     #endif
 }
 
-
 // Assumes the right format
-static void BlitBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* target, unsigned int num_sprites, float* values, GPU_BlitFlagEnum flags)
+static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* target, unsigned short num_vertices, float* values, unsigned int num_indices, unsigned short* indices, GPU_BatchFlagEnum flags)
 {
 	GPU_CONTEXT_DATA* cdata;
-	unsigned short* index_buffer;
-	unsigned int i;
-	(void)flags;
-
-    if(image == NULL)
-    {
-        GPU_PushErrorCode("GPU_BlitBatch", GPU_ERROR_NULL_ARGUMENT, "image");
-        return;
-    }
-    if(target == NULL)
-    {
-        GPU_PushErrorCode("GPU_BlitBatch", GPU_ERROR_NULL_ARGUMENT, "target");
-        return;
-    }
-    if(renderer != image->renderer || renderer != target->renderer)
-    {
-        GPU_PushErrorCode("GPU_BlitBatch", GPU_ERROR_USER_ERROR, "Mismatched renderer");
-        return;
-    }
-    
-    makeContextCurrent(renderer, target);
-
-    // Bind the texture to which subsequent calls refer
-    bindTexture(renderer, image);
-
-    // Bind the FBO
-    if(!bindFramebuffer(renderer, target))
-    {
-        GPU_PushErrorCode("GPU_BlitBatch", GPU_ERROR_BACKEND_ERROR, "Failed to bind framebuffer.");
-        return;
-    }
-    
-    prepareToRenderToTarget(renderer, target);
-    prepareToRenderImage(renderer, target, image);
-    changeViewport(target);
-    changeCamera(target);
-    
-    changeTexturing(renderer, 1);
-
-    setClipRect(renderer, target);
-    
-    #ifdef SDL_GPU_APPLY_TRANSFORMS_TO_GL_STACK
-    if(!IsFeatureEnabled(renderer, GPU_FEATURE_VERTEX_SHADER))
-        applyTransforms();
-    #endif
-    
-
-    cdata = (GPU_CONTEXT_DATA*)renderer->current_context_target->context->data;
-
-    renderer->impl->FlushBlitBuffer(renderer);
-    // Only need to check the blit buffer because of the VBO storage
-    if(cdata->blit_buffer_num_vertices + num_sprites*4 >= cdata->blit_buffer_max_num_vertices)
-    {
-        if(!growBlitBuffer(cdata, cdata->blit_buffer_num_vertices + num_sprites*4))
-        {
-            // Can't do all of these sprites!  Only do some of them...
-            num_sprites = (cdata->blit_buffer_max_num_vertices - cdata->blit_buffer_num_vertices)/4;
-        }
-    }
-    if(cdata->index_buffer_num_vertices + num_sprites*6 >= cdata->index_buffer_max_num_vertices)
-    {
-        if(!growIndexBuffer(cdata, cdata->index_buffer_num_vertices + num_sprites*6))
-        {
-            // Can't do all of these sprites!  Only do some of them...
-            num_sprites = (cdata->index_buffer_max_num_vertices - cdata->index_buffer_num_vertices)/6;
-        }
-    }
-    
-    index_buffer = cdata->index_buffer;
-    
-    #ifdef SDL_GPU_USE_BUFFER_PIPELINE
-    refresh_attribute_data(cdata);
-    #endif
-    
-    // Triangle indices
-    for(i = 0; i < num_sprites; i++)
-    {
-        int buffer_num_vertices = i*4;
-        // First tri
-        index_buffer[cdata->index_buffer_num_vertices++] = buffer_num_vertices;  // 0
-        index_buffer[cdata->index_buffer_num_vertices++] = buffer_num_vertices+1;  // 1
-        index_buffer[cdata->index_buffer_num_vertices++] = buffer_num_vertices+2;  // 2
-
-        // Second tri
-        index_buffer[cdata->index_buffer_num_vertices++] = buffer_num_vertices; // 0
-        index_buffer[cdata->index_buffer_num_vertices++] = buffer_num_vertices+2;  // 2
-        index_buffer[cdata->index_buffer_num_vertices++] = buffer_num_vertices+3;  // 3
-    }
-
-
-#ifdef SDL_GPU_USE_ARRAY_PIPELINE
-
-    glEnableClientState(GL_VERTEX_ARRAY);
-    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-	glEnableClientState(GL_COLOR_ARRAY);
-
-	{
-		int stride = 8*sizeof(float);
-		glVertexPointer(2, GL_FLOAT, stride, values + GPU_BLIT_BUFFER_VERTEX_OFFSET);
-		glTexCoordPointer(2, GL_FLOAT, stride, values + GPU_BLIT_BUFFER_TEX_COORD_OFFSET);
-		glColorPointer(4, GL_FLOAT, stride, values + GPU_BLIT_BUFFER_COLOR_OFFSET);
-	}
-
-    glDrawElements(GL_TRIANGLES, cdata->index_buffer_num_vertices, GL_UNSIGNED_SHORT, cdata->index_buffer);
-
-    glDisableClientState(GL_COLOR_ARRAY);
-    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-    glDisableClientState(GL_VERTEX_ARRAY);
-#endif
-
-
-
-#ifdef SDL_GPU_USE_BUFFER_PIPELINE_FALLBACK
-    if(!IsFeatureEnabled(renderer, GPU_FEATURE_VERTEX_SHADER))
-#endif
-#ifdef SDL_GPU_USE_FIXED_FUNCTION_PIPELINE
-    {
-        if(values != NULL)
-        {
-            unsigned int num_indices = cdata->index_buffer_num_vertices;
-            unsigned int index;
-            float* vertex_pointer = values;
-            float* texcoord_pointer = values + GPU_BLIT_BUFFER_TEX_COORD_OFFSET;
-            float* color_pointer = values + GPU_BLIT_BUFFER_COLOR_OFFSET;
-            
-            glBegin(GL_TRIANGLES);
-            for(i = 0; i < num_indices; i++)
-            {
-                index = index_buffer[i]*GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
-                glColor4f( color_pointer[index], color_pointer[index+1], color_pointer[index+2], color_pointer[index+3] );
-                glTexCoord2f( texcoord_pointer[index], texcoord_pointer[index+1] );
-                glVertex3f( vertex_pointer[index], vertex_pointer[index+1], 0.0f );
-            }
-            glEnd();
-        }
-    }
-#endif
-#ifdef SDL_GPU_USE_BUFFER_PIPELINE_FALLBACK
-    else
-#endif
-
-
-
-#ifdef SDL_GPU_USE_BUFFER_PIPELINE
-    {
-        // Upload our modelviewprojection matrix
-        if(cdata->current_shader_block.modelViewProjection_loc >= 0)
-        {
-            float mvp[16];
-            GPU_GetModelViewProjection(mvp);
-            glUniformMatrix4fv(cdata->current_shader_block.modelViewProjection_loc, 1, 0, mvp);
-        }
-
-        // Update the vertex array object's buffers
-        #if !defined(SDL_GPU_NO_VAO)
-        glBindVertexArray(cdata->blit_VAO);
-        #endif
-        
-        if(values != NULL)
-        {
-            // Upload blit buffer to a single buffer object
-            glBindBuffer(GL_ARRAY_BUFFER, cdata->blit_VBO[cdata->blit_VBO_flop]);
-            cdata->blit_VBO_flop = !cdata->blit_VBO_flop;
-            
-            // Copy the whole blit buffer to the GPU
-            submit_buffer_data(GPU_BLIT_BUFFER_STRIDE * (num_sprites*4), values);  // Fills GPU buffer with data.
-            
-            // Specify the formatting of the blit buffer
-            if(cdata->current_shader_block.position_loc >= 0)
-            {
-                glEnableVertexAttribArray(cdata->current_shader_block.position_loc);  // Tell GL to use client-side attribute data
-                glVertexAttribPointer(cdata->current_shader_block.position_loc, 2, GL_FLOAT, GL_FALSE, GPU_BLIT_BUFFER_STRIDE, 0);  // Tell how the data is formatted
-            }
-            if(cdata->current_shader_block.texcoord_loc >= 0)
-            {
-                glEnableVertexAttribArray(cdata->current_shader_block.texcoord_loc);
-                glVertexAttribPointer(cdata->current_shader_block.texcoord_loc, 2, GL_FLOAT, GL_FALSE, GPU_BLIT_BUFFER_STRIDE, (void*)(GPU_BLIT_BUFFER_TEX_COORD_OFFSET * sizeof(float)));
-            }
-            if(cdata->current_shader_block.color_loc >= 0)
-            {
-                glEnableVertexAttribArray(cdata->current_shader_block.color_loc);
-                glVertexAttribPointer(cdata->current_shader_block.color_loc, 4, GL_FLOAT, GL_FALSE, GPU_BLIT_BUFFER_STRIDE, (void*)(GPU_BLIT_BUFFER_COLOR_OFFSET * sizeof(float)));
-            }
-        }
-        
-        upload_attribute_data(cdata, num_sprites*4);
-        
-        glDrawElements(GL_TRIANGLES, cdata->index_buffer_num_vertices, GL_UNSIGNED_SHORT, cdata->index_buffer);
-        
-        // Disable the vertex arrays again
-        if(cdata->current_shader_block.position_loc >= 0)
-            glDisableVertexAttribArray(cdata->current_shader_block.position_loc);
-        if(cdata->current_shader_block.texcoord_loc >= 0)
-            glDisableVertexAttribArray(cdata->current_shader_block.texcoord_loc);
-        if(cdata->current_shader_block.color_loc >= 0)
-            glDisableVertexAttribArray(cdata->current_shader_block.color_loc);
-        
-        disable_attribute_data(cdata);
-        
-        #if !defined(SDL_GPU_NO_VAO)
-        glBindVertexArray(0);
-        #endif
-    }
-#endif
-
-    
-    cdata->blit_buffer_num_vertices = 0;
-    cdata->index_buffer_num_vertices = 0;
-
-    unsetClipRect(renderer, target);
-}
-
-// Assumes the right format
-static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* target, unsigned short num_vertices, float* values, unsigned int num_indices, unsigned short* indices, GPU_BlitFlagEnum flags)
-{
-	GPU_CONTEXT_DATA* cdata;
-	int stride;
+	int stride, offset_texcoords, offset_colors;
+	int size_vertices, size_texcoords, size_colors;
+	
 	Uint8 using_texture = (image != NULL);
-	(void)flags;
+	Uint8 use_vertices = (flags & (GPU_BATCH_XY | GPU_BATCH_XYZ));
+	Uint8 use_texcoords = (flags & GPU_BATCH_ST);
+	Uint8 use_colors = (flags & (GPU_BATCH_RGB | GPU_BATCH_RGBA));
+	Uint8 use_z = (flags & GPU_BATCH_XYZ);
+	Uint8 use_a = (flags & GPU_BATCH_RGBA);
     
     if(num_vertices == 0)
         return;
@@ -4409,37 +4198,90 @@ static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* 
     refresh_attribute_data(cdata);
     #endif
     
-    stride = GPU_BLIT_BUFFER_STRIDE;
-    (void)stride;
     if(indices == NULL)
         num_indices = num_vertices;
     
+    (void)stride;
+    (void)offset_texcoords;
+    (void)offset_colors;
+    (void)size_vertices;
+    (void)size_texcoords;
+    (void)size_colors;
+    
+    stride = 0;
+    offset_texcoords = offset_colors = 0;
+    size_vertices = size_texcoords = size_colors = 0;
+    
+    // Determine stride, size, and offsets
+    if(use_vertices)
+    {
+        if(use_z)
+            size_vertices = 3;
+        else
+            size_vertices = 2;
+        
+        stride += size_vertices;
+        
+        offset_texcoords = stride;
+        offset_colors = stride;
+    }
+    
+    if(use_texcoords)
+    {
+        size_texcoords = 2;
+        
+        stride += size_texcoords;
+        
+        offset_colors = stride;
+    }
+    
+    if(use_colors)
+    {
+        if(use_a)
+            size_colors = 4;
+        else
+            size_colors = 3;
+        
+        stride += size_colors;
+    }
+    
+    // Convert to a number of bytes
+    stride *= sizeof(float);
+    
         
 #ifdef SDL_GPU_USE_ARRAY_PIPELINE
-
-    glEnableClientState(GL_VERTEX_ARRAY);
-    if(using_texture)
-        glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-    glEnableClientState(GL_COLOR_ARRAY);
     
-    glVertexPointer(2, GL_FLOAT, stride, values);
-    if(using_texture)
     {
-        glTexCoordPointer(2, GL_FLOAT, stride, values + 2);
-        glColorPointer(4, GL_FLOAT, stride, values + 4);
+        // Enable
+        if(use_vertices)
+            glEnableClientState(GL_VERTEX_ARRAY);
+        if(use_texcoords)
+            glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+        if(use_colors)
+            glEnableClientState(GL_COLOR_ARRAY);
+        
+        // Set pointers
+        if(use_vertices)
+            glVertexPointer(size_vertices, GL_FLOAT, stride, values);
+        if(use_texcoords)
+            glTexCoordPointer(size_texcoords, GL_FLOAT, stride, values + offset_texcoords);
+        if(use_colors)
+            glColorPointer(size_colors, GL_FLOAT, stride, values + offset_colors);
+
+        // Upload
+        if(indices == NULL)
+            glDrawArrays(GL_TRIANGLES, 0, num_indices);
+        else
+            glDrawElements(GL_TRIANGLES, num_indices, GL_UNSIGNED_SHORT, indices);
+
+        // Disable
+        if(use_colors)
+            glDisableClientState(GL_COLOR_ARRAY);
+        if(use_texcoords)
+            glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+        if(use_vertices)
+            glDisableClientState(GL_VERTEX_ARRAY);
     }
-    else
-        glColorPointer(4, GL_FLOAT, stride, values + 4);
-
-    if(indices == NULL)
-        glDrawArrays(GL_TRIANGLES, 0, num_indices);
-    else
-        glDrawElements(GL_TRIANGLES, num_indices, GL_UNSIGNED_SHORT, indices);
-
-    glDisableClientState(GL_COLOR_ARRAY);
-    if(using_texture)
-        glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-    glDisableClientState(GL_VERTEX_ARRAY);
 #endif
 
 
@@ -4454,10 +4296,8 @@ static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* 
             unsigned int i;
             unsigned int index;
             float* vertex_pointer = values;
-            float* texcoord_pointer = values + 2;
-            float* color_pointer = values + 4;
-            if(using_texture)
-                color_pointer = values + 2;
+            float* texcoord_pointer = values + offset_texcoords;
+            float* color_pointer = values + offset_colors;
             
             glBegin(GL_TRIANGLES);
             for(i = 0; i < num_indices; i++)
@@ -4466,10 +4306,12 @@ static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* 
                     index = i*GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
                 else
                     index = indices[i]*GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
-                glColor4f( color_pointer[index], color_pointer[index+1], color_pointer[index+2], color_pointer[index+3] );
-                if(using_texture)
+                if(use_colors)
+                    glColor4f(color_pointer[index], color_pointer[index+1], color_pointer[index+2], (use_a? color_pointer[index+3] : 1.0f));
+                if(use_texcoords)
                     glTexCoord2f( texcoord_pointer[index], texcoord_pointer[index+1] );
-                glVertex3f( vertex_pointer[index], vertex_pointer[index+1], 0.0f );
+                if(use_vertices)
+                    glVertex3f( vertex_pointer[index], vertex_pointer[index+1], (use_z? vertex_pointer[index+2] : 0.0f) );
             }
             glEnd();
         }
@@ -4483,6 +4325,14 @@ static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* 
 
 #ifdef SDL_GPU_USE_BUFFER_PIPELINE
     {
+        // Skip uploads if we have no attribute location
+        if(cdata->current_shader_block.position_loc < 0)
+            use_vertices = 0;
+        if(cdata->current_shader_block.texcoord_loc < 0)
+            use_texcoords = 0;
+        if(cdata->current_shader_block.color_loc < 0)
+            use_colors = 0;
+        
         // Upload our modelviewprojection matrix
         if(cdata->current_shader_block.modelViewProjection_loc >= 0)
         {
@@ -4506,20 +4356,20 @@ static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* 
             submit_buffer_data(stride * num_vertices, values);  // Fills GPU buffer with data.
             
             // Specify the formatting of the blit buffer
-            if(cdata->current_shader_block.position_loc >= 0)
+            if(use_vertices)
             {
                 glEnableVertexAttribArray(cdata->current_shader_block.position_loc);  // Tell GL to use client-side attribute data
-                glVertexAttribPointer(cdata->current_shader_block.position_loc, 2, GL_FLOAT, GL_FALSE, stride, 0);  // Tell how the data is formatted
+                glVertexAttribPointer(cdata->current_shader_block.position_loc, size_vertices, GL_FLOAT, GL_FALSE, stride, 0);  // Tell how the data is formatted
             }
-            if(using_texture && cdata->current_shader_block.texcoord_loc >= 0)
+            if(use_texcoords)
             {
                 glEnableVertexAttribArray(cdata->current_shader_block.texcoord_loc);
-                glVertexAttribPointer(cdata->current_shader_block.texcoord_loc, 2, GL_FLOAT, GL_FALSE, stride, (void*)(2 * sizeof(float)));
+                glVertexAttribPointer(cdata->current_shader_block.texcoord_loc, size_texcoords, GL_FLOAT, GL_FALSE, stride, (void*)(offset_texcoords * sizeof(float)));
             }
-            if(cdata->current_shader_block.color_loc >= 0)
+            if(use_colors)
             {
                 glEnableVertexAttribArray(cdata->current_shader_block.color_loc);
-                glVertexAttribPointer(cdata->current_shader_block.color_loc, 4, GL_FLOAT, GL_FALSE, stride, using_texture? (void*)(4 * sizeof(float)) : (void*)(2 * sizeof(float)));
+                glVertexAttribPointer(cdata->current_shader_block.color_loc, size_colors, GL_FLOAT, GL_FALSE, stride, (void*)(offset_colors * sizeof(float)));
             }
         }
         
@@ -4531,11 +4381,11 @@ static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* 
             glDrawElements(GL_TRIANGLES, num_indices, GL_UNSIGNED_SHORT, indices);
         
         // Disable the vertex arrays again
-        if(cdata->current_shader_block.position_loc >= 0)
+        if(use_vertices)
             glDisableVertexAttribArray(cdata->current_shader_block.position_loc);
-        if(using_texture && cdata->current_shader_block.texcoord_loc >= 0)
+        if(use_texcoords)
             glDisableVertexAttribArray(cdata->current_shader_block.texcoord_loc);
-        if(cdata->current_shader_block.color_loc >= 0)
+        if(use_colors)
             glDisableVertexAttribArray(cdata->current_shader_block.color_loc);
         
         disable_attribute_data(cdata);
@@ -6246,7 +6096,6 @@ static void SetAttributeSource(GPU_Renderer* renderer, int num_values, GPU_Attri
     impl->BlitTransform = &BlitTransform; \
     impl->BlitTransformX = &BlitTransformX; \
     impl->BlitTransformMatrix = &BlitTransformMatrix; \
-    impl->BlitBatch = &BlitBatch; \
     impl->TriangleBatch = &TriangleBatch; \
  \
     impl->GenerateMipmaps = &GenerateMipmaps; \
