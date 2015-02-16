@@ -424,19 +424,24 @@ static const GPU_InitFlagEnum GPU_INIT_DISABLE_AUTO_VIRTUAL_RESOLUTION = 0x8;
 static const Uint32 GPU_NONE = 0x0;
 
 /*! \ingroup Rendering
- * Bit flags for the blit batch functions.
- * \see GPU_BlitBatch()
- * \see GPU_BlitBatchSeparate()
+ * Bit flags for geometry batching.
+ * \see GPU_TriangleBatch()
  */
-typedef Uint32 GPU_BlitFlagEnum;
-static const GPU_BlitFlagEnum GPU_PASSTHROUGH_VERTICES = 0x1;
-static const GPU_BlitFlagEnum GPU_PASSTHROUGH_TEXCOORDS = 0x2;
-static const GPU_BlitFlagEnum GPU_PASSTHROUGH_COLORS = 0x4;
-static const GPU_BlitFlagEnum GPU_USE_DEFAULT_POSITIONS = 0x8;
-static const GPU_BlitFlagEnum GPU_USE_DEFAULT_SRC_RECTS = 0x10;
-static const GPU_BlitFlagEnum GPU_USE_DEFAULT_COLORS = 0x20;
+typedef Uint32 GPU_BatchFlagEnum;
+static const GPU_BatchFlagEnum GPU_BATCH_XY = 0x1;
+static const GPU_BatchFlagEnum GPU_BATCH_XYZ = 0x2;
+static const GPU_BatchFlagEnum GPU_BATCH_ST = 0x4;
+static const GPU_BatchFlagEnum GPU_BATCH_RGB = 0x8;
+static const GPU_BatchFlagEnum GPU_BATCH_RGBA = 0x10;
 
-#define GPU_PASSTHROUGH_ALL (GPU_PASSTHROUGH_VERTICES | GPU_PASSTHROUGH_TEXCOORDS | GPU_PASSTHROUGH_COLORS)
+#define GPU_BATCH_XY_ST (GPU_BATCH_XY | GPU_BATCH_ST)
+#define GPU_BATCH_XYZ_ST (GPU_BATCH_XYZ | GPU_BATCH_ST)
+#define GPU_BATCH_XY_RGB (GPU_BATCH_XY | GPU_BATCH_RGB)
+#define GPU_BATCH_XYZ_RGB (GPU_BATCH_XYZ | GPU_BATCH_RGB)
+#define GPU_BATCH_XY_RGBA (GPU_BATCH_XY | GPU_BATCH_RGBA)
+#define GPU_BATCH_XYZ_RGBA (GPU_BATCH_XYZ | GPU_BATCH_RGBA)
+#define GPU_BATCH_XY_ST_RGBA (GPU_BATCH_XY | GPU_BATCH_ST | GPU_BATCH_RGBA)
+#define GPU_BATCH_XYZ_ST_RGBA (GPU_BATCH_XYZ | GPU_BATCH_ST | GPU_BATCH_RGBA)
 
 /*! \ingroup ShaderInterface
  * Type enumeration for GPU_AttributeFormat specifications.
@@ -1184,27 +1189,12 @@ DECLSPEC void SDLCALL GPU_BlitTransformX(GPU_Image* image, GPU_Rect* src_rect, G
 	* \param matrix3x3 3x3 matrix in column-major order (index = row + column*numColumns) */
 DECLSPEC void SDLCALL GPU_BlitTransformMatrix(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float* matrix3x3);
 
-/*! Performs 'num_sprites' blits of the given image to the given target.
- * Note: GPU_BlitBatch() cannot interpret a mix of normal values and "passthrough" values due to format ambiguity.
- * \param values A tightly-packed array of position (x,y), src_rect (x,y,w,h) values in image coordinates, and color (r,g,b,a) values with a range from 0-255.  Pass NULL to render with only custom shader attributes.
- * \param flags Bit flags to control the interpretation of the array parameters.  The only passthrough option accepted is GPU_PASSTHROUGH_ALL.
- */
-DECLSPEC void SDLCALL GPU_BlitBatch(GPU_Image* image, GPU_Target* target, unsigned int num_sprites, float* values, GPU_BlitFlagEnum flags);
-
-/*! Performs 'num_sprites' blits of the given image to the given target.
- * \param positions A tightly-packed array of (x,y) values
- * \param src_rects A tightly-packed array of (x,y,w,h) values in image coordinates
- * \param colors A tightly-packed array of (r,g,b,a) values with a range from 0-255
- * \param flags Bit flags to control the interpretation of the array parameters
- */
-DECLSPEC void SDLCALL GPU_BlitBatchSeparate(GPU_Image* image, GPU_Target* target, unsigned int num_sprites, float* positions, float* src_rects, float* colors, GPU_BlitFlagEnum flags);
-
-/*! Renders triangles from the given set of vertices.  This lets you render arbitrary 2D geometry.
- * \param values A tightly-packed array of vertex position (x,y), image coordinates (s,t), and color (r,g,b,a) values with a range from 0-255.  Pass NULL to render with only custom shader attributes.
+/*! Renders triangles from the given set of vertices.  This lets you render arbitrary 2D geometry.  It is a direct path to the GPU, so the format is different than typical SDL_gpu calls.
+ * \param values A tightly-packed array of vertex position (e.g. x,y), texture coordinates (e.g. s,t), and color (e.g. r,g,b,a) values.  Texture coordinates and color values are expected to be already normalized to 0.0 - 1.0.  Pass NULL to render with only custom shader attributes.
  * \param indices If not NULL, this is used to specify which vertices to use and in what order (i.e. it indexes the vertices in the 'values' array).
- * \param flags Bit flags to control the interpretation of the array parameters.  Since 'values' contains per-vertex data, GPU_PASSTHROUGH_VERTICES is ignored.  Texture coordinates are scaled down using the image dimensions and color components are normalized to [0.0, 1.0].
+ * \param flags Bit flags to control the interpretation of the 'values' array parameters.
  */
-DECLSPEC void SDLCALL GPU_TriangleBatch(GPU_Image* image, GPU_Target* target, unsigned short num_vertices, float* values, unsigned int num_indices, unsigned short* indices, GPU_BlitFlagEnum flags);
+DECLSPEC void SDLCALL GPU_TriangleBatch(GPU_Image* image, GPU_Target* target, unsigned short num_vertices, float* values, unsigned int num_indices, unsigned short* indices, GPU_BatchFlagEnum flags);
 
 /*! Send all buffered blitting data to the current context target. */
 DECLSPEC void SDLCALL GPU_FlushBlitBuffer(void);

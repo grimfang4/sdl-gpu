@@ -2,6 +2,85 @@
 #include "SDL_gpu.h"
 #include "common.h"
 
+void fill_vertex_values(float* vertex_values, float* velx, float* vely, unsigned int max_vertices, GPU_Target* screen, GPU_Image* image)
+{
+    unsigned int i;
+    int val_n = 0;
+    Uint16 w, h;
+    Uint16 tex_w, tex_h;
+    
+    if(image != NULL)
+    {
+        w = image->w;
+        h = image->h;
+        
+        tex_w = image->texture_w;
+        tex_h = image->texture_h;
+    }
+    else
+        w = h = tex_w = tex_h = 80;
+    
+    for(i = 0; i < max_vertices; i+=3)
+    {
+	    float offset_x1, offset_x2, offset_x3;
+	    float offset_y1, offset_y2, offset_y3;
+	    float x1, y1;
+	    
+		offset_x1 = rand()%(w/2);
+		offset_y1 = rand()%(h/2);
+		x1 = vertex_values[val_n++] = rand()%screen->w + offset_x1;
+		y1 = vertex_values[val_n++] = rand()%screen->h + offset_y1;
+        if(image != NULL)
+        {
+            vertex_values[val_n++] = offset_x1/tex_w;
+            vertex_values[val_n++] = offset_y1/tex_h;
+        }
+		vertex_values[val_n++] = (rand()%256)/255.0f;
+		vertex_values[val_n++] = (rand()%256)/255.0f;
+		vertex_values[val_n++] = (rand()%256)/255.0f;
+		vertex_values[val_n++] = (rand()%256)/255.0f;
+		
+		offset_x2 = 5 + rand()%(w/2);
+		offset_y2 = 5 + rand()%(h/2);
+		vertex_values[val_n++] = x1 + offset_x2;
+		vertex_values[val_n++] = y1 + offset_y2;
+        if(image != NULL)
+        {
+            vertex_values[val_n++] = (offset_x1 + offset_x2)/tex_w;
+            vertex_values[val_n++] = (offset_y1 + offset_y2)/tex_h;
+        }
+		vertex_values[val_n++] = (rand()%256)/255.0f;
+		vertex_values[val_n++] = (rand()%256)/255.0f;
+		vertex_values[val_n++] = (rand()%256)/255.0f;
+		vertex_values[val_n++] = (rand()%256)/255.0f;
+		
+		offset_x3 = -5 - rand()%(w/2);
+		offset_y3 = 5 + rand()%(h/2);
+		vertex_values[val_n++] = x1 + offset_x3;
+		vertex_values[val_n++] = y1 + offset_y3;
+        if(image != NULL)
+        {
+            vertex_values[val_n++] = (offset_x1 + offset_x3)/tex_w;
+            vertex_values[val_n++] = (offset_y1 + offset_y3)/tex_h;
+        }
+		vertex_values[val_n++] = (rand()%256)/255.0f;
+		vertex_values[val_n++] = (rand()%256)/255.0f;
+		vertex_values[val_n++] = (rand()%256)/255.0f;
+		vertex_values[val_n++] = (rand()%256)/255.0f;
+        
+        // Once per triangle
+        {
+            int n = i/3;
+            velx[n] = 10 + rand()%screen->w/10;
+            vely[n] = 10 + rand()%screen->h/10;
+            if(rand()%2)
+                velx[n] = -velx[n];
+            if(rand()%2)
+                vely[n] = -vely[n];
+        }
+    }
+}
+
 int do_interleaved(GPU_Target* screen)
 {
     Uint32 startTime;
@@ -21,7 +100,6 @@ int do_interleaved(GPU_Target* screen)
 	float* velx = (float*)malloc(sizeof(float)*max_vertices/3);
 	float* vely = (float*)malloc(sizeof(float)*max_vertices/3);
 	int i;
-    int val_n = 0;
     
 	GPU_Image* image = GPU_LoadImage("data/test3.png");
 	GPU_LogError("do_interleaved()\n");
@@ -31,55 +109,7 @@ int do_interleaved(GPU_Target* screen)
 	startTime = SDL_GetTicks();
 	frameCount = 0;
 	
-	for(i = 0; i < max_vertices; i+=3)
-	{
-	    float offset_x1, offset_x2, offset_x3;
-	    float offset_y1, offset_y2, offset_y3;
-	    float x1, y1;
-	    
-		offset_x1 = rand()%(image->w/2);
-		offset_y1 = rand()%(image->h/2);
-		x1 = vertex_values[val_n++] = rand()%screen->w + offset_x1;
-		y1 = vertex_values[val_n++] = rand()%screen->h + offset_y1;
-		vertex_values[val_n++] = offset_x1;
-		vertex_values[val_n++] = offset_y1;
-		vertex_values[val_n++] = rand()%256;
-		vertex_values[val_n++] = rand()%256;
-		vertex_values[val_n++] = rand()%256;
-		vertex_values[val_n++] = rand()%256;
-		
-		offset_x2 = 5 + rand()%(image->w/2);
-		offset_y2 = 5 + rand()%(image->h/2);
-		vertex_values[val_n++] = x1 + offset_x2;
-		vertex_values[val_n++] = y1 + offset_y2;
-		vertex_values[val_n++] = offset_x1 + offset_x2;
-		vertex_values[val_n++] = offset_y1 + offset_y2;
-		vertex_values[val_n++] = rand()%256;
-		vertex_values[val_n++] = rand()%256;
-		vertex_values[val_n++] = rand()%256;
-		vertex_values[val_n++] = rand()%256;
-		
-		offset_x3 = -5 - rand()%(image->w/2);
-		offset_y3 = 5 + rand()%(image->h/2);
-		vertex_values[val_n++] = x1 + offset_x3;
-		vertex_values[val_n++] = y1 + offset_y3;
-		vertex_values[val_n++] = offset_x1 + offset_x3;
-		vertex_values[val_n++] = offset_y1 + offset_y3;
-		vertex_values[val_n++] = rand()%256;
-		vertex_values[val_n++] = rand()%256;
-		vertex_values[val_n++] = rand()%256;
-		vertex_values[val_n++] = rand()%256;
-		if(i%3 == 0)  // Once per triangle
-        {
-            int n = i/3;
-            velx[n] = 10 + rand()%screen->w/10;
-            vely[n] = 10 + rand()%screen->h/10;
-            if(rand()%2)
-                velx[n] = -velx[n];
-            if(rand()%2)
-                vely[n] = -vely[n];
-        }
-	}
+	fill_vertex_values(vertex_values, velx, vely, max_vertices, screen, image);
 	
 	
 	done = 0;
@@ -124,7 +154,7 @@ int do_interleaved(GPU_Target* screen)
 		for(i = 0; i < num_vertices; i++)
 		{
 		    int n = i/3;
-		    val_n = floats_per_vertex*i;
+		    int val_n = floats_per_vertex*i;
 			vertex_values[val_n] += velx[n]*dt;
 			vertex_values[val_n+1] += vely[n]*dt;
 			if(vertex_values[val_n] < 0)
@@ -152,7 +182,7 @@ int do_interleaved(GPU_Target* screen)
 		
 		GPU_Clear(screen);
 		
-        GPU_TriangleBatch(image, screen, num_vertices, vertex_values, 0, NULL, 0);
+        GPU_TriangleBatch(image, screen, num_vertices, vertex_values, 0, NULL, GPU_BATCH_XY_ST_RGBA);
 		
 		GPU_Flip(screen);
 		
@@ -196,7 +226,6 @@ int do_indexed(GPU_Target* screen)
 	float* vely = (float*)malloc(sizeof(float)*max_vertices/3);
 	unsigned short* indices = (unsigned short*)malloc(sizeof(unsigned short)*max_vertices);
 	int i;
-    int val_n = 0;
     
 	GPU_Image* image = GPU_LoadImage("data/test3.png");
 	GPU_LogError("do_indexed()\n");
@@ -205,59 +234,11 @@ int do_indexed(GPU_Target* screen)
 	
 	startTime = SDL_GetTicks();
 	frameCount = 0;
-	for(i = 0; i < max_vertices; i+=3)
-	{
-	    float offset_x1, offset_x2, offset_x3;
-	    float offset_y1, offset_y2, offset_y3;
-	    float x1, y1;
-	    
-		offset_x1 = rand()%(image->w/2);
-		offset_y1 = rand()%(image->h/2);
-		x1 = vertex_values[val_n++] = rand()%screen->w + offset_x1;
-		y1 = vertex_values[val_n++] = rand()%screen->h + offset_y1;
-		vertex_values[val_n++] = offset_x1;
-		vertex_values[val_n++] = offset_y1;
-		vertex_values[val_n++] = rand()%256;
-		vertex_values[val_n++] = rand()%256;
-		vertex_values[val_n++] = rand()%256;
-		vertex_values[val_n++] = rand()%256;
-		indices[i] = i;
-		
-		offset_x2 = 5 + rand()%(image->w/2);
-		offset_y2 = 5 + rand()%(image->h/2);
-		vertex_values[val_n++] = x1 + offset_x2;
-		vertex_values[val_n++] = y1 + offset_y2;
-		vertex_values[val_n++] = offset_x1 + offset_x2;
-		vertex_values[val_n++] = offset_y1 + offset_y2;
-		vertex_values[val_n++] = rand()%256;
-		vertex_values[val_n++] = rand()%256;
-		vertex_values[val_n++] = rand()%256;
-		vertex_values[val_n++] = rand()%256;
-		indices[i+1] = i+1;
-		
-		offset_x3 = -5 - rand()%(image->w/2);
-		offset_y3 = 5 + rand()%(image->h/2);
-		vertex_values[val_n++] = x1 + offset_x3;
-		vertex_values[val_n++] = y1 + offset_y3;
-		vertex_values[val_n++] = offset_x1 + offset_x3;
-		vertex_values[val_n++] = offset_y1 + offset_y3;
-		vertex_values[val_n++] = rand()%256;
-		vertex_values[val_n++] = rand()%256;
-		vertex_values[val_n++] = rand()%256;
-		vertex_values[val_n++] = rand()%256;
-		indices[i+2] = i+2;
-		
-		if(i%3 == 0)  // Once per triangle
-        {
-            int n = i/3;
-            velx[n] = 10 + rand()%screen->w/10;
-            vely[n] = 10 + rand()%screen->h/10;
-            if(rand()%2)
-                velx[n] = -velx[n];
-            if(rand()%2)
-                vely[n] = -vely[n];
-        }
-	}
+	
+	fill_vertex_values(vertex_values, velx, vely, max_vertices, screen, image);
+	// Setup indices
+	for(i = 0; i < max_vertices; i++)
+        indices[i] = i;
 	
 	
 	done = 0;
@@ -302,7 +283,7 @@ int do_indexed(GPU_Target* screen)
 		for(i = 0; i < num_vertices; i++)
 		{
 		    int n = i/3;
-		    val_n = floats_per_vertex*i;
+		    int val_n = floats_per_vertex*i;
 			vertex_values[val_n] += velx[n]*dt;
 			vertex_values[val_n+1] += vely[n]*dt;
 			if(vertex_values[val_n] < 0)
@@ -330,7 +311,7 @@ int do_indexed(GPU_Target* screen)
 		
 		GPU_Clear(screen);
 		
-        GPU_TriangleBatch(image, screen, num_vertices, vertex_values, num_vertices, indices, 0);
+        GPU_TriangleBatch(image, screen, num_vertices, vertex_values, num_vertices, indices, GPU_BATCH_XY_ST_RGBA);
 		
 		GPU_Flip(screen);
 		
@@ -371,7 +352,6 @@ int do_attributes(GPU_Target* screen)
 	float* velx = (float*)malloc(sizeof(float)*max_vertices/3);
 	float* vely = (float*)malloc(sizeof(float)*max_vertices/3);
 	int i;
-    int val_n = 0;
 	
 	// 2 pos floats per vertex, 2 texcoords, 4 color components
 	int floats_per_vertex = 2 + 2 + 4;
@@ -389,6 +369,8 @@ int do_attributes(GPU_Target* screen)
 	startTime = SDL_GetTicks();
 	frameCount = 0;
 	
+	fill_vertex_values(vertex_values, velx, vely, max_vertices, screen, image);
+	
 	// Load attributes for the textured shader
 	program_object = 0;
 	GPU_ActivateShaderProgram(program_object, NULL);
@@ -404,58 +386,6 @@ int do_attributes(GPU_Target* screen)
 			GPU_MakeAttributeFormat(2, GPU_TYPE_FLOAT, 0, floats_per_vertex*sizeof(float), 2 * sizeof(float)));
 	attributes[2] = GPU_MakeAttribute(GPU_GetAttributeLocation(program_object, "gpu_Color"), vertex_values,
 			GPU_MakeAttributeFormat(4, GPU_TYPE_FLOAT, 0, floats_per_vertex*sizeof(float), 4 * sizeof(float)));
-        
-        
-    for(i = 0; i < max_vertices; i+=3)
-    {
-        float offset_x1, offset_x2, offset_x3;
-        float offset_y1, offset_y2, offset_y3;
-        float x1, y1;
-            
-        offset_x1 = rand()%(image->w/2);
-        offset_y1 = rand()%(image->h/2);
-        x1 = vertex_values[val_n++] = rand()%screen->w + offset_x1;
-        y1 = vertex_values[val_n++] = rand()%screen->h + offset_y1;
-        vertex_values[val_n++] = offset_x1/image->texture_w;
-        vertex_values[val_n++] = offset_y1/image->texture_h;
-        vertex_values[val_n++] = rand()%101/100.0f;
-        vertex_values[val_n++] = rand()%101/100.0f;
-        vertex_values[val_n++] = rand()%101/100.0f;
-        vertex_values[val_n++] = rand()%101/100.0f;
-            
-        offset_x2 = 5 + rand()%(image->w/2);
-        offset_y2 = 5 + rand()%(image->h/2);
-        vertex_values[val_n++] = x1 + offset_x2;
-        vertex_values[val_n++] = y1 + offset_y2;
-        vertex_values[val_n++] = (offset_x1 + offset_x2)/image->texture_w;
-        vertex_values[val_n++] = (offset_y1 + offset_y2)/image->texture_h;
-        vertex_values[val_n++] = rand()%101/100.0f;
-        vertex_values[val_n++] = rand()%101/100.0f;
-        vertex_values[val_n++] = rand()%101/100.0f;
-        vertex_values[val_n++] = rand()%101/100.0f;
-            
-        offset_x3 = -5 - rand()%(image->w/2);
-        offset_y3 = 5 + rand()%(image->h/2);
-        vertex_values[val_n++] = x1 + offset_x3;
-        vertex_values[val_n++] = y1 + offset_y3;
-        vertex_values[val_n++] = (offset_x1 + offset_x3)/image->texture_w;
-        vertex_values[val_n++] = (offset_y1 + offset_y3)/image->texture_h;
-        vertex_values[val_n++] = rand()%101/100.0f;
-        vertex_values[val_n++] = rand()%101/100.0f;
-        vertex_values[val_n++] = rand()%101/100.0f;
-        vertex_values[val_n++] = rand()%101/100.0f;
-            
-        if(i%3 == 0)  // Once per triangle
-        {
-            int n = i/3;
-            velx[n] = 10 + rand()%screen->w/10;
-            vely[n] = 10 + rand()%screen->h/10;
-            if(rand()%2)
-                velx[n] = -velx[n];
-            if(rand()%2)
-                vely[n] = -vely[n];
-        }
-    }
         
         
     done = 0;
@@ -502,7 +432,7 @@ int do_attributes(GPU_Target* screen)
         for(i = 0; i < num_vertices; i++)
         {
             int n = i/3;
-            val_n = floats_per_vertex*i;
+            int val_n = floats_per_vertex*i;
             vertex_values[val_n] += velx[n]*dt;
             vertex_values[val_n+1] += vely[n]*dt;
             if(vertex_values[val_n] < 0)
@@ -531,7 +461,7 @@ int do_attributes(GPU_Target* screen)
         GPU_SetAttributeSource(num_vertices, attributes[0]);
         GPU_SetAttributeSource(num_vertices, attributes[1]);
         GPU_SetAttributeSource(num_vertices, attributes[2]);
-        GPU_TriangleBatch(image, screen, num_vertices, NULL, 0, NULL, 0);
+        GPU_TriangleBatch(image, screen, num_vertices, NULL, 0, NULL, GPU_NONE);
             
         GPU_Flip(screen);
             
@@ -581,74 +511,13 @@ int do_untextured(GPU_Target* screen)
 	int floats_per_vertex = 2 + 4;
 	float* vertex_values = (float*)malloc(sizeof(float)*max_vertices*floats_per_vertex);
 	
-	Uint32 program_object;
-	GPU_Attribute attributes[2];
-	
 	GPU_LogError("do_untextured()\n");
 	
 	startTime = SDL_GetTicks();
 	frameCount = 0;
 	
-	// Load attributes for the textured shader
-	program_object = GPU_GetContextTarget()->context->default_untextured_shader_program;
-	GPU_ActivateShaderProgram(program_object, NULL);
-	// Disable the default shader's attributes (not a typical thing to do...)
-	{
-        GPU_ShaderBlock block = {-1,-1,-1,GPU_GetUniformLocation(program_object, "gpu_ModelViewProjectionMatrix")};
-        GPU_ActivateShaderProgram(program_object, &block);
-	}
+	fill_vertex_values(vertex_values, velx, vely, max_vertices, screen, NULL);
 	
-	attributes[0] = GPU_MakeAttribute(GPU_GetAttributeLocation(program_object, "gpu_Vertex"), vertex_values,
-			GPU_MakeAttributeFormat(2, GPU_TYPE_FLOAT, 0, floats_per_vertex*sizeof(float), 0));
-	attributes[1] = GPU_MakeAttribute(GPU_GetAttributeLocation(program_object, "gpu_Color"), vertex_values,
-			GPU_MakeAttributeFormat(4, GPU_TYPE_FLOAT, 0, floats_per_vertex*sizeof(float), 2 * sizeof(float)));
-        
-        
-    for(i = 0; i < max_vertices; i+=3)
-    {
-        float offset_x1, offset_x2, offset_x3;
-        float offset_y1, offset_y2, offset_y3;
-        float x1, y1;
-            
-        offset_x1 = rand()%(40);
-        offset_y1 = rand()%(40);
-        x1 = vertex_values[val_n++] = rand()%screen->w + offset_x1;
-        y1 = vertex_values[val_n++] = rand()%screen->h + offset_y1;
-        vertex_values[val_n++] = rand()%101/100.0f;
-        vertex_values[val_n++] = rand()%101/100.0f;
-        vertex_values[val_n++] = rand()%101/100.0f;
-        vertex_values[val_n++] = rand()%101/100.0f;
-            
-        offset_x2 = 5 + rand()%(40);
-        offset_y2 = 5 + rand()%(40);
-        vertex_values[val_n++] = x1 + offset_x2;
-        vertex_values[val_n++] = y1 + offset_y2;
-        vertex_values[val_n++] = rand()%101/100.0f;
-        vertex_values[val_n++] = rand()%101/100.0f;
-        vertex_values[val_n++] = rand()%101/100.0f;
-        vertex_values[val_n++] = rand()%101/100.0f;
-            
-        offset_x3 = -5 - rand()%(40);
-        offset_y3 = 5 + rand()%(40);
-        vertex_values[val_n++] = x1 + offset_x3;
-        vertex_values[val_n++] = y1 + offset_y3;
-        vertex_values[val_n++] = rand()%101/100.0f;
-        vertex_values[val_n++] = rand()%101/100.0f;
-        vertex_values[val_n++] = rand()%101/100.0f;
-        vertex_values[val_n++] = rand()%101/100.0f;
-            
-        if(i%3 == 0)  // Once per triangle
-        {
-            int n = i/3;
-            velx[n] = 10 + rand()%screen->w/10;
-            vely[n] = 10 + rand()%screen->h/10;
-            if(rand()%2)
-                velx[n] = -velx[n];
-            if(rand()%2)
-                vely[n] = -vely[n];
-        }
-    }
-        
         
     done = 0;
     while(!done)
@@ -719,10 +588,8 @@ int do_untextured(GPU_Target* screen)
                 vely[n] = -vely[n];
             }
         }
-            
-        GPU_SetAttributeSource(num_vertices, attributes[0]);
-        GPU_SetAttributeSource(num_vertices, attributes[1]);
-        GPU_TriangleBatch(NULL, screen, num_vertices, NULL, 0, NULL, 0);
+        
+        GPU_TriangleBatch(NULL, screen, num_vertices, vertex_values, 0, NULL, GPU_BATCH_XY | GPU_BATCH_RGBA);
         
         GPU_Flip(screen);
             

@@ -737,12 +737,6 @@ static void BlitTransformMatrix(GPU_Renderer* renderer, GPU_Image* image, GPU_Re
 }
 
 
-static void BlitBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* target, unsigned int num_sprites, float* values, GPU_BlitFlagEnum flags)
-{
-    GPU_Log(" %s (dummy)\n", __func__);
-}
-
-
 static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* target, unsigned short num_vertices, float* values, unsigned int num_indices, unsigned short* indices, GPU_BlitFlagEnum flags)
 {
     GPU_Log(" %s (dummy)\n", __func__);
@@ -1224,7 +1218,6 @@ void set_renderer_functions(GPU_RendererImpl* impl)
     impl->BlitTransform = &BlitTransform;
     impl->BlitTransformX = &BlitTransformX;
     impl->BlitTransformMatrix = &BlitTransformMatrix;
-    impl->BlitBatch = &BlitBatch;
     impl->TriangleBatch = &TriangleBatch;
 
     impl->GenerateMipmaps = &GenerateMipmaps;
