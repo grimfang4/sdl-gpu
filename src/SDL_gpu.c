@@ -89,16 +89,45 @@ Uint32 GPU_GetCurrentShaderProgram(void)
 }
 
 
+int GPU_DefaultPrint(GPU_LogLevelEnum log_level, const char* format, va_list args)
+{
+    switch(log_level)
+    {
+	#ifdef __ANDROID__
+	case GPU_LOG_INFO:
+		return __android_log_vprint((GPU_GetDebugLevel() >= GPU_DEBUG_LEVEL_3? ANDROID_LOG_ERROR : ANDROID_LOG_INFO), "APPLICATION", format, args);
+	case GPU_LOG_WARNING:
+		return __android_log_vprint((GPU_GetDebugLevel() >= GPU_DEBUG_LEVEL_2? ANDROID_LOG_ERROR : ANDROID_LOG_WARN), "APPLICATION", format, args);
+	case GPU_LOG_ERROR:
+		return __android_log_vprint(ANDROID_LOG_ERROR, "APPLICATION", format, args);
+	#else
+	case GPU_LOG_INFO:
+		return vfprintf((GPU_GetDebugLevel() >= GPU_DEBUG_LEVEL_3? stderr : stdout), format, args);
+	case GPU_LOG_WARNING:
+		return vfprintf((GPU_GetDebugLevel() >= GPU_DEBUG_LEVEL_2? stderr : stdout), format, args);
+	case GPU_LOG_ERROR:
+		return vfprintf(stderr, format, args);
+	#endif
+    default:
+        return 0;
+    }
+}
+
+static int (*gpu_print)(GPU_LogLevelEnum log_level, const char* format, va_list args) = &GPU_DefaultPrint;
+
+void GPU_SetLogCallback(int (*callback)(GPU_LogLevelEnum log_level, const char* format, va_list args))
+{
+    if(callback == NULL)
+        gpu_print = &GPU_DefaultPrint;
+    else
+        gpu_print = callback;
+}
 
 void GPU_LogInfo(const char* format, ...)
 {
 	va_list args;
 	va_start(args, format);
-	#ifdef __ANDROID__
-		__android_log_vprint((GPU_GetDebugLevel() >= GPU_DEBUG_LEVEL_3? ANDROID_LOG_ERROR : ANDROID_LOG_INFO), "APPLICATION", format, args);
-	#else
-		vfprintf((GPU_GetDebugLevel() >= GPU_DEBUG_LEVEL_3? stderr : stdout), format, args);
-	#endif
+    gpu_print(GPU_LOG_INFO, format, args);
 	va_end(args);
 }
 
@@ -106,11 +135,7 @@ void GPU_LogWarning(const char* format, ...)
 {
 	va_list args;
 	va_start(args, format);
-	#ifdef __ANDROID__
-		__android_log_vprint((GPU_GetDebugLevel() >= GPU_DEBUG_LEVEL_2? ANDROID_LOG_ERROR : ANDROID_LOG_WARN), "APPLICATION", format, args);
-	#else
-		vfprintf((GPU_GetDebugLevel() >= GPU_DEBUG_LEVEL_2? stderr : stdout), format, args);
-	#endif
+    gpu_print(GPU_LOG_WARNING, format, args);
 	va_end(args);
 }
 
@@ -118,11 +143,7 @@ void GPU_LogError(const char* format, ...)
 {
 	va_list args;
 	va_start(args, format);
-	#ifdef __ANDROID__
-		__android_log_vprint(ANDROID_LOG_ERROR, "APPLICATION", format, args);
-	#else
-		vfprintf(stderr, format, args);
-	#endif
+    gpu_print(GPU_LOG_ERROR, format, args);
 	va_end(args);
 }
 
