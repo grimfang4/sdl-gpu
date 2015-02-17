@@ -561,6 +561,17 @@ typedef enum {
 } GPU_DebugLevelEnum;
 
 
+/*! \ingroup Logging
+ * Type enumeration for logging levels.
+ * \see GPU_SetLogCallback()
+ */
+typedef enum {
+    GPU_LOG_INFO = 0,
+    GPU_LOG_WARNING,
+    GPU_LOG_ERROR
+} GPU_LogLevelEnum;
+
+
 /* Private implementation of renderer members */
 struct GPU_RendererImpl;
 
@@ -689,6 +700,9 @@ DECLSPEC void SDLCALL GPU_LogWarning(const char* format, ...);
 
 /*! Prints an error log message. */
 DECLSPEC void SDLCALL GPU_LogError(const char* format, ...);
+
+/*! Sets a custom callback for handling logging.  Use stdio's vsnprintf() to process the va_list into a string.  Passing NULL as the callback will reset to the default internal logging. */
+DECLSPEC void SDLCALL GPU_SetLogCallback(int (*callback)(GPU_LogLevelEnum log_level, const char* format, va_list args));
 
 /*! Pushes a new error code onto the error stack.  If the stack is full, this function does nothing.
  * \param function The name of the function that pushed the error
