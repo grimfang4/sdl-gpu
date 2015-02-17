@@ -703,6 +703,9 @@ DECLSPEC GPU_ErrorObject SDLCALL GPU_PopErrorCode(void);
 /*! Gets the string representation of an error code. */
 DECLSPEC const char* SDLCALL GPU_GetErrorString(GPU_ErrorEnum error);
 
+/*! Changes the maximum number of error objects that SDL_gpu will store.  This deletes all currently stored errors. */
+DECLSPEC void SDLCALL GPU_SetErrorStackMax(unsigned int max);
+
 // End of Logging
 /*! @} */
 
