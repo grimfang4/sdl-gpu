@@ -94,3 +94,61 @@ GPU_Target* initialize_demo(int argc, char** argv, Uint16 w, Uint16 h)
 	printCurrentRenderer();
 	return screen;
 }
+
+
+// Loads a shader and prepends version/compatibility info before compiling it
+Uint32 load_shader(GPU_ShaderEnum shader_type, const char* filename)
+{
+    SDL_RWops* rwops;
+    Uint32 shader;
+    char* source;
+    int header_size, file_size;
+    const char* header = "";
+    GPU_Renderer* renderer = GPU_GetCurrentRenderer();
+    
+    // Open file
+    rwops = SDL_RWFromFile(filename, "rb");
+    if(rwops == NULL)
+    {
+        GPU_PushErrorCode("load_shader", GPU_ERROR_FILE_NOT_FOUND, "Shader file \"%s\" not found", filename);
+        return 0;
+    }
+    
+    // Get file size
+    file_size = SDL_RWseek(rwops, 0, SEEK_END);
+    SDL_RWseek(rwops, 0, SEEK_SET);
+    
+    // Get size from header
+    if(renderer->shader_language == GPU_LANGUAGE_GLSL)
+    {
+        if(renderer->shader_version >= 120)
+            header = "#version 120\n";
+        else
+            header = "#version 110\n";  // Maybe this is good enough?
+    }
+    else if(renderer->shader_language == GPU_LANGUAGE_GLSLES)
+        header = "#version 100\nprecision mediump int;\nprecision mediump float;\n";
+    
+    header_size = strlen(header);
+    
+    // Allocate source buffer
+    source = (char*)malloc(sizeof(char)*(header_size + file_size + 1));
+    
+    // Prepend header
+    strcpy(source, header);
+    
+    // Read in source code
+    SDL_RWread(rwops, source + strlen(source), 1, file_size);
+    source[header_size + file_size] = '\0';
+    
+    GPU_LogError("\n\nSOURCE AFTER: %s\n\n", source);
+    
+    // Compile the shader
+    shader = GPU_CompileShader(shader_type, source);
+    
+    // Clean up
+    free(source);
+    SDL_RWclose(rwops);
+    
+    return shader;
+}

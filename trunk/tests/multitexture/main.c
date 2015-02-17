@@ -7,15 +7,15 @@ GPU_ShaderBlock load_shaders(Uint32* v, Uint32* f, Uint32* p)
     const char* vertex_shader_file;
     const char* fragment_shader_file;
 	
-	vertex_shader_file = "multitexture/test.vert";
-	fragment_shader_file = "multitexture/test.frag";
+	vertex_shader_file = "data/shaders/multitexture.vert";
+	fragment_shader_file = "data/shaders/multitexture.frag";
     
-    *v = GPU_LoadShader(GPU_VERTEX_SHADER, vertex_shader_file);
+    *v = load_shader(GPU_VERTEX_SHADER, vertex_shader_file);
     
     if(!*v)
         GPU_LogError("Failed to load vertex shader: %s\n", GPU_GetShaderMessage());
     
-    *f = GPU_LoadShader(GPU_FRAGMENT_SHADER, fragment_shader_file);
+    *f = load_shader(GPU_FRAGMENT_SHADER, fragment_shader_file);
     
     if(!*f)
         GPU_LogError("Failed to load fragment shader: %s\n", GPU_GetShaderMessage());
@@ -30,7 +30,7 @@ GPU_ShaderBlock load_shaders(Uint32* v, Uint32* f, Uint32* p)
     }
     
 	{
-		GPU_ShaderBlock block = GPU_LoadShaderBlock(*p, "gpu_Vertex", "gpu_TexCoord", "gpu_Color", "modelViewProjection");
+		GPU_ShaderBlock block = GPU_LoadShaderBlock(*p, "gpu_Vertex", "gpu_TexCoord", "gpu_Color", "gpu_ModelViewProjectionMatrix");
 		GPU_ActivateShaderProgram(*p, &block);
 
 		return block;

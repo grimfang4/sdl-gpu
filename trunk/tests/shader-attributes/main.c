@@ -5,26 +5,12 @@
 
 GPU_ShaderBlock load_shaders(Uint32* v, Uint32* f, Uint32* p)
 {
-    GPU_Renderer* renderer = GPU_GetCurrentRenderer();
-    const char* vertex_shader_file;
-    const char* fragment_shader_file;
-    if(renderer->shader_version < 130)
-    {
-        vertex_shader_file = "shader-attributes/test.vert";
-        fragment_shader_file = "shader-attributes/test.frag";
-    }
-    else
-    {
-        vertex_shader_file = "shader-attributes/test3.vert";
-        fragment_shader_file = "shader-attributes/test3.frag";
-    }
-    
-    *v = GPU_LoadShader(GPU_VERTEX_SHADER, vertex_shader_file);
+    *v = load_shader(GPU_VERTEX_SHADER, "data/shaders/shader-attributes.vert");
     
     if(!*v)
         GPU_LogError("Failed to load vertex shader: %s\n", GPU_GetShaderMessage());
     
-    *f = GPU_LoadShader(GPU_FRAGMENT_SHADER, fragment_shader_file);
+    *f = load_shader(GPU_FRAGMENT_SHADER, "data/shaders/shader-attributes.frag");
     
     if(!*f)
         GPU_LogError("Failed to load fragment shader: %s\n", GPU_GetShaderMessage());
@@ -39,7 +25,7 @@ GPU_ShaderBlock load_shaders(Uint32* v, Uint32* f, Uint32* p)
     }
     
     {
-        GPU_ShaderBlock block = GPU_LoadShaderBlock(*p, "gpu_Vertex", "gpu_TexCoord", NULL, "modelViewProjection");
+        GPU_ShaderBlock block = GPU_LoadShaderBlock(*p, "gpu_Vertex", "gpu_TexCoord", NULL, "gpu_ModelViewProjectionMatrix");
         GPU_ActivateShaderProgram(*p, &block);
         
         return block;

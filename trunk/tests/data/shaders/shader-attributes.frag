@@ -1,11 +1,3 @@
-#ifdef GL_ES
- #version 100
- precision mediump int;
- precision mediump float;
-#else
- #version 120
-#endif
-
 varying vec4 color;
 varying vec2 texCoord;
 
