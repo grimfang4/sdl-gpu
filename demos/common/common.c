@@ -141,8 +141,6 @@ Uint32 load_shader(GPU_ShaderEnum shader_type, const char* filename)
     SDL_RWread(rwops, source + strlen(source), 1, file_size);
     source[header_size + file_size] = '\0';
     
-    GPU_LogError("\n\nSOURCE AFTER: %s\n\n", source);
-    
     // Compile the shader
     shader = GPU_CompileShader(shader_type, source);
     
