@@ -34,12 +34,12 @@ static GPU_Renderer* current_renderer = NULL;
 
 static GPU_DebugLevelEnum debug_level = GPU_DEBUG_LEVEL_0;
 
-#define GPU_MAX_NUM_ERRORS 20
+#define GPU_DEFAULT_MAX_NUM_ERRORS 20
 #define GPU_ERROR_FUNCTION_STRING_MAX 128
 #define GPU_ERROR_DETAILS_STRING_MAX 512
-static GPU_ErrorObject error_code_stack[GPU_MAX_NUM_ERRORS];
-static int num_error_codes = 0;
-static int inited_error_code_stack = 0;
+static GPU_ErrorObject* error_code_stack = NULL;
+static unsigned int num_error_codes = 0;
+static unsigned int error_code_stack_size = GPU_DEFAULT_MAX_NUM_ERRORS;
 
 /*! A mapping of windowID to a GPU_Target to facilitate GPU_GetWindowTarget(). */
 typedef struct GPU_WindowMapping
@@ -191,15 +191,17 @@ GPU_FeatureEnum GPU_GetRequiredFeatures(void)
 
 static void init_error_stack(void)
 {
-    if(!inited_error_code_stack)
+    if(error_code_stack == NULL)
     {
-        int i;
-        inited_error_code_stack = 1;
-        for(i = 0; i < GPU_MAX_NUM_ERRORS; i++)
+        unsigned int i;
+        error_code_stack = (GPU_ErrorObject*)malloc(sizeof(GPU_ErrorObject)*error_code_stack_size);
+        
+        for(i = 0; i < error_code_stack_size; i++)
         {
             error_code_stack[i].function = (char*)malloc(GPU_ERROR_FUNCTION_STRING_MAX+1);
             error_code_stack[i].details = (char*)malloc(GPU_ERROR_DETAILS_STRING_MAX+1);
         }
+        num_error_codes = 0;
     }
 }
 
@@ -519,6 +521,27 @@ void GPU_UnsetImageVirtualResolution(GPU_Image* image)
     image->using_virtual_resolution = 0;
 }
 
+// Deletes all existing errors
+void GPU_SetErrorStackMax(unsigned int max)
+{
+    unsigned int i;
+    // Free the error stack
+    for(i = 0; i < error_code_stack_size; i++)
+    {
+        free(error_code_stack[i].function);
+        error_code_stack[i].function = NULL;
+        free(error_code_stack[i].details);
+        error_code_stack[i].details = NULL;
+    }
+    free(error_code_stack);
+    error_code_stack = NULL;
+    num_error_codes = 0;
+    
+    // Reallocate with new size
+    error_code_stack_size = max;
+    init_error_stack();
+}
+
 void GPU_CloseCurrentRenderer(void)
 {
 	if(current_renderer == NULL)
@@ -530,19 +553,21 @@ void GPU_CloseCurrentRenderer(void)
 
 void GPU_Quit(void)
 {
-    int i;
+    unsigned int i;
     if(num_error_codes > 0 && GPU_GetDebugLevel() >= GPU_DEBUG_LEVEL_1)
-        GPU_LogError("GPU_Quit: %d uncleared errors.\n", num_error_codes);
+        GPU_LogError("GPU_Quit: %d uncleared error%s.\n", num_error_codes, (num_error_codes > 1? "s" : ""));
         
     // Free the error stack
-    for(i = 0; i < GPU_MAX_NUM_ERRORS; i++)
+    for(i = 0; i < error_code_stack_size; i++)
     {
         free(error_code_stack[i].function);
         error_code_stack[i].function = NULL;
         free(error_code_stack[i].details);
         error_code_stack[i].details = NULL;
     }
-    inited_error_code_stack = 0;
+    free(error_code_stack);
+    error_code_stack = NULL;
+    num_error_codes = 0;
     
 	if(current_renderer == NULL)
 		return;
@@ -586,7 +611,7 @@ void GPU_PushErrorCode(const char* function, GPU_ErrorEnum error, const char* de
             GPU_LogError("%s: %s\n", (function == NULL? "NULL" : function), GPU_GetErrorString(error));
     }
     
-    if(num_error_codes < GPU_MAX_NUM_ERRORS)
+    if(num_error_codes < error_code_stack_size)
     {
         if(function == NULL)
             error_code_stack[num_error_codes].function[0] = '\0';
