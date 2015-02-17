@@ -8,25 +8,25 @@
 	#define __func__ __FUNCTION__
 #endif
 
-#define MAX_ACTIVE_RENDERERS 20
-#define MAX_REGISTERED_RENDERERS 10
+#define GPU_MAX_ACTIVE_RENDERERS 20
+#define GPU_MAX_REGISTERED_RENDERERS 10
 
-typedef struct RendererRegistration
+typedef struct GPU_RendererRegistration
 {
 	GPU_RendererID id;
 	GPU_Renderer* (*createFn)(GPU_RendererID request);
 	void (*freeFn)(GPU_Renderer*);
-} RendererRegistration;
+} GPU_RendererRegistration;
 
-static Uint8 initialized = 0;
+static Uint8 _gpu_renderer_register_is_initialized = 0;
 
-static GPU_Renderer* rendererMap[MAX_ACTIVE_RENDERERS];
-static RendererRegistration rendererRegister[MAX_REGISTERED_RENDERERS];
-
-
+static GPU_Renderer* _gpu_renderer_map[GPU_MAX_ACTIVE_RENDERERS];
+static GPU_RendererRegistration _gpu_renderer_register[GPU_MAX_REGISTERED_RENDERERS];
 
 
-void GPU_InitRendererRegister(void);
+
+
+void gpu_init_renderer_register(void);
 
 
 GPU_RendererEnum GPU_ReserveNextRendererEnum(void)
@@ -40,12 +40,12 @@ int GPU_GetNumActiveRenderers(void)
 	int count;
 	int i;
 
-	GPU_InitRendererRegister();
+	gpu_init_renderer_register();
 
 	count = 0;
-	for(i = 0; i < MAX_ACTIVE_RENDERERS; i++)
+	for(i = 0; i < GPU_MAX_ACTIVE_RENDERERS; i++)
 	{
-		if(rendererMap[i] != NULL)
+		if(_gpu_renderer_map[i] != NULL)
 			count++;
 	}
 	return count;
@@ -56,14 +56,14 @@ void GPU_GetActiveRendererList(GPU_RendererID* renderers_array)
 	int count;
 	int i;
 
-	GPU_InitRendererRegister();
+	gpu_init_renderer_register();
 
 	count = 0;
-	for(i = 0; i < MAX_ACTIVE_RENDERERS; i++)
+	for(i = 0; i < GPU_MAX_ACTIVE_RENDERERS; i++)
 	{
-		if(rendererMap[i] != NULL)
+		if(_gpu_renderer_map[i] != NULL)
 		{
-			renderers_array[count] = rendererMap[i]->id;
+			renderers_array[count] = _gpu_renderer_map[i]->id;
 			count++;
 		}
 	}
@@ -75,12 +75,12 @@ int GPU_GetNumRegisteredRenderers(void)
 	int count;
 	int i;
 
-	GPU_InitRendererRegister();
+	gpu_init_renderer_register();
 
 	count = 0;
-	for(i = 0; i < MAX_REGISTERED_RENDERERS; i++)
+	for(i = 0; i < GPU_MAX_REGISTERED_RENDERERS; i++)
 	{
-		if(rendererRegister[i].id.renderer != GPU_RENDERER_UNKNOWN)
+		if(_gpu_renderer_register[i].id.renderer != GPU_RENDERER_UNKNOWN)
 			count++;
 	}
 	return count;
@@ -91,14 +91,14 @@ void GPU_GetRegisteredRendererList(GPU_RendererID* renderers_array)
 	int count;
 	int i;
 
-	GPU_InitRendererRegister();
+	gpu_init_renderer_register();
 
 	count = 0;
-	for(i = 0; i < MAX_REGISTERED_RENDERERS; i++)
+	for(i = 0; i < GPU_MAX_REGISTERED_RENDERERS; i++)
 	{
-		if(rendererRegister[i].id.renderer != GPU_RENDERER_UNKNOWN)
+		if(_gpu_renderer_register[i].id.renderer != GPU_RENDERER_UNKNOWN)
 		{
-			renderers_array[count] = rendererRegister[i].id;
+			renderers_array[count] = _gpu_renderer_register[i].id;
 			count++;
 		}
 	}
@@ -109,12 +109,12 @@ GPU_RendererID GPU_GetRendererID(GPU_RendererEnum renderer)
 {
 	int i;
 
-	GPU_InitRendererRegister();
+	gpu_init_renderer_register();
 
-	for(i = 0; i < MAX_REGISTERED_RENDERERS; i++)
+	for(i = 0; i < GPU_MAX_REGISTERED_RENDERERS; i++)
 	{
-		if(rendererRegister[i].id.renderer == renderer)
-			return rendererRegister[i].id;
+		if(_gpu_renderer_register[i].id.renderer == renderer)
+			return _gpu_renderer_register[i].id;
 	}
 	
 	return GPU_MakeRendererID("Unknown", GPU_RENDERER_UNKNOWN, 0, 0);
@@ -137,7 +137,7 @@ void GPU_RegisterRenderer(GPU_RendererID id, GPU_Renderer* (*create_renderer)(GP
 {
     int i = GPU_GetNumRegisteredRenderers();
     
-	if(i >= MAX_REGISTERED_RENDERERS)
+	if(i >= GPU_MAX_REGISTERED_RENDERERS)
 		return;
     
     if(id.renderer == GPU_RENDERER_UNKNOWN)
@@ -156,12 +156,12 @@ void GPU_RegisterRenderer(GPU_RendererID id, GPU_Renderer* (*create_renderer)(GP
         return;
     }
     
-    rendererRegister[i].id = id;
-    rendererRegister[i].createFn = create_renderer;
-    rendererRegister[i].freeFn = free_renderer;
+    _gpu_renderer_register[i].id = id;
+    _gpu_renderer_register[i].createFn = create_renderer;
+    _gpu_renderer_register[i].freeFn = free_renderer;
 }
 
-void GPU_RegisterBuiltInRenderers(void)
+void gpu_register_built_in_renderers(void)
 {
 	#ifndef SDL_GPU_DISABLE_OPENGL
         #ifndef SDL_GPU_DISABLE_OPENGL_1_BASE
@@ -208,30 +208,30 @@ void GPU_RegisterBuiltInRenderers(void)
 static int renderer_order_size = 0;
 static GPU_RendererID renderer_order[GPU_RENDERER_ORDER_MAX];
 
-void GPU_InitRendererRegister(void)
+void gpu_init_renderer_register(void)
 {
 	int i;
 
-	if(initialized)
+	if(_gpu_renderer_register_is_initialized)
 		return;
 	
-	for(i = 0; i < MAX_REGISTERED_RENDERERS; i++)
+	for(i = 0; i < GPU_MAX_REGISTERED_RENDERERS; i++)
 	{
-		rendererRegister[i].id.name = "Unknown";
-		rendererRegister[i].id.renderer = GPU_RENDERER_UNKNOWN;
-		rendererRegister[i].createFn = NULL;
-		rendererRegister[i].freeFn = NULL;
+		_gpu_renderer_register[i].id.name = "Unknown";
+		_gpu_renderer_register[i].id.renderer = GPU_RENDERER_UNKNOWN;
+		_gpu_renderer_register[i].createFn = NULL;
+		_gpu_renderer_register[i].freeFn = NULL;
 	}
-	for(i = 0; i < MAX_ACTIVE_RENDERERS; i++)
+	for(i = 0; i < GPU_MAX_ACTIVE_RENDERERS; i++)
 	{
-		rendererMap[i] = NULL;
+		_gpu_renderer_map[i] = NULL;
 	}
 	
 	GPU_GetDefaultRendererOrder(&renderer_order_size, renderer_order);
 	
-	initialized = 1;
+	_gpu_renderer_register_is_initialized = 1;
 	
-	GPU_RegisterBuiltInRenderers();
+	gpu_register_built_in_renderers();
 }
 
 
@@ -297,18 +297,18 @@ GPU_Renderer* GPU_CreateRenderer(GPU_RendererID id)
 {
 	GPU_Renderer* result = NULL;
 	int i;
-	for(i = 0; i < MAX_REGISTERED_RENDERERS; i++)
+	for(i = 0; i < GPU_MAX_REGISTERED_RENDERERS; i++)
 	{
-		if(rendererRegister[i].id.renderer == GPU_RENDERER_UNKNOWN)
+		if(_gpu_renderer_register[i].id.renderer == GPU_RENDERER_UNKNOWN)
 			continue;
 		
-		if(id.renderer == rendererRegister[i].id.renderer)
+		if(id.renderer == _gpu_renderer_register[i].id.renderer)
 		{
-			if(rendererRegister[i].createFn != NULL)
+			if(_gpu_renderer_register[i].createFn != NULL)
             {
                 // Use the registered name
-                id.name = rendererRegister[i].id.name;
-				result = rendererRegister[i].createFn(id);
+                id.name = _gpu_renderer_register[i].id.name;
+				result = _gpu_renderer_register[i].createFn(id);
             }
 			break;
 		}
@@ -325,27 +325,27 @@ GPU_Renderer* GPU_CreateRenderer(GPU_RendererID id)
 GPU_Renderer* GPU_GetRenderer(GPU_RendererID id)
 {
 	int i;
-	GPU_InitRendererRegister();
+	gpu_init_renderer_register();
 	
-	for(i = 0; i < MAX_ACTIVE_RENDERERS; i++)
+	for(i = 0; i < GPU_MAX_ACTIVE_RENDERERS; i++)
 	{
-		if(rendererMap[i] == NULL)
+		if(_gpu_renderer_map[i] == NULL)
 			continue;
 		
-		if(id.renderer == rendererMap[i]->id.renderer)
-			return rendererMap[i];
+		if(id.renderer == _gpu_renderer_map[i]->id.renderer)
+			return _gpu_renderer_map[i];
 	}
     
     return NULL;
 }
 
 // Create a new renderer based on a registered id and store it in the map.
-GPU_Renderer* GPU_CreateAndAddRenderer(GPU_RendererID id)
+GPU_Renderer* gpu_create_and_add_renderer(GPU_RendererID id)
 {
 	int i;
-	for(i = 0; i < MAX_ACTIVE_RENDERERS; i++)
+	for(i = 0; i < GPU_MAX_ACTIVE_RENDERERS; i++)
 	{
-		if(rendererMap[i] == NULL)
+		if(_gpu_renderer_map[i] == NULL)
 		{
 			// Create
 			GPU_Renderer* renderer = GPU_CreateRenderer(id);
@@ -356,7 +356,7 @@ GPU_Renderer* GPU_CreateAndAddRenderer(GPU_RendererID id)
             }
             
 			// Add
-			rendererMap[i] = renderer;
+			_gpu_renderer_map[i] = renderer;
 			// Return
 			return renderer;
 		}
@@ -366,20 +366,20 @@ GPU_Renderer* GPU_CreateAndAddRenderer(GPU_RendererID id)
 }
 
 // Free renderer memory according to how the registry instructs
-void GPU_FreeRendererMemory(GPU_Renderer* renderer)
+void gpu_free_renderer_memory(GPU_Renderer* renderer)
 {
 	int i;
 	if(renderer == NULL)
         return;
 	
-	for(i = 0; i < MAX_REGISTERED_RENDERERS; i++)
+	for(i = 0; i < GPU_MAX_REGISTERED_RENDERERS; i++)
 	{
-		if(rendererRegister[i].id.renderer == GPU_RENDERER_UNKNOWN)
+		if(_gpu_renderer_register[i].id.renderer == GPU_RENDERER_UNKNOWN)
 			continue;
 		
-		if(renderer->id.renderer == rendererRegister[i].id.renderer)
+		if(renderer->id.renderer == _gpu_renderer_register[i].id.renderer)
 		{
-			rendererRegister[i].freeFn(renderer);
+			_gpu_renderer_register[i].freeFn(renderer);
 			return;
 		}
 	}
@@ -398,12 +398,12 @@ void GPU_FreeRenderer(GPU_Renderer* renderer)
     if(current_renderer == renderer)
         current_renderer = NULL;
         
-	for(i = 0; i < MAX_ACTIVE_RENDERERS; i++)
+	for(i = 0; i < GPU_MAX_ACTIVE_RENDERERS; i++)
 	{
-		if(renderer == rendererMap[i])
+		if(renderer == _gpu_renderer_map[i])
 		{
-			GPU_FreeRendererMemory(renderer);
-			rendererMap[i] = NULL;
+			gpu_free_renderer_memory(renderer);
+			_gpu_renderer_map[i] = NULL;
 			return;
 		}
 	}

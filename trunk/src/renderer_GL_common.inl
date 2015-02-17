@@ -40,7 +40,7 @@ See a particular renderer's *.c file for specifics. */
 	}
 #endif
 
-int GPU_strcasecmp(const char* s1, const char* s2);
+int gpu_strcasecmp(const char* s1, const char* s2);
 
 #include "SDL_platform.h"
 
@@ -2241,11 +2241,11 @@ static Uint8 SaveImage(GPU_Renderer* renderer, GPU_Image* image, const char* fil
     if(format == GPU_FILE_AUTO)
     {
         const char* extension = get_filename_ext(filename);
-        if(GPU_strcasecmp(extension, "png") == 0)
+        if(gpu_strcasecmp(extension, "png") == 0)
             format = GPU_FILE_PNG;
-        else if(GPU_strcasecmp(extension, "bmp") == 0)
+        else if(gpu_strcasecmp(extension, "bmp") == 0)
             format = GPU_FILE_BMP;
-        else if(GPU_strcasecmp(extension, "tga") == 0)
+        else if(gpu_strcasecmp(extension, "tga") == 0)
             format = GPU_FILE_TGA;
         else
         {
