@@ -5,12 +5,12 @@
 
 GPU_ShaderBlock load_shaders(Uint32* v, Uint32* f, Uint32* p)
 {
-    *v = load_shader(GPU_VERTEX_SHADER, "data/shaders/shader-attributes.vert");
+    *v = load_shader(GPU_VERTEX_SHADER, "data/shaders/time_mod.vert");
     
     if(!*v)
         GPU_LogError("Failed to load vertex shader: %s\n", GPU_GetShaderMessage());
     
-    *f = load_shader(GPU_FRAGMENT_SHADER, "data/shaders/shader-attributes.frag");
+    *f = load_shader(GPU_FRAGMENT_SHADER, "data/shaders/time_mod.frag");
     
     if(!*f)
         GPU_LogError("Failed to load fragment shader: %s\n", GPU_GetShaderMessage());
