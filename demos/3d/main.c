@@ -154,8 +154,8 @@ int main(int argc, char* argv[])
 		if (image == NULL)
 			return -1;
         
-        v = GPU_LoadShader(GPU_VERTEX_SHADER, "3d/untextured.vert");
-        f = GPU_LoadShader(GPU_FRAGMENT_SHADER, "3d/untextured.frag");
+        v = GPU_LoadShader(GPU_VERTEX_SHADER, "data/shaders/untextured.vert");
+        f = GPU_LoadShader(GPU_FRAGMENT_SHADER, "data/shaders/untextured.frag");
         p = GPU_LinkShaders(v, f);
         
         glUseProgram(p);

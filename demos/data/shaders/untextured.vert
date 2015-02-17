@@ -1,4 +1,4 @@
-#version 110
+#version 120
 
 attribute vec3 gpu_Vertex;
 attribute vec4 gpu_Color;
