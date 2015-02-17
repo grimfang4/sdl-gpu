@@ -1,8 +1,8 @@
 #include "SDL.h"
 #include "SDL_gpu.h"
 #include <math.h>
-#include "../../demos/common/compat.h"
-#include "../../demos/common/common.h"
+#include "compat.h"
+#include "common.h"
 
 
 int main(int argc, char* argv[])

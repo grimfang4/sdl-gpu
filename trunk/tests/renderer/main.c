@@ -737,7 +737,7 @@ static void BlitTransformMatrix(GPU_Renderer* renderer, GPU_Image* image, GPU_Re
 }
 
 
-static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* target, unsigned short num_vertices, float* values, unsigned int num_indices, unsigned short* indices, GPU_BlitFlagEnum flags)
+static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* target, unsigned short num_vertices, float* values, unsigned int num_indices, unsigned short* indices, GPU_BatchFlagEnum flags)
 {
     GPU_Log(" %s (dummy)\n", __func__);
 }
