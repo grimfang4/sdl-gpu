@@ -181,6 +181,11 @@ add_definitions("-Wall -std=c99 -pedantic")
 # Build the SDL_gpu library.
 add_subdirectory(src)
 
+if(SDL_gpu_BUILD_DEMOS OR SDL_gpu_BUILD_TESTS OR SDL_gpu_BUILD_TOOLS)
+	add_library(test-common STATIC ${SDL_gpu_SOURCE_DIR}/common/common.c ${SDL_gpu_SOURCE_DIR}/common/demo-font.c)
+	set(TEST_LIBS test-common SDL_gpu)
+endif(SDL_gpu_BUILD_DEMOS OR SDL_gpu_BUILD_TESTS OR SDL_gpu_BUILD_TOOLS)
+
 # Build the demos
 if(SDL_gpu_BUILD_DEMOS)
   add_subdirectory(demos)
