@@ -2,6 +2,18 @@
 See a particular renderer's *.c file for specifics. */
 
 
+#include <stdlib.h>
+#include "SDL_platform.h"
+#include <math.h>
+#include <string.h>
+
+#include "stb_image.h"
+#include "stb_image_write.h"
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
 // Visual C does not support static inline
 #ifndef static_inline
     #ifdef _MSC_VER
@@ -42,11 +54,6 @@ See a particular renderer's *.c file for specifics. */
 
 int gpu_strcasecmp(const char* s1, const char* s2);
 
-#include "SDL_platform.h"
-
-#include "stb_image.h"
-#include "stb_image_write.h"
-
 
 // Forces a flush when vertex limit is reached (roughly 1000 sprites)
 #define GPU_BLIT_BUFFER_VERTICES_PER_SPRITE 4
@@ -69,16 +76,7 @@ int gpu_strcasecmp(const char* s1, const char* s2);
 #define GPU_BLIT_BUFFER_COLOR_OFFSET 4
 
 
-#include <math.h>
-#include <string.h>
 
-#ifndef _MSC_VER
-	#include <strings.h>
-#endif
-
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
 
 
 #ifdef SDL_GPU_USE_SDL2
