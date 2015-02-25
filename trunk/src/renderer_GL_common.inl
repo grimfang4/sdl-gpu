@@ -459,8 +459,8 @@ static void makeContextCurrent(GPU_Renderer* renderer, GPU_Target* target)
     
     #ifdef SDL_GPU_USE_SDL2
     SDL_GL_MakeCurrent(SDL_GetWindowFromID(target->context->windowID), target->context->context);
-    renderer->current_context_target = target;
     #endif
+    renderer->current_context_target = target;
 }
 
 static void setClipRect(GPU_Renderer* renderer, GPU_Target* target)
@@ -3349,17 +3349,17 @@ static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
         free(cdata->blit_buffer);
         free(cdata->index_buffer);
     
-        #ifdef SDL_GPU_USE_SDL2
-        if(target->context->context != 0)
-            SDL_GL_DeleteContext(target->context->context);
-        #endif
-    
         #ifdef SDL_GPU_USE_BUFFER_PIPELINE
         glDeleteBuffers(2, cdata->blit_VBO);
         glDeleteBuffers(16, cdata->attribute_VBO);
             #if !defined(SDL_GPU_NO_VAO)
             glDeleteVertexArrays(1, &cdata->blit_VAO);
             #endif
+        #endif
+    
+        #ifdef SDL_GPU_USE_SDL2
+        if(target->context->context != 0)
+            SDL_GL_DeleteContext(target->context->context);
         #endif
         
         // Remove all of the window mappings that refer to this target
@@ -4846,7 +4846,11 @@ static void DoUntexturedFlush(GPU_Renderer* renderer, GPU_CONTEXT_DATA* cdata, u
 
 static void FlushBlitBuffer(GPU_Renderer* renderer)
 {
-    GPU_CONTEXT_DATA* cdata = (GPU_CONTEXT_DATA*)renderer->current_context_target->context->data;
+    GPU_CONTEXT_DATA* cdata;
+    if(renderer->current_context_target == NULL)
+        return;
+    
+    cdata = (GPU_CONTEXT_DATA*)renderer->current_context_target->context->data;
     if(cdata->blit_buffer_num_vertices > 0 && cdata->last_target != NULL)
     {
 		GPU_Target* dest = cdata->last_target;
