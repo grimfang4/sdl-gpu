@@ -127,9 +127,20 @@ int main(int argc, char* argv[])
 {
 	GPU_Target* screen;
 	
+	GPU_SetRequiredFeatures(GPU_FEATURE_BASIC_SHADERS);
 	screen = GPU_InitRenderer(GPU_RENDERER_OPENGL_1, 800, 600, GPU_DEFAULT_INIT_FLAGS);
 	if(screen == NULL)
-		return -1;
+    {
+        GPU_LogError("Initialization Error: Could not create a renderer with proper feature support for this demo.\n");
+		return 1;
+    }
+    
+    glewExperimental = GL_TRUE;  // Force GLEW to get exported functions instead of checking via extension string
+    if(glewInit() != GLEW_OK)
+    {
+        GPU_LogError("Initialization Error: Failed to initialize GLEW.\n");
+        return 2;
+    }
 
 	{
 		GPU_Image* image;
@@ -148,7 +159,7 @@ int main(int argc, char* argv[])
 
 		image = GPU_LoadImage("data/test.bmp");
 		if (image == NULL)
-			return -1;
+			return 3;
         
         v = GPU_LoadShader(GPU_VERTEX_SHADER, "data/shaders/untextured.vert");
         f = GPU_LoadShader(GPU_FRAGMENT_SHADER, "data/shaders/untextured.frag");

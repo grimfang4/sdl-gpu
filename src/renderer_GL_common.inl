@@ -1082,6 +1082,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     cdata->last_camera_inverted = 0;
 
     #ifdef SDL_GPU_USE_OPENGL
+    glewExperimental = GL_TRUE;  // Force GLEW to get exported functions instead of checking via extension string
     err = glewInit();
     if (GLEW_OK != err)
     {
