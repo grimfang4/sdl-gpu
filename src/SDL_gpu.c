@@ -1,6 +1,8 @@
 #include "SDL_gpu.h"
 #include "SDL_gpu_RendererImpl.h"
 #include "SDL_platform.h"
+#include <stdlib.h>
+#include <string.h>
 
 #ifdef __ANDROID__
 #include <android/log.h>
@@ -930,7 +932,10 @@ SDL_Surface* GPU_LoadSurface(const char* filename)
             Gmask = 0x0000ff00;
             Bmask = 0x00ff0000;
             Amask = 0xff000000;
-            break;
+			break;
+		default:
+			Rmask = Gmask = Bmask = 0;
+			break;
 	}
 	
 	result = SDL_CreateRGBSurfaceFrom(data, width, height, channels*8, width*channels, Rmask, Gmask, Bmask, Amask);
