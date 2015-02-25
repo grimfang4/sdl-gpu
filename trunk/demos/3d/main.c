@@ -1,11 +1,11 @@
 #include "SDL.h"
 #include "SDL_gpu.h"
 #include "SDL_gpu_OpenGL_1.h"
+#include "glew.h"
+#include <stdlib.h>
 
 
 
-
-GLuint VAO;
 GLuint VBO;
 GLuint modelViewProjection_loc;
 GLuint vertex_loc;
@@ -67,8 +67,6 @@ void draw_spinning_triangle()
     
     glUseProgram(p);
     
-    glBindVertexArray(VAO);
-    
     GPU_GetModelViewProjection(mvp);
     glUniformMatrix4fv(modelViewProjection_loc, 1, 0, mvp);
     
@@ -101,8 +99,6 @@ void draw_spinning_triangle()
      
     glDisableVertexAttribArray(color_loc);
     glDisableVertexAttribArray(vertex_loc);
-    
-    glBindVertexArray(0);
 }
 
 void draw_3d_stuff(GPU_Target* screen)
@@ -162,9 +158,6 @@ int main(int argc, char* argv[])
         vertex_loc = GPU_GetAttributeLocation(p, "gpu_Vertex");
         color_loc = GPU_GetAttributeLocation(p, "gpu_Color");
         modelViewProjection_loc = GPU_GetUniformLocation(p, "gpu_ModelViewProjectionMatrix");
-        
-        glGenVertexArrays(1, &VAO);
-        glBindVertexArray(VAO);
         
         glGenBuffers(1, &VBO);
         glBindBuffer(GL_ARRAY_BUFFER, VBO);
