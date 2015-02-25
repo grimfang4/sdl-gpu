@@ -2767,7 +2767,7 @@ static GPU_Image* CopyImage(GPU_Renderer* renderer, GPU_Image* image)
 				Uint8 use_blending = image->use_blending;
 				GPU_FilterEnum filter_mode = image->filter_mode;
 				Uint8 use_virtual = image->using_virtual_resolution;
-				Uint16 w, h;
+				Uint16 w = 0, h = 0;
 				GPU_UnsetColor(image);
 				GPU_SetBlending(image, 0);
 				GPU_SetImageFilter(image, GPU_FILTER_NEAREST);
