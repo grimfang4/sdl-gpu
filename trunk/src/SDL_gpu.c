@@ -218,12 +218,12 @@ static void gpu_init_error_stack(void)
     if(_gpu_error_code_stack == NULL)
     {
         unsigned int i;
-        _gpu_error_code_stack = (GPU_ErrorObject*)malloc(sizeof(GPU_ErrorObject)*_gpu_error_code_stack_size);
+        _gpu_error_code_stack = (GPU_ErrorObject*)SDL_malloc(sizeof(GPU_ErrorObject)*_gpu_error_code_stack_size);
         
         for(i = 0; i < _gpu_error_code_stack_size; i++)
         {
-            _gpu_error_code_stack[i].function = (char*)malloc(GPU_ERROR_FUNCTION_STRING_MAX+1);
-            _gpu_error_code_stack[i].details = (char*)malloc(GPU_ERROR_DETAILS_STRING_MAX+1);
+            _gpu_error_code_stack[i].function = (char*)SDL_malloc(GPU_ERROR_FUNCTION_STRING_MAX+1);
+            _gpu_error_code_stack[i].details = (char*)SDL_malloc(GPU_ERROR_DETAILS_STRING_MAX+1);
         }
         _gpu_num_error_codes = 0;
     }
@@ -234,7 +234,7 @@ static void gpu_init_window_mappings(void)
     if(_gpu_window_mappings == NULL)
     {
         _gpu_window_mappings_size = GPU_INITIAL_WINDOW_MAPPINGS_SIZE;
-        _gpu_window_mappings = (GPU_WindowMapping*)malloc(_gpu_window_mappings_size * sizeof(GPU_WindowMapping));
+        _gpu_window_mappings = (GPU_WindowMapping*)SDL_malloc(_gpu_window_mappings_size * sizeof(GPU_WindowMapping));
         _gpu_num_window_mappings = 0;
     }
 }
@@ -271,9 +271,9 @@ void GPU_AddWindowMapping(GPU_Target* target)
     {
 		GPU_WindowMapping* new_array;
         _gpu_window_mappings_size *= 2;
-        new_array = (GPU_WindowMapping*)malloc(_gpu_window_mappings_size * sizeof(GPU_WindowMapping));
+        new_array = (GPU_WindowMapping*)SDL_malloc(_gpu_window_mappings_size * sizeof(GPU_WindowMapping));
         memcpy(new_array, _gpu_window_mappings, _gpu_num_window_mappings * sizeof(GPU_WindowMapping));
-        free(_gpu_window_mappings);
+        SDL_free(_gpu_window_mappings);
         _gpu_window_mappings = new_array;
     }
     
@@ -563,12 +563,12 @@ void GPU_SetErrorStackMax(unsigned int max)
     // Free the error stack
     for(i = 0; i < _gpu_error_code_stack_size; i++)
     {
-        free(_gpu_error_code_stack[i].function);
+        SDL_free(_gpu_error_code_stack[i].function);
         _gpu_error_code_stack[i].function = NULL;
-        free(_gpu_error_code_stack[i].details);
+        SDL_free(_gpu_error_code_stack[i].details);
         _gpu_error_code_stack[i].details = NULL;
     }
-    free(_gpu_error_code_stack);
+    SDL_free(_gpu_error_code_stack);
     _gpu_error_code_stack = NULL;
     _gpu_num_error_codes = 0;
     
@@ -595,12 +595,12 @@ void GPU_Quit(void)
     // Free the error stack
     for(i = 0; i < _gpu_error_code_stack_size; i++)
     {
-        free(_gpu_error_code_stack[i].function);
+        SDL_free(_gpu_error_code_stack[i].function);
         _gpu_error_code_stack[i].function = NULL;
-        free(_gpu_error_code_stack[i].details);
+        SDL_free(_gpu_error_code_stack[i].details);
         _gpu_error_code_stack[i].details = NULL;
     }
-    free(_gpu_error_code_stack);
+    SDL_free(_gpu_error_code_stack);
     _gpu_error_code_stack = NULL;
     _gpu_num_error_codes = 0;
     
@@ -880,10 +880,10 @@ SDL_Surface* GPU_LoadSurface(const char* filename)
             return NULL;
         int data_bytes = SDL_RWseek(rwops, 0, SEEK_END);
         SDL_RWseek(rwops, 0, SEEK_SET);
-        unsigned char* c_data = (unsigned char*)malloc(data_bytes);
+        unsigned char* c_data = (unsigned char*)SDL_malloc(data_bytes);
         SDL_RWread(rwops, c_data, 1, data_bytes);
         data = stbi_load_from_memory(c_data, data_bytes, &width, &height, &channels, 0);
-        free(c_data);
+        SDL_free(c_data);
         SDL_FreeRW(rwops);
 	}
 	else
