@@ -392,9 +392,9 @@ static Uint8 growBlitBuffer(GPU_CONTEXT_DATA* cdata, unsigned int minimum_vertic
     
     //GPU_LogError("Growing to %d vertices\n", new_max_num_vertices);
     // Resize the blit buffer
-    new_buffer = (float*)malloc(new_max_num_vertices * GPU_BLIT_BUFFER_STRIDE);
+    new_buffer = (float*)SDL_malloc(new_max_num_vertices * GPU_BLIT_BUFFER_STRIDE);
     memcpy(new_buffer, cdata->blit_buffer, cdata->blit_buffer_num_vertices * GPU_BLIT_BUFFER_STRIDE);
-    free(cdata->blit_buffer);
+    SDL_free(cdata->blit_buffer);
     cdata->blit_buffer = new_buffer;
     cdata->blit_buffer_max_num_vertices = new_max_num_vertices;
     
@@ -437,9 +437,9 @@ static Uint8 growIndexBuffer(GPU_CONTEXT_DATA* cdata, unsigned int minimum_verti
     
     //GPU_LogError("Growing to %d indices\n", new_max_num_vertices);
     // Resize the index buffer
-    new_indices = (unsigned short*)malloc(new_max_num_vertices * sizeof(unsigned short));
+    new_indices = (unsigned short*)SDL_malloc(new_max_num_vertices * sizeof(unsigned short));
     memcpy(new_indices, cdata->index_buffer, cdata->index_buffer_num_vertices * sizeof(unsigned short));
-    free(cdata->index_buffer);
+    SDL_free(cdata->index_buffer);
     cdata->index_buffer = new_indices;
     cdata->index_buffer_max_num_vertices = new_max_num_vertices;
     
@@ -950,17 +950,17 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
 		int index_buffer_storage_size;
 
         created = 1;
-        target = (GPU_Target*)malloc(sizeof(GPU_Target));
+        target = (GPU_Target*)SDL_malloc(sizeof(GPU_Target));
         memset(target, 0, sizeof(GPU_Target));
         target->refcount = 1;
         target->is_alias = 0;
-        target->data = (GPU_TARGET_DATA*)malloc(sizeof(GPU_TARGET_DATA));
+        target->data = (GPU_TARGET_DATA*)SDL_malloc(sizeof(GPU_TARGET_DATA));
         memset(target->data, 0, sizeof(GPU_TARGET_DATA));
         ((GPU_TARGET_DATA*)target->data)->refcount = 1;
         target->image = NULL;
-        target->context = (GPU_Context*)malloc(sizeof(GPU_Context));
+        target->context = (GPU_Context*)SDL_malloc(sizeof(GPU_Context));
         memset(target->context, 0, sizeof(GPU_Context));
-        cdata = (GPU_CONTEXT_DATA*)malloc(sizeof(GPU_CONTEXT_DATA));
+        cdata = (GPU_CONTEXT_DATA*)SDL_malloc(sizeof(GPU_CONTEXT_DATA));
         memset(cdata, 0, sizeof(GPU_CONTEXT_DATA));
         target->context->data = cdata;
         target->context->context = NULL;
@@ -971,11 +971,11 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
         cdata->blit_buffer_max_num_vertices = GPU_BLIT_BUFFER_INIT_MAX_NUM_VERTICES;
         cdata->blit_buffer_num_vertices = 0;
         blit_buffer_storage_size = GPU_BLIT_BUFFER_INIT_MAX_NUM_VERTICES*GPU_BLIT_BUFFER_STRIDE;
-        cdata->blit_buffer = (float*)malloc(blit_buffer_storage_size);
+        cdata->blit_buffer = (float*)SDL_malloc(blit_buffer_storage_size);
         cdata->index_buffer_max_num_vertices = GPU_BLIT_BUFFER_INIT_MAX_NUM_VERTICES;
         cdata->index_buffer_num_vertices = 0;
         index_buffer_storage_size = GPU_BLIT_BUFFER_INIT_MAX_NUM_VERTICES*sizeof(unsigned short);
-        cdata->index_buffer = (unsigned short*)malloc(index_buffer_storage_size);
+        cdata->index_buffer = (unsigned short*)SDL_malloc(index_buffer_storage_size);
     }
     else
     {
@@ -990,12 +990,12 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     {
         if(created)
         {
-            free(cdata->blit_buffer);
-            free(cdata->index_buffer);
-            free(target->context->data);
-            free(target->context);
-            free(target->data);
-            free(target);
+            SDL_free(cdata->blit_buffer);
+            SDL_free(cdata->index_buffer);
+            SDL_free(target->context->data);
+            SDL_free(target->context);
+            SDL_free(target->data);
+            SDL_free(target);
         }
         return NULL;
     }
@@ -1023,12 +1023,12 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     {
         if(created)
         {
-            free(cdata->blit_buffer);
-            free(cdata->index_buffer);
-            free(target->context->data);
-            free(target->context);
-            free(target->data);
-            free(target);
+            SDL_free(cdata->blit_buffer);
+            SDL_free(cdata->index_buffer);
+            SDL_free(target->context->data);
+            SDL_free(target->context);
+            SDL_free(target->data);
+            SDL_free(target);
         }
         return NULL;
     }
@@ -1324,7 +1324,7 @@ static GPU_Target* CreateAliasTarget(GPU_Renderer* renderer, GPU_Target* target)
     if(target == NULL)
         return NULL;
     
-    result = (GPU_Target*)malloc(sizeof(GPU_Target));
+    result = (GPU_Target*)SDL_malloc(sizeof(GPU_Target));
     
     // Copy the members
     *result = *target;
@@ -1783,9 +1783,9 @@ static GPU_Image* CreateUninitializedImage(GPU_Renderer* renderer, Uint16 w, Uin
     glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
     #endif
 
-    result = (GPU_Image*)malloc(sizeof(GPU_Image));
+    result = (GPU_Image*)SDL_malloc(sizeof(GPU_Image));
     result->refcount = 1;
-    data = (GPU_IMAGE_DATA*)malloc(sizeof(GPU_IMAGE_DATA));
+    data = (GPU_IMAGE_DATA*)SDL_malloc(sizeof(GPU_IMAGE_DATA));
     data->refcount = 1;
     result->target = NULL;
     result->renderer = renderer;
@@ -1859,9 +1859,9 @@ static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, GPU_Fo
     // Initialize texture using a blank buffer
     if(zero_buffer_size < (unsigned int)(w*h*result->bytes_per_pixel))
     {
-        free(zero_buffer);
+        SDL_free(zero_buffer);
         zero_buffer_size = w*h*result->bytes_per_pixel;
-        zero_buffer = (unsigned char*)malloc(zero_buffer_size);
+        zero_buffer = (unsigned char*)SDL_malloc(zero_buffer_size);
         memset(zero_buffer, 0, zero_buffer_size);
     }
     
@@ -2017,14 +2017,14 @@ static GPU_Image* CreateImageUsingTexture(GPU_Renderer* renderer, Uint32 handle,
 	
 	// Finally create the image
     
-    data = (GPU_IMAGE_DATA*)malloc(sizeof(GPU_IMAGE_DATA));
+    data = (GPU_IMAGE_DATA*)SDL_malloc(sizeof(GPU_IMAGE_DATA));
     data->refcount = 1;
     data->handle = handle;
     data->owns_handle = take_ownership;
     data->format = gl_format;
     
 
-    result = (GPU_Image*)malloc(sizeof(GPU_Image));
+    result = (GPU_Image*)SDL_malloc(sizeof(GPU_Image));
     result->refcount = 1;
     result->target = NULL;
     result->renderer = renderer;
@@ -2082,7 +2082,7 @@ static GPU_Image* CreateAliasImage(GPU_Renderer* renderer, GPU_Image* image)
     if(image == NULL)
         return NULL;
 
-    result = (GPU_Image*)malloc(sizeof(GPU_Image));
+    result = (GPU_Image*)SDL_malloc(sizeof(GPU_Image));
     // Copy the members
     *result = *image;
     
@@ -2164,18 +2164,18 @@ static unsigned char* getRawTargetData(GPU_Renderer* renderer, GPU_Target* targe
     bytes_per_pixel = 4;
     if(target->image != NULL)
         bytes_per_pixel = target->image->bytes_per_pixel;
-    data = (unsigned char*)malloc(target->base_w * target->base_h * bytes_per_pixel);
+    data = (unsigned char*)SDL_malloc(target->base_w * target->base_h * bytes_per_pixel);
     
     // This can take regions of pixels, so using base_w and base_h with an image target should be fine.
     if(!readTargetPixels(renderer, target, ((GPU_TARGET_DATA*)target->data)->format, data))
     {
-        free(data);
+        SDL_free(data);
         return NULL;
     }
     
     // Flip the data vertically (OpenGL framebuffer is read upside down)
     pitch = target->base_w * bytes_per_pixel;
-    copy = (unsigned char*)malloc(pitch);
+    copy = (unsigned char*)SDL_malloc(pitch);
     
     for(y = 0; y < target->base_h/2; y++)
     {
@@ -2185,7 +2185,7 @@ static unsigned char* getRawTargetData(GPU_Renderer* renderer, GPU_Target* targe
         memcpy(top, bottom, pitch);
         memcpy(bottom, copy, pitch);
     }
-    free(copy);
+    SDL_free(copy);
 
     return data;
 }
@@ -2197,12 +2197,12 @@ static unsigned char* getRawImageData(GPU_Renderer* renderer, GPU_Image* image)
     if(image->target != NULL && isCurrentTarget(renderer, image->target))
         renderer->impl->FlushBlitBuffer(renderer);
     
-    data = (unsigned char*)malloc(image->texture_w * image->texture_h * image->bytes_per_pixel);
+    data = (unsigned char*)SDL_malloc(image->texture_w * image->texture_h * image->bytes_per_pixel);
     
     // FIXME: Sometimes the texture is stored and read in RGBA even when I specify RGB.  getRawImageData() might need to return the stored format or Bpp.
     if(!readImagePixels(renderer, image, ((GPU_IMAGE_DATA*)image->data)->format, data))
     {
-        free(data);
+        SDL_free(data);
         return NULL;
     }
 
@@ -2249,7 +2249,7 @@ static Uint8 SaveImage(GPU_Renderer* renderer, GPU_Image* image, const char* fil
         else
         {
             GPU_PushErrorCode("GPU_SaveImage", GPU_ERROR_DATA_ERROR, "Could not detect output file format from file name");
-            free(data);
+            SDL_free(data);
             return 0;
         }
     }
@@ -2271,7 +2271,7 @@ static Uint8 SaveImage(GPU_Renderer* renderer, GPU_Image* image, const char* fil
             break;
     }
 
-    free(data);
+    SDL_free(data);
     return result;
 }
 
@@ -2565,7 +2565,7 @@ static SDL_PixelFormat* AllocFormat(GLenum glFormat)
 
     //GPU_LogError("AllocFormat(): %d, Masks: %X %X %X %X\n", glFormat, Rmask, Gmask, Bmask, Amask);
 
-    result = (SDL_PixelFormat*)malloc(sizeof(SDL_PixelFormat));
+    result = (SDL_PixelFormat*)SDL_malloc(sizeof(SDL_PixelFormat));
     memset(result, 0, sizeof(SDL_PixelFormat));
 
     result->BitsPerPixel = 8*channels;
@@ -2625,7 +2625,7 @@ static Uint8 hasColorkey(SDL_Surface* surface)
 
 static void FreeFormat(SDL_PixelFormat* format)
 {
-    free(format);
+    SDL_free(format);
 }
 
 // Returns NULL on failure.  Returns the original surface if no copy is needed.  Returns a new surface converted to the right format otherwise.
@@ -2701,7 +2701,7 @@ static SDL_Surface* copySurfaceIfNeeded(GPU_Renderer* renderer, GLenum glFormat,
         {
             surface = SDL_ConvertSurface(newSurface, dst_fmt, 0);
             SDL_FreeSurface(newSurface);
-            free(blob);
+            SDL_free(blob);
         }
         else
             surface = SDL_ConvertSurface(surface, dst_fmt, 0);
@@ -2812,7 +2812,7 @@ static GPU_Image* CopyImage(GPU_Renderer* renderer, GPU_Image* image)
             result = CreateUninitializedImage(renderer, image->texture_w, image->texture_h, image->format);
             if(result == NULL)
             {
-                free(texture_data);
+                SDL_free(texture_data);
                 GPU_PushErrorCode("GPU_CopyImage", GPU_ERROR_BACKEND_ERROR, "Failed to create new image.");
                 return NULL;
             }
@@ -2848,7 +2848,7 @@ static GPU_Image* CopyImage(GPU_Renderer* renderer, GPU_Image* image)
             glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
             #endif
             
-            free(texture_data);
+            SDL_free(texture_data);
         }
         break;
         default:
@@ -3197,10 +3197,10 @@ static void FreeImage(GPU_Renderer* renderer, GPU_Image* image)
     {
         if(data->owns_handle)
             glDeleteTextures( 1, &data->handle);
-        free(data);
+        SDL_free(data);
     }
     
-    free(image);
+    SDL_free(image);
 }
 
 
@@ -3236,10 +3236,10 @@ static GPU_Target* LoadTarget(GPU_Renderer* renderer, GPU_Image* image)
     if(status != GL_FRAMEBUFFER_COMPLETE)
         return NULL;
 
-    result = (GPU_Target*)malloc(sizeof(GPU_Target));
+    result = (GPU_Target*)SDL_malloc(sizeof(GPU_Target));
     memset(result, 0, sizeof(GPU_Target));
     result->refcount = 1;
-    data = (GPU_TARGET_DATA*)malloc(sizeof(GPU_TARGET_DATA));
+    data = (GPU_TARGET_DATA*)SDL_malloc(sizeof(GPU_TARGET_DATA));
     data->refcount = 1;
     result->data = data;
     data->handle = handle;
@@ -3291,8 +3291,8 @@ static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
         if(target == renderer->current_context_target)
             renderer->current_context_target = NULL;
         
-        free(cdata->blit_buffer);
-        free(cdata->index_buffer);
+        SDL_free(cdata->blit_buffer);
+        SDL_free(cdata->index_buffer);
         
         #ifdef SDL_GPU_USE_SDL2
         if(target->context->context != 0)
@@ -3302,14 +3302,14 @@ static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
         // Remove all of the window mappings that refer to this target
         GPU_RemoveWindowMappingByTarget(target);
         
-        free(target->context->data);
-        free(target->context);
+        SDL_free(target->context->data);
+        SDL_free(target->context);
         
         // Does the renderer data need to be freed too?
         data = ((GPU_TARGET_DATA*)target->data);
         
-        free(data);
-        free(target);
+        SDL_free(data);
+        SDL_free(target);
         
         return;
     }
@@ -3329,7 +3329,7 @@ static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
     if(data->refcount > 1)
     {
         data->refcount--;
-        free(target);
+        SDL_free(target);
         return;
     }
     
@@ -3345,8 +3345,8 @@ static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
     {
         GPU_CONTEXT_DATA* cdata = (GPU_CONTEXT_DATA*)target->context->data;
         
-        free(cdata->blit_buffer);
-        free(cdata->index_buffer);
+        SDL_free(cdata->blit_buffer);
+        SDL_free(cdata->index_buffer);
     
         #ifdef SDL_GPU_USE_BUFFER_PIPELINE
         glDeleteBuffers(2, cdata->blit_VBO);
@@ -3364,13 +3364,13 @@ static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
         // Remove all of the window mappings that refer to this target
         GPU_RemoveWindowMappingByTarget(target);
         
-        free(target->context->data);
-        free(target->context);
+        SDL_free(target->context->data);
+        SDL_free(target->context);
         target->context = NULL;
     }
     
-    free(data);
-    free(target);
+    SDL_free(data);
+    SDL_free(target);
 }
 
 
@@ -5217,7 +5217,7 @@ static Uint32 CompileShader_RW(GPU_Renderer* renderer, GPU_ShaderEnum shader_typ
 {
     // Read in the shader source code
     Uint32 size = GetShaderSourceSize_RW(shader_source);
-    char* source_string = (char*)malloc(size+1);
+    char* source_string = (char*)SDL_malloc(size+1);
     int result = GetShaderSource_RW(shader_source, source_string);
 	Uint32 result2;
 	(void)renderer;
@@ -5226,12 +5226,12 @@ static Uint32 CompileShader_RW(GPU_Renderer* renderer, GPU_ShaderEnum shader_typ
     {
         GPU_PushErrorCode("GPU_CompileShader", GPU_ERROR_DATA_ERROR, "Failed to read shader source");
         snprintf(shader_message, 256, "Failed to read shader source.\n");
-        free(source_string);
+        SDL_free(source_string);
         return 0;
     }
     
     result2 = compile_shader_source(shader_type, source_string);
-    free(source_string);
+    SDL_free(source_string);
     
     return result2;
 }
@@ -6027,14 +6027,14 @@ static void SetAttributeSource(GPU_Renderer* renderer, int num_values, GPU_Attri
         // Make sure we have enough room for converted per-vertex data
         if(a->per_vertex_storage_size < needed_size)
         {
-            free(a->per_vertex_storage);
-            a->per_vertex_storage = malloc(needed_size);
+            SDL_free(a->per_vertex_storage);
+            a->per_vertex_storage = SDL_malloc(needed_size);
             a->per_vertex_storage_size = needed_size;
         }
     }
     else if(a->per_vertex_storage_size > 0)
     {
-        free(a->per_vertex_storage);
+        SDL_free(a->per_vertex_storage);
         a->per_vertex_storage = NULL;
         a->per_vertex_storage_size = 0;
     }

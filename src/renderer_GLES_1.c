@@ -27,7 +27,7 @@ void GPU_FreeRenderer_GLES_1(GPU_Renderer* renderer) {}
 
 GPU_Renderer* GPU_CreateRenderer_GLES_1(GPU_RendererID request)
 {
-    GPU_Renderer* renderer = (GPU_Renderer*)malloc(sizeof(GPU_Renderer));
+    GPU_Renderer* renderer = (GPU_Renderer*)SDL_malloc(sizeof(GPU_Renderer));
     if(renderer == NULL)
         return NULL;
 
@@ -40,7 +40,7 @@ GPU_Renderer* GPU_CreateRenderer_GLES_1(GPU_RendererID request)
     
     renderer->current_context_target = NULL;
     
-    renderer->impl = (GPU_RendererImpl*)malloc(sizeof(GPU_RendererImpl));
+    renderer->impl = (GPU_RendererImpl*)SDL_malloc(sizeof(GPU_RendererImpl));
     memset(renderer->impl, 0, sizeof(GPU_RendererImpl));
     SET_COMMON_FUNCTIONS(renderer->impl);
 
@@ -52,7 +52,7 @@ void GPU_FreeRenderer_GLES_1(GPU_Renderer* renderer)
     if(renderer == NULL)
         return;
 
-    free(renderer);
+    SDL_free(renderer);
 }
 
 #endif
