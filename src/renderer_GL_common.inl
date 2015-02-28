@@ -443,6 +443,20 @@ static Uint8 growIndexBuffer(GPU_CONTEXT_DATA* cdata, unsigned int minimum_verti
     cdata->index_buffer = new_indices;
     cdata->index_buffer_max_num_vertices = new_max_num_vertices;
     
+    #ifdef SDL_GPU_USE_BUFFER_PIPELINE
+        // Resize the IBO
+        #if !defined(SDL_GPU_NO_VAO)
+        glBindVertexArray(cdata->blit_VAO);
+        #endif
+        
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cdata->blit_IBO);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned short) * cdata->blit_buffer_max_num_vertices, NULL, GL_DYNAMIC_DRAW);
+        
+        #if !defined(SDL_GPU_NO_VAO)
+        glBindVertexArray(0);
+        #endif
+    #endif
+    
     return 1;
 }
 
@@ -822,20 +836,39 @@ static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request,
         renderer_request.minor_version = 1;
     }
     
+    // Tell SDL what we require for the GL context.
     GPU_flags = GPU_GetPreInitFlags();
-    // Tell SDL what we want.
+    
     renderer->GPU_init_flags = GPU_flags;
     if(GPU_flags & GPU_INIT_DISABLE_DOUBLE_BUFFER)
         SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 0);
     else
         SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 #ifdef SDL_GPU_USE_SDL2
+
+    // GL profile
     #ifdef SDL_GPU_USE_GLES
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
     #endif
+    // GL 3.2 and 3.3 have two profile modes
+    // ARB_compatibility brings support for this to GL 3.1, but glGetStringi() via GLEW has chicken and egg problems.
+    #if SDL_GPU_GL_MAJOR_VERSION == 3
+    if(renderer_request.minor_version >= 2)
+    {
+        if(GPU_flags & GPU_INIT_REQUEST_COMPATIBILITY_PROFILE)
+            SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
+        else
+            SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+    }
+    #else
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, 0);  // Disable for falling back to other renderers
+    #endif
+    
+    // GL version
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, renderer_request.major_version);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, renderer_request.minor_version);
 #else
+    // vsync for SDL 1.2
     if(!(GPU_flags & GPU_INIT_DISABLE_VSYNC))
         SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, 1);
 #endif
@@ -1010,11 +1043,8 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     if(created || target->context->context == NULL)
     {
         target->context->context = SDL_GL_CreateContext(window);
-        renderer->current_context_target = target;
         GPU_AddWindowMapping(target);
     }
-    else
-        renderer->impl->MakeCurrent(renderer, target, target->context->windowID);
     
     #else
     
@@ -1039,13 +1069,9 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     target->context->stored_window_w = target->context->window_w;
     target->context->stored_window_h = target->context->window_h;
     
-    renderer->impl->MakeCurrent(renderer, target, target->context->windowID);
-    
     #endif
-    
-    framebuffer_handle = 0;
-    glGetIntegerv(GL_FRAMEBUFFER_BINDING, &framebuffer_handle);
-    ((GPU_TARGET_DATA*)target->data)->handle = framebuffer_handle;
+        
+    ((GPU_TARGET_DATA*)target->data)->handle = 0;
     ((GPU_TARGET_DATA*)target->data)->format = GL_RGBA;
 
     target->renderer = renderer;
@@ -1081,6 +1107,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     cdata->last_camera = target->camera;  // Redundant due to applyTargetCamera(), below
     cdata->last_camera_inverted = 0;
 
+    err = glGetError();
     #ifdef SDL_GPU_USE_OPENGL
     glewExperimental = GL_TRUE;  // Force GLEW to get exported functions instead of checking via extension string
     err = glewInit();
@@ -1092,6 +1119,11 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     }
     #endif
     
+    renderer->impl->MakeCurrent(renderer, target, target->context->windowID);
+        
+    framebuffer_handle = 0;
+    glGetIntegerv(GL_FRAMEBUFFER_BINDING, &framebuffer_handle);
+    ((GPU_TARGET_DATA*)target->data)->handle = framebuffer_handle;
     
     // Update our renderer info from the current GL context.
     #ifdef SDL_GPU_USE_OPENGL
@@ -1195,6 +1227,14 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     renderer->impl->SetLineThickness(renderer, 1.0f);
     
     
+    #ifdef SDL_GPU_USE_BUFFER_PIPELINE
+        // Create vertex array container and buffer
+        #if !defined(SDL_GPU_NO_VAO)
+        glGenVertexArrays(1, &cdata->blit_VAO);
+        glBindVertexArray(cdata->blit_VAO);
+        #endif
+    #endif
+    
     target->context->default_textured_shader_program = 0;
     target->context->default_untextured_shader_program = 0;
     target->context->current_shader_program = 0;
@@ -1205,22 +1245,36 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     if(IsFeatureEnabled(renderer, GPU_FEATURE_BASIC_SHADERS))
     {
         Uint32 v, f, p;
+        const char* textured_vertex_shader_source = GPU_DEFAULT_TEXTURED_VERTEX_SHADER_SOURCE;
+        const char* textured_fragment_shader_source = GPU_DEFAULT_TEXTURED_FRAGMENT_SHADER_SOURCE;
+        const char* untextured_vertex_shader_source = GPU_DEFAULT_UNTEXTURED_VERTEX_SHADER_SOURCE;
+        const char* untextured_fragment_shader_source = GPU_DEFAULT_UNTEXTURED_FRAGMENT_SHADER_SOURCE;
+        
+        #ifdef SDL_GPU_ENABLE_CORE_SHADERS
+        if(renderer->id.major_version == 3 && renderer->id.minor_version >= 2)
+        {
+            textured_vertex_shader_source = GPU_DEFAULT_TEXTURED_VERTEX_SHADER_SOURCE_CORE;
+            textured_fragment_shader_source = GPU_DEFAULT_TEXTURED_FRAGMENT_SHADER_SOURCE_CORE;
+            untextured_vertex_shader_source = GPU_DEFAULT_UNTEXTURED_VERTEX_SHADER_SOURCE_CORE;
+            untextured_fragment_shader_source = GPU_DEFAULT_UNTEXTURED_FRAGMENT_SHADER_SOURCE_CORE;
+        }
+        #endif
         
         // Textured shader
-        v = renderer->impl->CompileShader(renderer, GPU_VERTEX_SHADER, GPU_DEFAULT_TEXTURED_VERTEX_SHADER_SOURCE);
+        v = renderer->impl->CompileShader(renderer, GPU_VERTEX_SHADER, textured_vertex_shader_source);
         
         if(!v)
         {
-            GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Failed to load default textured vertex shader.");
+            GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Failed to load default textured vertex shader: %s.", GPU_GetShaderMessage());
             target->context->failed = 1;
             return NULL;
         }
         
-        f = renderer->impl->CompileShader(renderer, GPU_FRAGMENT_SHADER, GPU_DEFAULT_TEXTURED_FRAGMENT_SHADER_SOURCE);
+        f = renderer->impl->CompileShader(renderer, GPU_FRAGMENT_SHADER, textured_fragment_shader_source);
         
         if(!f)
         {
-            GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Failed to load default textured fragment shader.");
+            GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Failed to load default textured fragment shader: %s.", GPU_GetShaderMessage());
             target->context->failed = 1;
             return NULL;
         }
@@ -1232,7 +1286,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
         
         if(!p)
         {
-            GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Failed to link default textured shader program.");
+            GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Failed to link default textured shader program: %s.", GPU_GetShaderMessage());
             target->context->failed = 1;
             return NULL;
         }
@@ -1244,20 +1298,20 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
         
         
         // Untextured shader
-        v = renderer->impl->CompileShader(renderer, GPU_VERTEX_SHADER, GPU_DEFAULT_UNTEXTURED_VERTEX_SHADER_SOURCE);
+        v = renderer->impl->CompileShader(renderer, GPU_VERTEX_SHADER, untextured_vertex_shader_source);
         
         if(!v)
         {
-            GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Failed to load default untextured vertex shader.");
+            GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Failed to load default untextured vertex shader: %s.", GPU_GetShaderMessage());
             target->context->failed = 1;
             return NULL;
         }
         
-        f = renderer->impl->CompileShader(renderer, GPU_FRAGMENT_SHADER, GPU_DEFAULT_UNTEXTURED_FRAGMENT_SHADER_SOURCE);
+        f = renderer->impl->CompileShader(renderer, GPU_FRAGMENT_SHADER, untextured_fragment_shader_source);
         
         if(!f)
         {
-            GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Failed to load default untextured fragment shader.");
+            GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Failed to load default untextured fragment shader: %s.", GPU_GetShaderMessage());
             target->context->failed = 1;
             return NULL;
         }
@@ -1269,7 +1323,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
         
         if(!p)
         {
-            GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Failed to link default untextured shader program.");
+            GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Failed to link default untextured shader program: %s.", GPU_GetShaderMessage());
             target->context->failed = 1;
             return NULL;
         }
@@ -1291,10 +1345,6 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     
     #ifdef SDL_GPU_USE_BUFFER_PIPELINE
         // Create vertex array container and buffer
-        #if !defined(SDL_GPU_NO_VAO)
-        glGenVertexArrays(1, &cdata->blit_VAO);
-        glBindVertexArray(cdata->blit_VAO);
-        #endif
         
         glGenBuffers(2, cdata->blit_VBO);
         // Create space on the GPU
@@ -1304,13 +1354,16 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
         glBufferData(GL_ARRAY_BUFFER, GPU_BLIT_BUFFER_STRIDE * cdata->blit_buffer_max_num_vertices, NULL, GL_STREAM_DRAW);
         cdata->blit_VBO_flop = 0;
         
+        glGenBuffers(1, &cdata->blit_IBO);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cdata->blit_IBO);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned short) * cdata->blit_buffer_max_num_vertices, NULL, GL_DYNAMIC_DRAW);
+        
         glGenBuffers(16, cdata->attribute_VBO);
         
         // Init 16 attributes to 0 / NULL.
         memset(cdata->shader_attributes, 0, 16*sizeof(GPU_AttributeSource));
     #endif
     #endif
-    
     
     return target;
 }
@@ -3350,6 +3403,7 @@ static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
     
         #ifdef SDL_GPU_USE_BUFFER_PIPELINE
         glDeleteBuffers(2, cdata->blit_VBO);
+        glDeleteBuffers(1, &cdata->blit_IBO);
         glDeleteBuffers(16, cdata->attribute_VBO);
             #if !defined(SDL_GPU_NO_VAO)
             glDeleteVertexArrays(1, &cdata->blit_VAO);
@@ -4083,21 +4137,28 @@ static int get_lowest_attribute_num_values(GPU_CONTEXT_DATA* cdata, int cap)
     return lowest;
 }
 
-static_inline void submit_buffer_data(int bytes, float* values)
+static_inline void submit_buffer_data(int bytes, float* values, int bytes_indices, unsigned short* indices)
 {
     #ifdef SDL_GPU_USE_BUFFER_PIPELINE
         #ifdef SDL_GPU_USE_BUFFER_MAPPING
         float* data = (float*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-        if(data == NULL)
-            return;
-    
-        memcpy(data, values, bytes);
-    
-        glUnmapBuffer(GL_ARRAY_BUFFER);
+        unsigned short* data_i = (unsigned short*)glMapBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_WRITE_ONLY);
+        if(data != NULL)
+        {
+            memcpy(data, values, bytes);
+            glUnmapBuffer(GL_ARRAY_BUFFER);
+        }
+        if(data_i != NULL)
+        {
+            memcpy(data_i, indices, bytes_indices);
+            glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
+        }
         #elif defined(SDL_GPU_USE_BUFFER_RESET)
         glBufferData(GL_ARRAY_BUFFER, bytes, values, GL_STREAM_DRAW);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, bytes_indices, indices, GL_DYNAMIC_DRAW);
         #else
         glBufferSubData(GL_ARRAY_BUFFER, 0, bytes, values);
+        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, bytes_indices, indices);
         #endif
     #endif
 }
@@ -4331,6 +4392,11 @@ static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* 
             use_texcoords = 0;
         if(cdata->current_shader_block.color_loc < 0)
             use_colors = 0;
+
+        // Update the vertex array object's buffers
+        #if !defined(SDL_GPU_NO_VAO)
+        glBindVertexArray(cdata->blit_VAO);
+        #endif
         
         // Upload our modelviewprojection matrix
         if(cdata->current_shader_block.modelViewProjection_loc >= 0)
@@ -4339,20 +4405,16 @@ static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* 
             GPU_GetModelViewProjection(mvp);
             glUniformMatrix4fv(cdata->current_shader_block.modelViewProjection_loc, 1, 0, mvp);
         }
-
-        // Update the vertex array object's buffers
-        #if !defined(SDL_GPU_NO_VAO)
-        glBindVertexArray(cdata->blit_VAO);
-        #endif
         
         if(values != NULL)
         {
             // Upload blit buffer to a single buffer object
             glBindBuffer(GL_ARRAY_BUFFER, cdata->blit_VBO[cdata->blit_VBO_flop]);
             cdata->blit_VBO_flop = !cdata->blit_VBO_flop;
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cdata->blit_IBO);
             
             // Copy the whole blit buffer to the GPU
-            submit_buffer_data(stride * num_vertices, values);  // Fills GPU buffer with data.
+            submit_buffer_data(stride * num_vertices, values, sizeof(unsigned short)*num_indices, indices);  // Fills GPU buffer with data.
             
             // Specify the formatting of the blit buffer
             if(use_vertices)
@@ -4377,7 +4439,7 @@ static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* 
         if(indices == NULL)
             glDrawArrays(GL_TRIANGLES, 0, num_indices);
         else
-            glDrawElements(GL_TRIANGLES, num_indices, GL_UNSIGNED_SHORT, indices);
+            glDrawElements(GL_TRIANGLES, num_indices, GL_UNSIGNED_SHORT, (void*)0);
         
         // Disable the vertex arrays again
         if(use_vertices)
@@ -4689,6 +4751,11 @@ static void DoPartialFlush(GPU_Renderer* renderer, GPU_CONTEXT_DATA* cdata, unsi
 
 #ifdef SDL_GPU_USE_BUFFER_PIPELINE
         {
+            // Update the vertex array object's buffers
+            #if !defined(SDL_GPU_NO_VAO)
+            glBindVertexArray(cdata->blit_VAO);
+            #endif
+            
             // Upload our modelviewprojection matrix
             if(cdata->current_shader_block.modelViewProjection_loc >= 0)
             {
@@ -4696,18 +4763,14 @@ static void DoPartialFlush(GPU_Renderer* renderer, GPU_CONTEXT_DATA* cdata, unsi
                 GPU_GetModelViewProjection(mvp);
                 glUniformMatrix4fv(cdata->current_shader_block.modelViewProjection_loc, 1, 0, mvp);
             }
-        
-            // Update the vertex array object's buffers
-            #if !defined(SDL_GPU_NO_VAO)
-            glBindVertexArray(cdata->blit_VAO);
-            #endif
             
             // Upload blit buffer to a single buffer object
             glBindBuffer(GL_ARRAY_BUFFER, cdata->blit_VBO[cdata->blit_VBO_flop]);
             cdata->blit_VBO_flop = !cdata->blit_VBO_flop;
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cdata->blit_IBO);
             
             // Copy the whole blit buffer to the GPU
-            submit_buffer_data(GPU_BLIT_BUFFER_STRIDE * num_vertices, blit_buffer);  // Fills GPU buffer with data.
+            submit_buffer_data(GPU_BLIT_BUFFER_STRIDE * num_vertices, blit_buffer, sizeof(unsigned short)*num_indices, index_buffer);  // Fills GPU buffer with data.
             
             // Specify the formatting of the blit buffer
             if(cdata->current_shader_block.position_loc >= 0)
@@ -4728,7 +4791,7 @@ static void DoPartialFlush(GPU_Renderer* renderer, GPU_CONTEXT_DATA* cdata, unsi
             
             upload_attribute_data(cdata, num_vertices);
             
-            glDrawElements(cdata->last_shape, num_indices, GL_UNSIGNED_SHORT, index_buffer);
+            glDrawElements(cdata->last_shape, num_indices, GL_UNSIGNED_SHORT, (void*)0);
             
             // Disable the vertex arrays again
             if(cdata->current_shader_block.position_loc >= 0)
@@ -4790,6 +4853,11 @@ static void DoUntexturedFlush(GPU_Renderer* renderer, GPU_CONTEXT_DATA* cdata, u
 
 #ifdef SDL_GPU_USE_BUFFER_PIPELINE
     {
+        // Update the vertex array object's buffers
+        #if !defined(SDL_GPU_NO_VAO)
+        glBindVertexArray(cdata->blit_VAO);
+        #endif
+        
         // Upload our modelviewprojection matrix
         if(cdata->current_shader_block.modelViewProjection_loc >= 0)
         {
@@ -4797,18 +4865,14 @@ static void DoUntexturedFlush(GPU_Renderer* renderer, GPU_CONTEXT_DATA* cdata, u
             GPU_GetModelViewProjection(mvp);
             glUniformMatrix4fv(cdata->current_shader_block.modelViewProjection_loc, 1, 0, mvp);
         }
-    
-        // Update the vertex array object's buffers
-        #if !defined(SDL_GPU_NO_VAO)
-        glBindVertexArray(cdata->blit_VAO);
-        #endif
         
         // Upload blit buffer to a single buffer object
         glBindBuffer(GL_ARRAY_BUFFER, cdata->blit_VBO[cdata->blit_VBO_flop]);
         cdata->blit_VBO_flop = !cdata->blit_VBO_flop;
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cdata->blit_IBO);
         
         // Copy the whole blit buffer to the GPU
-        submit_buffer_data(GPU_BLIT_BUFFER_STRIDE * num_vertices, blit_buffer);  // Fills GPU buffer with data.
+        submit_buffer_data(GPU_BLIT_BUFFER_STRIDE * num_vertices, blit_buffer, sizeof(unsigned short)*num_indices, index_buffer);  // Fills GPU buffer with data.
         
         // Specify the formatting of the blit buffer
         if(cdata->current_shader_block.position_loc >= 0)
@@ -4824,7 +4888,7 @@ static void DoUntexturedFlush(GPU_Renderer* renderer, GPU_CONTEXT_DATA* cdata, u
         
         upload_attribute_data(cdata, num_vertices);
         
-        glDrawElements(cdata->last_shape, num_indices, GL_UNSIGNED_SHORT, index_buffer);
+        glDrawElements(cdata->last_shape, num_indices, GL_UNSIGNED_SHORT, (void*)0);
         
         // Disable the vertex arrays again
         if(cdata->current_shader_block.position_loc >= 0)

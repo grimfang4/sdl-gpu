@@ -417,6 +417,7 @@ static const GPU_InitFlagEnum GPU_INIT_ENABLE_VSYNC = 0x1;
 static const GPU_InitFlagEnum GPU_INIT_DISABLE_VSYNC = 0x2;
 static const GPU_InitFlagEnum GPU_INIT_DISABLE_DOUBLE_BUFFER = 0x4;
 static const GPU_InitFlagEnum GPU_INIT_DISABLE_AUTO_VIRTUAL_RESOLUTION = 0x8;
+static const GPU_InitFlagEnum GPU_INIT_REQUEST_COMPATIBILITY_PROFILE = 0x10;
 
 #define GPU_DEFAULT_INIT_FLAGS 0
 

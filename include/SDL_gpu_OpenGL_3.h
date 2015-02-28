@@ -31,7 +31,7 @@
 
 
 #define GPU_DEFAULT_TEXTURED_VERTEX_SHADER_SOURCE \
-"#version 130\n\
+"#version 150\n\
 \
 in vec2 gpu_Vertex;\n\
 in vec2 gpu_TexCoord;\n\
@@ -50,7 +50,7 @@ void main(void)\n\
 
 // Tier 3 uses shader attributes to send position, texcoord, and color data for each vertex.
 #define GPU_DEFAULT_UNTEXTURED_VERTEX_SHADER_SOURCE \
-"#version 130\n\
+"#version 150\n\
 \
 in vec2 gpu_Vertex;\n\
 in vec4 gpu_Color;\n\
@@ -89,6 +89,72 @@ void main(void)\n\
 }"
 
 
+
+
+// OpenGL 3.2 and 3.3 need newer shaders in case a core profile is used
+
+#define GPU_DEFAULT_TEXTURED_VERTEX_SHADER_SOURCE_CORE \
+"#version 150\n\
+\
+in vec2 gpu_Vertex;\n\
+in vec2 gpu_TexCoord;\n\
+in vec4 gpu_Color;\n\
+uniform mat4 gpu_ModelViewProjectionMatrix;\n\
+\
+out vec4 color;\n\
+out vec2 texCoord;\n\
+\
+void main(void)\n\
+{\n\
+	color = gpu_Color;\n\
+	texCoord = vec2(gpu_TexCoord);\n\
+	gl_Position = gpu_ModelViewProjectionMatrix * vec4(gpu_Vertex, 0.0, 1.0);\n\
+}"
+
+#define GPU_DEFAULT_UNTEXTURED_VERTEX_SHADER_SOURCE_CORE \
+"#version 150\n\
+\
+in vec2 gpu_Vertex;\n\
+in vec4 gpu_Color;\n\
+uniform mat4 gpu_ModelViewProjectionMatrix;\n\
+\
+out vec4 color;\n\
+\
+void main(void)\n\
+{\n\
+	color = gpu_Color;\n\
+	gl_Position = gpu_ModelViewProjectionMatrix * vec4(gpu_Vertex, 0.0, 1.0);\n\
+}"
+
+
+#define GPU_DEFAULT_TEXTURED_FRAGMENT_SHADER_SOURCE_CORE \
+"#version 150\n\
+\
+in vec4 color;\n\
+in vec2 texCoord;\n\
+\
+uniform sampler2D tex;\n\
+\
+out vec4 fragColor;\n\
+\
+void main(void)\n\
+{\n\
+    fragColor = texture(tex, texCoord) * color;\n\
+}"
+
+#define GPU_DEFAULT_UNTEXTURED_FRAGMENT_SHADER_SOURCE_CORE \
+"#version 150\n\
+\
+in vec4 color;\n\
+\
+out vec4 fragColor;\n\
+\
+void main(void)\n\
+{\n\
+    fragColor = color;\n\
+}"
+
+
 typedef struct ContextData_OpenGL_3
 {
 	SDL_Color last_color;
@@ -112,6 +178,7 @@ typedef struct ContextData_OpenGL_3
     // Tier 3 rendering
     unsigned int blit_VAO;
     unsigned int blit_VBO[2];  // For double-buffering
+    unsigned int blit_IBO;
     Uint8 blit_VBO_flop;
     GPU_ShaderBlock shader_block[2];
     GPU_ShaderBlock current_shader_block;

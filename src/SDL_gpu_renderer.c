@@ -177,15 +177,22 @@ void gpu_register_built_in_renderers(void)
         #endif
 	
         #ifndef SDL_GPU_DISABLE_OPENGL_2
-        GPU_RegisterRenderer(GPU_MakeRendererID("OpenGL 2", GPU_RENDERER_OPENGL_2, 2, 0),
-                             &GPU_CreateRenderer_OpenGL_2,
-                             &GPU_FreeRenderer_OpenGL_2);
+            GPU_RegisterRenderer(GPU_MakeRendererID("OpenGL 2", GPU_RENDERER_OPENGL_2, 2, 0),
+                                 &GPU_CreateRenderer_OpenGL_2,
+                                 &GPU_FreeRenderer_OpenGL_2);
         #endif
 	
         #ifndef SDL_GPU_DISABLE_OPENGL_3
-        GPU_RegisterRenderer(GPU_MakeRendererID("OpenGL 3", GPU_RENDERER_OPENGL_3, 3, 0),
-                             &GPU_CreateRenderer_OpenGL_3,
-                             &GPU_FreeRenderer_OpenGL_3);
+            #ifdef __MACOSX__
+            // Depending on OS X version, it might only support core GL 3.3 or 3.2
+            GPU_RegisterRenderer(GPU_MakeRendererID("OpenGL 3", GPU_RENDERER_OPENGL_3, 3, 2),
+                                 &GPU_CreateRenderer_OpenGL_3,
+                                 &GPU_FreeRenderer_OpenGL_3);
+            #else
+            GPU_RegisterRenderer(GPU_MakeRendererID("OpenGL 3", GPU_RENDERER_OPENGL_3, 3, 0),
+                                 &GPU_CreateRenderer_OpenGL_3,
+                                 &GPU_FreeRenderer_OpenGL_3);
+            #endif
         #endif
     #endif
 	
@@ -280,7 +287,15 @@ void GPU_GetDefaultRendererOrder(int* order_size, GPU_RendererID* order)
         default_order[count++] = GPU_MakeRendererID("OpenGLES 2", GPU_RENDERER_GLES_2, 2, 0);
         default_order[count++] = GPU_MakeRendererID("OpenGLES 1", GPU_RENDERER_GLES_1, 1, 1);
     #else
+        #ifdef __MACOSX__
+        // My understanding of OS X OpenGL support:
+        // OS X 10.9: GL 2.1, 3.3, 4.1
+        // OS X 10.7: GL 2.1, 3.2
+        // OS X 10.6: GL 1.4, 2.1
+        default_order[count++] = GPU_MakeRendererID("OpenGL 3", GPU_RENDERER_OPENGL_3, 3, 2);
+        #else
         default_order[count++] = GPU_MakeRendererID("OpenGL 3", GPU_RENDERER_OPENGL_3, 3, 0);
+        #endif
         default_order[count++] = GPU_MakeRendererID("OpenGL 2", GPU_RENDERER_OPENGL_2, 2, 0);
         default_order[count++] = GPU_MakeRendererID("OpenGL 1", GPU_RENDERER_OPENGL_1, 1, 1);
     #endif
