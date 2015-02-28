@@ -103,7 +103,9 @@ static float SetLineThickness(GPU_Renderer* renderer, float thickness)
         renderer->impl->FlushBlitBuffer(renderer);
     
 	renderer->current_context_target->context->line_thickness = thickness;
+	#ifndef SDL_GPU_SKIP_LINE_WIDTH
 	glLineWidth(thickness);
+	#endif
 	return old;
 }
 
