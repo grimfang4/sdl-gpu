@@ -119,7 +119,8 @@ else (SDL_gpu_DISABLE_OPENGL)
 			link_libraries (${GLEW_LIBRARIES})
 		else(GLEW_FOUND)
 			SET(SDL_gpu_SRCS ${SDL_gpu_SRCS} externals/glew/glew.c)
-			SET(SDL_gpu_HDRS ${SDL_gpu_HDRS} externals/glew/glew.h externals/glew/glxew.h externals/glew/wglew.h)
+			SET(SDL_gpu_HDRS ${SDL_gpu_HDRS} externals/glew/GL/glew.h externals/glew/GL/glxew.h externals/glew/GL/wglew.h)
+			add_definitions("-DGLEW_STATIC")
 		endif(GLEW_FOUND)
 	endif(NOT SDL_gpu_DISABLE_OPENGL)
 
@@ -168,6 +169,7 @@ include_directories(src)
 
 if(NOT GLEW_FOUND)
   include_directories(src/externals/glew)
+  include_directories(src/externals/glew/GL)
 endif(NOT GLEW_FOUND)
 
 if(NOT STBI_FOUND)
