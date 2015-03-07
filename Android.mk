@@ -9,12 +9,12 @@ STB_IMAGE_DIR := $(SDL_GPU_DIR)/src/externals/stb_image
 
 LOCAL_CFLAGS := -I$(LOCAL_PATH)/../SDL/include -I$(LOCAL_PATH)/$(SDL_GPU_DIR)/include -I$(LOCAL_PATH)/$(STB_IMAGE_DIR)
 
-LOCAL_SRC_FILES := $(SDL_GPU_DIR)/SDL_gpu.c \
-				   $(SDL_GPU_DIR)/SDL_gpu_matrix.c \
-				   $(SDL_GPU_DIR)/SDL_gpu_renderer.c \
-				   $(SDL_GPU_DIR)/SDL_gpu_shapes.c \
-				   $(SDL_GPU_DIR)/renderer_GLES_1.c \
-				   $(SDL_GPU_DIR)/renderer_GLES_2.c \
+LOCAL_SRC_FILES := $(SDL_GPU_DIR)/src/SDL_gpu.c \
+				   $(SDL_GPU_DIR)/src/SDL_gpu_matrix.c \
+				   $(SDL_GPU_DIR)/src/SDL_gpu_renderer.c \
+				   $(SDL_GPU_DIR)/src/SDL_gpu_shapes.c \
+				   $(SDL_GPU_DIR)/src/renderer_GLES_1.c \
+				   $(SDL_GPU_DIR)/src/renderer_GLES_2.c \
 				   $(STB_IMAGE_DIR)/stb_image.c \
 				   $(STB_IMAGE_DIR)/stb_image_write.c
 
