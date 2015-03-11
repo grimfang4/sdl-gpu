@@ -399,6 +399,7 @@ GPU_Target* GPU_Init(Uint16 w, Uint16 h, GPU_WindowFlagEnum SDL_flags)
             return screen;
     }
     
+    GPU_PushErrorCode("GPU_Init", GPU_ERROR_BACKEND_ERROR, "No renderer out of %d was able to initialize properly", renderer_order_size);
     return NULL;
 }
 
@@ -428,6 +429,7 @@ GPU_Target* GPU_InitRendererByID(GPU_RendererID renderer_request, Uint16 w, Uint
 	screen = renderer->impl->Init(renderer, renderer_request, w, h, SDL_flags);
 	if(screen == NULL)
     {
+        GPU_PushErrorCode("GPU_InitRendererByID", GPU_ERROR_BACKEND_ERROR, "Renderer %s failed to initialize properly", renderer->id.name);
         // Init failed, destroy the renderer...
         // Erase the window mappings
         _gpu_num_window_mappings = 0;

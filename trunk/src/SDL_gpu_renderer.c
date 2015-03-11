@@ -377,6 +377,7 @@ GPU_Renderer* gpu_create_and_add_renderer(GPU_RendererID id)
 		}
 	}
 	
+    GPU_PushErrorCode(__func__, GPU_ERROR_BACKEND_ERROR, "Couldn't create a new renderer.  Too many active renderers for GPU_MAX_ACTIVE_RENDERERS (%d).", GPU_MAX_ACTIVE_RENDERERS);
 	return NULL;
 }
 
