@@ -847,6 +847,7 @@ static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request,
 #ifdef SDL_GPU_USE_SDL2
 
     // GL profile
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, 0);  // Disable in case this is a fallback renderer
     #ifdef SDL_GPU_USE_GLES
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
     #endif
@@ -860,8 +861,6 @@ static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request,
         else
             SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
     }
-    #else
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, 0);  // Disable for falling back to other renderers
     #endif
     
     // GL version
