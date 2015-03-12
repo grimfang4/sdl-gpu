@@ -3979,66 +3979,6 @@ static void BlitTransformX(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* s
     cdata->blit_buffer_num_vertices += GPU_BLIT_BUFFER_VERTICES_PER_SPRITE;
 }
 
-static void BlitTransformMatrix(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float* matrix3x3)
-{
-    if(image == NULL)
-    {
-        GPU_PushErrorCode("GPU_BlitTransformMatrix", GPU_ERROR_NULL_ARGUMENT, "image");
-        return;
-    }
-    if(target == NULL)
-    {
-        GPU_PushErrorCode("GPU_BlitTransformMatrix", GPU_ERROR_NULL_ARGUMENT, "target");
-        return;
-    }
-    if(renderer != image->renderer || renderer != target->renderer)
-    {
-        GPU_PushErrorCode("GPU_BlitTransformMatrix", GPU_ERROR_USER_ERROR, "Mismatched renderer");
-        return;
-    }
-    
-    // TODO: See below.
-    renderer->impl->FlushBlitBuffer(renderer);
-    
-    GPU_PushMatrix();
-
-    // column-major 3x3 to column-major 4x4 (and scooting the 2D translations to the homogeneous column)
-    // FIXME: Should index 8 replace the homogeneous 1?  This looks like it adjusts the z-value...
-	{
-		float matrix[16];
-		matrix[0] = matrix3x3[0];
-		matrix[1] = matrix3x3[1];
-		matrix[2] = matrix3x3[2];
-		matrix[3] = 0;
-		
-		matrix[4] = matrix3x3[3];
-		matrix[5] = matrix3x3[4];
-		matrix[6] = matrix3x3[5];
-		matrix[7] = 0;
-		
-		matrix[8] = 0;
-		matrix[9] = 0;
-		matrix[10] = matrix3x3[8];
-		matrix[11] = 0;
-
-		matrix[12] = matrix3x3[6];
-		matrix[13] = matrix3x3[7];
-		matrix[14] = 0;
-		matrix[15] = 1;
-		
-		GPU_Translate(x, y, 0);
-		GPU_MultMatrix(matrix);
-	}
-
-    renderer->impl->Blit(renderer, image, src_rect, target, 0, 0);
-    
-    // Popping the matrix will revert the transform before it can be used, so we have to flush for now.
-    // TODO: Do the matrix math myself on the vertex coords.
-    renderer->impl->FlushBlitBuffer(renderer);
-
-    GPU_PopMatrix();
-}
-
 
 
 #ifdef SDL_GPU_USE_BUFFER_PIPELINE
@@ -6181,7 +6121,6 @@ static void SetAttributeSource(GPU_Renderer* renderer, int num_values, GPU_Attri
     impl->BlitScale = &BlitScale; \
     impl->BlitTransform = &BlitTransform; \
     impl->BlitTransformX = &BlitTransformX; \
-    impl->BlitTransformMatrix = &BlitTransformMatrix; \
     impl->TriangleBatch = &TriangleBatch; \
  \
     impl->GenerateMipmaps = &GenerateMipmaps; \

@@ -57,9 +57,6 @@ target_link_libraries (virtual-resolution-test ${TEST_LIBS})
 add_executable(transformx-test transformx/main.c)
 target_link_libraries (transformx-test ${TEST_LIBS})
 
-add_executable(transform-matrix-test transform-matrix/main.c)
-target_link_libraries (transform-matrix-test ${TEST_LIBS})
-
 add_executable(copy-test copy/main.c)
 target_link_libraries (copy-test ${TEST_LIBS})
 

@@ -1,5 +1,6 @@
 #include "common.h"
 #include <string.h>
+#include <stdlib.h>
 
 void printRenderers(void)
 {
