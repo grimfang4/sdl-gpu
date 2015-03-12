@@ -592,6 +592,9 @@ struct GPU_Renderer
 	/*! Current display target */
 	GPU_Target* current_context_target;
 	
+	/*! 0 for inverted, 1 for mathematical */
+	Uint8 coordinate_mode;
+	
 	struct GPU_RendererImpl* impl;
 };
 
@@ -779,6 +782,13 @@ DECLSPEC void SDLCALL GPU_FreeRenderer(GPU_Renderer* renderer);
 /*! Reapplies the renderer state to the backend API (e.g. OpenGL, Direct3D).  Use this if you want SDL_gpu to be able to render after you've used direct backend calls. */
 DECLSPEC void SDLCALL GPU_ResetRendererState(void);
 
+/*! Sets the coordinate mode for this renderer.  Target and image coordinates will be either "inverted" (0,0 is the upper left corner, y increases downward) or "mathematical" (0,0 is the bottom-left corner, y increases upward).
+ * The default is inverted (0), as this is traditional for 2D graphics.
+ * \param inverted 0 is for inverted coordinates, 1 is for mathematical coordinates */
+DECLSPEC void SDLCALL GPU_SetCoordinateMode(Uint8 use_math_coords);
+
+DECLSPEC Uint8 SDLCALL GPU_GetCoordinateMode(void);
+
 // End of RendererControls
 /*! @} */
 
@@ -879,6 +889,9 @@ DECLSPEC SDL_Color SDLCALL GPU_MakeColor(Uint8 r, Uint8 g, Uint8 b, Uint8 a);
 
 /*! Sets the given target's viewport. */
 DECLSPEC void SDLCALL GPU_SetViewport(GPU_Target* target, GPU_Rect viewport);
+
+/*! Resets the given target's viewport to the entire target area. */
+DECLSPEC void SDLCALL GPU_UnsetViewport(GPU_Target* target);
 
 /*! \return A GPU_Camera with position (0, 0, -10), angle of 0, and zoom of 1. */
 DECLSPEC GPU_Camera SDLCALL GPU_GetDefaultCamera(void);
