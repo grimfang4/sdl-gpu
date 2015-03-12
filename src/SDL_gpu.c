@@ -1209,25 +1209,6 @@ void GPU_BlitTransformX(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target
 	_gpu_current_renderer->impl->BlitTransformX(_gpu_current_renderer, image, src_rect, target, x, y, pivot_x, pivot_y, angle, scaleX, scaleY);
 }
 
-void GPU_BlitTransformMatrix(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float* matrix3x3)
-{
-    if(!CHECK_RENDERER)
-        RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL renderer");
-    MAKE_CURRENT_IF_NONE(target);
-    if(!CHECK_CONTEXT)
-        RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL context");
-    
-	if(image == NULL)
-        RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT, "image");
-	if(target == NULL)
-        RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT, "target");
-    
-    if(matrix3x3 == NULL)
-		return;
-	
-	_gpu_current_renderer->impl->BlitTransformMatrix(_gpu_current_renderer, image, src_rect, target, x, y, matrix3x3);
-}
-
 void GPU_TriangleBatch(GPU_Image* image, GPU_Target* target, unsigned short num_vertices, float* values, unsigned int num_indices, unsigned short* indices, GPU_BatchFlagEnum flags)
 {
     if(!CHECK_RENDERER)

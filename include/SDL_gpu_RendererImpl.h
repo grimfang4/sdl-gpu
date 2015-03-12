@@ -115,9 +115,6 @@ typedef struct GPU_RendererImpl
 	/*! \see GPU_BlitTransformX() */
 	void (SDLCALL *BlitTransformX)(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float pivot_x, float pivot_y, float degrees, float scaleX, float scaleY);
 	
-	/*! \see GPU_BlitTransformMatrix() */
-	void (SDLCALL *BlitTransformMatrix)(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float* matrix3x3);
-	
 	/*! \see GPU_TriangleBatch() */
 	void (SDLCALL *TriangleBatch)(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* target, unsigned short num_vertices, float* values, unsigned int num_indices, unsigned short* indices, GPU_BatchFlagEnum flags);
 	

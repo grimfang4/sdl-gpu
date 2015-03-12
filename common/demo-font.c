@@ -1,4 +1,6 @@
 #include "demo-font.h"
+#include <stdlib.h>
+#include <string.h>
 
 static Uint32 _GetPixel(SDL_Surface *Surface, int x, int y)
 {
