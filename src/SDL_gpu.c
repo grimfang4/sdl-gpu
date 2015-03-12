@@ -78,6 +78,22 @@ void GPU_ResetRendererState(void)
 	_gpu_current_renderer->impl->ResetRendererState(_gpu_current_renderer);
 }
 
+void GPU_SetCoordinateMode(Uint8 use_math_coords)
+{
+	if(_gpu_current_renderer == NULL)
+		return;
+	
+	_gpu_current_renderer->coordinate_mode = use_math_coords;
+}
+
+Uint8 GPU_GetCoordinateMode(void)
+{
+	if(_gpu_current_renderer == NULL)
+		return 0;
+	
+	return _gpu_current_renderer->coordinate_mode;
+}
+
 GPU_Renderer* GPU_GetCurrentRenderer(void)
 {
 	return _gpu_current_renderer;
@@ -770,6 +786,12 @@ void GPU_SetViewport(GPU_Target* target, GPU_Rect viewport)
 {
     if(target != NULL)
         target->viewport = viewport;
+}
+
+void GPU_UnsetViewport(GPU_Target* target)
+{
+    if(target != NULL)
+        target->viewport = GPU_MakeRect(0, 0, target->w, target->h);
 }
 
 GPU_Camera GPU_GetDefaultCamera(void)

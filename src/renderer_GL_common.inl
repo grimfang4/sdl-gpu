@@ -483,7 +483,11 @@ static void setClipRect(GPU_Renderer* renderer, GPU_Target* target)
         glEnable(GL_SCISSOR_TEST);
         if(target->context != NULL)
         {
-            int y = context_target->h - (target->clip_rect.y + target->clip_rect.h);
+            int y;
+            if(renderer->coordinate_mode == 0)
+                y = context_target->h - (target->clip_rect.y + target->clip_rect.h);
+            else
+                y = target->clip_rect.y;
             float xFactor = ((float)context_target->context->window_w)/context_target->w;
             float yFactor = ((float)context_target->context->window_h)/context_target->h;
             glScissor(target->clip_rect.x * xFactor, y * yFactor, target->clip_rect.w * xFactor, target->clip_rect.h * yFactor);
@@ -729,12 +733,15 @@ static void forceChangeViewport(GPU_Target* target, GPU_Rect viewport)
     
     cdata->last_viewport = viewport;
     
-    // Need the real height to flip the y-coord (from OpenGL coord system)
     y = viewport.y;
-    if(target->image != NULL)
-        y = target->image->h - viewport.h - viewport.y;
-    else if(target->context != NULL)
-        y = target->context->window_h - viewport.h - viewport.y;
+    if(GPU_GetCoordinateMode() == 0)
+    {
+        // Need the real height to flip the y-coord (from OpenGL coord system)
+        if(target->image != NULL)
+            y = target->image->h - viewport.h - viewport.y;
+        else if(target->context != NULL)
+            y = target->context->window_h - viewport.h - viewport.y;
+    }
     
     glViewport(viewport.x, y, viewport.w, viewport.h);
 }
@@ -762,7 +769,7 @@ static void applyTargetCamera(GPU_Target* target)
     GPU_MatrixMode( GPU_PROJECTION );
     GPU_LoadIdentity();
     
-    if(!invert)
+    if((!invert ^ GPU_GetCoordinateMode()))
         GPU_Ortho(target->camera.x, target->w + target->camera.x, target->h + target->camera.y, target->camera.y, -1.0f, 1.0f);
     else
         GPU_Ortho(target->camera.x, target->w + target->camera.x, target->camera.y, target->h + target->camera.y, -1.0f, 1.0f);  // Special inverted orthographic projection because tex coords are inverted already for render-to-texture
@@ -3621,6 +3628,13 @@ static void Blit(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, G
         dy1 += fractional;
         dy2 += fractional;
     }
+    
+    if(renderer->coordinate_mode == 1)
+    {
+        float temp = dy1;
+        dy1 = dy2;
+        dy2 = temp;
+    }
 
     cdata = (GPU_CONTEXT_DATA*)renderer->current_context_target->context->data;
 
@@ -3843,6 +3857,13 @@ static void BlitTransformX(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* s
         fractional = h/2.0f - floorf(h/2.0f);
         dy1 += fractional;
         dy2 += fractional;
+    }
+    
+    if(renderer->coordinate_mode == 1)
+    {
+        float temp = dy1;
+        dy1 = dy2;
+        dy2 = temp;
     }
 
     // Apply transforms
