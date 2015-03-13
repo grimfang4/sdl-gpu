@@ -1,6 +1,8 @@
 #include "SDL_gpu.h"
 #include "SDL_gpu_RendererImpl.h"
 #include "SDL_platform.h"
+#include "stb_image.h"
+#include "stb_image_write.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -31,7 +33,17 @@
 int gpu_strcasecmp(const char* s1, const char* s2);
 
 void gpu_init_renderer_register(void);
+void gpu_free_renderer_register(void);
 GPU_Renderer* gpu_create_and_add_renderer(GPU_RendererID id);
+
+int gpu_default_print(GPU_LogLevelEnum log_level, const char* format, va_list args);
+
+/*! A mapping of windowID to a GPU_Target to facilitate GPU_GetWindowTarget(). */
+typedef struct GPU_WindowMapping
+{
+    Uint32 windowID;
+    GPU_Target* target;
+} GPU_WindowMapping;
 
 static GPU_Renderer* _gpu_current_renderer = NULL;
 
@@ -44,17 +56,17 @@ static GPU_ErrorObject* _gpu_error_code_stack = NULL;
 static unsigned int _gpu_num_error_codes = 0;
 static unsigned int _gpu_error_code_stack_size = GPU_DEFAULT_MAX_NUM_ERRORS;
 
-/*! A mapping of windowID to a GPU_Target to facilitate GPU_GetWindowTarget(). */
-typedef struct GPU_WindowMapping
-{
-    Uint32 windowID;
-    GPU_Target* target;
-} GPU_WindowMapping;
-
 #define GPU_INITIAL_WINDOW_MAPPINGS_SIZE 10
 static GPU_WindowMapping* _gpu_window_mappings = NULL;
 static int _gpu_window_mappings_size = 0;
 static int _gpu_num_window_mappings = 0;
+
+static Uint32 _gpu_init_windowID = 0;
+
+static GPU_InitFlagEnum _gpu_preinit_flags = GPU_DEFAULT_INIT_FLAGS;
+static GPU_InitFlagEnum _gpu_required_features = 0;
+
+static int (*_gpu_print)(GPU_LogLevelEnum log_level, const char* format, va_list args) = &gpu_default_print;
 
 
 SDL_version GPU_GetLinkedVersion(void)
@@ -132,8 +144,6 @@ int gpu_default_print(GPU_LogLevelEnum log_level, const char* format, va_list ar
     }
 }
 
-static int (*_gpu_print)(GPU_LogLevelEnum log_level, const char* format, va_list args) = &gpu_default_print;
-
 void GPU_SetLogCallback(int (*callback)(GPU_LogLevelEnum log_level, const char* format, va_list args))
 {
     if(callback == NULL)
@@ -194,8 +204,6 @@ static Uint8 gpu_init_SDL(void)
 	return 1;
 }
 
-static Uint32 _gpu_init_windowID = 0;
-
 void GPU_SetInitWindow(Uint32 windowID)
 {
     _gpu_init_windowID = windowID;
@@ -205,9 +213,6 @@ Uint32 GPU_GetInitWindow(void)
 {
     return _gpu_init_windowID;
 }
-
-static GPU_InitFlagEnum _gpu_preinit_flags = GPU_DEFAULT_INIT_FLAGS;
-static GPU_InitFlagEnum _gpu_required_features = 0;
 
 void GPU_SetPreInitFlags(GPU_InitFlagEnum GPU_flags)
 {
@@ -628,9 +633,20 @@ void GPU_Quit(void)
 	_gpu_current_renderer->impl->Quit(_gpu_current_renderer);
 	GPU_FreeRenderer(_gpu_current_renderer);
 	// FIXME: Free all renderers
+	_gpu_current_renderer = NULL;
+	
+	_gpu_init_windowID = 0;
+	
+	// Free window mappings
+	SDL_free(_gpu_window_mappings);
+	_gpu_window_mappings = NULL;
+	_gpu_window_mappings_size = 0;
+	_gpu_num_window_mappings = 0;
 	
 	if(GPU_GetNumActiveRenderers() == 0)
 		SDL_Quit();
+    
+    gpu_free_renderer_register();
 }
 
 void GPU_SetDebugLevel(GPU_DebugLevelEnum level)
@@ -989,9 +1005,6 @@ SDL_Surface* GPU_LoadSurface(const char* filename)
 	
 	return result;
 }
-
-#include "stb_image.h"
-#include "stb_image_write.h"
 
 // From http://stackoverflow.com/questions/5309471/getting-file-extension-in-c
 static const char *get_filename_ext(const char *filename)
