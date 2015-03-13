@@ -66,6 +66,9 @@ static Uint32 _gpu_init_windowID = 0;
 static GPU_InitFlagEnum _gpu_preinit_flags = GPU_DEFAULT_INIT_FLAGS;
 static GPU_InitFlagEnum _gpu_required_features = 0;
 
+static Uint8 _gpu_initialized_SDL_core = 0;
+static Uint8 _gpu_initialized_SDL = 0;
+
 static int (*_gpu_print)(GPU_LogLevelEnum log_level, const char* format, va_list args) = &gpu_default_print;
 
 
@@ -179,10 +182,9 @@ void GPU_LogError(const char* format, ...)
 
 static Uint8 gpu_init_SDL(void)
 {
-	if(GPU_GetNumActiveRenderers() == 0)
+	if(!_gpu_initialized_SDL)
 	{
-	    Uint32 subsystems = SDL_WasInit(SDL_INIT_EVERYTHING);
-	    if(!subsystems)
+	    if(!_gpu_initialized_SDL_core && !SDL_WasInit(SDL_INIT_EVERYTHING))
         {
             // Nothing has been set up, so init SDL and the video subsystem.
             if(SDL_Init(SDL_INIT_VIDEO) < 0)
@@ -190,16 +192,16 @@ static Uint8 gpu_init_SDL(void)
                 GPU_PushErrorCode("GPU_Init", GPU_ERROR_BACKEND_ERROR, "Failed to initialize SDL video subsystem");
                 return 0;
             }
+            _gpu_initialized_SDL_core = 1;
         }
-        else if(!(subsystems & SDL_INIT_VIDEO))
+        
+        // SDL is definitely ready now, but we're going to init the video subsystem to be sure that SDL_gpu keeps it available until GPU_Quit().
+        if(SDL_InitSubSystem(SDL_INIT_VIDEO) < 0)
         {
-            // Something already set up SDL, so just init video.
-            if(SDL_InitSubSystem(SDL_INIT_VIDEO) < 0)
-            {
-                GPU_PushErrorCode("GPU_Init", GPU_ERROR_BACKEND_ERROR, "Failed to initialize SDL video subsystem");
-                return 0;
-            }
+            GPU_PushErrorCode("GPU_Init", GPU_ERROR_BACKEND_ERROR, "Failed to initialize SDL video subsystem");
+            return 0;
         }
+        _gpu_initialized_SDL = 1;
 	}
 	return 1;
 }
@@ -643,10 +645,19 @@ void GPU_Quit(void)
 	_gpu_window_mappings_size = 0;
 	_gpu_num_window_mappings = 0;
 	
-	if(GPU_GetNumActiveRenderers() == 0)
-		SDL_Quit();
-    
     gpu_free_renderer_register();
+    
+    if(_gpu_initialized_SDL)
+    {
+        SDL_QuitSubSystem(SDL_INIT_VIDEO);
+        _gpu_initialized_SDL = 0;
+        
+        if(_gpu_initialized_SDL_core)
+        {
+            SDL_Quit();
+            _gpu_initialized_SDL_core = 0;
+        }
+    }
 }
 
 void GPU_SetDebugLevel(GPU_DebugLevelEnum level)
