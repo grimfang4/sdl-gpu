@@ -899,6 +899,14 @@ static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request,
     
     if(window == NULL)
     {
+        int win_w, win_h;
+        #ifdef __ANDROID__
+        win_w = win_h = 0;  // Force Android to create full screen window
+        #else
+        win_w = w;
+        win_h = h;
+        #endif
+        
         // Set up window flags
         SDL_flags |= SDL_WINDOW_OPENGL;
         if(!(SDL_flags & SDL_WINDOW_HIDDEN))
@@ -907,7 +915,7 @@ static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request,
         renderer->SDL_init_flags = SDL_flags;
         window = SDL_CreateWindow("",
                                   SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                                  w, h,
+                                  win_w, win_h,
                                   SDL_flags);
 
         if(window == NULL)
