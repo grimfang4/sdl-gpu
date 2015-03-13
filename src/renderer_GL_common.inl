@@ -93,6 +93,13 @@ int gpu_strcasecmp(const char* s1, const char* s2);
 #endif
 
 
+// Workaround for Intel HD glVertexAttrib() bug.
+#ifdef SDL_GPU_USE_OPENGL
+// FIXME: This should probably exist in context storage, as I expect it to be a problem across contexts.
+static Uint8 apply_Intel_attrib_workaround = 0;
+static Uint8 vendor_is_Intel = 0;
+#endif
+
 
 
 static SDL_PixelFormat* AllocFormat(GLenum glFormat);
@@ -816,13 +823,6 @@ static void applyTransforms(void)
 }
 #endif
 
-
-// Workaround for Intel HD glVertexAttrib() bug.
-#ifdef SDL_GPU_USE_OPENGL
-// FIXME: This should probably exist in context storage, as I expect it to be a problem across contexts.
-static Uint8 apply_Intel_attrib_workaround = 0;
-static Uint8 vendor_is_Intel = 0;
-#endif
 
 static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request, Uint16 w, Uint16 h, GPU_WindowFlagEnum SDL_flags)
 {
