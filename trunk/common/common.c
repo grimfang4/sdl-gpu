@@ -97,7 +97,10 @@ GPU_Target* initialize_demo(int argc, char** argv, Uint16 w, Uint16 h)
 }
 
 
-// Loads a shader and prepends version/compatibility info before compiling it
+// Loads a shader and prepends version/compatibility info before compiling it.
+// Normally, you can just use GPU_LoadShader() for shader source files or GPU_CompileShader() for strings.
+// However, some hardware (certain ATI/AMD cards) does not let you put non-#version preprocessing at the top of the file.
+// Therefore, I need to prepend the version info here so I can support both GLSL and GLSLES with one shader file.
 Uint32 load_shader(GPU_ShaderEnum shader_type, const char* filename)
 {
     SDL_RWops* rwops;
