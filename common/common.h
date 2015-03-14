@@ -2,6 +2,8 @@
 #define _COMMON_H__
 
 #include "SDL_gpu.h"
+#include <stdlib.h>
+#include <string.h>
 
 void printRenderers(void);
 void printCurrentRenderer(void);
