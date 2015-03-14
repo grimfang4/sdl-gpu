@@ -31,7 +31,7 @@
 
 
 #define GPU_DEFAULT_TEXTURED_VERTEX_SHADER_SOURCE \
-"#version 150\n\
+"#version 130\n\
 \
 in vec2 gpu_Vertex;\n\
 in vec2 gpu_TexCoord;\n\
@@ -50,7 +50,7 @@ void main(void)\n\
 
 // Tier 3 uses shader attributes to send position, texcoord, and color data for each vertex.
 #define GPU_DEFAULT_UNTEXTURED_VERTEX_SHADER_SOURCE \
-"#version 150\n\
+"#version 130\n\
 \
 in vec2 gpu_Vertex;\n\
 in vec4 gpu_Color;\n\

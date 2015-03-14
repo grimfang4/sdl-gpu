@@ -19,6 +19,7 @@ void GPU_FreeRenderer_OpenGL_3(GPU_Renderer* renderer) {}
 #define SDL_GPU_SKIP_LINE_WIDTH
 #define SDL_GPU_GL_TIER 3
 #define SDL_GPU_GLSL_VERSION 130
+#define SDL_GPU_GLSL_VERSION_CORE 150
 #define SDL_GPU_GL_MAJOR_VERSION 3
 #define SDL_GPU_ENABLE_CORE_SHADERS
 

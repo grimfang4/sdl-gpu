@@ -867,6 +867,9 @@ static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request,
             SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
         else
             SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+        
+        // Set newer default shader version for core-capable contexts
+        renderer->shader_version = SDL_GPU_GLSL_VERSION_CORE;
     }
     #endif
     
