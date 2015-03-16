@@ -52,9 +52,10 @@ static GPU_DebugLevelEnum _gpu_debug_level = GPU_DEBUG_LEVEL_0;
 #define GPU_DEFAULT_MAX_NUM_ERRORS 20
 #define GPU_ERROR_FUNCTION_STRING_MAX 128
 #define GPU_ERROR_DETAILS_STRING_MAX 512
-static GPU_ErrorObject* _gpu_error_code_stack = NULL;
+static GPU_ErrorObject* _gpu_error_code_queue = NULL;
 static unsigned int _gpu_num_error_codes = 0;
-static unsigned int _gpu_error_code_stack_size = GPU_DEFAULT_MAX_NUM_ERRORS;
+static unsigned int _gpu_error_code_queue_size = GPU_DEFAULT_MAX_NUM_ERRORS;
+static GPU_ErrorObject _gpu_error_code_result;
 
 #define GPU_INITIAL_WINDOW_MAPPINGS_SIZE 10
 static GPU_WindowMapping* _gpu_window_mappings = NULL;
@@ -236,19 +237,24 @@ GPU_FeatureEnum GPU_GetRequiredFeatures(void)
     return _gpu_required_features;
 }
 
-static void gpu_init_error_stack(void)
+static void gpu_init_error_queue(void)
 {
-    if(_gpu_error_code_stack == NULL)
+    if(_gpu_error_code_queue == NULL)
     {
         unsigned int i;
-        _gpu_error_code_stack = (GPU_ErrorObject*)SDL_malloc(sizeof(GPU_ErrorObject)*_gpu_error_code_stack_size);
+        _gpu_error_code_queue = (GPU_ErrorObject*)SDL_malloc(sizeof(GPU_ErrorObject)*_gpu_error_code_queue_size);
         
-        for(i = 0; i < _gpu_error_code_stack_size; i++)
+        for(i = 0; i < _gpu_error_code_queue_size; i++)
         {
-            _gpu_error_code_stack[i].function = (char*)SDL_malloc(GPU_ERROR_FUNCTION_STRING_MAX+1);
-            _gpu_error_code_stack[i].details = (char*)SDL_malloc(GPU_ERROR_DETAILS_STRING_MAX+1);
+            _gpu_error_code_queue[i].function = (char*)SDL_malloc(GPU_ERROR_FUNCTION_STRING_MAX+1);
+            _gpu_error_code_queue[i].error = GPU_ERROR_NONE;
+            _gpu_error_code_queue[i].details = (char*)SDL_malloc(GPU_ERROR_DETAILS_STRING_MAX+1);
         }
         _gpu_num_error_codes = 0;
+        
+        _gpu_error_code_result.function = (char*)SDL_malloc(GPU_ERROR_FUNCTION_STRING_MAX+1);
+        _gpu_error_code_result.error = GPU_ERROR_NONE;
+        _gpu_error_code_result.details = (char*)SDL_malloc(GPU_ERROR_DETAILS_STRING_MAX+1);
     }
 }
 
@@ -404,7 +410,7 @@ GPU_Target* GPU_Init(Uint16 w, Uint16 h, GPU_WindowFlagEnum SDL_flags)
 	int i;
     GPU_RendererID renderer_order[GPU_RENDERER_ORDER_MAX];
 
-    gpu_init_error_stack();
+    gpu_init_error_queue();
     
 	gpu_init_renderer_register();
 	
@@ -437,7 +443,7 @@ GPU_Target* GPU_InitRendererByID(GPU_RendererID renderer_request, Uint16 w, Uint
 	GPU_Renderer* renderer;
 	GPU_Target* screen;
 
-    gpu_init_error_stack();
+    gpu_init_error_queue();
 	gpu_init_renderer_register();
 	
 	if(!gpu_init_SDL())
@@ -581,25 +587,35 @@ void GPU_UnsetImageVirtualResolution(GPU_Image* image)
     image->using_virtual_resolution = 0;
 }
 
-// Deletes all existing errors
-void GPU_SetErrorStackMax(unsigned int max)
+void gpu_free_error_queue(void)
 {
     unsigned int i;
-    // Free the error stack
-    for(i = 0; i < _gpu_error_code_stack_size; i++)
+    // Free the error queue
+    for(i = 0; i < _gpu_error_code_queue_size; i++)
     {
-        SDL_free(_gpu_error_code_stack[i].function);
-        _gpu_error_code_stack[i].function = NULL;
-        SDL_free(_gpu_error_code_stack[i].details);
-        _gpu_error_code_stack[i].details = NULL;
+        SDL_free(_gpu_error_code_queue[i].function);
+        _gpu_error_code_queue[i].function = NULL;
+        SDL_free(_gpu_error_code_queue[i].details);
+        _gpu_error_code_queue[i].details = NULL;
     }
-    SDL_free(_gpu_error_code_stack);
-    _gpu_error_code_stack = NULL;
+    SDL_free(_gpu_error_code_queue);
+    _gpu_error_code_queue = NULL;
     _gpu_num_error_codes = 0;
     
+    SDL_free(_gpu_error_code_result.function);
+    _gpu_error_code_result.function = NULL;
+    SDL_free(_gpu_error_code_result.details);
+    _gpu_error_code_result.details = NULL;
+}
+
+// Deletes all existing errors
+void GPU_SetErrorQueueMax(unsigned int max)
+{
+    gpu_free_error_queue();
+    
     // Reallocate with new size
-    _gpu_error_code_stack_size = max;
-    gpu_init_error_stack();
+    _gpu_error_code_queue_size = max;
+    gpu_init_error_queue();
 }
 
 void GPU_CloseCurrentRenderer(void)
@@ -613,21 +629,10 @@ void GPU_CloseCurrentRenderer(void)
 
 void GPU_Quit(void)
 {
-    unsigned int i;
     if(_gpu_num_error_codes > 0 && GPU_GetDebugLevel() >= GPU_DEBUG_LEVEL_1)
         GPU_LogError("GPU_Quit: %d uncleared error%s.\n", _gpu_num_error_codes, (_gpu_num_error_codes > 1? "s" : ""));
-        
-    // Free the error stack
-    for(i = 0; i < _gpu_error_code_stack_size; i++)
-    {
-        SDL_free(_gpu_error_code_stack[i].function);
-        _gpu_error_code_stack[i].function = NULL;
-        SDL_free(_gpu_error_code_stack[i].details);
-        _gpu_error_code_stack[i].details = NULL;
-    }
-    SDL_free(_gpu_error_code_stack);
-    _gpu_error_code_stack = NULL;
-    _gpu_num_error_codes = 0;
+    
+    gpu_free_error_queue();
     
 	if(_gpu_current_renderer == NULL)
 		return;
@@ -674,6 +679,8 @@ GPU_DebugLevelEnum GPU_GetDebugLevel(void)
 
 void GPU_PushErrorCode(const char* function, GPU_ErrorEnum error, const char* details, ...)
 {
+    gpu_init_error_queue();
+    
     if(GPU_GetDebugLevel() >= GPU_DEBUG_LEVEL_1)
     {
         // Print the message
@@ -691,23 +698,23 @@ void GPU_PushErrorCode(const char* function, GPU_ErrorEnum error, const char* de
             GPU_LogError("%s: %s\n", (function == NULL? "NULL" : function), GPU_GetErrorString(error));
     }
     
-    if(_gpu_num_error_codes < _gpu_error_code_stack_size)
+    if(_gpu_num_error_codes < _gpu_error_code_queue_size)
     {
         if(function == NULL)
-            _gpu_error_code_stack[_gpu_num_error_codes].function[0] = '\0';
+            _gpu_error_code_queue[_gpu_num_error_codes].function[0] = '\0';
         else
         {
-            strncpy(_gpu_error_code_stack[_gpu_num_error_codes].function, function, GPU_ERROR_FUNCTION_STRING_MAX);
-            _gpu_error_code_stack[_gpu_num_error_codes].function[GPU_ERROR_FUNCTION_STRING_MAX] = '\0';
+            strncpy(_gpu_error_code_queue[_gpu_num_error_codes].function, function, GPU_ERROR_FUNCTION_STRING_MAX);
+            _gpu_error_code_queue[_gpu_num_error_codes].function[GPU_ERROR_FUNCTION_STRING_MAX] = '\0';
         }
-        _gpu_error_code_stack[_gpu_num_error_codes].error = error;
+        _gpu_error_code_queue[_gpu_num_error_codes].error = error;
         if(details == NULL)
-            _gpu_error_code_stack[_gpu_num_error_codes].details[0] = '\0';
+            _gpu_error_code_queue[_gpu_num_error_codes].details[0] = '\0';
         else
         {
             va_list lst;
             va_start(lst, details);
-            vsnprintf(_gpu_error_code_stack[_gpu_num_error_codes].details, GPU_ERROR_DETAILS_STRING_MAX, details, lst);
+            vsnprintf(_gpu_error_code_queue[_gpu_num_error_codes].details, GPU_ERROR_DETAILS_STRING_MAX, details, lst);
             va_end(lst);
         }
         _gpu_num_error_codes++;
@@ -716,13 +723,31 @@ void GPU_PushErrorCode(const char* function, GPU_ErrorEnum error, const char* de
 
 GPU_ErrorObject GPU_PopErrorCode(void)
 {
-    if(_gpu_num_error_codes <= 0)
-    {
-        GPU_ErrorObject e = {NULL, GPU_ERROR_NONE, NULL};
-        return e;
-    }
+    unsigned int i;
+    GPU_ErrorObject result = {NULL, GPU_ERROR_NONE, NULL};
     
-    return _gpu_error_code_stack[--_gpu_num_error_codes];
+    gpu_init_error_queue();
+    
+    if(_gpu_num_error_codes <= 0)
+        return result;
+    
+    // Pop the oldest
+    strcpy(_gpu_error_code_result.function, _gpu_error_code_queue[0].function);
+    _gpu_error_code_result.error = _gpu_error_code_queue[0].error;
+    strcpy(_gpu_error_code_result.details, _gpu_error_code_queue[0].details);
+    
+    // We'll be returning that one
+    result = _gpu_error_code_result;
+    
+    // Move the rest down
+    _gpu_num_error_codes--;
+    for(i = 0; i < _gpu_num_error_codes; i++)
+    {
+        strcpy(_gpu_error_code_queue[i].function, _gpu_error_code_queue[i+1].function);
+        _gpu_error_code_queue[i].error = _gpu_error_code_queue[i+1].error;
+        strcpy(_gpu_error_code_queue[i].details, _gpu_error_code_queue[i+1].details);
+    }
+    return result;
 }
 
 const char* GPU_GetErrorString(GPU_ErrorEnum error)
