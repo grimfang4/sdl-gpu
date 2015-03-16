@@ -39,7 +39,7 @@ typedef struct GPU_Target GPU_Target;
  * \defgroup Logging Debugging, Logging, and Error Handling
  * Use GPU_Log() for normal logging output (e.g. to replace printf).  Other logging priorities are handled by GPU_LogWarning() and GPU_LogError().
  * 
- * SDL_gpu stores an error stack that you can read and manipulate using GPU_PopErrorCode() and GPU_PushErrorCode().  If you set the debug level using GPU_SetDebugLevel(), you can have any errors automatically logged as they are generated.
+ * SDL_gpu stores an error queue that you can read and manipulate using GPU_PopErrorCode() and GPU_PushErrorCode().  If you set the debug level using GPU_SetDebugLevel(), you can have any errors automatically logged as they are generated.
  * 
  * \defgroup RendererSetup Renderer Setup
  * \defgroup RendererControls Renderer Controls
@@ -708,21 +708,21 @@ DECLSPEC void SDLCALL GPU_LogError(const char* format, ...);
 /*! Sets a custom callback for handling logging.  Use stdio's vsnprintf() to process the va_list into a string.  Passing NULL as the callback will reset to the default internal logging. */
 DECLSPEC void SDLCALL GPU_SetLogCallback(int (*callback)(GPU_LogLevelEnum log_level, const char* format, va_list args));
 
-/*! Pushes a new error code onto the error stack.  If the stack is full, this function does nothing.
+/*! Pushes a new error code into the error queue.  If the queue is full, the queue is not modified.
  * \param function The name of the function that pushed the error
- * \param error The error code to push on the error stack
+ * \param error The error code to push on the error queue
  * \param details Additional information string, can be NULL.
  */
 DECLSPEC void SDLCALL GPU_PushErrorCode(const char* function, GPU_ErrorEnum error, const char* details, ...);
 
-/*! Pops an error object from the error stack and returns it.  If the error stack is empty, it returns an error object with NULL function, GPU_ERROR_NONE error, and NULL details. */
+/*! Pops an error object from the error queue and returns it.  If the error queue is empty, it returns an error object with NULL function, GPU_ERROR_NONE error, and NULL details. */
 DECLSPEC GPU_ErrorObject SDLCALL GPU_PopErrorCode(void);
 
 /*! Gets the string representation of an error code. */
 DECLSPEC const char* SDLCALL GPU_GetErrorString(GPU_ErrorEnum error);
 
 /*! Changes the maximum number of error objects that SDL_gpu will store.  This deletes all currently stored errors. */
-DECLSPEC void SDLCALL GPU_SetErrorStackMax(unsigned int max);
+DECLSPEC void SDLCALL GPU_SetErrorQueueMax(unsigned int max);
 
 // End of Logging
 /*! @} */
