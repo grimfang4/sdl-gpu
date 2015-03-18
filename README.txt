@@ -9,14 +9,8 @@ See LICENSE.txt for details of the usage license granted to you for this code.
 LATEST SOURCE
 =============
 
-SDL_gpu is hosted on Google Code (http://code.google.com/p/sdl-gpu).  You can check out the latest version of the source code with Subversion:
-svn checkout http://sdl-gpu.googlecode.com/svn/trunk/ sdl-gpu
-
-To check out everything, including the pre-generated documentation:
-svn checkout http://sdl-gpu.googlecode.com/svn/ sdl-gpu
-
-For just the current library code, use:
-svn checkout http://sdl-gpu.googlecode.com/svn/trunk/ sdl-gpu
+SDL_gpu is hosted on Github (https://github.com/grimfang4/sdl-gpu).  You can check out the latest version of the source code with Git:
+git clone https://github.com/grimfang4/sdl-gpu.git sdl-gpu
 
 
 ============
@@ -57,7 +51,8 @@ DOCUMENTATION
 =============
 
 Documentation is automatically generated with Doxygen (http://sourceforge.net/projects/doxygen).
-Pre-generated documentation can be found in the repository's base documentation directory.
+Pre-generated documentation is hosted by DinoMage Games:
+http://dinomage.com/reference/SDL_gpu/
 
 
 
