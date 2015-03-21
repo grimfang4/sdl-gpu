@@ -1051,7 +1051,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     }
     
     // Store the window info
-    SDL_GetWindowSize(window, &target->context->window_w, &target->context->window_h);
+    SDL_GL_GetDrawableSize(window, &target->context->window_w, &target->context->window_h);
     target->context->stored_window_w = target->context->window_w;
     target->context->stored_window_h = target->context->window_h;
     target->context->windowID = SDL_GetWindowID(window);
@@ -1444,7 +1444,7 @@ static void MakeCurrent(GPU_Renderer* renderer, GPU_Target* target, Uint32 windo
             window = SDL_GetWindowFromID(windowID);
             if(window != NULL)
             {
-                SDL_GetWindowSize(window, &target->context->window_w, &target->context->window_h);
+                SDL_GL_GetDrawableSize(window, &target->context->window_w, &target->context->window_h);
                 target->base_w = target->context->window_w;
                 target->base_h = target->context->window_h;
             }
@@ -1542,11 +1542,11 @@ static Uint8 SetWindowResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
 #ifdef SDL_GPU_USE_SDL2
     
     // Don't need to resize (only update internals) when resolution isn't changing.
-    SDL_GetWindowSize(SDL_GetWindowFromID(target->context->windowID), &target->context->window_w, &target->context->window_h);
+    SDL_GL_GetDrawableSize(SDL_GetWindowFromID(target->context->windowID), &target->context->window_w, &target->context->window_h);
     if(target->context->window_w != w || target->context->window_h != h)
     {
         SDL_SetWindowSize(SDL_GetWindowFromID(target->context->windowID), w, h);
-        SDL_GetWindowSize(SDL_GetWindowFromID(target->context->windowID), &target->context->window_w, &target->context->window_h);
+        SDL_GL_GetDrawableSize(SDL_GetWindowFromID(target->context->windowID), &target->context->window_w, &target->context->window_h);
     }
     
 #else
@@ -1690,7 +1690,7 @@ static Uint8 SetFullscreen(GPU_Renderer* renderer, Uint8 enable_fullscreen, Uint
             SDL_SetWindowSize(SDL_GetWindowFromID(target->context->windowID), target->context->stored_window_w, target->context->stored_window_h);
         
         // Update window dims
-        SDL_GetWindowSize(SDL_GetWindowFromID(target->context->windowID), &target->context->window_w, &target->context->window_h);
+        SDL_GL_GetDrawableSize(SDL_GetWindowFromID(target->context->windowID), &target->context->window_w, &target->context->window_h);
     }
     
 #else
