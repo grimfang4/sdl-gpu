@@ -515,8 +515,6 @@ static void prepareToRenderToTarget(GPU_Renderer* renderer, GPU_Target* target)
 {
     // Set up the camera
     renderer->impl->SetCamera(renderer, target, &target->camera);
-    
-    setClipRect(renderer, target);
 }
 
 
