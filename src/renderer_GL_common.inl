@@ -433,7 +433,7 @@ static Uint8 growIndexBuffer(GPU_CONTEXT_DATA* cdata, unsigned int minimum_verti
         return 1;
     if(cdata->index_buffer_max_num_vertices == GPU_INDEX_BUFFER_ABSOLUTE_MAX_VERTICES)
         return 0;
-
+    
     // Calculate new size (in vertices)
     new_max_num_vertices = cdata->index_buffer_max_num_vertices * 2;
     while(new_max_num_vertices <= minimum_vertices_needed)
@@ -457,7 +457,7 @@ static Uint8 growIndexBuffer(GPU_CONTEXT_DATA* cdata, unsigned int minimum_verti
         #endif
         
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cdata->blit_IBO);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned short) * cdata->blit_buffer_max_num_vertices, NULL, GL_DYNAMIC_DRAW);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned short) * cdata->index_buffer_max_num_vertices, NULL, GL_DYNAMIC_DRAW);
         
         #if !defined(SDL_GPU_NO_VAO)
         glBindVertexArray(0);
