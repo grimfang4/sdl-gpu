@@ -39,6 +39,7 @@
 #endif
 
 #include <stddef.h>  /* For size_t */
+#include <stdlib.h>
 
 /*
  * Define glewGetContext and related helper macros.
@@ -88,7 +89,6 @@ static void * (*regalGetProcAddress) (const GLchar *) = glGetProcAddressREGAL;
 #elif defined(__sgi) || defined (__sun) || defined(__HAIKU__) || defined(GLEW_APPLE_GLX)
 #include <dlfcn.h>
 #include <stdio.h>
-#include <stdlib.h>
 
 void* dlGetProcAddress (const GLubyte* name)
 {
@@ -109,7 +109,6 @@ void* dlGetProcAddress (const GLubyte* name)
 #endif /* __sgi || __sun || GLEW_APPLE_GLX */
 
 #if defined(__APPLE__)
-#include <stdlib.h>
 #include <string.h>
 #include <AvailabilityMacros.h>
 

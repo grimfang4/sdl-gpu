@@ -1,6 +1,7 @@
 #include "SDL.h"
 #include "SDL_gpu.h"
 #include "common.h"
+#include <stdlib.h>
 
 void fill_vertex_values(float* vertex_values, float* velx, float* vely, unsigned int max_vertices, GPU_Target* screen, GPU_Image* image)
 {

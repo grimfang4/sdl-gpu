@@ -3,6 +3,7 @@
 #include <math.h>
 #include "compat.h"
 #include "common.h"
+#include <stdlib.h>
 
 #ifndef M_PI
 #define M_PI 3.14159f

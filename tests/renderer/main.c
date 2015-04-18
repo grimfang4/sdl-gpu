@@ -2,6 +2,7 @@
 #include "SDL_gpu.h"
 #include "SDL_gpu_RendererImpl.h"
 #include "common.h"
+#include <stdlib.h>
 
 
 #ifdef _MSC_VER

@@ -2,6 +2,7 @@
 #include "SDL_gpu.h"
 #include <math.h>
 #include "common.h"
+#include <stdlib.h>
 
 
 void set_vertex(float* vertex_array, unsigned int vertex_index, unsigned short* index_array, unsigned int index_array_index, float x, float y, float s, float t, float r, float g, float b, float a)

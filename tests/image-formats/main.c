@@ -2,6 +2,7 @@
 #include "SDL_gpu.h"
 #include <math.h>
 #include "common.h"
+#include <stdlib.h>
 
 
 void log_surface_details(SDL_Surface* surface)

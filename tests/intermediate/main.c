@@ -3,6 +3,7 @@
 #include <math.h>
 #include "compat.h"
 #include "common.h"
+#include <stdlib.h>
 
 
 int main(int argc, char* argv[])
