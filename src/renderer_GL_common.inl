@@ -936,7 +936,10 @@ static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request,
     screen = SDL_SetVideoMode(w, h, 0, SDL_flags);
 
     if(screen == NULL)
+    {
+        GPU_PushErrorCode("GPU_Init", GPU_ERROR_BACKEND_ERROR, "Screen surface creation failed.");
         return NULL;
+    }
 #endif
     
     renderer->enabled_features = 0xFFFFFFFF;  // Pretend to support them all if using incompatible headers
@@ -1036,6 +1039,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     window = SDL_GetWindowFromID(windowID);
     if(window == NULL)
     {
+        GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Failed to acquire the window from the given ID.");
         if(created)
         {
             SDL_free(cdata->blit_buffer);
@@ -1066,6 +1070,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     screen = SDL_GetVideoSurface();
     if(screen == NULL)
     {
+        GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Failed to acquire the video surface.");
         if(created)
         {
             SDL_free(cdata->blit_buffer);
@@ -1128,6 +1133,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     if (GLEW_OK != err)
     {
         // Probably don't have the right GL version for this renderer
+        GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Failed to initialize extensions for renderer %s.", renderer->id.name);
         target->context->failed = 1;
         return NULL;
     }
@@ -1178,9 +1184,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     // Did the wrong runtime library try to use a later versioned renderer?
     if(renderer->id.major_version < renderer->requested_id.major_version)
     {
-		#ifdef SDL_GPU_USE_GLES
-            GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Renderer version (%d) is incompatible with the available OpenGL runtime library version (%d).", renderer->requested_id.major_version, renderer->id.major_version);
-		#endif
+        GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Renderer major version (%d) is incompatible with the available OpenGL runtime library version (%d).", renderer->requested_id.major_version, renderer->id.major_version);
         target->context->failed = 1;
         return NULL;
     }
