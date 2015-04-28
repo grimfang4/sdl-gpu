@@ -6,5 +6,8 @@ target_link_libraries (init-demo SDL_gpu)
 add_executable(3d-demo 3d/main.c ../src/externals/glew/glew.c)
 target_link_libraries (3d-demo SDL_gpu)
 
+add_executable(3d-demo-gl3 3d-gl3/main.c ../src/externals/glew/glew.c)
+target_link_libraries (3d-demo-gl3 SDL_gpu)
+
 add_executable(tutorial-space-demo tutorial-space/main.c)
 target_link_libraries (tutorial-space-demo SDL_gpu)

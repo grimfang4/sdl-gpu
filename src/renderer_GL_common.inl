@@ -1270,12 +1270,15 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
         const char* untextured_fragment_shader_source = GPU_DEFAULT_UNTEXTURED_FRAGMENT_SHADER_SOURCE;
         
         #ifdef SDL_GPU_ENABLE_CORE_SHADERS
-        if(renderer->id.major_version == 3 && renderer->id.minor_version >= 2)
-        {
-            textured_vertex_shader_source = GPU_DEFAULT_TEXTURED_VERTEX_SHADER_SOURCE_CORE;
-            textured_fragment_shader_source = GPU_DEFAULT_TEXTURED_FRAGMENT_SHADER_SOURCE_CORE;
-            untextured_vertex_shader_source = GPU_DEFAULT_UNTEXTURED_VERTEX_SHADER_SOURCE_CORE;
-            untextured_fragment_shader_source = GPU_DEFAULT_UNTEXTURED_FRAGMENT_SHADER_SOURCE_CORE;
+        if(renderer->id.major_version >= 3)
+        {   
+            if(renderer->id.minor_version >= 2 || renderer->id.major_version >= 4)
+            {
+                textured_vertex_shader_source = GPU_DEFAULT_TEXTURED_VERTEX_SHADER_SOURCE_CORE;
+                textured_fragment_shader_source = GPU_DEFAULT_TEXTURED_FRAGMENT_SHADER_SOURCE_CORE;
+                untextured_vertex_shader_source = GPU_DEFAULT_UNTEXTURED_VERTEX_SHADER_SOURCE_CORE;
+                untextured_fragment_shader_source = GPU_DEFAULT_UNTEXTURED_FRAGMENT_SHADER_SOURCE_CORE;
+            }
         }
         #endif
         
