@@ -7,6 +7,14 @@ See a particular renderer's *.c file for specifics. */
 #include <math.h>
 #include <string.h>
 
+// Check for C99 support
+// We'll use it for intptr_t which is used to suppress warnings about converting an int to a ptr for GL calls.
+#if __STDC_VERSION__ >= 199901L
+    #include <stdint.h>
+#else
+    #define intptr_t long
+#endif
+
 #include "stb_image.h"
 #include "stb_image_write.h"
 
@@ -1270,7 +1278,8 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
         const char* untextured_fragment_shader_source = GPU_DEFAULT_UNTEXTURED_FRAGMENT_SHADER_SOURCE;
         
         #ifdef SDL_GPU_ENABLE_CORE_SHADERS
-        if(renderer->id.major_version == 3 && renderer->id.minor_version >= 2)
+        // Use core shaders only when supported by the actual context we got
+        if(renderer->id.major_version > 3 || (renderer->id.major_version == 3 && renderer->id.minor_version >= 2))
         {
             textured_vertex_shader_source = GPU_DEFAULT_TEXTURED_VERTEX_SHADER_SOURCE_CORE;
             textured_fragment_shader_source = GPU_DEFAULT_TEXTURED_FRAGMENT_SHADER_SOURCE_CORE;
@@ -4070,7 +4079,7 @@ static void upload_attribute_data(GPU_CONTEXT_DATA* cdata, int num_vertices)
             glBufferData(GL_ARRAY_BUFFER, bytes_used, a->next_value, GL_STREAM_DRAW);
             
             glEnableVertexAttribArray(a->attribute.location);
-            glVertexAttribPointer(a->attribute.location, a->attribute.format.num_elems_per_value, a->attribute.format.type, a->attribute.format.normalize, a->per_vertex_storage_stride_bytes, (void*)(long)a->per_vertex_storage_offset_bytes);
+            glVertexAttribPointer(a->attribute.location, a->attribute.format.num_elems_per_value, a->attribute.format.type, a->attribute.format.normalize, a->per_vertex_storage_stride_bytes, (void*)(intptr_t)a->per_vertex_storage_offset_bytes);
             
             a->enabled = 1;
             // Move the data along so we use the next values for the next flush
