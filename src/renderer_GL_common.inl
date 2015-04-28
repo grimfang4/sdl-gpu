@@ -495,8 +495,8 @@ static void setClipRect(GPU_Renderer* renderer, GPU_Target* target)
                 y = context_target->h - (target->clip_rect.y + target->clip_rect.h);
             else
                 y = target->clip_rect.y;
-            float xFactor = ((float)context_target->context->window_w)/context_target->w;
-            float yFactor = ((float)context_target->context->window_h)/context_target->h;
+            float xFactor = ((float)context_target->context->drawable_w)/context_target->w;
+            float yFactor = ((float)context_target->context->drawable_h)/context_target->h;
             glScissor(target->clip_rect.x * xFactor, y * yFactor, target->clip_rect.w * xFactor, target->clip_rect.h * yFactor);
         }
         else
@@ -745,7 +745,7 @@ static void forceChangeViewport(GPU_Target* target, GPU_Rect viewport)
         if(target->image != NULL)
             y = target->image->h - viewport.h - viewport.y;
         else if(target->context != NULL)
-            y = target->context->window_h - viewport.h - viewport.y;
+            y = target->context->drawable_h - viewport.h - viewport.y;
     }
     
     glViewport(viewport.x, y, viewport.w, viewport.h);
@@ -1050,6 +1050,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     
     // Store the window info
     SDL_GetWindowSize(window, &target->context->window_w, &target->context->window_h);
+    SDL_GL_GetDrawableSize(window, &target->context->drawable_w, &target->context->drawable_h);
     target->context->stored_window_w = target->context->window_w;
     target->context->stored_window_h = target->context->window_h;
     target->context->windowID = SDL_GetWindowID(window);
@@ -1079,8 +1080,8 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     }
     
     target->context->windowID = 1;
-    target->context->window_w = screen->w;
-    target->context->window_h = screen->h;
+    target->context->window_w = target->context->drawable_w = screen->w;
+    target->context->window_h = target->context->drawable_h = screen->h;
     target->context->stored_window_w = target->context->window_w;
     target->context->stored_window_h = target->context->window_h;
     
@@ -1090,10 +1091,10 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     ((GPU_TARGET_DATA*)target->data)->format = GL_RGBA;
 
     target->renderer = renderer;
-    target->w = target->context->window_w;
-    target->h = target->context->window_h;
-    target->base_w = target->context->window_w;
-    target->base_h = target->context->window_h;
+    target->w = target->context->drawable_w;
+    target->h = target->context->drawable_h;
+    target->base_w = target->context->drawable_w;
+    target->base_h = target->context->drawable_h;
 
     target->use_clip_rect = 0;
     target->clip_rect.x = 0;
@@ -1102,7 +1103,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     target->clip_rect.h = target->h;
     target->use_color = 0;
     
-    target->viewport = GPU_MakeRect(0, 0, target->context->window_w, target->context->window_h);
+    target->viewport = GPU_MakeRect(0, 0, target->context->drawable_w, target->context->drawable_h);
     target->camera = GPU_GetDefaultCamera();
     
     target->context->line_thickness = 1.0f;
@@ -1443,8 +1444,9 @@ static void MakeCurrent(GPU_Renderer* renderer, GPU_Target* target, Uint32 windo
             if(window != NULL)
             {
                 SDL_GetWindowSize(window, &target->context->window_w, &target->context->window_h);
-                target->base_w = target->context->window_w;
-                target->base_h = target->context->window_h;
+                SDL_GL_GetDrawableSize(window, &target->context->drawable_w, &target->context->drawable_h);
+                target->base_w = target->context->drawable_w;
+                target->base_h = target->context->drawable_h;
             }
             
             // Reset the camera for this window
@@ -1462,10 +1464,10 @@ static void MakeCurrent(GPU_Renderer* renderer, GPU_Target* target, Uint32 windo
     screen = SDL_GetVideoSurface();
     if(screen != NULL)
     {
-        target->context->window_w = screen->w;
-        target->context->window_h = screen->h;
-        target->base_w = target->context->window_w;
-        target->base_h = target->context->window_h;
+        target->context->window_w = target->context->drawable_w = screen->w;
+        target->context->window_h = target->context->drawable_h = screen->h;
+        target->base_w = target->context->drawable_w;
+        target->base_h = target->context->drawable_h;
     }
     #endif
 }
@@ -1539,12 +1541,18 @@ static Uint8 SetWindowResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
     
 #ifdef SDL_GPU_USE_SDL2
     
-    // Don't need to resize (only update internals) when resolution isn't changing.
-    SDL_GetWindowSize(SDL_GetWindowFromID(target->context->windowID), &target->context->window_w, &target->context->window_h);
-    if(target->context->window_w != w || target->context->window_h != h)
     {
-        SDL_SetWindowSize(SDL_GetWindowFromID(target->context->windowID), w, h);
-        SDL_GetWindowSize(SDL_GetWindowFromID(target->context->windowID), &target->context->window_w, &target->context->window_h);
+        SDL_Window* window = SDL_GetWindowFromID(target->context->windowID);
+        
+        // Don't need to resize (only update internals) when resolution isn't changing.
+        SDL_GetWindowSize(window, &target->context->window_w, &target->context->window_h);
+        SDL_GL_GetDrawableSize(window, &target->context->drawable_w, &target->context->drawable_h);
+        if(target->context->window_w != w || target->context->window_h != h)
+        {
+            SDL_SetWindowSize(window, w, h);
+            SDL_GetWindowSize(window, &target->context->window_w, &target->context->window_h);
+            SDL_GL_GetDrawableSize(window, &target->context->drawable_w, &target->context->drawable_h);
+        }
     }
     
 #else
@@ -1563,8 +1571,8 @@ static Uint8 SetWindowResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
             return 0;
     }
 
-    target->context->window_w = screen->w;
-    target->context->window_h = screen->h;
+    target->context->window_w = target->context->drawable_w = screen->w;
+    target->context->window_h = target->context->drawable_h = screen->h;
     
     // FIXME: Does the entire GL state need to be reset because the screen was recreated?
     
@@ -1583,8 +1591,8 @@ static Uint8 SetWindowResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
     target->context->stored_window_h = target->context->window_h;
     
     // Update base dimensions
-    target->base_w = target->context->window_w;
-    target->base_h = target->context->window_h;
+    target->base_w = target->context->drawable_w;
+    target->base_h = target->context->drawable_h;
     
     // Resets virtual resolution
     target->w = target->base_w;
@@ -1655,7 +1663,8 @@ static Uint8 SetFullscreen(GPU_Renderer* renderer, Uint8 enable_fullscreen, Uint
     GPU_Target* target = renderer->current_context_target;
     
 #ifdef SDL_GPU_USE_SDL2
-    Uint32 old_flags = SDL_GetWindowFlags(SDL_GetWindowFromID(target->context->windowID));
+    SDL_Window* window = SDL_GetWindowFromID(target->context->windowID);
+    Uint32 old_flags = SDL_GetWindowFlags(window);
     Uint8 was_fullscreen = (old_flags & SDL_WINDOW_FULLSCREEN);
     Uint8 is_fullscreen = was_fullscreen;
     
@@ -1669,9 +1678,9 @@ static Uint8 SetFullscreen(GPU_Renderer* renderer, Uint8 enable_fullscreen, Uint
             flags = SDL_WINDOW_FULLSCREEN;
     }
     
-    if(SDL_SetWindowFullscreen(SDL_GetWindowFromID(target->context->windowID), flags) >= 0)
+    if(SDL_SetWindowFullscreen(window, flags) >= 0)
     {
-        flags = SDL_GetWindowFlags(SDL_GetWindowFromID(target->context->windowID));
+        flags = SDL_GetWindowFlags(window);
         is_fullscreen = (flags & SDL_WINDOW_FULLSCREEN);
         
         // If we just went fullscreen, save the original resolution
@@ -1685,10 +1694,11 @@ static Uint8 SetFullscreen(GPU_Renderer* renderer, Uint8 enable_fullscreen, Uint
         
         // If we're in windowed mode now and a resolution was stored, restore the original window resolution
         if(was_fullscreen && !is_fullscreen && (target->context->stored_window_w != 0 && target->context->stored_window_h != 0))
-            SDL_SetWindowSize(SDL_GetWindowFromID(target->context->windowID), target->context->stored_window_w, target->context->stored_window_h);
+            SDL_SetWindowSize(window, target->context->stored_window_w, target->context->stored_window_h);
         
         // Update window dims
-        SDL_GetWindowSize(SDL_GetWindowFromID(target->context->windowID), &target->context->window_w, &target->context->window_h);
+        SDL_GetWindowSize(window, &target->context->window_w, &target->context->window_h);
+        SDL_GL_GetDrawableSize(window, &target->context->drawable_w, &target->context->drawable_h);
     }
     
 #else
@@ -1702,8 +1712,8 @@ static Uint8 SetFullscreen(GPU_Renderer* renderer, Uint8 enable_fullscreen, Uint
         is_fullscreen = (surf->flags & SDL_FULLSCREEN);
         
         // Update window dims
-        target->context->window_w = surf->w;
-        target->context->window_h = surf->h;
+        target->context->window_w = target->context->drawable_w = surf->w;
+        target->context->window_h = target->context->drawable_h = surf->h;
     }
     
 #endif
@@ -1714,12 +1724,12 @@ static Uint8 SetFullscreen(GPU_Renderer* renderer, Uint8 enable_fullscreen, Uint
         if(!target->using_virtual_resolution)
         {
             // Update dims
-            target->w = target->context->window_w;
-            target->h = target->context->window_h;
+            target->w = target->context->drawable_w;
+            target->h = target->context->drawable_h;
         }
 
         // Reset viewport
-        target->viewport = GPU_MakeRect(0, 0, target->context->window_w, target->context->window_h);
+        target->viewport = GPU_MakeRect(0, 0, target->context->drawable_w, target->context->drawable_h);
         changeViewport(target);
         
         // Reset clip
@@ -1730,8 +1740,8 @@ static Uint8 SetFullscreen(GPU_Renderer* renderer, Uint8 enable_fullscreen, Uint
             applyTargetCamera(target);
     }
     
-    target->base_w = target->context->window_w;
-    target->base_h = target->context->window_h;
+    target->base_w = target->context->drawable_w;
+    target->base_h = target->context->drawable_h;
     
     return is_fullscreen;
 }

@@ -320,6 +320,10 @@ typedef struct GPU_Context
 	int window_w;
 	int window_h;
 	
+	/*! Drawable region dimensions */
+	int drawable_w;
+	int drawable_h;
+	
 	/*! Window dimensions for restoring windowed mode after GPU_SetFullscreen(1,1). */
 	int stored_window_w;
 	int stored_window_h;
