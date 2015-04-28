@@ -45,6 +45,8 @@ option(SDL_gpu_DISABLE_GLES_1 "Disable OpenGLES 1.X renderer" OFF)
 option(SDL_gpu_DISABLE_GLES_2 "Disable OpenGLES 2.X renderer" OFF)
 option(SDL_gpu_DISABLE_GLES_3 "Disable OpenGLES 3.X renderer" OFF)
 
+option(SDL_gpu_USE_SYSTEM_GLEW "Attempt to use the system GLEW library (may not support GL 3+)" OFF)
+
 if(APPLE)
 	if(IOS)
 		# iOS 8 may need the framework option
@@ -134,11 +136,14 @@ else (SDL_gpu_DISABLE_OPENGL)
 		add_definitions("-DSDL_GPU_DISABLE_OPENGL_4")
 	endif (SDL_gpu_DISABLE_OPENGL_4)
 	
-        # If glew is not found here, we’ll use the bundled version
-	find_package(GLEW)
-        if(NOT GLEW_FOUND)
-          message(" Using bundled version of GLEW")
-        endif(NOT GLEW_FOUND)
+	if(SDL_gpu_USE_SYSTEM_GLEW)
+	    # If glew is not found here, we’ll use the bundled version
+		find_package(GLEW)
+	endif()
+
+    if(NOT GLEW_FOUND)
+        message(" Using bundled version of GLEW")
+    endif(NOT GLEW_FOUND)
         
         
 	if (NOT SDL_gpu_DISABLE_OPENGL)
