@@ -442,7 +442,7 @@ static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, GPU_Fo
     result->has_mipmaps = 0;
     
     result->color = white;
-    result->use_blending = ((format == GPU_FORMAT_LUMINANCE_ALPHA || format == GPU_FORMAT_RGBA)? 1 : 0);
+    result->use_blending = 1;
     result->blend_mode = GPU_GetBlendModeFromPreset(GPU_BLEND_NORMAL);
     result->filter_mode = GPU_FILTER_LINEAR;
     result->snap_mode = GPU_SNAP_POSITION_AND_DIMENSIONS;

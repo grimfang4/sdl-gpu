@@ -121,7 +121,6 @@ int main(int argc, char* argv[])
         
         // Fade out the selection image
         GPU_SetColor(selection_image, GPU_MakeColor(255, 255, 255, 100));
-        GPU_SetBlending(selection_image, 1);
         
         if(!GPU_LoadTarget(image))
             return 6;
