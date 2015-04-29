@@ -3074,9 +3074,9 @@ static void UpdateImage(GPU_Renderer* renderer, GPU_Image* image, const GPU_Rect
     if(image->target != NULL && isCurrentTarget(renderer, image->target))
         renderer->impl->FlushBlitBuffer(renderer);
     bindTexture(renderer, image);
-    alignment = 1;
-    if(newSurface->format->BytesPerPixel == 4)
-        alignment = 4;
+    alignment = 8;
+    while(newSurface->pitch % alignment)
+        alignment >>= 1;
     glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
     #ifdef SDL_GPU_USE_OPENGL
     glPixelStorei(GL_UNPACK_ROW_LENGTH, (newSurface->pitch / newSurface->format->BytesPerPixel));
@@ -3163,7 +3163,9 @@ static void UpdateImageBytes(GPU_Renderer* renderer, GPU_Image* image, const GPU
     if(image->target != NULL && isCurrentTarget(renderer, image->target))
         renderer->impl->FlushBlitBuffer(renderer);
     bindTexture(renderer, image);
-    alignment = 1;
+    alignment = 8;
+    while(bytes_per_row % alignment)
+        alignment >>= 1;
     glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
     #ifdef SDL_GPU_USE_OPENGL
     glPixelStorei(GL_UNPACK_ROW_LENGTH, (bytes_per_row / image->bytes_per_pixel));
@@ -3303,9 +3305,9 @@ static Uint8 ReplaceImage(GPU_Renderer* renderer, GPU_Image* image, SDL_Surface*
     
     
     // Upload surface pixel data
-    alignment = 1;
-    if(newSurface->format->BytesPerPixel == 4)
-        alignment = 4;
+    alignment = 8;
+    while(newSurface->pitch % alignment)
+        alignment >>= 1;
     glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
     #ifdef SDL_GPU_USE_OPENGL
     glPixelStorei(GL_UNPACK_ROW_LENGTH, (newSurface->pitch / newSurface->format->BytesPerPixel));
