@@ -114,6 +114,9 @@ target_link_libraries (image-formats-test ${TEST_LIBS})
 add_executable(coordinate-mode-test coordinate-mode/main.c)
 target_link_libraries (coordinate-mode-test ${TEST_LIBS})
 
+add_executable(replace-image-test replace-image/main.c)
+target_link_libraries (replace-image-test ${TEST_LIBS})
+
 add_executable(sandbox-test sandbox/main.c)
 target_link_libraries (sandbox-test ${TEST_LIBS})
 

@@ -537,6 +537,11 @@ static void UpdateImageBytes(GPU_Renderer* renderer, GPU_Image* image, const GPU
     GPU_Log(" %s (dummy)\n", __func__);
 }
 
+static Uint8 ReplaceImage(GPU_Renderer* renderer, GPU_Image* image, SDL_Surface* surface, const GPU_Rect* surface_rect)
+{
+    GPU_Log(" %s (dummy)\n", __func__);
+    return 0;
+}
 
 static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surface)
 {
@@ -1198,6 +1203,7 @@ void set_renderer_functions(GPU_RendererImpl* impl)
     impl->CopyImage = &CopyImage;
     impl->UpdateImage = &UpdateImage;
     impl->UpdateImageBytes = &UpdateImageBytes;
+    impl->ReplaceImage = &ReplaceImage;
     impl->CopyImageFromSurface = &CopyImageFromSurface;
     impl->CopyImageFromTarget = &CopyImageFromTarget;
     impl->CopySurfaceFromTarget = &CopySurfaceFromTarget;

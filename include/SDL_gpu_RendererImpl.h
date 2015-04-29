@@ -79,6 +79,9 @@ typedef struct GPU_RendererImpl
 	/*! \see GPU_UpdateImageBytes */
 	void (SDLCALL *UpdateImageBytes)(GPU_Renderer* renderer, GPU_Image* image, const GPU_Rect* image_rect, const unsigned char* bytes, int bytes_per_row);
 	
+	/*! \see GPU_ReplaceImage */
+	Uint8 (SDLCALL *ReplaceImage)(GPU_Renderer* renderer, GPU_Image* image, SDL_Surface* surface, const GPU_Rect* surface_rect);
+	
 	/*! \see GPU_CopyImageFromSurface() */
 	GPU_Image* (SDLCALL *CopyImageFromSurface)(GPU_Renderer* renderer, SDL_Surface* surface);
 	

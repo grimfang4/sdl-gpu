@@ -1789,6 +1789,29 @@ static GPU_Camera SetCamera(GPU_Renderer* renderer, GPU_Target* target, GPU_Came
     return old_camera;
 }
 
+static GLuint CreateUninitializedTexture(GPU_Renderer* renderer)
+{
+    GLuint handle;
+    
+    glGenTextures(1, &handle);
+    if(handle == 0)
+        return 0;
+
+    flushAndBindTexture(renderer, handle);
+
+    // Set the texture's stretching properties
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    #if defined(SDL_GPU_USE_GLES) && (SDL_GPU_GLES_TIER == 1)
+    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
+    #endif
+    
+    return handle;
+}
 
 static GPU_Image* CreateUninitializedImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, GPU_FormatEnum format)
 {
@@ -1852,27 +1875,16 @@ static GPU_Image* CreateUninitializedImage(GPU_Renderer* renderer, Uint16 w, Uin
         GPU_PushErrorCode("GPU_CreateUninitializedImage", GPU_ERROR_DATA_ERROR, "Unsupported number of bytes per pixel (%d)", bytes_per_pixel);
         return NULL;
     }
-
-    glGenTextures( 1, &handle );
+    
+    // Create the underlying texture
+    handle = CreateUninitializedTexture(renderer);
     if(handle == 0)
     {
         GPU_PushErrorCode("GPU_CreateUninitializedImage", GPU_ERROR_BACKEND_ERROR, "Failed to generate a texture handle.");
         return NULL;
     }
-
-    flushAndBindTexture( renderer, handle );
-
-    // Set the texture's stretching properties
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
-    #if defined(SDL_GPU_USE_GLES) && (SDL_GPU_GLES_TIER == 1)
-    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
-    #endif
-
+    
+    // Create the GPU_Image
     result = (GPU_Image*)SDL_malloc(sizeof(GPU_Image));
     result->refcount = 1;
     data = (GPU_IMAGE_DATA*)SDL_malloc(sizeof(GPU_IMAGE_DATA));
@@ -3169,6 +3181,198 @@ static void UpdateImageBytes(GPU_Renderer* renderer, GPU_Image* image, const GPU
 }
 
 
+
+static Uint8 ReplaceImage(GPU_Renderer* renderer, GPU_Image* image, SDL_Surface* surface, const GPU_Rect* surface_rect)
+{
+	GPU_IMAGE_DATA* data;
+	GPU_Rect sourceRect;
+	SDL_Surface* newSurface;
+	GLenum internal_format;
+	Uint8* pixels;
+	int w, h;
+	int alignment;
+
+    if(image == NULL)
+    {
+        GPU_PushErrorCode("GPU_ReplaceImage", GPU_ERROR_NULL_ARGUMENT, "image");
+        return 0;
+    }
+    
+    if(surface == NULL)
+    {
+        GPU_PushErrorCode("GPU_ReplaceImage", GPU_ERROR_NULL_ARGUMENT, "surface");
+        return 0;
+    }
+    
+    data = (GPU_IMAGE_DATA*)image->data;
+    internal_format = data->format;
+
+    newSurface = copySurfaceIfNeeded(renderer, internal_format, surface, &internal_format);
+    if(newSurface == NULL)
+    {
+        GPU_PushErrorCode("GPU_ReplaceImage", GPU_ERROR_BACKEND_ERROR, "Failed to convert surface to proper pixel format.");
+        return 0;
+    }
+    
+    // Free the attached framebuffer
+    if((renderer->enabled_features & GPU_FEATURE_RENDER_TARGETS) && image->target != NULL)
+    {
+        GPU_TARGET_DATA* tdata = (GPU_TARGET_DATA*)image->target->data;
+        if(renderer->current_context_target != NULL)
+            flushAndClearBlitBufferIfCurrentFramebuffer(renderer, image->target);
+        if(tdata->handle != 0)
+            glDeleteFramebuffers(1, &tdata->handle);
+        tdata->handle = 0;
+    }
+    
+    // Free the old texture
+    if(data->owns_handle)
+        glDeleteTextures( 1, &data->handle);
+    data->handle = 0;
+    
+    // Get the area of the surface we'll use
+    if(surface_rect == NULL)
+    {
+        sourceRect.x = 0;
+        sourceRect.y = 0;
+        sourceRect.w = surface->w;
+        sourceRect.h = surface->h;
+    }
+    else
+        sourceRect = *surface_rect;
+    
+    // Clip the source rect to the surface
+    if(sourceRect.x < 0)
+    {
+        sourceRect.w += sourceRect.x;
+        sourceRect.x = 0;
+    }
+    if(sourceRect.y < 0)
+    {
+        sourceRect.h += sourceRect.y;
+        sourceRect.y = 0;
+    }
+    if(sourceRect.x >= surface->w)
+        sourceRect.x = surface->w - 1;
+    if(sourceRect.y >= surface->h)
+        sourceRect.y = surface->h - 1;
+    
+    if(sourceRect.x + sourceRect.w > surface->w)
+        sourceRect.w = surface->w - sourceRect.x;
+    if(sourceRect.y + sourceRect.h > surface->h)
+        sourceRect.h = surface->h - sourceRect.y;
+    
+    if(sourceRect.w <= 0 || sourceRect.h <= 0)
+    {
+        GPU_PushErrorCode("GPU_ReplaceImage", GPU_ERROR_DATA_ERROR, "Clipped source rect has zero size.");
+        return 0;
+    }
+    
+    // Allocate new texture
+    data->handle = CreateUninitializedTexture(renderer);
+    data->owns_handle = 1;
+    if(data->handle == 0)
+    {
+        GPU_PushErrorCode("GPU_ReplaceImage", GPU_ERROR_BACKEND_ERROR, "Failed to create a new texture handle.");
+        return 0;
+    }
+    
+    // Update image members
+    w = sourceRect.w;
+    h = sourceRect.h;
+    
+    if(!image->using_virtual_resolution)
+    {
+        image->w = w;
+        image->h = h;
+    }
+    image->base_w = w;
+    image->base_h = h;
+    
+    if(!(renderer->enabled_features & GPU_FEATURE_NON_POWER_OF_TWO))
+    {
+        if(!isPowerOfTwo(w))
+            w = getNearestPowerOf2(w);
+        if(!isPowerOfTwo(h))
+            h = getNearestPowerOf2(h);
+    }
+    image->texture_w = w;
+    image->texture_h = h;
+    
+    image->has_mipmaps = 0;
+    
+    
+    // Upload surface pixel data
+    alignment = 1;
+    if(newSurface->format->BytesPerPixel == 4)
+        alignment = 4;
+    glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
+    #ifdef SDL_GPU_USE_OPENGL
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, (newSurface->pitch / newSurface->format->BytesPerPixel));
+    #endif
+    
+    pixels = (Uint8*)newSurface->pixels;
+    // Shift the pixels pointer to the proper source position
+    pixels += (int)(newSurface->pitch * sourceRect.y + (newSurface->format->BytesPerPixel)*sourceRect.x);
+    
+    glTexImage2D(GL_TEXTURE_2D, 0, internal_format, w, h, 0,
+                 internal_format, GL_UNSIGNED_BYTE, pixels);
+
+    // Delete temporary surface
+    if(surface != newSurface)
+        SDL_FreeSurface(newSurface);
+    
+    // Restore GL defaults
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+    #ifdef SDL_GPU_USE_OPENGL
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+    #endif
+    
+    
+    
+    // Update target members
+    if((renderer->enabled_features & GPU_FEATURE_RENDER_TARGETS) && image->target != NULL)
+    {
+        GLenum status;
+        GPU_Target* target = image->target;
+        GPU_TARGET_DATA* tdata = (GPU_TARGET_DATA*)target->data;
+        
+        // Create framebuffer object
+        glGenFramebuffers(1, &tdata->handle);
+        if(tdata->handle == 0)
+        {
+            GPU_PushErrorCode("GPU_ReplaceImage", GPU_ERROR_BACKEND_ERROR, "Failed to create new framebuffer target.");
+            return 0;
+        }
+        
+        flushAndBindFramebuffer(renderer, tdata->handle);
+
+        // Attach the texture to it
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, data->handle, 0);
+
+        status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+        if(status != GL_FRAMEBUFFER_COMPLETE)
+        {
+            GPU_PushErrorCode("GPU_ReplaceImage", GPU_ERROR_BACKEND_ERROR, "Failed to recreate framebuffer target.");
+            return 0;
+        }
+        
+        if(!target->using_virtual_resolution)
+        {
+            target->w = image->base_w;
+            target->h = image->base_h;
+        }
+        target->base_w = image->texture_w;
+        target->base_h = image->texture_h;
+        
+        // Reset viewport?
+        target->viewport = GPU_MakeRect(0, 0, target->w, target->h);
+    }
+
+    return 1;
+}
+
+
 static_inline Uint32 getPixel(SDL_Surface *Surface, int x, int y)
 {
     Uint8* bits;
@@ -3214,6 +3418,12 @@ static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surf
     if(surface == NULL)
     {
         GPU_PushErrorCode("GPU_CopyImageFromSurface", GPU_ERROR_NULL_ARGUMENT, "surface");
+        return NULL;
+    }
+
+    if(surface->w == 0 || surface->h == 0)
+    {
+        GPU_PushErrorCode("GPU_CopyImageFromSurface", GPU_ERROR_DATA_ERROR, "Surface has a zero dimension.");
         return NULL;
     }
 
@@ -6139,6 +6349,7 @@ static void SetAttributeSource(GPU_Renderer* renderer, int num_values, GPU_Attri
     impl->CopyImage = &CopyImage; \
     impl->UpdateImage = &UpdateImage; \
     impl->UpdateImageBytes = &UpdateImageBytes; \
+    impl->ReplaceImage = &ReplaceImage; \
     impl->CopyImageFromSurface = &CopyImageFromSurface; \
     impl->CopyImageFromTarget = &CopyImageFromTarget; \
     impl->CopySurfaceFromTarget = &CopySurfaceFromTarget; \

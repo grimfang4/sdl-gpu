@@ -934,6 +934,14 @@ void GPU_UpdateImageBytes(GPU_Image* image, const GPU_Rect* image_rect, const un
 	_gpu_current_renderer->impl->UpdateImageBytes(_gpu_current_renderer, image, image_rect, bytes, bytes_per_row);
 }
 
+Uint8 GPU_ReplaceImage(GPU_Image* image, SDL_Surface* surface, const GPU_Rect* surface_rect)
+{
+	if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL)
+		return 0;
+	
+	return _gpu_current_renderer->impl->ReplaceImage(_gpu_current_renderer, image, surface, surface_rect);
+}
+
 SDL_Surface* GPU_LoadSurface(const char* filename)
 {
 	int width, height, channels;
