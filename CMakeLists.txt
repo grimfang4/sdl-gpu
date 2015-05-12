@@ -67,7 +67,7 @@ endif()
 
 set(SDL_gpu_VERSION 0.11.0)
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/scripts)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/scripts)
 
 if(APPLE)
 	include(ios-cmake/toolchain/XcodeDefaults)
@@ -82,20 +82,20 @@ endif ( SDL_gpu_BUILD_DEBUG )
 # Find the package for SDL or SDL2
 if ( SDL_gpu_USE_SDL1 )
 	find_package(SDL REQUIRED)
-	
+
 	if ( NOT SDL_FOUND )
 	   message ( FATAL_ERROR "SDL not found!" )
 	endif ( NOT SDL_FOUND )
-	
+
 	include_directories(${SDL_INCLUDE_DIR})
 	link_libraries(${SDL_LIBRARY})
 else ( SDL_gpu_USE_SDL1 )
 	find_package(SDL2 REQUIRED)
-	
+
 	if ( NOT SDL2_FOUND )
 	   message ( FATAL_ERROR "SDL2 not found!" )
 	endif ( NOT SDL2_FOUND )
-	
+
 	if ( NOT SDL2MAIN_LIBRARY )
 		message ( WARNING "SDL2MAIN_LIBRARY is NOTFOUND" )
 		SET( SDL2MAIN_LIBRARY "" )
@@ -119,7 +119,7 @@ else (SDL_gpu_DISABLE_OPENGL)
 		link_libraries(${OPENGL_LIBRARIES})
 	endif()
 
-	
+
 	if (SDL_gpu_DISABLE_OPENGL_1_BASE)
 		add_definitions("-DSDL_GPU_DISABLE_OPENGL_1_BASE")
 	endif (SDL_gpu_DISABLE_OPENGL_1_BASE)
@@ -135,7 +135,7 @@ else (SDL_gpu_DISABLE_OPENGL)
 	if (SDL_gpu_DISABLE_OPENGL_4)
 		add_definitions("-DSDL_GPU_DISABLE_OPENGL_4")
 	endif (SDL_gpu_DISABLE_OPENGL_4)
-	
+
 	if(SDL_gpu_USE_SYSTEM_GLEW)
 	    # If glew is not found here, we’ll use the bundled version
 		find_package(GLEW)
@@ -144,15 +144,15 @@ else (SDL_gpu_DISABLE_OPENGL)
     if(NOT GLEW_FOUND)
         message(" Using bundled version of GLEW")
     endif(NOT GLEW_FOUND)
-        
-        
+
+
 	if (NOT SDL_gpu_DISABLE_OPENGL)
 		if(GLEW_FOUND)
 			# Look in the GL subdirectory, too.
 			foreach(GL_DIR ${GLEW_INCLUDE_DIRS})
 				set(GLEW_GL_DIRS ${GLEW_GL_DIRS} "${GL_DIR}/GL")
 			endforeach(GL_DIR ${GLEW_INCLUDE_DIRS})
-			
+
 			include_directories(${GLEW_INCLUDE_DIRS} ${GLEW_GL_DIRS})
 			link_libraries (${GLEW_LIBRARIES})
 		else(GLEW_FOUND)
@@ -178,7 +178,7 @@ else (SDL_gpu_DISABLE_GLES)
 			${ANDROID_GLES2_LIBRARY}
 			${ANDROID_GLES1_LIBRARY}
 		)
-	else()	
+	else()
 		find_package(OpenGLES REQUIRED)
 		include_directories(${OPENGLES_INCLUDE_DIR})
 		link_libraries (${OPENGLES_LIBRARIES})
@@ -193,7 +193,7 @@ else (SDL_gpu_DISABLE_GLES)
 	if (SDL_gpu_DISABLE_GLES_3)
 		add_definitions("-DSDL_GPU_DISABLE_GLES_3")
 	endif (SDL_gpu_DISABLE_GLES_3)
-	
+
 endif (SDL_gpu_DISABLE_GLES)
 
 # If stb-image is not found here, we’ll use the bundled version
@@ -245,14 +245,14 @@ endif(SDL_gpu_BUILD_DEMOS)
 # Build the tests
 if(SDL_gpu_BUILD_TESTS)
   if(SDL_gpu_BUILD_VIDEO_TEST)
-  
+
 	find_package(FFMPEG REQUIRED)
 	include_directories(${FFMPEG_INCLUDE_DIR})
 	link_libraries (${FFMPEG_LIBRARIES})
-	
+
     add_definitions("-DSDL_GPU_BUILD_VIDEO_TEST")
   endif(SDL_gpu_BUILD_VIDEO_TEST)
-  
+
   add_subdirectory(tests)
 endif(SDL_gpu_BUILD_TESTS)
 
@@ -260,4 +260,3 @@ endif(SDL_gpu_BUILD_TESTS)
 if(SDL_gpu_BUILD_TOOLS)
   add_subdirectory(tools)
 endif(SDL_gpu_BUILD_TOOLS)
-
