@@ -1061,10 +1061,6 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     }
     
     // Store the window info
-    SDL_GetWindowSize(window, &target->context->window_w, &target->context->window_h);
-    SDL_GL_GetDrawableSize(window, &target->context->drawable_w, &target->context->drawable_h);
-    target->context->stored_window_w = target->context->window_w;
-    target->context->stored_window_h = target->context->window_h;
     target->context->windowID = SDL_GetWindowID(window);
     
     // Make a new context if needed and make it current
@@ -1073,6 +1069,13 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
         target->context->context = SDL_GL_CreateContext(window);
         GPU_AddWindowMapping(target);
     }
+    
+    // Get window dimensions
+    SDL_GetWindowSize(window, &target->context->window_w, &target->context->window_h);
+    target->context->stored_window_w = target->context->window_w;
+    target->context->stored_window_h = target->context->window_h;
+    // We need a GL context before we can get the drawable size.
+    SDL_GL_GetDrawableSize(window, &target->context->drawable_w, &target->context->drawable_h);
     
     #else
     
