@@ -1,0 +1,13 @@
+CMakeCache.txt
+CMakeFiles
+Makefile
+*.cmake
+3d-demo
+init-demo
+tutorial-space-demo
+*.a
+*.so
+*.a
+*.o
+
+
