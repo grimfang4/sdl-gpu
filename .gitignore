@@ -2,12 +2,10 @@ CMakeCache.txt
 CMakeFiles
 Makefile
 *.cmake
-3d-demo
-init-demo
-tutorial-space-demo
+*-demo
+*-test
 *.a
 *.so
-*.a
 *.o
 
 
