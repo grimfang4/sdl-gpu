@@ -9,5 +9,6 @@ tutorial-space-demo
 *.so
 *.a
 *.o
-
+example.png
+write-img
 
