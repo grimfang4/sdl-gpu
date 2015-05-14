@@ -8,3 +8,6 @@ target_link_libraries (3d-demo SDL_gpu)
 
 add_executable(tutorial-space-demo tutorial-space/main.c)
 target_link_libraries (tutorial-space-demo SDL_gpu)
+
+add_executable(write-img write-to-img/main.c)
+target_link_libraries(write-img SDL_gpu)
