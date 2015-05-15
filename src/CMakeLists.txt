@@ -10,6 +10,7 @@ set(SDL_gpu_SRCS
 	renderer_OpenGL_3.c
 	renderer_GLES_1.c
 	renderer_GLES_2.c
+	renderer_GLES_3.c
 )
 
 set(SDL_gpu_HDRS
@@ -22,6 +23,7 @@ set(SDL_gpu_HDRS
 	../include/SDL_gpu_OpenGL_3.h
 	../include/SDL_gpu_GLES_1.h
 	../include/SDL_gpu_GLES_2.h
+	../include/SDL_gpu_GLES_3.h
 	renderer_GL_common.inl
 	renderer_shapes_GL_common.inl
 )
@@ -52,6 +54,7 @@ set(SDL_gpu_install_HDRS
 	../include/SDL_gpu_OpenGL_3.h
 	../include/SDL_gpu_GLES_1.h
 	../include/SDL_gpu_GLES_2.h
+	../include/SDL_gpu_GLES_3.h
 )
 
 # Set the appropriate library name for the version of SDL used

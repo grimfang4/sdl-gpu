@@ -137,6 +137,8 @@ GPU_Renderer* GPU_CreateRenderer_GLES_1(GPU_RendererID request);
 void GPU_FreeRenderer_GLES_1(GPU_Renderer* renderer);
 GPU_Renderer* GPU_CreateRenderer_GLES_2(GPU_RendererID request);
 void GPU_FreeRenderer_GLES_2(GPU_Renderer* renderer);
+GPU_Renderer* GPU_CreateRenderer_GLES_3(GPU_RendererID request);
+void GPU_FreeRenderer_GLES_3(GPU_Renderer* renderer);
 
 void GPU_RegisterRenderer(GPU_RendererID id, GPU_Renderer* (*create_renderer)(GPU_RendererID request), void (*free_renderer)(GPU_Renderer* renderer))
 {
@@ -211,6 +213,11 @@ void gpu_register_built_in_renderers(void)
         GPU_RegisterRenderer(GPU_MakeRendererID("OpenGLES 2", GPU_RENDERER_GLES_2, 2, 0),
                              &GPU_CreateRenderer_GLES_2,
                              &GPU_FreeRenderer_GLES_2);
+        #endif
+        #ifndef SDL_GPU_DISABLE_GLES_3
+        GPU_RegisterRenderer(GPU_MakeRendererID("OpenGLES 3", GPU_RENDERER_GLES_3, 3, 0),
+                             &GPU_CreateRenderer_GLES_3,
+                             &GPU_FreeRenderer_GLES_3);
         #endif
     #endif
 	
@@ -305,6 +312,7 @@ void GPU_GetDefaultRendererOrder(int* order_size, GPU_RendererID* order)
     GPU_RendererID default_order[GPU_RENDERER_ORDER_MAX];
     
     #if defined(__ANDROID__) || defined(__IPHONEOS__)
+        default_order[count++] = GPU_MakeRendererID("OpenGLES 3", GPU_RENDERER_GLES_3, 3, 0);
         default_order[count++] = GPU_MakeRendererID("OpenGLES 2", GPU_RENDERER_GLES_2, 2, 0);
         default_order[count++] = GPU_MakeRendererID("OpenGLES 1", GPU_RENDERER_GLES_1, 1, 1);
     #else

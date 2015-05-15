@@ -2011,6 +2011,14 @@ static GPU_Image* CreateImageUsingTexture(GPU_Renderer* renderer, Uint32 handle,
     
 	GPU_Image* result;
 	GPU_IMAGE_DATA* data;
+	
+	#ifdef SDL_GPU_USE_GLES
+	if(renderer->id.major_version == 3 && renderer->id.minor_version == 0)
+	{
+	    GPU_PushErrorCode("GPU_CreateImageUsingTexture", GPU_ERROR_UNSUPPORTED_FUNCTION, "Renderer %s's runtime version on this device (3.0) does not support this function", renderer->id.name);
+        return NULL;
+	}
+    #endif
 
     flushAndBindTexture(renderer, handle);
     
