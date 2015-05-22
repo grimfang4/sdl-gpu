@@ -1,0 +1,11 @@
+CMakeCache.txt
+CMakeFiles
+Makefile
+*.cmake
+*-demo
+*-test
+*.a
+*.so
+*.o
+
+
