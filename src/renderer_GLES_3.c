@@ -23,6 +23,8 @@ void GPU_FreeRenderer_GLES_3(GPU_Renderer* renderer) {}
 #endif
 #define SDL_GPU_SKIP_ENABLE_TEXTURE_2D
 #define SDL_GPU_ASSUME_SHADERS
+// TODO: Make this dynamic because GLES 3.1 supports it
+#define SDL_GPU_DISABLE_TEXTURE_GETS
 
 #include "renderer_GL_common.inl"
 #include "renderer_shapes_GL_common.inl"
