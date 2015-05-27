@@ -1302,7 +1302,8 @@ GPU_Renderer* create_dummy_renderer(GPU_RendererID request)
 
     renderer->id = request;
     renderer->shader_language = GPU_LANGUAGE_NONE;
-    renderer->shader_version = 0;
+    renderer->min_shader_version = 0;
+    renderer->max_shader_version = 0;
     
     renderer->current_context_target = NULL;
     
