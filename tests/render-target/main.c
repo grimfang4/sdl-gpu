@@ -12,7 +12,7 @@ int main(int argc, char* argv[])
 
 	screen = initialize_demo(argc, argv, 800, 600);
 	if(screen == NULL)
-		return -1;
+		return 1;
 
 	{
 		GPU_Image* image2;
@@ -34,24 +34,29 @@ int main(int argc, char* argv[])
 
 		image2 = GPU_LoadImage("data/test2.bmp");
 		if (image2 == NULL)
-			return -1;
+			return 2;
 
 		image3 = GPU_LoadImage("data/test.bmp");
 		if (image3 == NULL)
-			return -1;
+			return 3;
 
 		font_surface = GPU_LoadSurface("data/comic14.png");
 		font = FONT_Alloc(font_surface);
+		if(font == NULL)
+        {
+            GPU_LogError("Failed to load font.\n");
+            return 4;
+        }
 		GPU_SetRGB(font->image, 255, 0, 0);
 		SDL_FreeSurface(font_surface);
 
 		mode1image = GPU_CreateImage(300, 300, GPU_FORMAT_RGBA);
 		if (mode1image == NULL)
-			return -1;
+			return 5;
 
 		mode2image = GPU_CreateImage(400, 400, GPU_FORMAT_RGBA);
 		if (mode2image == NULL)
-			return -1;
+			return 6;
 
 		GPU_LoadTarget(mode1image);
 		GPU_LoadTarget(mode2image);
