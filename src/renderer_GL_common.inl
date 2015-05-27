@@ -872,10 +872,14 @@ static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request,
         if(GPU_flags & GPU_INIT_REQUEST_COMPATIBILITY_PROFILE)
             SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
         else
+        {
             SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+            // Force newer default shader version for core contexts because they don't support lower versions
+            renderer->min_shader_version = SDL_GPU_GLSL_VERSION_CORE;
+            if(renderer->min_shader_version > renderer->max_shader_version)
+                renderer->max_shader_version = SDL_GPU_GLSL_VERSION_CORE;
+        }
 
-        // Set newer default shader version for core-capable contexts
-        renderer->shader_version = SDL_GPU_GLSL_VERSION_CORE;
     }
     #endif
 
@@ -1172,6 +1176,19 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
 
         GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Failed to parse OpenGL version string: \"%s\"", version_string);
     }
+    #ifndef SDL_GPU_DISABLE_SHADERS
+    // Check max GLSL version
+    {
+        int major, minor;
+        version_string = (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION);
+        if(sscanf(version_string, "%d.%d", &major, &minor) <= 0)
+        {
+            GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Failed to parse GLSL version string: \"%s\"", version_string);
+        }
+        else
+            renderer->max_shader_version = major*100 + minor;
+    }
+    #endif
     #else
     // GLES doesn't have GL_MAJOR_VERSION.  Check via version string instead.
     version_string = (const char*)glGetString(GL_VERSION);
@@ -1191,6 +1208,19 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
             GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Failed to parse OpenGL version string: \"%s\"", version_string);
         }
     }
+    #ifndef SDL_GPU_DISABLE_SHADERS
+    // Check max GLSL version
+    {
+        int major, minor;
+        version_string = (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION);
+        if(sscanf(version_string, "OpenGL ES GLSL ES %d.%d", &major, &minor) <= 0)
+        {
+            GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Failed to parse GLSL version string: \"%s\"", version_string);
+        }
+        else
+            renderer->max_shader_version = major*100 + minor;
+    }
+    #endif
     #endif
 
     // Did the wrong runtime library try to use a later versioned renderer?
@@ -2817,7 +2847,9 @@ static SDL_Surface* pack_surface_if_needed(SDL_Surface* surface)
 // Returns NULL on failure.  Returns the original surface if no copy is needed.  Returns a new surface converted to the right format otherwise.
 static SDL_Surface* copySurfaceIfNeeded(GPU_Renderer* renderer, GLenum glFormat, SDL_Surface* surface, GLenum* surfaceFormatResult)
 {
+    #ifdef SDL_GPU_USE_GLES
     SDL_Surface* original = surface;
+    #endif
 
     // If format doesn't match, we need to do a copy
     int format_compare = compareFormats(renderer, glFormat, surface, surfaceFormatResult);

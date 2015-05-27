@@ -38,7 +38,8 @@ GPU_Renderer* GPU_CreateRenderer_OpenGL_3(GPU_RendererID request)
     renderer->id = request;
     renderer->id.renderer = GPU_RENDERER_OPENGL_3;
     renderer->shader_language = GPU_LANGUAGE_GLSL;
-    renderer->shader_version = SDL_GPU_GLSL_VERSION;
+    renderer->min_shader_version = 110;
+    renderer->max_shader_version = SDL_GPU_GLSL_VERSION;
     
     renderer->current_context_target = NULL;
     
