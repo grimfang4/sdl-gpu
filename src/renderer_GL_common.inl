@@ -5537,7 +5537,7 @@ static Uint32 compile_shader_source(GPU_ShaderEnum shader_type, const char* shad
 }
 
 
-static Uint32 CompileShader_RW(GPU_Renderer* renderer, GPU_ShaderEnum shader_type, SDL_RWops* shader_source)
+static Uint32 CompileShader_RW(GPU_Renderer* renderer, GPU_ShaderEnum shader_type, SDL_RWops* shader_source, Uint8 free_rwops)
 {
     // Read in the shader source code
     Uint32 size = GetShaderSourceSize_RW(shader_source);
@@ -5546,6 +5546,9 @@ static Uint32 CompileShader_RW(GPU_Renderer* renderer, GPU_ShaderEnum shader_typ
 	Uint32 result2;
 	(void)renderer;
 
+    if(free_rwops)
+        SDL_RWclose(shader_source);
+    
     if(!result)
     {
         GPU_PushErrorCode("GPU_CompileShader", GPU_ERROR_DATA_ERROR, "Failed to read shader source");
@@ -5567,9 +5570,7 @@ static Uint32 CompileShader(GPU_Renderer* renderer, GPU_ShaderEnum shader_type, 
     if(size == 0)
         return 0;
     rwops = SDL_RWFromConstMem(shader_source, size);
-    size = renderer->impl->CompileShader_RW(renderer, shader_type, rwops);
-    SDL_RWclose(rwops);
-    return size;
+    return renderer->impl->CompileShader_RW(renderer, shader_type, rwops, 1);
 }
 
 static Uint32 CreateShaderProgram(GPU_Renderer* renderer)

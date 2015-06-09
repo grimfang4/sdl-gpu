@@ -29,18 +29,7 @@ typedef struct GPU_Target GPU_Target;
 
 /*!
  * \defgroup Initialization Initialization
- * SDL_gpu has a fairly simple initialization process.  If you need nothing more than the default initialization, call:
- * <pre>GPU_Target* screen = GPU_Init(width, height, GPU_DEFAULT_INIT_FLAGS);</pre>
- * Then when you're done, clean up with:
- * <pre>GPU_Quit();</pre>
- * 
- * Other functions in the Initialization module control how initialization is performed.
- * 
  * \defgroup Logging Debugging, Logging, and Error Handling
- * Use GPU_Log() for normal logging output (e.g. to replace printf).  Other logging priorities are handled by GPU_LogWarning() and GPU_LogError().
- * 
- * SDL_gpu stores an error queue that you can read and manipulate using GPU_PopErrorCode() and GPU_PushErrorCode().  If you set the debug level using GPU_SetDebugLevel(), you can have any errors automatically logged as they are generated.
- * 
  * \defgroup RendererSetup Renderer Setup
  * \defgroup RendererControls Renderer Controls
  * \defgroup ContextControls Context Controls
@@ -959,6 +948,9 @@ DECLSPEC void SDLCALL GPU_UnsetTargetColor(GPU_Target* target);
 /*! Load surface from an image file that is supported by this renderer.  Don't forget to SDL_FreeSurface() it. */
 DECLSPEC SDL_Surface* SDLCALL GPU_LoadSurface(const char* filename);
 
+/*! Load surface from an image file in memory.  Don't forget to SDL_FreeSurface() it. */
+DECLSPEC SDL_Surface* SDLCALL GPU_LoadSurface_RW(SDL_RWops* rwops, Uint8 free_rwops);
+
 /*! Save surface to a file.
  * With a format of GPU_FILE_AUTO, the file type is deduced from the extension.  Supported formats are: png, bmp, tga.
  * Returns 0 on failure. */
@@ -1450,7 +1442,7 @@ DECLSPEC Uint32 SDLCALL GPU_CreateShaderProgram(void);
 DECLSPEC void SDLCALL GPU_FreeShaderProgram(Uint32 program_object);
 
 /*! Loads shader source from an SDL_RWops, compiles it, and returns the new shader object. */
-DECLSPEC Uint32 SDLCALL GPU_CompileShader_RW(GPU_ShaderEnum shader_type, SDL_RWops* shader_source);
+DECLSPEC Uint32 SDLCALL GPU_CompileShader_RW(GPU_ShaderEnum shader_type, SDL_RWops* shader_source, Uint8 free_rwops);
 
 /*! Compiles shader source and returns the new shader object. */
 DECLSPEC Uint32 SDLCALL GPU_CompileShader(GPU_ShaderEnum shader_type, const char* shader_source);

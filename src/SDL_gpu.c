@@ -942,56 +942,18 @@ Uint8 GPU_ReplaceImage(GPU_Image* image, SDL_Surface* surface, const GPU_Rect* s
     return _gpu_current_renderer->impl->ReplaceImage(_gpu_current_renderer, image, surface, surface_rect);
 }
 
-SDL_Surface* GPU_LoadSurface(const char* filename)
+static SDL_Surface* gpu_copy_raw_surface_data(unsigned char* data, int width, int height, int channels)
 {
     int i;
-    int width, height, channels;
     Uint32 Rmask, Gmask, Bmask, Amask = 0;
-    unsigned char* data;
     SDL_Surface* result;
-
-    if(filename == NULL)
-    {
-        GPU_PushErrorCode("GPU_LoadSurface", GPU_ERROR_NULL_ARGUMENT, "filename");
-        return NULL;
-    }
-
-#ifdef __ANDROID__
-    if(strlen(filename) > 0 && filename[0] != '/')
-    {
-        // Must use SDL_RWops to access the assets directory automatically
-        SDL_RWops* rwops = SDL_RWFromFile(filename, "r");
-        if(rwops == NULL)
-            return NULL;
-        int data_bytes = SDL_RWseek(rwops, 0, SEEK_END);
-        SDL_RWseek(rwops, 0, SEEK_SET);
-        unsigned char* c_data = (unsigned char*)SDL_malloc(data_bytes);
-        SDL_RWread(rwops, c_data, 1, data_bytes);
-        data = stbi_load_from_memory(c_data, data_bytes, &width, &height, &channels, 0);
-        SDL_free(c_data);
-        SDL_FreeRW(rwops);
-    }
-    else
-    {
-        // Absolute filename
-        data = stbi_load(filename, &width, &height, &channels, 0);
-    }
-#else
-    data = stbi_load(filename, &width, &height, &channels, 0);
-#endif
-
+    
     if(data == NULL)
     {
-        GPU_PushErrorCode(__func__, GPU_ERROR_DATA_ERROR, "Failed to load \"%s\": %s", filename, stbi_failure_reason());
+        GPU_PushErrorCode(__func__, GPU_ERROR_DATA_ERROR, "Got NULL data");
         return NULL;
     }
-    if(channels < 1 || channels > 4)
-    {
-        GPU_PushErrorCode(__func__, GPU_ERROR_DATA_ERROR, "Failed to load \"%s\": Unsupported pixel format", filename);
-        stbi_image_free(data);
-        return NULL;
-    }
-
+    
     switch(channels)
     {
     case 1:
@@ -1020,6 +982,8 @@ SDL_Surface* GPU_LoadSurface(const char* filename)
         break;
     default:
         Rmask = Gmask = Bmask = 0;
+        GPU_PushErrorCode(__func__, GPU_ERROR_DATA_ERROR, "Invalid number of channels: %d", channels);
+        return NULL;
         break;
     }
 
@@ -1027,7 +991,6 @@ SDL_Surface* GPU_LoadSurface(const char* filename)
     if(result == NULL)
     {
         GPU_PushErrorCode(__func__, GPU_ERROR_DATA_ERROR, "Failed to create new %dx%d surface", width, height);
-        stbi_image_free(data);
         return NULL;
     }
 
@@ -1036,9 +999,7 @@ SDL_Surface* GPU_LoadSurface(const char* filename)
     {
         memcpy((Uint8*)result->pixels + i*result->pitch, data + channels*width*i, channels*width);
     }
-
-    stbi_image_free(data);
-
+    
     if(result != NULL && result->format->palette != NULL)
     {
         // SDL_CreateRGBSurface has no idea what palette to use, so it uses a blank one.
@@ -1059,6 +1020,85 @@ SDL_Surface* GPU_LoadSurface(const char* filename)
         SDL_SetPalette(result, SDL_LOGPAL, colors, 0, 256);
 #endif
     }
+    
+    return result;
+}
+
+SDL_Surface* GPU_LoadSurface_RW(SDL_RWops* rwops, Uint8 free_rwops)
+{
+    int width, height, channels;
+    unsigned char* data;
+    SDL_Surface* result;
+    
+    int data_bytes;
+    unsigned char* c_data;
+
+    if(rwops == NULL)
+    {
+        GPU_PushErrorCode(__func__, GPU_ERROR_NULL_ARGUMENT, "rwops");
+        return NULL;
+    }
+
+    // Get count of bytes
+    SDL_RWseek(rwops, 0, SEEK_SET);
+    data_bytes = SDL_RWseek(rwops, 0, SEEK_END);
+    SDL_RWseek(rwops, 0, SEEK_SET);
+    
+    // Read in the rwops data
+    c_data = (unsigned char*)SDL_malloc(data_bytes);
+    SDL_RWread(rwops, c_data, 1, data_bytes);
+    
+    // Load image
+    data = stbi_load_from_memory(c_data, data_bytes, &width, &height, &channels, 0);
+    
+    // Clean up temp data
+    SDL_free(c_data);
+    if(free_rwops)
+        SDL_RWclose(rwops);
+
+    if(data == NULL)
+    {
+        GPU_PushErrorCode(__func__, GPU_ERROR_DATA_ERROR, "Failed to load from rwops: %s", stbi_failure_reason());
+        return NULL;
+    }
+
+    // Copy into a surface
+    result = gpu_copy_raw_surface_data(data, width, height, channels);
+
+    stbi_image_free(data);
+
+    return result;
+}
+
+SDL_Surface* GPU_LoadSurface(const char* filename)
+{
+    int width, height, channels;
+    unsigned char* data;
+    SDL_Surface* result;
+
+    if(filename == NULL)
+    {
+        GPU_PushErrorCode("GPU_LoadSurface", GPU_ERROR_NULL_ARGUMENT, "filename");
+        return NULL;
+    }
+
+#ifdef __ANDROID__
+    // Must use SDL_RWops to access the assets directory automatically
+    if(strlen(filename) > 0 && filename[0] != '/')
+        return GPU_LoadSurface_RW(SDL_RWFromFile(filename, "r"), 1);
+#endif
+
+    data = stbi_load(filename, &width, &height, &channels, 0);
+
+    if(data == NULL)
+    {
+        GPU_PushErrorCode(__func__, GPU_ERROR_DATA_ERROR, "Failed to load \"%s\": %s", filename, stbi_failure_reason());
+        return NULL;
+    }
+
+    result = gpu_copy_raw_surface_data(data, width, height, channels);
+
+    stbi_image_free(data);
 
     return result;
 }
@@ -1734,33 +1774,36 @@ void GPU_Flip(GPU_Target* target)
 // Shader API
 
 
-Uint32 GPU_CompileShader_RW(GPU_ShaderEnum shader_type, SDL_RWops* shader_source)
+Uint32 GPU_CompileShader_RW(GPU_ShaderEnum shader_type, SDL_RWops* shader_source, Uint8 free_rwops)
 {
     if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL)
+    {
+        if(free_rwops)
+            SDL_RWclose(shader_source);
         return 0;
+    }
 
-    return _gpu_current_renderer->impl->CompileShader_RW(_gpu_current_renderer, shader_type, shader_source);
+    return _gpu_current_renderer->impl->CompileShader_RW(_gpu_current_renderer, shader_type, shader_source, free_rwops);
 }
 
 Uint32 GPU_LoadShader(GPU_ShaderEnum shader_type, const char* filename)
 {
     SDL_RWops* rwops;
-    Uint32 result;
 
     if(filename == NULL)
     {
         GPU_PushErrorCode(__func__, GPU_ERROR_NULL_ARGUMENT, "filename");
         return 0;
     }
+    
     rwops = SDL_RWFromFile(filename, "r");
     if(rwops == NULL)
     {
         GPU_PushErrorCode(__func__, GPU_ERROR_FILE_NOT_FOUND, "%s", filename);
         return 0;
     }
-    result = GPU_CompileShader_RW(shader_type, rwops);
-    SDL_RWclose(rwops);
-    return result;
+    
+    return GPU_CompileShader_RW(shader_type, rwops, 1);
 }
 
 Uint32 GPU_CompileShader(GPU_ShaderEnum shader_type, const char* shader_source)

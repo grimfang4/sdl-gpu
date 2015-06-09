@@ -154,7 +154,7 @@ typedef struct GPU_RendererImpl
 	void (SDLCALL *FreeShaderProgram)(GPU_Renderer* renderer, Uint32 program_object);
 	
     /*! \see GPU_CompileShader_RW() */
-	Uint32 (SDLCALL *CompileShader_RW)(GPU_Renderer* renderer, GPU_ShaderEnum shader_type, SDL_RWops* shader_source);
+	Uint32 (SDLCALL *CompileShader_RW)(GPU_Renderer* renderer, GPU_ShaderEnum shader_type, SDL_RWops* shader_source, Uint8 free_rwops);
 	
     /*! \see GPU_CompileShader() */
 	Uint32 (SDLCALL *CompileShader)(GPU_Renderer* renderer, GPU_ShaderEnum shader_type, const char* shader_source);

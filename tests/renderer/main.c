@@ -834,7 +834,7 @@ static void FreeShaderProgram(GPU_Renderer* renderer, Uint32 program_object)
     GPU_Log(" %s (dummy)\n", __func__);
 }
 
-static Uint32 CompileShader_RW(GPU_Renderer* renderer, GPU_ShaderEnum shader_type, SDL_RWops* shader_source)
+static Uint32 CompileShader_RW(GPU_Renderer* renderer, GPU_ShaderEnum shader_type, SDL_RWops* shader_source, Uint8 free_rwops)
 {
     GPU_Log(" %s (dummy)\n", __func__);
     
