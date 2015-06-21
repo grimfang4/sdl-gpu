@@ -590,7 +590,8 @@ struct GPU_Renderer
 	GPU_InitFlagEnum GPU_init_flags;
 	
 	GPU_ShaderLanguageEnum shader_language;
-	int shader_version;
+	int min_shader_version;
+	int max_shader_version;
     GPU_FeatureEnum enabled_features;
 	
 	/*! Current display target */

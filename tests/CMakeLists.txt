@@ -3,6 +3,10 @@ include_directories (${SDL_gpu_SOURCE_DIR}/common)
 
 set(TEST_LIBS test-common SDL_gpu)
 
+if(MINGW)
+    set(TEST_LIBS ${TEST_LIBS} mingw32)
+endif(MINGW)
+
 add_executable(create-test create/main.c)
 target_link_libraries (create-test ${TEST_LIBS})
 

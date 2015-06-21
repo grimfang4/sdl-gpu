@@ -42,9 +42,11 @@ void printRenderers(void)
 
 void printCurrentRenderer(void)
 {
-    GPU_RendererID id = GPU_GetCurrentRenderer()->id;
+    GPU_Renderer* renderer = GPU_GetCurrentRenderer();
+    GPU_RendererID id = renderer->id;
     
-	GPU_Log("Using renderer: %s (%d.%d)\n\n", id.name, id.major_version, id.minor_version);
+	GPU_Log("Using renderer: %s (%d.%d)\n", id.name, id.major_version, id.minor_version);
+	GPU_Log(" Shader versions supported: %d to %d\n\n", renderer->min_shader_version, renderer->max_shader_version);
 }
 
 GPU_Target* initialize_demo(int argc, char** argv, Uint16 w, Uint16 h)
@@ -125,7 +127,7 @@ Uint32 load_shader(GPU_ShaderEnum shader_type, const char* filename)
     // Get size from header
     if(renderer->shader_language == GPU_LANGUAGE_GLSL)
     {
-        if(renderer->shader_version >= 120)
+        if(renderer->max_shader_version >= 120)
             header = "#version 120\n";
         else
             header = "#version 110\n";  // Maybe this is good enough?
