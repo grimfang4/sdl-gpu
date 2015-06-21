@@ -21,6 +21,17 @@ elseif(ANDROID)
   set(SDL_gpu_DEFAULT_BUILD_DEMOS OFF)
   set(SDL_gpu_DEFAULT_DISABLE_OPENGL ON)
   set(SDL_gpu_DEFAULT_DISABLE_GLES OFF)
+elseif(("${CMAKE_SYSTEM}" MATCHES "Linux") AND ("${CMAKE_SYSTEM_PROCESSOR}" MATCHES "arm"))
+  
+  # Assuming Raspberry Pi 2 for now.
+  # There is a bug with the shipping GLES v1 library where 3 of the symbols are misnamed.
+  # If you have an arm/ES device without this problem, don't enable this macro.
+  # TODO: Need way to identify Raspberry Pi/Broadcom
+  add_definitions(-DSDL_GPU_USE_BROADCOM_RASPBERRYPI_WORKAROUND)
+
+  set(SDL_gpu_DEFAULT_BUILD_DEMOS OFF)
+  set(SDL_gpu_DEFAULT_DISABLE_OPENGL ON)
+  set(SDL_gpu_DEFAULT_DISABLE_GLES OFF)
 else()
   set(SDL_gpu_DEFAULT_BUILD_DEMOS ON)
   set(SDL_gpu_DEFAULT_DISABLE_OPENGL OFF)
@@ -114,9 +125,11 @@ else (SDL_gpu_DISABLE_OPENGL)
 	include_directories(${OPENGL_INCLUDE_DIR})
 	if(APPLE AND NOT IOS)
 		# CMake incorrectly includes AGL.framework in OPENGL_LIBRARIES which is obsolete.
-		link_libraries(${OPENGL_gl_LIBRARY})
+		# link_libraries(${OPENGL_gl_LIBRARY})
+		set(SDL_gpu_GL_LIBRARIES ${OPENGL_gl_LIBRARY})
 	else()
-		link_libraries(${OPENGL_LIBRARIES})
+		# link_libraries(${OPENGL_LIBRARIES})
+		set(SDL_gpu_GL_LIBRARIES ${OPENGL_LIBRARIES})
 	endif()
 
 
@@ -181,7 +194,8 @@ else (SDL_gpu_DISABLE_GLES)
 	else()
 		find_package(OpenGLES REQUIRED)
 		include_directories(${OPENGLES_INCLUDE_DIR})
-		link_libraries (${OPENGLES_LIBRARIES})
+#		link_libraries (${OPENGLES_LIBRARIES})
+		set(SDL_gpu_GL_LIBRARIES ${OPENGLES_LIBRARIES})
 	endif()
 
 	if (SDL_gpu_DISABLE_GLES_1)

@@ -81,6 +81,9 @@ if(SDL_gpu_BUILD_SHARED)
 		${SDL_gpu_HDRS}
 		${SDL_gpu_SRCS}
 	)
+	
+	target_link_libraries(SDL_gpu_shared ${SDL_gpu_GL_LIBRARIES})
+
 	if(SDL_gpu_BUILD_FRAMEWORK)
 		set_target_properties(SDL_gpu_shared PROPERTIES
 			FRAMEWORK TRUE
