@@ -304,10 +304,14 @@ void GPU_GetDefaultRendererOrder(int* order_size, GPU_RendererID* order)
     int count = 0;
     GPU_RendererID default_order[GPU_RENDERER_ORDER_MAX];
     
-    #if defined(__ANDROID__) || defined(__IPHONEOS__)
+//    #if defined(__ANDROID__) || defined(__IPHONEOS__)
+    #if !defined(SDL_GPU_DISABLE_GLES2) && !defined(SDL_GPU_DISABLE_GLES)
         default_order[count++] = GPU_MakeRendererID("OpenGLES 2", GPU_RENDERER_GLES_2, 2, 0);
+    #endif
+    #if !defined(SDL_GPU_DISABLE_GLES1) && !defined(SDL_GPU_DISABLE_GLES)
         default_order[count++] = GPU_MakeRendererID("OpenGLES 1", GPU_RENDERER_GLES_1, 1, 1);
-    #else
+    #endif
+    #if !defined(SDL_GPU_DISABLE_OPENGL)
         #ifdef __MACOSX__
         // My understanding of OS X OpenGL support:
         // OS X 10.9: GL 2.1, 3.3, 4.1
