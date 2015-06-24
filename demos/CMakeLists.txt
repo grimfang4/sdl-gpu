@@ -1,6 +1,6 @@
 include_directories (${SDL_gpu_SOURCE_DIR})
 
-set(DEMO_LIBS SDL_gpu)
+set(DEMO_LIBS SDL_gpu ${SDL_gpu_GL_LIBRARIES})
 
 if(MINGW)
     set(DEMO_LIBS ${DEMO_LIBS} mingw32)
