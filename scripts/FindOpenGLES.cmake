@@ -47,29 +47,44 @@ ELSE (WIN32)
 
   ELSE(APPLE)
 
-	IF(0) # Disabled, untill further testing
 
 
-		FIND_PATH(OPENGLES_INCLUDE_DIR GLES/gl.h
+		FIND_PATH(OPENGLES_INCLUDE_DIR GLES2/gl2.h
 		  /usr/openwin/share/include
 		  /opt/graphics/OpenGL/include /usr/X11R6/include
 		  /usr/include
+		  # Raspberry Pi (Raspbian) puts these in /opt/vc "VideoCore"
+		  /opt/vc/include
 		)
 
 
 		FIND_LIBRARY(OPENGLES_gl_LIBRARY
-		  NAMES GLES_CM
+		  # NAMES GLES_CM
+		  NAMES GLESv2
 		  PATHS /opt/graphics/OpenGL/lib
 				/usr/openwin/lib
 				/usr/shlib /usr/X11R6/lib
 				/usr/lib
+				# Raspberry Pi (Raspbian) puts these in /opt/vc "VideoCore"
+				/opt/vc/lib
+		)
+		FIND_LIBRARY(OPENGLES_gl1_LIBRARY
+		  NAMES GLESv1_CM
+		  PATHS /opt/graphics/OpenGL/lib
+				/usr/openwin/lib
+				/usr/shlib /usr/X11R6/lib
+				/usr/lib
+				# Raspberry Pi (Raspbian) puts these in /opt/vc "VideoCore"
+				/opt/vc/lib
 		)
 
 		# On Unix OpenGL most certainly always requires X11.
 		# Feel free to tighten up these conditions if you don't 
 		# think this is always true.
 		# It's not true on OSX.
+		# This is not true on Raspberry Pi (Raspbian)
 
+	IF(0) # Disabled, untill further testing
 		IF (OPENGLES_gl_LIBRARY)
 		  IF(NOT X11_FOUND)
 			INCLUDE(FindX11)
@@ -88,7 +103,7 @@ ENDIF (WIN32)
 SET( OPENGLES_FOUND "NO" )
 IF(OPENGLES_gl_LIBRARY)
 
-    SET( OPENGLES_LIBRARIES ${OPENGLES_gl_LIBRARY} ${OPENGLES_LIBRARIES})
+	SET( OPENGLES_LIBRARIES ${OPENGLES_gl_LIBRARY} ${OPENGLES_gl1_LIBRARY} ${OPENGLES_LIBRARIES})
 
     SET( OPENGLES_FOUND "YES" )
 

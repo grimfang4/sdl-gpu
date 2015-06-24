@@ -27,9 +27,19 @@
     #define GL_COLOR_ATTACHMENT0 GL_COLOR_ATTACHMENT0_OES
     #define GL_FRAMEBUFFER_COMPLETE GL_FRAMEBUFFER_COMPLETE_OES
 
+/* It looks like on Raspberry Pi 2/Raspbian, the 
+	symbols in library are missing the OES suffix,
+	even though the headers seem to be named right.
+*/
+#ifdef SDL_GPU_USE_BROADCOM_RASPBERRYPI_WORKAROUND
+	extern void glBlendEquation(GLenum mode);
+	extern void glBlendEquationSeparate(GLenum modeRGB, GLenum modeAlpha);
+	extern void glBlendFuncSeparate(GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum dstAlpha);
+#else
     #define glBlendEquation glBlendEquationOES
     #define glBlendEquationSeparate glBlendEquationSeparateOES
     #define glBlendFuncSeparate glBlendFuncSeparateOES
+#endif
 
     #define GL_FUNC_ADD GL_FUNC_ADD_OES
     #define GL_FUNC_SUBTRACT GL_FUNC_SUBTRACT_OES
