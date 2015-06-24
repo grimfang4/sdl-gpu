@@ -989,6 +989,90 @@ static Uint8 IsFeatureEnabled(GPU_Renderer* renderer, GPU_FeatureEnum feature)
     return ((renderer->enabled_features & feature) == feature);
 }
 
+static Uint8 get_GL_version(int* major, int* minor)
+{
+    const char* version_string;
+    #ifdef SDL_GPU_USE_OPENGL
+        // OpenGL < 3.0 doesn't have GL_MAJOR_VERSION.  Check via version string instead.
+        version_string = (const char*)glGetString(GL_VERSION);
+        if(sscanf(version_string, "%d.%d", major, minor) <= 0)
+        {
+            // Failure
+            *major = SDL_GPU_GL_MAJOR_VERSION;
+            #if SDL_GPU_GL_MAJOR_VERSION != 3
+                *minor = 1;
+            #else
+                *minor = 0;
+            #endif
+
+            GPU_PushErrorCode(__func__, GPU_ERROR_BACKEND_ERROR, "Failed to parse OpenGL version string: \"%s\"", version_string);
+            return 0;
+        }
+        return 1;
+    #else
+        // GLES doesn't have GL_MAJOR_VERSION.  Check via version string instead.
+        version_string = (const char*)glGetString(GL_VERSION);
+        // OpenGL ES 2.0?
+        if(sscanf(version_string, "OpenGL ES %d.%d", major, minor) <= 0)
+        {
+            // OpenGL ES-CM 1.1?  OpenGL ES-CL 1.1?
+            if(sscanf(version_string, "OpenGL ES-C%*c %d.%d", major, minor) <= 0)
+            {
+                // Failure
+                *major = SDL_GPU_GLES_MAJOR_VERSION;
+                #if SDL_GPU_GLES_MAJOR_VERSION == 1
+                    *minor = 1;
+                #else
+                    *minor = 0;
+                #endif
+
+                GPU_PushErrorCode(__func__, GPU_ERROR_BACKEND_ERROR, "Failed to parse OpenGL ES version string: \"%s\"", version_string);
+                return 0;
+            }
+        }
+        return 1;
+    #endif
+}
+
+static Uint8 get_GLSL_version(int* version)
+{
+    #ifndef SDL_GPU_DISABLE_SHADERS
+        const char* version_string;
+        int major, minor;
+        #ifdef SDL_GPU_USE_OPENGL
+            {
+                version_string = (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION);
+                if(version_string == NULL || sscanf(version_string, "%d.%d", &major, &minor) <= 0)
+                {
+                    GPU_PushErrorCode(__func__, GPU_ERROR_BACKEND_ERROR, "Failed to parse GLSL version string: \"%s\"", version_string);
+                    *version = SDL_GPU_GLSL_VERSION;
+                    return 0;
+                }
+                else
+                    *version = major*100 + minor;
+            }
+        #else
+            {
+                version_string = (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION);
+                if(version_string == NULL || sscanf(version_string, "OpenGL ES GLSL ES %d.%d", &major, &minor) <= 0)
+                {
+                    GPU_PushErrorCode(__func__, GPU_ERROR_BACKEND_ERROR, "Failed to parse GLSL ES version string: \"%s\"", version_string);
+                    *version = SDL_GPU_GLSL_VERSION;
+                    return 0;
+                }
+                else
+                    *version = major*100 + minor;
+            }
+        #endif
+    #endif
+    return 1;
+}
+
+static Uint8 get_API_versions(GPU_Renderer* renderer)
+{
+    return (get_GL_version(&renderer->id.major_version, &renderer->id.minor_version)
+           && get_GLSL_version(&renderer->max_shader_version));
+}
 
 static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowID, GPU_Target* target)
 {
@@ -1004,7 +1088,6 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
 #ifdef SDL_GPU_USE_OPENGL
 	GLenum err;
 #endif
-	const char* version_string;
 	GPU_FeatureEnum required_features = GPU_GetRequiredFeatures();
 
     if(target == NULL)
@@ -1161,67 +1244,10 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     glGetIntegerv(GL_FRAMEBUFFER_BINDING, &framebuffer_handle);
     ((GPU_TARGET_DATA*)target->data)->handle = framebuffer_handle;
 
+
     // Update our renderer info from the current GL context.
-    #ifdef SDL_GPU_USE_OPENGL
-    // OpenGL < 3.0 doesn't have GL_MAJOR_VERSION.  Check via version string instead.
-    version_string = (const char*)glGetString(GL_VERSION);
-    if(sscanf(version_string, "%d.%d", &renderer->id.major_version, &renderer->id.minor_version) <= 0)
-    {
-        renderer->id.major_version = SDL_GPU_GL_MAJOR_VERSION;
-        #if SDL_GPU_GL_MAJOR_VERSION != 3
-            renderer->id.minor_version = 1;
-        #else
-            renderer->id.minor_version = 0;
-        #endif
-
-        GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Failed to parse OpenGL version string: \"%s\"", version_string);
-    }
-    #ifndef SDL_GPU_DISABLE_SHADERS
-    // Check max GLSL version
-    {
-        int major, minor;
-        version_string = (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION);
-        if(sscanf(version_string, "%d.%d", &major, &minor) <= 0)
-        {
-            GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Failed to parse GLSL version string: \"%s\"", version_string);
-        }
-        else
-            renderer->max_shader_version = major*100 + minor;
-    }
-    #endif
-    #else
-    // GLES doesn't have GL_MAJOR_VERSION.  Check via version string instead.
-    version_string = (const char*)glGetString(GL_VERSION);
-    // OpenGL ES 2.0?
-    if(sscanf(version_string, "OpenGL ES %d.%d", &renderer->id.major_version, &renderer->id.minor_version) <= 0)
-    {
-        // OpenGL ES-CM 1.1?  OpenGL ES-CL 1.1?
-        if(sscanf(version_string, "OpenGL ES-C%*c %d.%d", &renderer->id.major_version, &renderer->id.minor_version) <= 0)
-        {
-            renderer->id.major_version = SDL_GPU_GLES_MAJOR_VERSION;
-            #if SDL_GPU_GLES_MAJOR_VERSION == 1
-                renderer->id.minor_version = 1;
-            #else
-                renderer->id.minor_version = 0;
-            #endif
-
-            GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Failed to parse OpenGL version string: \"%s\"", version_string);
-        }
-    }
-    #ifndef SDL_GPU_DISABLE_SHADERS
-    // Check max GLSL version
-    {
-        int major, minor;
-        version_string = (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION);
-        if(sscanf(version_string, "OpenGL ES GLSL ES %d.%d", &major, &minor) <= 0)
-        {
-            GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Failed to parse GLSL version string: \"%s\"", version_string);
-        }
-        else
-            renderer->max_shader_version = major*100 + minor;
-    }
-    #endif
-    #endif
+    if(!get_API_versions(renderer))
+        GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Failed to get backend API versions.");
 
     // Did the wrong runtime library try to use a later versioned renderer?
     if(renderer->id.major_version < renderer->requested_id.major_version)
@@ -1230,6 +1256,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
         target->context->failed = 1;
         return NULL;
     }
+    
 
     init_features(renderer);
 
