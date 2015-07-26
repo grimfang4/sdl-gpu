@@ -869,6 +869,9 @@ DECLSPEC void SDLCALL GPU_FreeTarget(GPU_Target* target);
 /*! Change the logical size of the given target.  Rendering to this target will be scaled as if the dimensions were actually the ones given. */
 DECLSPEC void SDLCALL GPU_SetVirtualResolution(GPU_Target* target, Uint16 w, Uint16 h);
 
+/*! Query the logical size of the given target. */
+DECLSPEC void SDLCALL GPU_GetVirtualResolution(GPU_Target* target, Uint16* w, Uint16* h);
+
 /*! Converts screen space coordinates (such as from mouse input) to logical drawing coordinates. */
 DECLSPEC void SDLCALL GPU_GetVirtualCoords(GPU_Target* target, float* x, float* y, float displayX, float displayY);
 

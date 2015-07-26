@@ -31,6 +31,10 @@ See a particular renderer's *.c file for specifics. */
     #endif
 #endif
 
+#if defined ( WIN32 )
+#define __func__ __FUNCTION__
+#endif
+
 // Visual C does not support C99 (which includes a safe snprintf)
 #ifdef _MSC_VER
 	#define snprintf c99_snprintf
@@ -1682,6 +1686,19 @@ static Uint8 SetWindowResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
         applyTargetCamera(target);
 
     return 1;
+}
+
+static void GetVirtualResolution(GPU_Target* target, Uint16* w, Uint16* h)
+{
+	if (target == NULL)
+	{
+		*w = 0;
+		*h = 0;
+	}
+	else {
+		*w = target->w;
+		*h = target->h;
+	}
 }
 
 static void SetVirtualResolution(GPU_Renderer* renderer, GPU_Target* target, Uint16 w, Uint16 h)
