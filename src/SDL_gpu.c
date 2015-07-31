@@ -537,6 +537,14 @@ Uint8 GPU_SetWindowResolution(Uint16 w, Uint16 h)
 }
 
 
+void GPU_GetVirtualResolution(GPU_Target* target, Uint16* w, Uint16* h)
+{
+	if (target == NULL)
+		RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL target");
+
+	_gpu_current_renderer->impl->GetVirtualResolution(target, w, h);
+}
+
 void GPU_SetVirtualResolution(GPU_Target* target, Uint16 w, Uint16 h)
 {
     if(!CHECK_RENDERER)
