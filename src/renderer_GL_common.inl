@@ -1074,6 +1074,35 @@ static Uint8 get_API_versions(GPU_Renderer* renderer)
            && get_GLSL_version(&renderer->max_shader_version));
 }
 
+static void update_stored_dimensions(GPU_Target* target)
+{
+    Uint8 is_fullscreen;
+    
+    if(target->context == NULL)
+        return;
+    
+    #ifdef SDL_GPU_USE_SDL2
+    {
+        SDL_Window* window = SDL_GetWindowFromID(target->context->windowID);
+        SDL_GetWindowSize(window, &target->context->window_w, &target->context->window_h);
+        is_fullscreen = (SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN);
+    }
+    #else
+    {
+        SDL_Surface* screen = SDL_GetVideoSurface();
+        target->context->window_w = screen->w;
+        target->context->window_h = screen->h;
+        is_fullscreen = (screen->flags & SDL_FULLSCREEN);
+    }
+    #endif
+    
+    if(!is_fullscreen)
+    {
+        target->context->stored_window_w = target->context->window_w;
+        target->context->stored_window_h = target->context->window_h;
+    }
+}
+
 static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowID, GPU_Target* target)
 {
     Uint8 created = 0;  // Make a new one or repurpose an existing target?
@@ -1156,11 +1185,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
         target->context->context = SDL_GL_CreateContext(window);
         GPU_AddWindowMapping(target);
     }
-
-    // Get window dimensions
-    SDL_GetWindowSize(window, &target->context->window_w, &target->context->window_h);
-    target->context->stored_window_w = target->context->window_w;
-    target->context->stored_window_h = target->context->window_h;
+    
     // We need a GL context before we can get the drawable size.
     SDL_GL_GetDrawableSize(window, &target->context->drawable_w, &target->context->drawable_h);
 
@@ -1183,12 +1208,13 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     }
 
     target->context->windowID = 1;
-    target->context->window_w = target->context->drawable_w = screen->w;
-    target->context->window_h = target->context->drawable_h = screen->h;
-    target->context->stored_window_w = target->context->window_w;
-    target->context->stored_window_h = target->context->window_h;
+    target->context->drawable_w = screen->w;
+    target->context->drawable_h = screen->h;
 
     #endif
+    
+    update_stored_dimensions(target);
+
 
     ((GPU_TARGET_DATA*)target->data)->handle = 0;
     ((GPU_TARGET_DATA*)target->data)->format = GL_RGBA;
@@ -1604,6 +1630,40 @@ static void ResetRendererState(GPU_Renderer* renderer)
         extBindFramebuffer(renderer, ((GPU_TARGET_DATA*)target->data)->handle);
 }
 
+static void get_window_dimensions(GPU_Target* target, int* w, int* h)
+{
+#ifdef SDL_GPU_USE_SDL2
+    SDL_GetWindowSize(SDL_GetWindowFromID(target->context->windowID), w, h);
+#else
+    SDL_Surface* screen = SDL_GetVideoSurface();
+    *w = screen->w;
+    *h = screen->h;
+#endif
+}
+
+static void get_drawable_dimensions(GPU_Target* target, int* w, int* h)
+{
+#ifdef SDL_GPU_USE_SDL2
+    SDL_GL_GetDrawableSize(SDL_GetWindowFromID(target->context->windowID), w, h);
+#else
+    get_window_dimensions(target, w, h);
+#endif
+}
+
+static void resize_window(GPU_Target* target, int w, int h)
+{
+#ifdef SDL_GPU_USE_SDL2
+    SDL_SetWindowSize(SDL_GetWindowFromID(target->context->windowID), w, h);
+#else
+    SDL_Surface* screen = SDL_GetVideoSurface();
+    Uint32 flags = screen->flags;
+    
+    screen = SDL_SetVideoMode(w, h, 0, flags);
+    // NOTE: There's a bug in SDL 1.2.  This is a workaround.  Let's resize again:
+    screen = SDL_SetVideoMode(w, h, 0, flags);
+#endif
+}
+
 static Uint8 SetWindowResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
 {
     GPU_Target* target = renderer->current_context_target;
@@ -1612,47 +1672,27 @@ static Uint8 SetWindowResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
     if(isCurrent)
         renderer->impl->FlushBlitBuffer(renderer);
 
-#ifdef SDL_GPU_USE_SDL2
-
-    {
-        SDL_Window* window = SDL_GetWindowFromID(target->context->windowID);
-
-        // Don't need to resize (only update internals) when resolution isn't changing.
-        SDL_GetWindowSize(window, &target->context->window_w, &target->context->window_h);
-        SDL_GL_GetDrawableSize(window, &target->context->drawable_w, &target->context->drawable_h);
-        if(target->context->window_w != w || target->context->window_h != h)
-        {
-            SDL_SetWindowSize(window, w, h);
-            SDL_GetWindowSize(window, &target->context->window_w, &target->context->window_h);
-            SDL_GL_GetDrawableSize(window, &target->context->drawable_w, &target->context->drawable_h);
-        }
-    }
-
-#else
-    SDL_Surface* screen = SDL_GetVideoSurface();
-    Uint32 flags = screen->flags;
-    GPU_Context* context;
-
     // Don't need to resize (only update internals) when resolution isn't changing.
-    if(screen->w != w || screen->h != h)
+    get_window_dimensions(target, &target->context->window_w, &target->context->window_h);
+    get_drawable_dimensions(target, &target->context->drawable_w, &target->context->drawable_h);
+    if(target->context->window_w != w || target->context->window_h != h)
     {
-        screen = SDL_SetVideoMode(w, h, 0, flags);
-        // There's a bug in SDL.  This is a workaround.  Let's resize again:
-        screen = SDL_SetVideoMode(w, h, 0, flags);
-
-        if(screen == NULL)
-            return 0;
+        resize_window(target, w, h);
+        get_window_dimensions(target, &target->context->window_w, &target->context->window_h);
+        get_drawable_dimensions(target, &target->context->drawable_w, &target->context->drawable_h);
     }
 
-    target->context->window_w = target->context->drawable_w = screen->w;
-    target->context->window_h = target->context->drawable_h = screen->h;
+#ifdef SDL_GPU_USE_SDL1
 
     // FIXME: Does the entire GL state need to be reset because the screen was recreated?
+    {
+        GPU_Context* context;
 
-    // Reset texturing state
-    context = renderer->current_context_target->context;
-    context->use_texturing = 1;
-    ((GPU_CONTEXT_DATA*)context->data)->last_use_texturing = 0;
+        // Reset texturing state
+        context = renderer->current_context_target->context;
+        context->use_texturing = 1;
+        ((GPU_CONTEXT_DATA*)context->data)->last_use_texturing = 0;
+    }
 
     // Clear target (no state change)
     glClearColor( 0.0f, 0.0f, 0.0f, 0.0f );
@@ -1660,8 +1700,7 @@ static Uint8 SetWindowResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
 #endif
 
     // Store the resolution for fullscreen_desktop changes
-    target->context->stored_window_w = target->context->window_w;
-    target->context->stored_window_h = target->context->window_h;
+    update_stored_dimensions(target);
 
     // Update base dimensions
     target->base_w = target->context->drawable_w;
@@ -1768,10 +1807,6 @@ static Uint8 SetFullscreen(GPU_Renderer* renderer, Uint8 enable_fullscreen, Uint
         // If we're in windowed mode now and a resolution was stored, restore the original window resolution
         if(was_fullscreen && !is_fullscreen && (target->context->stored_window_w != 0 && target->context->stored_window_h != 0))
             SDL_SetWindowSize(window, target->context->stored_window_w, target->context->stored_window_h);
-
-        // Update window dims
-        SDL_GetWindowSize(window, &target->context->window_w, &target->context->window_h);
-        SDL_GL_GetDrawableSize(window, &target->context->drawable_w, &target->context->drawable_h);
     }
 
 #else
@@ -1783,16 +1818,16 @@ static Uint8 SetFullscreen(GPU_Renderer* renderer, Uint8 enable_fullscreen, Uint
     {
         SDL_WM_ToggleFullScreen(surf);
         is_fullscreen = (surf->flags & SDL_FULLSCREEN);
-
-        // Update window dims
-        target->context->window_w = target->context->drawable_w = surf->w;
-        target->context->window_h = target->context->drawable_h = surf->h;
     }
 
 #endif
 
     if(is_fullscreen != was_fullscreen)
     {
+        // Update window dims
+        get_window_dimensions(target, &target->context->window_w, &target->context->window_h);
+        get_drawable_dimensions(target, &target->context->drawable_w, &target->context->drawable_h);
+        
         // If virtual res is not set, we need to update the target dims and reset stuff that no longer is right
         if(!target->using_virtual_resolution)
         {
