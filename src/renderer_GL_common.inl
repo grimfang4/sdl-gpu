@@ -35,8 +35,8 @@ See a particular renderer's *.c file for specifics. */
 #define __func__ __FUNCTION__
 #endif
 
-// Visual C does not support C99 (which includes a safe snprintf)
-#ifdef _MSC_VER
+// Old Visual C did not support C99 (which includes a safe snprintf)
+#if defined(_MSC_VER) && (_MSC_VER < 1900)
 	#define snprintf c99_snprintf
 	// From Valentin Milea: http://stackoverflow.com/questions/2915672/snprintf-and-visual-studio-2010
 	static_inline int c99_vsnprintf(char* str, size_t size, const char* format, va_list ap)
