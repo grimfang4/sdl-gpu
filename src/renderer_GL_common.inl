@@ -2410,19 +2410,10 @@ static unsigned char* getRawImageData(GPU_Renderer* renderer, GPU_Image* image)
     return data;
 }
 
-// From http://stackoverflow.com/questions/5309471/getting-file-extension-in-c
-static const char *get_filename_ext(const char *filename)
-{
-    const char *dot = strrchr(filename, '.');
-    if(!dot || dot == filename)
-        return "";
-    return dot + 1;
-}
-
 static Uint8 SaveImage(GPU_Renderer* renderer, GPU_Image* image, const char* filename, GPU_FileFormatEnum format)
 {
     Uint8 result;
-    unsigned char* data;
+    SDL_Surface* surface;
 
     if(image == NULL || filename == NULL ||
             image->texture_w < 1 || image->texture_h < 1 || image->bytes_per_pixel < 1 || image->bytes_per_pixel > 4)
@@ -2430,49 +2421,14 @@ static Uint8 SaveImage(GPU_Renderer* renderer, GPU_Image* image, const char* fil
         return 0;
     }
 
-    data = getRawImageData(renderer, image);
+    surface = renderer->impl->CopySurfaceFromImage(renderer, image);
 
-    if(data == NULL)
-    {
-        GPU_PushErrorCode("GPU_SaveImage", GPU_ERROR_BACKEND_ERROR, "Could not retrieve texture data.");
+    if(surface == NULL)
         return 0;
-    }
+    
+    result = GPU_SaveSurface(surface, filename, format);
 
-    if(format == GPU_FILE_AUTO)
-    {
-        const char* extension = get_filename_ext(filename);
-        if(gpu_strcasecmp(extension, "png") == 0)
-            format = GPU_FILE_PNG;
-        else if(gpu_strcasecmp(extension, "bmp") == 0)
-            format = GPU_FILE_BMP;
-        else if(gpu_strcasecmp(extension, "tga") == 0)
-            format = GPU_FILE_TGA;
-        else
-        {
-            GPU_PushErrorCode("GPU_SaveImage", GPU_ERROR_DATA_ERROR, "Could not detect output file format from file name");
-            SDL_free(data);
-            return 0;
-        }
-    }
-
-    switch(format)
-    {
-        case GPU_FILE_PNG:
-            result = (stbi_write_png(filename, image->texture_w, image->texture_h, image->bytes_per_pixel, (const unsigned char *const)data, 0) > 0);
-            break;
-        case GPU_FILE_BMP:
-            result = (stbi_write_bmp(filename, image->texture_w, image->texture_h, image->bytes_per_pixel, (void*)data) > 0);
-            break;
-        case GPU_FILE_TGA:
-            result = (stbi_write_tga(filename, image->texture_w, image->texture_h, image->bytes_per_pixel, (void*)data) > 0);
-            break;
-        default:
-            GPU_PushErrorCode("GPU_SaveImage", GPU_ERROR_DATA_ERROR, "Unsupported output file format");
-            result = 0;
-            break;
-    }
-
-    SDL_free(data);
+    SDL_FreeSurface(surface);
     return result;
 }
 
@@ -2533,18 +2489,30 @@ static SDL_Surface* CopySurfaceFromImage(GPU_Renderer* renderer, GPU_Image* imag
     unsigned char* data;
     SDL_Surface* result;
 	SDL_PixelFormat* format;
+	int w, h;
 
     if(image == NULL)
     {
         GPU_PushErrorCode("GPU_CopySurfaceFromImage", GPU_ERROR_NULL_ARGUMENT, "image");
         return NULL;
     }
-    if(image->texture_w < 1 || image->texture_h < 1)
+    if(image->w < 1 || image->h < 1)
     {
         GPU_PushErrorCode("GPU_CopySurfaceFromImage", GPU_ERROR_DATA_ERROR, "Invalid image dimensions (%dx%d)", image->base_w, image->base_h);
         return NULL;
     }
 
+    // FIXME: Virtual resolutions overwrite the NPOT dimensions when NPOT textures are not supported!
+    if(image->using_virtual_resolution)
+    {
+        w = image->texture_w;
+        h = image->texture_h;
+    }
+    else
+    {
+        w = image->w;
+        h = image->h;
+    }
     data = getRawImageData(renderer, image);
 
     if(data == NULL)
@@ -2555,11 +2523,11 @@ static SDL_Surface* CopySurfaceFromImage(GPU_Renderer* renderer, GPU_Image* imag
 
     format = AllocFormat(((GPU_IMAGE_DATA*)image->data)->format);
 
-    result = SDL_CreateRGBSurface(SDL_SWSURFACE, image->texture_w, image->texture_h, format->BitsPerPixel, format->Rmask, format->Gmask, format->Bmask, format->Amask);
+    result = SDL_CreateRGBSurface(SDL_SWSURFACE, w, h, format->BitsPerPixel, format->Rmask, format->Gmask, format->Bmask, format->Amask);
 
 	if(result == NULL)
 	{
-	    GPU_PushErrorCode("GPU_CopySurfaceFromImage", GPU_ERROR_DATA_ERROR, "Failed to create new %dx%d surface", image->texture_w, image->texture_h);
+	    GPU_PushErrorCode("GPU_CopySurfaceFromImage", GPU_ERROR_DATA_ERROR, "Failed to create new %dx%d surface", w, h);
 	    SDL_free(data);
 		return NULL;
 	}
@@ -2567,8 +2535,8 @@ static SDL_Surface* CopySurfaceFromImage(GPU_Renderer* renderer, GPU_Image* imag
     // Copy row-by-row in case the pitch doesn't match
     {
         int i;
-        int source_pitch = image->texture_w*format->BytesPerPixel;
-        for(i = 0; i < image->texture_h; ++i)
+        int source_pitch = image->texture_w*format->BytesPerPixel;  // Use the actual texture width to pull from the data
+        for(i = 0; i < h; ++i)
         {
             memcpy((Uint8*)result->pixels + i*result->pitch, data + source_pitch*i, source_pitch);
         }

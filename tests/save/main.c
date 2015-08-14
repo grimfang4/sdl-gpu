@@ -3,7 +3,7 @@
 #include <math.h>
 #include "common.h"
 
-#define IMAGE_FILE "data/test.bmp"
+#define IMAGE_FILE "data/happy_52x63.bmp"
 #define SAVE_FILE "save.bmp"
 
 
