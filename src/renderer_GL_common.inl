@@ -89,13 +89,119 @@ int gpu_strcasecmp(const char* s1, const char* s2);
 
 
 
+// SDL 1.2 / SDL 2.0 translation layer
 
 
 #ifdef SDL_GPU_USE_SDL2
-    #define GET_ALPHA(sdl_color) ((sdl_color).a)
+
+#define GET_ALPHA(sdl_color) ((sdl_color).a)
+
+static_inline SDL_Window* get_window(Uint32 windowID)
+{
+    return SDL_GetWindowFromID(windowID);
+}
+
+static_inline Uint32 get_window_id(SDL_Window* window)
+{
+    return SDL_GetWindowID(window);
+}
+
+static_inline void get_window_dimensions(SDL_Window* window, int* w, int* h)
+{
+    SDL_GetWindowSize(window, w, h);
+}
+
+static_inline void get_drawable_dimensions(SDL_Window* window, int* w, int* h)
+{
+    SDL_GL_GetDrawableSize(window, w, h);
+}
+
+static_inline void resize_window(GPU_Target* target, int w, int h)
+{
+    SDL_SetWindowSize(SDL_GetWindowFromID(target->context->windowID), w, h);
+}
+
+static_inline Uint8 get_fullscreen_state(SDL_Window* window)
+{
+    return (SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN);
+}
+
+static_inline Uint8 has_colorkey(SDL_Surface* surface)
+{
+    return (SDL_GetColorKey(surface, NULL) == 0);
+}
+
 #else
-    #define GET_ALPHA(sdl_color) ((sdl_color).unused)
+
+#define SDL_Window SDL_Surface
+#define GET_ALPHA(sdl_color) ((sdl_color).unused)
+
+static_inline SDL_Window* get_window(Uint32 windowID)
+{
+    return (windowID == 1? SDL_GetVideoSurface() : NULL);
+}
+
+static_inline Uint32 get_window_id(SDL_Surface* window)
+{
+    return (SDL_GetVideoSurface() == window? 1 : 0);
+}
+
+static_inline void get_window_dimensions(SDL_Window* window, int* w, int* h)
+{
+    if(window == NULL)
+        return;
+    *w = window->w;
+    *h = window->h;
+}
+
+static_inline void get_drawable_dimensions(SDL_Window* window, int* w, int* h)
+{
+    get_window_dimensions(window, w, h);
+}
+
+static_inline void resize_window(GPU_Target* target, int w, int h)
+{
+    SDL_Surface* screen = SDL_GetVideoSurface();
+    Uint32 flags = screen->flags;
+    
+    screen = SDL_SetVideoMode(w, h, 0, flags);
+    // NOTE: There's a bug in SDL 1.2.  This is a workaround.  Let's resize again:
+    screen = SDL_SetVideoMode(w, h, 0, flags);
+}
+
+static_inline Uint8 get_fullscreen_state(SDL_Window* window)
+{
+    return (window->flags & SDL_FULLSCREEN);
+}
+
+static_inline Uint8 has_colorkey(SDL_Surface* surface)
+{
+    return (surface->flags & SDL_SRCCOLORKEY);
+}
+
 #endif
+
+
+
+static_inline void get_target_window_dimensions(GPU_Target* target, int* w, int* h)
+{
+    SDL_Window* window;
+    if(target == NULL || target->context == NULL)
+        return;
+    window = get_window(target->context->windowID);
+    get_window_dimensions(window, w, h);
+}
+
+static_inline void get_target_drawable_dimensions(GPU_Target* target, int* w, int* h)
+{
+    SDL_Window* window;
+    if(target == NULL || target->context == NULL)
+        return;
+    window = get_window(target->context->windowID);
+    get_drawable_dimensions(window, w, h);
+}
+
+
 
 
 #ifndef GL_VERTEX_SHADER
@@ -837,11 +943,7 @@ static void applyTransforms(void)
 static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request, Uint16 w, Uint16 h, GPU_WindowFlagEnum SDL_flags)
 {
 	GPU_InitFlagEnum GPU_flags;
-#ifdef SDL_GPU_USE_SDL2
 	SDL_Window* window;
-#else
-	SDL_Surface* screen;
-#endif
 
 #ifdef SDL_GPU_USE_OPENGL
 	const char* vendor_string;
@@ -941,7 +1043,7 @@ static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request,
             return NULL;
         }
 
-        GPU_SetInitWindow(SDL_GetWindowID(window));
+        GPU_SetInitWindow(get_window_id(window));
     }
     else
         renderer->SDL_init_flags = SDL_flags;
@@ -949,9 +1051,9 @@ static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request,
 #else
     SDL_flags |= SDL_OPENGL;
     renderer->SDL_init_flags = SDL_flags;
-    screen = SDL_SetVideoMode(w, h, 0, SDL_flags);
+    window = SDL_SetVideoMode(w, h, 0, SDL_flags);
 
-    if(screen == NULL)
+    if(window == NULL)
     {
         GPU_PushErrorCode("GPU_Init", GPU_ERROR_BACKEND_ERROR, "Screen surface creation failed.");
         return NULL;
@@ -962,13 +1064,8 @@ static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request,
 
 
     // Create or re-init the current target.  This also creates the GL context and initializes enabled_features.
-    #ifdef SDL_GPU_USE_SDL2
-    if(renderer->impl->CreateTargetFromWindow(renderer, SDL_GetWindowID(window), renderer->current_context_target) == NULL)
+    if(renderer->impl->CreateTargetFromWindow(renderer, get_window_id(window), renderer->current_context_target) == NULL)
         return NULL;
-    #else
-    if(renderer->impl->CreateTargetFromWindow(renderer, 0, renderer->current_context_target) == NULL)
-        return NULL;
-    #endif
 
     // If the dimensions of the window don't match what we asked for, then set up a virtual resolution to pretend like they are.
     if(!(GPU_flags & GPU_INIT_DISABLE_AUTO_VIRTUAL_RESOLUTION) && w != 0 && h != 0 && (w != renderer->current_context_target->w || h != renderer->current_context_target->h))
@@ -1078,27 +1175,18 @@ static Uint8 get_API_versions(GPU_Renderer* renderer)
            && get_GLSL_version(&renderer->max_shader_version));
 }
 
+
 static void update_stored_dimensions(GPU_Target* target)
 {
     Uint8 is_fullscreen;
+    SDL_Window* window;
     
     if(target->context == NULL)
         return;
     
-    #ifdef SDL_GPU_USE_SDL2
-    {
-        SDL_Window* window = SDL_GetWindowFromID(target->context->windowID);
-        SDL_GetWindowSize(window, &target->context->window_w, &target->context->window_h);
-        is_fullscreen = (SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN);
-    }
-    #else
-    {
-        SDL_Surface* screen = SDL_GetVideoSurface();
-        target->context->window_w = screen->w;
-        target->context->window_h = screen->h;
-        is_fullscreen = (screen->flags & SDL_FULLSCREEN);
-    }
-    #endif
+    window = get_window(target->context->windowID);
+    get_window_dimensions(window, &target->context->window_w, &target->context->window_h);
+    is_fullscreen = get_fullscreen_state(window);
     
     if(!is_fullscreen)
     {
@@ -1111,11 +1199,8 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
 {
     Uint8 created = 0;  // Make a new one or repurpose an existing target?
 	GPU_CONTEXT_DATA* cdata;
-#ifdef SDL_GPU_USE_SDL2
 	SDL_Window* window;
-#else
-	SDL_Surface* screen;
-#endif
+	
 	int framebuffer_handle;
 	SDL_Color white = { 255, 255, 255, 255 };
 #ifdef SDL_GPU_USE_OPENGL
@@ -1162,9 +1247,8 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
         cdata = (GPU_CONTEXT_DATA*)target->context->data;
     }
 
-    #ifdef SDL_GPU_USE_SDL2
 
-    window = SDL_GetWindowFromID(windowID);
+    window = get_window(windowID);
     if(window == NULL)
     {
         GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Failed to acquire the window from the given ID.");
@@ -1181,8 +1265,9 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     }
 
     // Store the window info
-    target->context->windowID = SDL_GetWindowID(window);
+    target->context->windowID = get_window_id(window);
 
+    #ifdef SDL_GPU_USE_SDL2
     // Make a new context if needed and make it current
     if(created || target->context->context == NULL)
     {
@@ -1195,25 +1280,8 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
 
     #else
 
-    screen = SDL_GetVideoSurface();
-    if(screen == NULL)
-    {
-        GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Failed to acquire the video surface.");
-        if(created)
-        {
-            SDL_free(cdata->blit_buffer);
-            SDL_free(cdata->index_buffer);
-            SDL_free(target->context->data);
-            SDL_free(target->context);
-            SDL_free(target->data);
-            SDL_free(target);
-        }
-        return NULL;
-    }
-
-    target->context->windowID = 1;
-    target->context->drawable_w = screen->w;
-    target->context->drawable_h = screen->h;
+    target->context->drawable_w = window->w;
+    target->context->drawable_h = window->h;
 
     #endif
     
@@ -1512,28 +1580,25 @@ static GPU_Target* CreateAliasTarget(GPU_Renderer* renderer, GPU_Target* target)
 
 static void MakeCurrent(GPU_Renderer* renderer, GPU_Target* target, Uint32 windowID)
 {
-#ifdef SDL_GPU_USE_SDL2
-	SDL_GLContext c;
-#else
-	SDL_Surface* screen;
-#endif
+	SDL_Window* window;
 
     if(target == NULL)
         return;
-    #ifdef SDL_GPU_USE_SDL2
+    
     if(target->image != NULL)
         return;
+    
 
-    c = target->context->context;
-    if(c != NULL)
+    if(target->context->context != NULL)
     {
         renderer->current_context_target = target;
-        SDL_GL_MakeCurrent(SDL_GetWindowFromID(windowID), c);
-        // Reset camera if the target's window was changed
+        #ifdef SDL_GPU_USE_SDL2
+        SDL_GL_MakeCurrent(SDL_GetWindowFromID(windowID), target->context->context);
+        #endif
+        
+        // Reset window mapping, base size, and camera if the target's window was changed
         if(target->context->windowID != windowID)
         {
-			SDL_Window* window;
-
             renderer->impl->FlushBlitBuffer(renderer);
 
             // Update the window mappings
@@ -1543,11 +1608,11 @@ static void MakeCurrent(GPU_Renderer* renderer, GPU_Target* target, Uint32 windo
             GPU_AddWindowMapping(target);
 
             // Update target's window size
-            window = SDL_GetWindowFromID(windowID);
+            window = get_window(windowID);
             if(window != NULL)
             {
-                SDL_GetWindowSize(window, &target->context->window_w, &target->context->window_h);
-                SDL_GL_GetDrawableSize(window, &target->context->drawable_w, &target->context->drawable_h);
+                get_window_dimensions(window, &target->context->window_w, &target->context->window_h);
+                get_drawable_dimensions(window, &target->context->drawable_w, &target->context->drawable_h);
                 target->base_w = target->context->drawable_w;
                 target->base_h = target->context->drawable_h;
             }
@@ -1556,23 +1621,6 @@ static void MakeCurrent(GPU_Renderer* renderer, GPU_Target* target, Uint32 windo
             applyTargetCamera(((GPU_CONTEXT_DATA*)renderer->current_context_target->context->data)->last_target);
         }
     }
-    #else
-    renderer->current_context_target = target;
-    // Only one window...
-    GPU_RemoveWindowMapping(1);
-    target->context->windowID = 1;
-    GPU_AddWindowMapping(target);
-
-    // Update target's window size
-    screen = SDL_GetVideoSurface();
-    if(screen != NULL)
-    {
-        target->context->window_w = target->context->drawable_w = screen->w;
-        target->context->window_h = target->context->drawable_h = screen->h;
-        target->base_w = target->context->drawable_w;
-        target->base_h = target->context->drawable_h;
-    }
-    #endif
 }
 
 
@@ -1634,40 +1682,6 @@ static void ResetRendererState(GPU_Renderer* renderer)
         extBindFramebuffer(renderer, ((GPU_TARGET_DATA*)target->data)->handle);
 }
 
-static void get_window_dimensions(GPU_Target* target, int* w, int* h)
-{
-#ifdef SDL_GPU_USE_SDL2
-    SDL_GetWindowSize(SDL_GetWindowFromID(target->context->windowID), w, h);
-#else
-    SDL_Surface* screen = SDL_GetVideoSurface();
-    *w = screen->w;
-    *h = screen->h;
-#endif
-}
-
-static void get_drawable_dimensions(GPU_Target* target, int* w, int* h)
-{
-#ifdef SDL_GPU_USE_SDL2
-    SDL_GL_GetDrawableSize(SDL_GetWindowFromID(target->context->windowID), w, h);
-#else
-    get_window_dimensions(target, w, h);
-#endif
-}
-
-static void resize_window(GPU_Target* target, int w, int h)
-{
-#ifdef SDL_GPU_USE_SDL2
-    SDL_SetWindowSize(SDL_GetWindowFromID(target->context->windowID), w, h);
-#else
-    SDL_Surface* screen = SDL_GetVideoSurface();
-    Uint32 flags = screen->flags;
-    
-    screen = SDL_SetVideoMode(w, h, 0, flags);
-    // NOTE: There's a bug in SDL 1.2.  This is a workaround.  Let's resize again:
-    screen = SDL_SetVideoMode(w, h, 0, flags);
-#endif
-}
-
 static Uint8 SetWindowResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
 {
     GPU_Target* target = renderer->current_context_target;
@@ -1677,13 +1691,13 @@ static Uint8 SetWindowResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
         renderer->impl->FlushBlitBuffer(renderer);
 
     // Don't need to resize (only update internals) when resolution isn't changing.
-    get_window_dimensions(target, &target->context->window_w, &target->context->window_h);
-    get_drawable_dimensions(target, &target->context->drawable_w, &target->context->drawable_h);
+    get_target_window_dimensions(target, &target->context->window_w, &target->context->window_h);
+    get_target_drawable_dimensions(target, &target->context->drawable_w, &target->context->drawable_h);
     if(target->context->window_w != w || target->context->window_h != h)
     {
         resize_window(target, w, h);
-        get_window_dimensions(target, &target->context->window_w, &target->context->window_h);
-        get_drawable_dimensions(target, &target->context->drawable_w, &target->context->drawable_h);
+        get_target_window_dimensions(target, &target->context->window_w, &target->context->window_h);
+        get_target_drawable_dimensions(target, &target->context->drawable_w, &target->context->drawable_h);
     }
 
 #ifdef SDL_GPU_USE_SDL1
@@ -1829,8 +1843,8 @@ static Uint8 SetFullscreen(GPU_Renderer* renderer, Uint8 enable_fullscreen, Uint
     if(is_fullscreen != was_fullscreen)
     {
         // Update window dims
-        get_window_dimensions(target, &target->context->window_w, &target->context->window_h);
-        get_drawable_dimensions(target, &target->context->drawable_w, &target->context->drawable_h);
+        get_target_window_dimensions(target, &target->context->window_w, &target->context->window_h);
+        get_target_drawable_dimensions(target, &target->context->drawable_w, &target->context->drawable_h);
         
         // If virtual res is not set, we need to update the target dims and reset stuff that no longer is right
         if(!target->using_virtual_resolution)
@@ -2817,15 +2831,6 @@ static SDL_PixelFormat* AllocFormat(GLenum glFormat)
     return result;
 }
 
-static Uint8 hasColorkey(SDL_Surface* surface)
-{
-#ifdef SDL_GPU_USE_SDL2
-    return (SDL_GetColorKey(surface, NULL) == 0);
-#else
-    return (surface->flags & SDL_SRCCOLORKEY);
-#endif
-}
-
 static void FreeFormat(SDL_PixelFormat* format)
 {
     SDL_free(format);
@@ -3523,7 +3528,7 @@ static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surf
     // See what the best image format is.
     if(surface->format->Amask == 0)
     {
-        if(hasColorkey(surface))
+        if(has_colorkey(surface))
             format = GPU_FORMAT_RGBA;
         else
             format = GPU_FORMAT_RGB;
