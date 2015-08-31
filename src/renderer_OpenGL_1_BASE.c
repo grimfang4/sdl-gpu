@@ -13,6 +13,7 @@ void GPU_FreeRenderer_OpenGL_1_BASE(GPU_Renderer* renderer) {}
 // Most of the code pulled in from here...
 #define SDL_GPU_USE_OPENGL
 #define SDL_GPU_DISABLE_SHADERS
+#define SDL_GPU_DISABLE_RENDER_TO_TEXTURE
 #define SDL_GPU_USE_FIXED_FUNCTION_PIPELINE
 #define SDL_GPU_GL_TIER 1
 #define SDL_GPU_GL_MAJOR_VERSION 1

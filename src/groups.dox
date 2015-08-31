@@ -8,6 +8,7 @@
  * 
  * Other functions in the Initialization module control how initialization is performed.
  * 
+ * 
  * \defgroup Logging Debugging, Logging, and Error Handling
  * Use GPU_Log() for normal logging output (e.g. to replace printf).  Other logging priorities are handled by GPU_LogWarning() and GPU_LogError().
  * 

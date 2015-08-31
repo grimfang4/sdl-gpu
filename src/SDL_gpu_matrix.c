@@ -20,33 +20,33 @@
 	#endif
 #endif
 
-// Visual C does not support C99 (which includes a safe snprintf)
-#ifdef _MSC_VER
-#define snprintf c99_snprintf
-// From Valentin Milea: http://stackoverflow.com/questions/2915672/snprintf-and-visual-studio-2010
-static_inline int c99_vsnprintf(char* str, size_t size, const char* format, va_list ap)
-{
-	int count = -1;
+// Old Visual C did not support C99 (which includes a safe snprintf)
+#if defined(_MSC_VER) && (_MSC_VER < 1900)
+    #define snprintf c99_snprintf
+    // From Valentin Milea: http://stackoverflow.com/questions/2915672/snprintf-and-visual-studio-2010
+    static_inline int c99_vsnprintf(char* str, size_t size, const char* format, va_list ap)
+    {
+        int count = -1;
 
-	if (size != 0)
-		count = _vsnprintf_s(str, size, _TRUNCATE, format, ap);
-	if (count == -1)
-		count = _vscprintf(format, ap);
+        if (size != 0)
+            count = _vsnprintf_s(str, size, _TRUNCATE, format, ap);
+        if (count == -1)
+            count = _vscprintf(format, ap);
 
-	return count;
-}
+        return count;
+    }
 
-static_inline int c99_snprintf(char* str, size_t size, const char* format, ...)
-{
-	int count;
-	va_list ap;
+    static_inline int c99_snprintf(char* str, size_t size, const char* format, ...)
+    {
+        int count;
+        va_list ap;
 
-	va_start(ap, format);
-	count = c99_vsnprintf(str, size, format, ap);
-	va_end(ap);
+        va_start(ap, format);
+        count = c99_vsnprintf(str, size, format, ap);
+        va_end(ap);
 
-	return count;
-}
+        return count;
+    }
 #endif
 
 

@@ -42,9 +42,6 @@ typedef struct GPU_RendererImpl
 	
 	/*! \see GPU_SetVirtualResolution() */
 	void (SDLCALL *SetVirtualResolution)(GPU_Renderer* renderer, GPU_Target* target, Uint16 w, Uint16 h);
-	
-	/*! \see GPU_GetVirtualResolution() */
-	void (SDLCALL *GetVirtualResolution)(GPU_Target* target, Uint16* w, Uint16* h);
 
 	/*! \see GPU_UnsetVirtualResolution() */
 	void (SDLCALL *UnsetVirtualResolution)(GPU_Renderer* renderer, GPU_Target* target);
