@@ -222,7 +222,8 @@ static Uint8 vendor_is_Intel = 0;
 
 static SDL_PixelFormat* AllocFormat(GLenum glFormat);
 static void FreeFormat(SDL_PixelFormat* format);
-
+static void refresh_attribute_data(GPU_CONTEXT_DATA* cdata);
+static void MultitextureFlush(GPU_Renderer* renderer, float** buffers);
 
 static char shader_message[256];
 
@@ -4319,7 +4320,164 @@ static void BlitTransformX(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* s
     cdata->blit_buffer_num_vertices += GPU_BLIT_BUFFER_VERTICES_PER_SPRITE;
 }
 
+static void MultitextureBlit(GPU_Renderer* renderer, GPU_Image** images, GPU_Rect* rects, GPU_Target* target, float x, float y)
+{
+	Uint32 tex_w, tex_h;
+	float w;
+	float h;
+	float x1, y1, x2, y2;
+	float dx1, dy1, dx2, dy2;
+	GPU_CONTEXT_DATA* cdata;
+	float* blit_buffer;
+	float** buffers[32];
+	unsigned short blit_buffer_starting_index;
+	int vert_index;
+	int tex_index;
+	int i;
+	int color_index;
+	float r, g, b, a;
+	GPU_Image* image;
 
+	if(images == NULL)
+	{
+	GPU_PushErrorCode("GPU_MultitextureBlit", GPU_ERROR_NULL_ARGUMENT, "images");
+	return;
+	}
+
+	if(target == NULL)
+	{
+	GPU_PushErrorCode("GPU_MultitextureBlit", GPU_ERROR_NULL_ARGUMENT, "target");
+	return;
+	}
+
+	if (renderer->multitexture_block == NULL)
+	{
+		GPU_PushErrorCode("GPU_MultitextureBlit", GPU_ERROR_USER_ERROR, "No multitexture block available");
+	}
+
+	for (i = 0; i < renderer->multitexture_block->num_textures; ++i)
+		if(renderer != images[i]->renderer || renderer != target->renderer)
+		{
+		GPU_PushErrorCode("GPU_MultitextureBlit", GPU_ERROR_USER_ERROR, "Mismatched renderer");
+		return;
+		}
+
+	renderer->impl->FlushBlitBuffer(renderer);
+	for (i = 1; i < renderer->multitexture_block->num_textures; ++i)
+	{
+		// Bind the texture to which subsequent calls refer
+		int image_loc = renderer->impl->GetUniformLocation(renderer, renderer->current_context_target->context->current_shader_program, renderer->multitexture_block->image_names[i]);
+		image = images[i];
+		renderer->impl->SetShaderImage(renderer, image, image_loc, i);
+		int coord_loc = renderer->impl->GetAttributeLocation(renderer, renderer->current_context_target->context->current_shader_program, renderer->multitexture_block->texcoord_names[i]);
+		int coord_buffer = renderer->multitexture_texCoord_buffers[i];
+		if (coord_buffer == 0)
+		{
+			//initialize a buffer and make sure it's big enough to hold our data
+			float dummy[1024 / sizeof(float)];
+			glGenBuffers(1, &renderer->multitexture_texCoord_buffers[i]);
+			glBindBuffer(GL_ARRAY_BUFFER, renderer->multitexture_texCoord_buffers[i]);
+			glBufferData(GL_ARRAY_BUFFER, 1024, &dummy, GL_STREAM_DRAW);
+			coord_buffer = renderer->multitexture_texCoord_buffers[i];
+		}
+		renderer->impl->SetAttributei(renderer, coord_loc, coord_buffer);
+	}
+
+	renderer->impl->Blit(renderer, images[0], &rects[0], target, x, y);
+	buffers[0] = ((GPU_CONTEXT_DATA*)renderer->current_context_target->context->data)->blit_buffer;
+
+	for (i = 1; i < renderer->multitexture_block->num_textures; ++i)
+	{
+		// Bind the texture to which subsequent calls refer
+		int coord_loc;
+		int coord_buffer;
+		image = images[i];
+		GPU_Rect* src_rect = &rects[i];
+		
+		tex_w = image->texture_w;
+		tex_h = image->texture_h;
+
+		if (image->snap_mode == GPU_SNAP_POSITION || image->snap_mode == GPU_SNAP_POSITION_AND_DIMENSIONS)
+		{
+			// Avoid rounding errors in texture sampling by insisting on integral pixel positions
+			x = floorf(x);
+			y = floorf(y);
+		}
+
+		// Scale src_rect tex coords according to actual texture dims
+		x1 = src_rect->x / (float)tex_w;
+		y1 = src_rect->y / (float)tex_h;
+		x2 = (src_rect->x + src_rect->w) / (float)tex_w;
+		y2 = (src_rect->y + src_rect->h) / (float)tex_h;
+		w = src_rect->w;
+		h = src_rect->h;
+
+		if (image->using_virtual_resolution)
+		{
+			// Scale texture coords to fit the original dims
+			x1 *= image->base_w / (float)image->w;
+			y1 *= image->base_h / (float)image->h;
+			x2 *= image->base_w / (float)image->w;
+			y2 *= image->base_h / (float)image->h;
+		}
+
+		// Center the image on the given coords
+		dx1 = x - w / 2.0f;
+		dy1 = y - h / 2.0f;
+		dx2 = x + w / 2.0f;
+		dy2 = y + h / 2.0f;
+
+		if (image->snap_mode == GPU_SNAP_DIMENSIONS || image->snap_mode == GPU_SNAP_POSITION_AND_DIMENSIONS)
+		{
+			float fractional;
+			fractional = w / 2.0f - floorf(w / 2.0f);
+			dx1 += fractional;
+			dx2 += fractional;
+			fractional = h / 2.0f - floorf(h / 2.0f);
+			dy1 += fractional;
+			dy2 += fractional;
+		}
+
+		if (renderer->coordinate_mode == 1)
+		{
+			float temp = dy1;
+			dy1 = dy2;
+			dy2 = temp;
+		}
+
+		blit_buffer = (float *)SDL_malloc(4 * GPU_BLIT_BUFFER_FLOATS_PER_VERTEX * sizeof(float));
+		blit_buffer_starting_index = 0;
+		
+		vert_index = GPU_BLIT_BUFFER_VERTEX_OFFSET;
+		tex_index = GPU_BLIT_BUFFER_TEX_COORD_OFFSET;
+		color_index = GPU_BLIT_BUFFER_COLOR_OFFSET;
+		if (target->use_color)
+		{
+			r = MIX_COLOR_COMPONENT_NORMALIZED_RESULT(target->color.r, image->color.r);
+			g = MIX_COLOR_COMPONENT_NORMALIZED_RESULT(target->color.g, image->color.g);
+			b = MIX_COLOR_COMPONENT_NORMALIZED_RESULT(target->color.b, image->color.b);
+			a = MIX_COLOR_COMPONENT_NORMALIZED_RESULT(GET_ALPHA(target->color), GET_ALPHA(image->color));
+		}
+		else
+		{
+			r = image->color.r / 255.0f;
+			g = image->color.g / 255.0f;
+			b = image->color.b / 255.0f;
+			a = GET_ALPHA(image->color) / 255.0f;
+		}
+
+		// 4 Quad vertices
+		SET_TEXTURED_VERTEX_UNINDEXED(dx1, dy1, x1, y1, r, g, b, a);
+		SET_TEXTURED_VERTEX_UNINDEXED(dx2, dy1, x2, y1, r, g, b, a);
+		SET_TEXTURED_VERTEX_UNINDEXED(dx2, dy2, x2, y2, r, g, b, a);
+		SET_TEXTURED_VERTEX_UNINDEXED(dx1, dy2, x1, y2, r, g, b, a);
+
+		buffers[i] = blit_buffer;
+	}
+	MultitextureFlush(renderer, buffers);
+	for (i = 1; i < renderer->multitexture_block->num_textures; ++i)
+		SDL_free(buffers[i]);
+}
 
 #ifdef SDL_GPU_USE_BUFFER_PIPELINE
 
@@ -5204,6 +5362,138 @@ static void DoUntexturedFlush(GPU_Renderer* renderer, GPU_CONTEXT_DATA* cdata, u
 #endif
 }
 
+static void DoMultitextureFlush(GPU_Renderer* renderer, GPU_CONTEXT_DATA* cdata, unsigned short num_vertices, float** blit_buffers, unsigned int num_indices, unsigned short* index_buffer)
+{
+	(void)renderer;
+	int i;
+	int count = renderer->multitexture_block->num_textures;
+#ifdef SDL_GPU_USE_ARRAY_PIPELINE
+	for (i = 0; i < count; ++i)
+	{
+		float* blit_buffer = blit_buffers[i];
+		glClientActiveTexture(GL_TEXTURE0 + i);
+		glEnableClientState(GL_VERTEX_ARRAY);
+		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+		glEnableClientState(GL_COLOR_ARRAY);
+
+		if (i == 0)
+		{
+			glVertexPointer(2, GL_FLOAT, GPU_BLIT_BUFFER_STRIDE, blit_buffer + GPU_BLIT_BUFFER_VERTEX_OFFSET);
+			glColorPointer(4, GL_FLOAT, GPU_BLIT_BUFFER_STRIDE, blit_buffer + GPU_BLIT_BUFFER_COLOR_OFFSET);
+		}
+		glTexCoordPointer(2, GL_FLOAT, GPU_BLIT_BUFFER_STRIDE, blit_buffer + GPU_BLIT_BUFFER_TEX_COORD_OFFSET);
+	}
+
+	glDrawElements(cdata->last_shape, num_indices, GL_UNSIGNED_SHORT, index_buffer);
+
+	for (i = count - 1; i >= 0; --i)
+	{
+		glClientActiveTexture(GL_TEXTURE0 + i);
+		glDisableClientState(GL_COLOR_ARRAY);
+		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+		glDisableClientState(GL_VERTEX_ARRAY);
+	}
+	return;
+#endif
+
+
+
+
+#ifdef SDL_GPU_USE_BUFFER_PIPELINE_FALLBACK
+	if (!IsFeatureEnabled(renderer, GPU_FEATURE_VERTEX_SHADER))
+#endif
+#ifdef SDL_GPU_USE_FIXED_FUNCTION_PIPELINE
+	{
+		unsigned int index;
+		float* vertex_pointer = blit_buffers[0] + GPU_BLIT_BUFFER_VERTEX_OFFSET;
+		float* color_pointer = blit_buffers[0] + GPU_BLIT_BUFFER_COLOR_OFFSET;
+
+		glBegin(cdata->last_shape);
+		for (i = 0; i < num_indices; i++)
+		{
+			index = index_buffer[i] * GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
+			glColor4f(color_pointer[index], color_pointer[index + 1], color_pointer[index + 2], color_pointer[index + 3]);
+			for (j = 0; j < count; ++j)
+			{
+				float* texcoord_pointer = blit_buffers[j] + GPU_BLIT_BUFFER_TEX_COORD_OFFSET;
+				glMultiTexCoord2f(GL_TEXTURE0 + j, texcoord_pointer[index], texcoord_pointer[index + 1]);
+			}
+			glVertex3f(vertex_pointer[index], vertex_pointer[index + 1], 0.0f);
+		}
+		glEnd();
+
+		return;
+	}
+#endif
+
+
+
+
+#ifdef SDL_GPU_USE_BUFFER_PIPELINE
+	{
+		// Update the vertex array object's buffers
+#if !defined(SDL_GPU_NO_VAO)
+		glBindVertexArray(cdata->blit_VAO);
+#endif
+
+		// Upload our modelviewprojection matrix
+		if (cdata->current_shader_block.modelViewProjection_loc >= 0)
+		{
+			float mvp[16];
+			GPU_GetModelViewProjection(mvp);
+			glUniformMatrix4fv(cdata->current_shader_block.modelViewProjection_loc, 1, 0, mvp);
+		}
+
+		renderer->multitexture_texCoord_buffers[0] = cdata->blit_VBO[cdata->blit_VBO_flop];
+		cdata->blit_VBO_flop = !cdata->blit_VBO_flop;
+		for (i = count - 1; i >= 0; --i)
+		{
+			// Upload blit buffer to a single buffer object
+			glBindBuffer(GL_ARRAY_BUFFER, renderer->multitexture_texCoord_buffers[i]);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cdata->blit_IBO);
+
+			// Copy the whole blit buffer to the GPU			
+			submit_buffer_data(GPU_BLIT_BUFFER_STRIDE * num_vertices, blit_buffers[i], sizeof(unsigned short)*num_indices, index_buffer);  // Fills GPU buffer with data.
+
+																																   // Specify the formatting of the blit buffer
+			if (cdata->current_shader_block.texcoord_loc >= 0)
+			{
+				glEnableVertexAttribArray(cdata->current_shader_block.texcoord_loc);
+				glVertexAttribPointer(cdata->current_shader_block.texcoord_loc, 2, GL_FLOAT, GL_FALSE, GPU_BLIT_BUFFER_STRIDE, (void*)(GPU_BLIT_BUFFER_TEX_COORD_OFFSET * sizeof(float)));
+			}
+		}
+		if (cdata->current_shader_block.position_loc >= 0)
+		{
+			glEnableVertexAttribArray(cdata->current_shader_block.position_loc);  // Tell GL to use client-side attribute data
+			glVertexAttribPointer(cdata->current_shader_block.position_loc, 2, GL_FLOAT, GL_FALSE, GPU_BLIT_BUFFER_STRIDE, 0);  // Tell how the data is formatted
+		}
+		if (cdata->current_shader_block.color_loc >= 0)
+		{
+			glEnableVertexAttribArray(cdata->current_shader_block.color_loc);
+			glVertexAttribPointer(cdata->current_shader_block.color_loc, 4, GL_FLOAT, GL_FALSE, GPU_BLIT_BUFFER_STRIDE, (void*)(GPU_BLIT_BUFFER_COLOR_OFFSET * sizeof(float)));
+		}
+
+		upload_attribute_data(cdata, num_vertices);
+
+		glDrawElements(cdata->last_shape, num_indices, GL_UNSIGNED_SHORT, (void*)0);
+
+		// Disable the vertex arrays again
+		if (cdata->current_shader_block.position_loc >= 0)
+			glDisableVertexAttribArray(cdata->current_shader_block.position_loc);
+		if (cdata->current_shader_block.texcoord_loc >= 0)
+			glDisableVertexAttribArray(cdata->current_shader_block.texcoord_loc);
+		if (cdata->current_shader_block.color_loc >= 0)
+			glDisableVertexAttribArray(cdata->current_shader_block.color_loc);
+
+		disable_attribute_data(cdata);
+
+#if !defined(SDL_GPU_NO_VAO)
+		glBindVertexArray(0);
+#endif
+	}
+#endif
+}
+
 #define MAX(a, b) ((a) > (b)? (a) : (b))
 
 static void FlushBlitBuffer(GPU_Renderer* renderer)
@@ -5265,6 +5555,55 @@ static void FlushBlitBuffer(GPU_Renderer* renderer)
 
         unsetClipRect(renderer, dest);
     }
+}
+
+static void MultitextureFlush(GPU_Renderer* renderer, float** buffers)
+{
+	GPU_CONTEXT_DATA* cdata;
+	if (renderer->current_context_target == NULL)
+		return;
+
+	cdata = (GPU_CONTEXT_DATA*)renderer->current_context_target->context->data;
+	if (cdata->blit_buffer_num_vertices > 0 && cdata->last_target != NULL)
+	{
+		GPU_Target* dest = cdata->last_target;
+		int num_vertices;
+		int num_indices;
+		float* blit_buffer;
+		unsigned short* index_buffer;
+
+		changeViewport(dest);
+		changeCamera(dest);
+
+		applyTexturing(renderer);
+
+#ifdef SDL_GPU_APPLY_TRANSFORMS_TO_GL_STACK
+		if (!IsFeatureEnabled(renderer, GPU_FEATURE_VERTEX_SHADER))
+			applyTransforms();
+#endif
+
+		setClipRect(renderer, dest);
+
+#ifdef SDL_GPU_USE_BUFFER_PIPELINE
+		refresh_attribute_data(cdata);
+#endif
+
+		index_buffer = cdata->index_buffer;
+		num_vertices = MAX(cdata->blit_buffer_num_vertices, get_lowest_attribute_num_values(cdata, cdata->blit_buffer_num_vertices));
+		num_indices = num_vertices * 3 / 2;  // 6 indices per sprite / 4 vertices per sprite = 3/2
+
+		DoMultitextureFlush(renderer, cdata, num_vertices, buffers, num_indices, index_buffer);
+
+		cdata->blit_buffer_num_vertices -= num_vertices;
+		// Move our pointers ahead
+		blit_buffer += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX*num_vertices;
+		index_buffer += num_indices;
+
+		cdata->blit_buffer_num_vertices = 0;
+		cdata->index_buffer_num_vertices = 0;
+
+		unsetClipRect(renderer, dest);
+	}
 }
 
 static void Flip(GPU_Renderer* renderer, GPU_Target* target)
@@ -6463,6 +6802,7 @@ static void SetAttributeSource(GPU_Renderer* renderer, int num_values, GPU_Attri
     impl->BlitScale = &BlitScale; \
     impl->BlitTransform = &BlitTransform; \
     impl->BlitTransformX = &BlitTransformX; \
+    impl->MultitextureBlit = &MultitextureBlit; \
     impl->TriangleBatch = &TriangleBatch; \
  \
     impl->GenerateMipmaps = &GenerateMipmaps; \

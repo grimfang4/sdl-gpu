@@ -1397,6 +1397,12 @@ void GPU_UnsetClip(GPU_Target* target)
 
 
 
+SDL_Color GPU_GetColor(GPU_Image* image)
+{
+	return image->color;
+}
+
+
 
 void GPU_SetColor(GPU_Image* image, SDL_Color color)
 {
@@ -1999,6 +2005,66 @@ void GPU_SetShaderImage(GPU_Image* image, int location, int image_unit)
         return;
 
     _gpu_current_renderer->impl->SetShaderImage(_gpu_current_renderer, image, location, image_unit);
+}
+
+GPU_MultitextureBlock GPU_LoadMultitextureBlock(int count, char** image_names, char** texcoord_names)
+{
+	GPU_MultitextureBlock result;
+	result.image_names = (char**)SDL_malloc(count * sizeof(char*));
+	result.texcoord_names = (char**)SDL_malloc(count * sizeof(char*));
+	for (int i = 0; i < count; ++i)
+	{
+		result.image_names[i] = (char*)SDL_malloc(strlen(image_names[i]) + 1);
+		result.texcoord_names[i] = (char*)SDL_malloc(strlen(texcoord_names[i]) + 1);
+		strcpy(result.image_names[i], image_names[i]);
+		strcpy(result.texcoord_names[i], texcoord_names[i]);
+	}
+	result.num_textures = count;
+	return result;
+}
+
+void GPU_FreeMultitextureBlock(GPU_MultitextureBlock* value)
+{
+	int count = value->num_textures;
+	for (int i = 0; i < count; ++i)
+	{
+		SDL_free(value->image_names[i]);
+		SDL_free(value->texcoord_names[i]);
+	}
+	SDL_free(value->image_names);
+	SDL_free(value->texcoord_names);
+}
+
+void GPU_SetMultitextureBlock(GPU_MultitextureBlock* value)
+{
+	_gpu_current_renderer->multitexture_block = value;
+}
+
+void GPU_MultitextureBlit(GPU_Image** images, GPU_Rect* rects, GPU_Target* target, float x, float y)
+{
+	if (!CHECK_RENDERER)
+		RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL renderer");
+	MAKE_CURRENT_IF_NONE(target);
+	if (!CHECK_CONTEXT)
+		RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL context");
+
+	if (images == NULL)
+		RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT, "images");
+	if (rects == NULL)
+		RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT, "rects");
+	if (target == NULL)
+		RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT, "target");
+
+	_gpu_current_renderer->impl->MultitextureBlit(_gpu_current_renderer, images, rects, target, x, y);
+}
+
+void GPU_BlitBatch(GPU_Image* image, GPU_Target* target, Uint32 num_sprites,
+	float* values, GPU_BatchFlagEnum flags)
+{}
+
+void GPU_BlitBatchSeparate(GPU_Image* image, GPU_Target* target, Uint32 num_sprites,
+	float* positions, float* src_rects, float* colors, GPU_BatchFlagEnum flags)
+{
 }
 
 void GPU_GetUniformiv(Uint32 program_object, int location, int* values)

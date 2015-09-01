@@ -517,6 +517,15 @@ typedef struct GPU_AttributeSource
 } GPU_AttributeSource;
 
 
+/*! \ingroup ShaderInterface */
+typedef struct GPU_MultitextureBlock
+{
+	int num_textures;
+	char** image_names; /* array of char* */
+	char** texcoord_names; /* array of char* */
+} GPU_MultitextureBlock;
+
+
 /*! \ingroup Logging
  * Type enumeration for error codes.
  * \see GPU_PushErrorCode()
@@ -588,7 +597,10 @@ struct GPU_Renderer
 	
 	/*! 0 for inverted, 1 for mathematical */
 	Uint8 coordinate_mode;
-	
+
+	struct GPU_MultitextureBlock* multitexture_block;
+	int multitexture_texCoord_buffers[32];
+
 	struct GPU_RendererImpl* impl;
 };
 
@@ -1017,6 +1029,9 @@ DECLSPEC void SDLCALL GPU_GenerateMipmaps(GPU_Image* image);
 /*! Sets the modulation color for subsequent drawing of the given image. */
 DECLSPEC void SDLCALL GPU_SetColor(GPU_Image* image, SDL_Color color);
 
+/*! Gets the modulation color for subsequent drawing of the given image. */
+DECLSPEC SDL_Color SDLCALL GPU_GetColor(GPU_Image* image);
+
 /*! Sets the modulation color for subsequent drawing of the given image. */
 DECLSPEC void SDLCALL GPU_SetRGB(GPU_Image* image, Uint8 r, Uint8 g, Uint8 b);
 
@@ -1222,6 +1237,12 @@ DECLSPEC void SDLCALL GPU_BlitTransformX(GPU_Image* image, GPU_Rect* src_rect, G
  * \param flags Bit flags to control the interpretation of the 'values' array parameters.
  */
 DECLSPEC void SDLCALL GPU_TriangleBatch(GPU_Image* image, GPU_Target* target, unsigned short num_vertices, float* values, unsigned int num_indices, unsigned short* indices, GPU_BatchFlagEnum flags);
+
+DECLSPEC void SDLCALL GPU_BlitBatch(GPU_Image* image, GPU_Target* target, Uint32 num_sprites,
+	float* values, GPU_BatchFlagEnum flags);
+
+DECLSPEC void SDLCALL GPU_BlitBatchSeparate(GPU_Image* image, GPU_Target* target, Uint32 num_sprites,
+	float* positions, float* src_rects, float* colors, GPU_BatchFlagEnum flags);
 
 /*! Send all buffered blitting data to the current context target. */
 DECLSPEC void SDLCALL GPU_FlushBlitBuffer(void);
@@ -1506,6 +1527,14 @@ DECLSPEC void SDLCALL GPU_SetShaderBlock(GPU_ShaderBlock block);
     \param location The uniform location of a texture sampler
     \param image_unit The index of the texture unit to set.  0 is the first unit, which is used by SDL_gpu's blitting functions.  1 would be the second unit. */
 DECLSPEC void SDLCALL GPU_SetShaderImage(GPU_Image* image, int location, int image_unit);
+
+DECLSPEC GPU_MultitextureBlock SDLCALL GPU_LoadMultitextureBlock(int count, char** image_names, char** texcoord_names);
+
+DECLSPEC void SDLCALL GPU_SetMultitextureBlock(GPU_MultitextureBlock* value);
+
+DECLSPEC void SDLCALL GPU_FreeMultitextureBlock(GPU_MultitextureBlock* value);
+
+DECLSPEC void SDLCALL GPU_MultitextureBlit(GPU_Image** images, GPU_Rect* rects, GPU_Target* target, float x, float y);
 
 /*! Fills "values" with the value of the uniform shader variable at the given location. */
 DECLSPEC void SDLCALL GPU_GetUniformiv(Uint32 program_object, int location, int* values);
