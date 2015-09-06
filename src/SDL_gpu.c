@@ -1846,7 +1846,16 @@ Uint32 GPU_CreateShaderProgram(void)
 
 Uint32 GPU_LinkShaders(Uint32 shader_object1, Uint32 shader_object2)
 {
+    Uint32 shaders[2];
+    shaders[0] = shader_object1;
+    shaders[1] = shader_object2;
+    return GPU_LinkManyShaders(shaders, 2);
+}
+
+Uint32 GPU_LinkManyShaders(Uint32 *shader_objects, int count)
+{
     Uint32 p;
+    int i;
 
     if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL)
         return 0;
@@ -1856,8 +1865,8 @@ Uint32 GPU_LinkShaders(Uint32 shader_object1, Uint32 shader_object2)
 
     p = _gpu_current_renderer->impl->CreateShaderProgram(_gpu_current_renderer);
 
-    _gpu_current_renderer->impl->AttachShader(_gpu_current_renderer, p, shader_object1);
-    _gpu_current_renderer->impl->AttachShader(_gpu_current_renderer, p, shader_object2);
+    for (i = 0; i < count; i++)
+        _gpu_current_renderer->impl->AttachShader(_gpu_current_renderer, p, shader_objects[i]);
 
     if(_gpu_current_renderer->impl->LinkShaderProgram(_gpu_current_renderer, p))
         return p;
