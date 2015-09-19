@@ -127,5 +127,8 @@ target_link_libraries (sandbox-test ${TEST_LIBS})
 add_executable(renderer-test renderer/main.c)
 target_link_libraries (renderer-test ${TEST_LIBS})
 
+add_executable(multitexture-test multitexture-blit/main.c)
+target_link_libraries (multitexture-test ${TEST_LIBS})
+
 add_executable(video-test video/main.c)
 target_link_libraries (video-test ${TEST_LIBS})
