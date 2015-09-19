@@ -1456,6 +1456,9 @@ DECLSPEC Uint32 SDLCALL GPU_LoadShader(GPU_ShaderEnum shader_type, const char* f
 /*! Creates and links a shader program with the given shader objects. */
 DECLSPEC Uint32 SDLCALL GPU_LinkShaders(Uint32 shader_object1, Uint32 shader_object2);
 
+/*! Creates and links a shader program with the given shader objects. */
+DECLSPEC Uint32 SDLCALL GPU_LinkManyShaders(Uint32 *shader_objects, int count);
+
 /*! Deletes a shader object. */
 DECLSPEC void SDLCALL GPU_FreeShader(Uint32 shader_object);
 
