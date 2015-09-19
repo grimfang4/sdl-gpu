@@ -5569,7 +5569,6 @@ static void MultitextureFlush(GPU_Renderer* renderer, float** buffers)
 		GPU_Target* dest = cdata->last_target;
 		int num_vertices;
 		int num_indices;
-		float* blit_buffer;
 		unsigned short* index_buffer;
 
 		changeViewport(dest);
@@ -5596,7 +5595,6 @@ static void MultitextureFlush(GPU_Renderer* renderer, float** buffers)
 
 		cdata->blit_buffer_num_vertices -= num_vertices;
 		// Move our pointers ahead
-		blit_buffer += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX*num_vertices;
 		index_buffer += num_indices;
 
 		cdata->blit_buffer_num_vertices = 0;
