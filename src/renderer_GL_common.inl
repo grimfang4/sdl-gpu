@@ -5404,6 +5404,7 @@ static void DoMultitextureFlush(GPU_Renderer* renderer, GPU_CONTEXT_DATA* cdata,
 #endif
 #ifdef SDL_GPU_USE_FIXED_FUNCTION_PIPELINE
 	{
+        int j;
 		unsigned int index;
 		float* vertex_pointer = blit_buffers[0] + GPU_BLIT_BUFFER_VERTEX_OFFSET;
 		float* color_pointer = blit_buffers[0] + GPU_BLIT_BUFFER_COLOR_OFFSET;
