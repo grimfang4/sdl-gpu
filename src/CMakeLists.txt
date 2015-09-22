@@ -8,6 +8,7 @@ set(SDL_gpu_SRCS
 	renderer_OpenGL_1.c
 	renderer_OpenGL_2.c
 	renderer_OpenGL_3.c
+	renderer_OpenGL_4.c
 	renderer_GLES_1.c
 	renderer_GLES_2.c
 )
@@ -20,6 +21,7 @@ set(SDL_gpu_HDRS
 	../include/SDL_gpu_OpenGL_1.h
 	../include/SDL_gpu_OpenGL_2.h
 	../include/SDL_gpu_OpenGL_3.h
+	../include/SDL_gpu_OpenGL_4.h
 	../include/SDL_gpu_GLES_1.h
 	../include/SDL_gpu_GLES_2.h
 	renderer_GL_common.inl
@@ -50,6 +52,7 @@ set(SDL_gpu_install_HDRS
 	../include/SDL_gpu_OpenGL_1.h
 	../include/SDL_gpu_OpenGL_2.h
 	../include/SDL_gpu_OpenGL_3.h
+	../include/SDL_gpu_OpenGL_4.h
 	../include/SDL_gpu_GLES_1.h
 	../include/SDL_gpu_GLES_2.h
 )
