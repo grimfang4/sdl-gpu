@@ -19,7 +19,9 @@ DEPENDENCIES
 
 SDL 1.2 or SDL 2.0 (www.libsdl.org)
 A rendering backend
-	Currently implemented: OpenGL 1.1, OpenGL 2.0, OpenGL 3.0, OpenGL ES 1.1, OpenGL ES 2.0
+	Currently implemented:
+		OpenGL 1.1, 2.0, 3.0, 4.0
+		OpenGL ES 1.1, 2.0, 3.0
 
 
 ========
