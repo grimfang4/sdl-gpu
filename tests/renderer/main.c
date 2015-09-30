@@ -472,14 +472,6 @@ static GPU_Image* CreateImageUsingTexture(GPU_Renderer* renderer, Uint32 handle,
 }
 
 
-static GPU_Image* LoadImage(GPU_Renderer* renderer, const char* filename)
-{
-    GPU_Log(" %s (dummy)\n", __func__);
-    
-    return renderer->impl->CreateImage(renderer, 100, 100, GPU_FORMAT_RGBA);
-}
-
-
 static GPU_Image* CreateAliasImage(GPU_Renderer* renderer, GPU_Image* image)
 {
 	GPU_Image* result;
@@ -1197,7 +1189,6 @@ void set_renderer_functions(GPU_RendererImpl* impl)
 
     impl->CreateImage = &CreateImage;
     impl->CreateImageUsingTexture = &CreateImageUsingTexture;
-    impl->LoadImage = &LoadImage;
     impl->CreateAliasImage = &CreateAliasImage;
     impl->SaveImage = &SaveImage;
     impl->CopyImage = &CopyImage;

@@ -902,10 +902,27 @@ GPU_Image* GPU_CreateImageUsingTexture(Uint32 handle, Uint8 take_ownership)
 
 GPU_Image* GPU_LoadImage(const char* filename)
 {
+    return GPU_LoadImage_RW(SDL_RWFromFile(filename, "r"), 1);
+}
+
+GPU_Image* GPU_LoadImage_RW(SDL_RWops* rwops, Uint8 free_rwops)
+{
+	GPU_Image* result;
+	SDL_Surface* surface;
     if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL)
         return NULL;
+        
+    surface = GPU_LoadSurface_RW(rwops, free_rwops);
+    if(surface == NULL)
+    {
+        GPU_PushErrorCode("GPU_LoadImage_RW", GPU_ERROR_DATA_ERROR, "Failed to load image data.");
+        return NULL;
+    }
 
-    return _gpu_current_renderer->impl->LoadImage(_gpu_current_renderer, filename);
+    result = _gpu_current_renderer->impl->CopyImageFromSurface(_gpu_current_renderer, surface);
+    SDL_FreeSurface(surface);
+
+    return result;
 }
 
 GPU_Image* GPU_CreateAliasImage(GPU_Image* image)
@@ -1086,35 +1103,7 @@ SDL_Surface* GPU_LoadSurface_RW(SDL_RWops* rwops, Uint8 free_rwops)
 
 SDL_Surface* GPU_LoadSurface(const char* filename)
 {
-    int width, height, channels;
-    unsigned char* data;
-    SDL_Surface* result;
-
-    if(filename == NULL)
-    {
-        GPU_PushErrorCode("GPU_LoadSurface", GPU_ERROR_NULL_ARGUMENT, "filename");
-        return NULL;
-    }
-
-#ifdef __ANDROID__
-    // Must use SDL_RWops to access the assets directory automatically
-    if(strlen(filename) > 0 && filename[0] != '/')
-        return GPU_LoadSurface_RW(SDL_RWFromFile(filename, "r"), 1);
-#endif
-
-    data = stbi_load(filename, &width, &height, &channels, 0);
-
-    if(data == NULL)
-    {
-        GPU_PushErrorCode(__func__, GPU_ERROR_DATA_ERROR, "Failed to load \"%s\": %s", filename, stbi_failure_reason());
-        return NULL;
-    }
-
-    result = gpu_copy_raw_surface_data(data, width, height, channels);
-
-    stbi_image_free(data);
-
-    return result;
+    return GPU_LoadSurface_RW(SDL_RWFromFile(filename, "r"), 1);
 }
 
 // From http://stackoverflow.com/questions/5309471/getting-file-extension-in-c

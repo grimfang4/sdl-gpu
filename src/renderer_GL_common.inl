@@ -2280,22 +2280,6 @@ static GPU_Image* CreateImageUsingTexture(GPU_Renderer* renderer, Uint32 handle,
     #endif
 }
 
-static GPU_Image* LoadImage(GPU_Renderer* renderer, const char* filename)
-{
-	GPU_Image* result;
-    SDL_Surface* surface = GPU_LoadSurface(filename);
-    if(surface == NULL)
-    {
-        GPU_PushErrorCode("GPU_LoadImage", GPU_ERROR_DATA_ERROR, "Failed to load image data.");
-        return NULL;
-    }
-
-    result = renderer->impl->CopyImageFromSurface(renderer, surface);
-    SDL_FreeSurface(surface);
-
-    return result;
-}
-
 
 static GPU_Image* CreateAliasImage(GPU_Renderer* renderer, GPU_Image* image)
 {
@@ -6450,7 +6434,6 @@ static void SetAttributeSource(GPU_Renderer* renderer, int num_values, GPU_Attri
  \
     impl->CreateImage = &CreateImage; \
     impl->CreateImageUsingTexture = &CreateImageUsingTexture; \
-    impl->LoadImage = &LoadImage; \
     impl->CreateAliasImage = &CreateAliasImage; \
     impl->SaveImage = &SaveImage; \
     impl->CopyImage = &CopyImage; \

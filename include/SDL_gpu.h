@@ -981,6 +981,9 @@ DECLSPEC GPU_Image* SDLCALL GPU_CreateImageUsingTexture(Uint32 handle, Uint8 tak
 /*! Load image from an image file that is supported by this renderer.  Don't forget to GPU_FreeImage() it. */
 DECLSPEC GPU_Image* SDLCALL GPU_LoadImage(const char* filename);
 
+/*! Load image from an image file in memory.  Don't forget to GPU_FreeImage() it. */
+DECLSPEC GPU_Image* SDLCALL GPU_LoadImage_RW(SDL_RWops* rwops, Uint8 free_rwops);
+
 /*! Creates an image that aliases the given image.  Aliases can be used to store image settings (e.g. modulation color) for easy switching.
  * GPU_FreeImage() frees the alias's memory, but does not affect the original. */
 DECLSPEC GPU_Image* SDLCALL GPU_CreateAliasImage(GPU_Image* image);

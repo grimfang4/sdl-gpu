@@ -61,9 +61,6 @@ typedef struct GPU_RendererImpl
     /*! \see GPU_CreateImageUsingTexture() */
 	GPU_Image* (SDLCALL *CreateImageUsingTexture)(GPU_Renderer* renderer, Uint32 handle, Uint8 take_ownership);
 	
-	/*! \see GPU_LoadImage() */
-	GPU_Image* (SDLCALL *LoadImage)(GPU_Renderer* renderer, const char* filename);
-	
     /*! \see GPU_CreateAliasImage() */
 	GPU_Image* (SDLCALL *CreateAliasImage)(GPU_Renderer* renderer, GPU_Image* image);
 	
