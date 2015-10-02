@@ -105,10 +105,22 @@ void GPU_Rectangle(GPU_Target* target, float x1, float y1, float x2, float y2, S
 	renderer->impl->Rectangle(renderer, target, x1, y1, x2, y2, color);
 }
 
+void GPU_Rectangle2(GPU_Target* target, GPU_Rect rect, SDL_Color color)
+{
+	CHECK_RENDERER();
+	renderer->impl->Rectangle(renderer, target, rect.x, rect.y, rect.x + rect.w, rect.y + rect.h, color);
+}
+
 void GPU_RectangleFilled(GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color)
 {
 	CHECK_RENDERER();
 	renderer->impl->RectangleFilled(renderer, target, x1, y1, x2, y2, color);
+}
+
+void GPU_RectangleFilled2(GPU_Target* target, GPU_Rect rect, SDL_Color color)
+{
+	CHECK_RENDERER();
+	renderer->impl->RectangleFilled(renderer, target, rect.x, rect.y, rect.x + rect.w, rect.y + rect.h, color);
 }
 
 void GPU_RectangleRound(GPU_Target* target, float x1, float y1, float x2, float y2, float radius, SDL_Color color)
@@ -117,10 +129,22 @@ void GPU_RectangleRound(GPU_Target* target, float x1, float y1, float x2, float 
 	renderer->impl->RectangleRound(renderer, target, x1, y1, x2, y2, radius, color);
 }
 
+void GPU_RectangleRound2(GPU_Target* target, GPU_Rect rect, float radius, SDL_Color color)
+{
+	CHECK_RENDERER();
+	renderer->impl->RectangleRound(renderer, target, rect.x, rect.y, rect.x + rect.w, rect.y + rect.h, radius, color);
+}
+
 void GPU_RectangleRoundFilled(GPU_Target* target, float x1, float y1, float x2, float y2, float radius, SDL_Color color)
 {
 	CHECK_RENDERER();
 	renderer->impl->RectangleRoundFilled(renderer, target, x1, y1, x2, y2, radius, color);
+}
+
+void GPU_RectangleRoundFilled2(GPU_Target* target, GPU_Rect rect, float radius, SDL_Color color)
+{
+	CHECK_RENDERER();
+	renderer->impl->RectangleRoundFilled(renderer, target, rect.x, rect.y, rect.x + rect.w, rect.y + rect.h, radius, color);
 }
 
 void GPU_Polygon(GPU_Target* target, unsigned int num_vertices, float* vertices, SDL_Color color)

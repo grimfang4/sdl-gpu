@@ -1380,6 +1380,13 @@ DECLSPEC void SDLCALL GPU_TriFilled(GPU_Target* target, float x1, float y1, floa
  */
 DECLSPEC void SDLCALL GPU_Rectangle(GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color);
 
+/*! Renders a colored rectangle outline.
+ * \param target The destination render target
+ * \param rect The rectangular area to draw
+ * \param color The color of the shape to render
+ */
+DECLSPEC void SDLCALL GPU_Rectangle2(GPU_Target* target, GPU_Rect rect, SDL_Color color);
+
 /*! Renders a colored filled rectangle.
  * \param target The destination render target
  * \param x1 x-coord of top-left corner
@@ -1389,6 +1396,13 @@ DECLSPEC void SDLCALL GPU_Rectangle(GPU_Target* target, float x1, float y1, floa
  * \param color The color of the shape to render
  */
 DECLSPEC void SDLCALL GPU_RectangleFilled(GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color);
+
+/*! Renders a colored filled rectangle.
+ * \param target The destination render target
+ * \param rect The rectangular area to draw
+ * \param color The color of the shape to render
+ */
+DECLSPEC void SDLCALL GPU_RectangleFilled2(GPU_Target* target, GPU_Rect rect, SDL_Color color);
 
 /*! Renders a colored rounded (filleted) rectangle outline.
  * \param target The destination render target
@@ -1401,6 +1415,14 @@ DECLSPEC void SDLCALL GPU_RectangleFilled(GPU_Target* target, float x1, float y1
  */
 DECLSPEC void SDLCALL GPU_RectangleRound(GPU_Target* target, float x1, float y1, float x2, float y2, float radius, SDL_Color color);
 
+/*! Renders a colored rounded (filleted) rectangle outline.
+ * \param target The destination render target
+ * \param rect The rectangular area to draw
+ * \param radius The radius of the corners
+ * \param color The color of the shape to render
+ */
+DECLSPEC void SDLCALL GPU_RectangleRound2(GPU_Target* target, GPU_Rect rect, float radius, SDL_Color color);
+
 /*! Renders a colored filled rounded (filleted) rectangle.
  * \param target The destination render target
  * \param x1 x-coord of top-left corner
@@ -1411,6 +1433,14 @@ DECLSPEC void SDLCALL GPU_RectangleRound(GPU_Target* target, float x1, float y1,
  * \param color The color of the shape to render
  */
 DECLSPEC void SDLCALL GPU_RectangleRoundFilled(GPU_Target* target, float x1, float y1, float x2, float y2, float radius, SDL_Color color);
+
+/*! Renders a colored filled rounded (filleted) rectangle.
+ * \param target The destination render target
+ * \param rect The rectangular area to draw
+ * \param radius The radius of the corners
+ * \param color The color of the shape to render
+ */
+DECLSPEC void SDLCALL GPU_RectangleRoundFilled2(GPU_Target* target, GPU_Rect rect, float radius, SDL_Color color);
 
 /*! Renders a colored polygon outline.  The vertices are expected to define a convex polygon.
  * \param target The destination render target
