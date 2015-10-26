@@ -1096,7 +1096,7 @@ static Uint8 get_GL_version(int* major, int* minor)
     #ifdef SDL_GPU_USE_OPENGL
         // OpenGL < 3.0 doesn't have GL_MAJOR_VERSION.  Check via version string instead.
         version_string = (const char*)glGetString(GL_VERSION);
-        if(sscanf(version_string, "%d.%d", major, minor) <= 0)
+        if(version_string == NULL || sscanf(version_string, "%d.%d", major, minor) <= 0)
         {
             // Failure
             *major = SDL_GPU_GL_MAJOR_VERSION;
@@ -1114,10 +1114,10 @@ static Uint8 get_GL_version(int* major, int* minor)
         // GLES doesn't have GL_MAJOR_VERSION.  Check via version string instead.
         version_string = (const char*)glGetString(GL_VERSION);
         // OpenGL ES 2.0?
-        if(sscanf(version_string, "OpenGL ES %d.%d", major, minor) <= 0)
+        if(version_string == NULL || sscanf(version_string, "OpenGL ES %d.%d", major, minor) <= 0)
         {
             // OpenGL ES-CM 1.1?  OpenGL ES-CL 1.1?
-            if(sscanf(version_string, "OpenGL ES-C%*c %d.%d", major, minor) <= 0)
+            if(version_string == NULL || sscanf(version_string, "OpenGL ES-C%*c %d.%d", major, minor) <= 0)
             {
                 // Failure
                 *major = SDL_GPU_GLES_MAJOR_VERSION;
@@ -1272,6 +1272,17 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     if(created || target->context->context == NULL)
     {
         target->context->context = SDL_GL_CreateContext(window);
+        if(target->context->context == NULL)
+        {
+            GPU_PushErrorCode("GPU_CreateTargetFromWindow", GPU_ERROR_BACKEND_ERROR, "Failed to create GL context.");
+            SDL_free(cdata->blit_buffer);
+            SDL_free(cdata->index_buffer);
+            SDL_free(target->context->data);
+            SDL_free(target->context);
+            SDL_free(target->data);
+            SDL_free(target);
+            return NULL;
+        }
         GPU_AddWindowMapping(target);
     }
     
@@ -2544,7 +2555,7 @@ static SDL_Surface* CopySurfaceFromImage(GPU_Renderer* renderer, GPU_Image* imag
         int source_pitch = image->texture_w*format->BytesPerPixel;  // Use the actual texture width to pull from the data
         for(i = 0; i < h; ++i)
         {
-            memcpy((Uint8*)result->pixels + i*result->pitch, data + source_pitch*i, source_pitch);
+            memcpy((Uint8*)result->pixels + i*result->pitch, data + source_pitch*i, result->pitch);
         }
     }
 
