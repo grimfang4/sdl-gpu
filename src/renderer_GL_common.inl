@@ -951,39 +951,6 @@ static void get_camera_matrix(float* result, GPU_Camera camera)
 
 }
 
-static void get_camera_projection(float* result, GPU_Camera camera)
-{
-    GPU_CONTEXT_DATA* cdata = (GPU_CONTEXT_DATA*)GPU_GetContextTarget()->context->data;
-    GPU_Target* target = cdata->last_target;
-    Uint8 invert = cdata->last_camera_inverted;
-
-    GPU_MatrixIdentity(result);
-
-    if(!invert ^ GPU_GetCoordinateMode())
-        GPU_MatrixOrtho(result, target->camera.x, target->w + target->camera.x, target->h + target->camera.y, target->camera.y, -1.0f, 1.0f);
-    else
-        GPU_MatrixOrtho(result, target->camera.x, target->w + target->camera.x, target->camera.y, target->h + target->camera.y, -1.0f, 1.0f);  // Special inverted orthographic projection because tex coords are inverted already for render-to-texture
-}
-
-static void get_camera_modelview(float* result, GPU_Camera camera)
-{
-    GPU_CONTEXT_DATA* cdata = (GPU_CONTEXT_DATA*)GPU_GetContextTarget()->context->data;
-    GPU_Target* target = cdata->last_target;
-	float offsetX, offsetY;
-
-    GPU_MatrixIdentity(result);
-
-    offsetX = target->w/2.0f;
-    offsetY = target->h/2.0f;
-    GPU_MatrixTranslate(result, offsetX, offsetY, 0);
-    GPU_MatrixRotate(result, target->camera.angle, 0, 0, 1);
-    GPU_MatrixTranslate(result, -offsetX, -offsetY, 0);
-
-    GPU_MatrixTranslate(result, target->camera.x + offsetX, target->camera.y + offsetY, 0);
-    GPU_MatrixScale(result, target->camera.zoom, target->camera.zoom, 1.0f);
-    GPU_MatrixTranslate(result, -target->camera.x - offsetX, -target->camera.y - offsetY, 0);
-}
-
 
 
 #ifdef SDL_GPU_APPLY_TRANSFORMS_TO_GL_STACK
