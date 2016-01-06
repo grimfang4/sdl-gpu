@@ -260,32 +260,53 @@ static void init_features(GPU_Renderer* renderer)
 
     // NPOT textures
 #ifdef SDL_GPU_USE_OPENGL
-    if(isExtensionSupported("GL_ARB_texture_non_power_of_two"))
+    #if SDL_GPU_GL_MAJOR_VERSION >= 2
+        // Core in GL 2+
         renderer->enabled_features |= GPU_FEATURE_NON_POWER_OF_TWO;
-    else
-        renderer->enabled_features &= ~GPU_FEATURE_NON_POWER_OF_TWO;
+    #else
+        if(isExtensionSupported("GL_ARB_texture_non_power_of_two"))
+            renderer->enabled_features |= GPU_FEATURE_NON_POWER_OF_TWO;
+        else
+            renderer->enabled_features &= ~GPU_FEATURE_NON_POWER_OF_TWO;
+    #endif
 #elif defined(SDL_GPU_USE_GLES)
-    if(isExtensionSupported("GL_OES_texture_npot") || isExtensionSupported("GL_IMG_texture_npot")
-       || isExtensionSupported("GL_APPLE_texture_2D_limited_npot") || isExtensionSupported("GL_ARB_texture_non_power_of_two"))
+    #if SDL_GPU_GLES_MAJOR_VERSION >= 3
+        // Core in GLES 3+
         renderer->enabled_features |= GPU_FEATURE_NON_POWER_OF_TWO;
-    else
-        renderer->enabled_features &= ~GPU_FEATURE_NON_POWER_OF_TWO;
+    #else
+        if(isExtensionSupported("GL_OES_texture_npot") || isExtensionSupported("GL_IMG_texture_npot")
+           || isExtensionSupported("GL_APPLE_texture_2D_limited_npot") || isExtensionSupported("GL_ARB_texture_non_power_of_two"))
+            renderer->enabled_features |= GPU_FEATURE_NON_POWER_OF_TWO;
+        else
+            renderer->enabled_features &= ~GPU_FEATURE_NON_POWER_OF_TWO;
+            
+        #if SDL_GPU_GLES_MAJOR_VERSION >= 2
+        // Assume limited NPOT support for GLES 2+
+            renderer->enabled_features |= GPU_FEATURE_NON_POWER_OF_TWO;
+        #endif
+    #endif
 #endif
 
     // FBO
 #ifdef SDL_GPU_USE_OPENGL
-    if(isExtensionSupported("GL_EXT_framebuffer_object"))
+    #if SDL_GPU_GL_MAJOR_VERSION >= 3
+        // Core in GL 3+
         renderer->enabled_features |= GPU_FEATURE_RENDER_TARGETS;
-    else
-        renderer->enabled_features &= ~GPU_FEATURE_RENDER_TARGETS;
+    #else
+        if(isExtensionSupported("GL_EXT_framebuffer_object"))
+            renderer->enabled_features |= GPU_FEATURE_RENDER_TARGETS;
+        else
+            renderer->enabled_features &= ~GPU_FEATURE_RENDER_TARGETS;
+    #endif
 #elif defined(SDL_GPU_USE_GLES)
-    #if SDL_GPU_GL_TIER < 3
+    #if SDL_GPU_GLES_MAJOR_VERSION >= 2
+        // Core in GLES 2+
+        renderer->enabled_features |= GPU_FEATURE_RENDER_TARGETS;
+    #else
         if(isExtensionSupported("GL_OES_framebuffer_object"))
             renderer->enabled_features |= GPU_FEATURE_RENDER_TARGETS;
         else
             renderer->enabled_features &= ~GPU_FEATURE_RENDER_TARGETS;
-    #else
-            renderer->enabled_features |= GPU_FEATURE_RENDER_TARGETS;
     #endif
 #endif
 
@@ -294,7 +315,7 @@ static void init_features(GPU_Renderer* renderer)
     renderer->enabled_features |= GPU_FEATURE_BLEND_EQUATIONS;
     renderer->enabled_features |= GPU_FEATURE_BLEND_FUNC_SEPARATE;
 
-    #if SDL_GPU_GL_MAJOR_VERSION > 1
+    #if SDL_GPU_GL_MAJOR_VERSION >= 2
         // Core in GL 2+
         renderer->enabled_features |= GPU_FEATURE_BLEND_EQUATIONS_SEPARATE;
     #else
@@ -306,7 +327,7 @@ static void init_features(GPU_Renderer* renderer)
 
 #elif defined(SDL_GPU_USE_GLES)
 
-    #if SDL_GPU_GLES_MAJOR_VERSION > 1
+    #if SDL_GPU_GLES_MAJOR_VERSION >= 2
         // Core in GLES 2+
         renderer->enabled_features |= GPU_FEATURE_BLEND_EQUATIONS;
         renderer->enabled_features |= GPU_FEATURE_BLEND_FUNC_SEPARATE;
@@ -331,7 +352,7 @@ static void init_features(GPU_Renderer* renderer)
 
     // Wrap modes
 #ifdef SDL_GPU_USE_OPENGL
-    #if SDL_GPU_GL_MAJOR_VERSION > 1
+    #if SDL_GPU_GL_MAJOR_VERSION >= 2
         renderer->enabled_features |= GPU_FEATURE_WRAP_REPEAT_MIRRORED;
     #else
         if(isExtensionSupported("GL_ARB_texture_mirrored_repeat"))
@@ -340,7 +361,7 @@ static void init_features(GPU_Renderer* renderer)
             renderer->enabled_features &= ~GPU_FEATURE_WRAP_REPEAT_MIRRORED;
     #endif
 #elif defined(SDL_GPU_USE_GLES)
-    #if SDL_GPU_GLES_MAJOR_VERSION > 1
+    #if SDL_GPU_GLES_MAJOR_VERSION >= 2
         renderer->enabled_features |= GPU_FEATURE_WRAP_REPEAT_MIRRORED;
     #else
         if(isExtensionSupported("GL_OES_texture_mirrored_repeat"))
