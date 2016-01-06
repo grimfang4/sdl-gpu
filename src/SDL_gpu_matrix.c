@@ -50,10 +50,56 @@
 #endif
 
 
-// Implementations based on Wayne Cochran's (wcochran) matrix.c
 
 // Column-major
 #define INDEX(row,col) ((col)*4 + (row))
+
+
+float GPU_VectorLength(float* vec3)
+{
+	return sqrtf(vec3[0] * vec3[0] + vec3[1] * vec3[1] + vec3[2] * vec3[2]);
+}
+
+void GPU_VectorNormalize(float* vec3)
+{
+	float mag = GPU_VectorLength(vec3);
+	vec3[0] /= mag;
+	vec3[1] /= mag;
+	vec3[2] /= mag;
+}
+
+float GPU_VectorDot(float* A, float* B)
+{
+	return A[0] * B[0] + A[1] * B[1] + A[2] * B[2];
+}
+
+void GPU_VectorCross(float* result, float* A, float* B)
+{
+	result[0] = A[1] * B[2] - A[2] * B[1];
+	result[1] = A[2] * B[0] - A[0] * B[2];
+	result[2] = A[0] * B[1] - A[1] * B[0];
+}
+
+void GPU_VectorCopy(float* result, float* A)
+{
+	result[0] = A[0];
+	result[1] = A[1];
+	result[2] = A[2];
+}
+
+void GPU_VectorApplyMatrix(float* vec3, float* matrix_4x4)
+{
+	float x = matrix_4x4[INDEX(0, 0)] * vec3[0] + matrix_4x4[INDEX(0, 1)] * vec3[1] + matrix_4x4[INDEX(0, 2)] * vec3[2] + matrix_4x4[INDEX(0, 3)];
+	float y = matrix_4x4[INDEX(1, 0)] * vec3[0] + matrix_4x4[INDEX(1, 1)] * vec3[1] + matrix_4x4[INDEX(1, 2)] * vec3[2] + matrix_4x4[INDEX(1, 3)];
+	float z = matrix_4x4[INDEX(2, 0)] * vec3[0] + matrix_4x4[INDEX(2, 1)] * vec3[1] + matrix_4x4[INDEX(2, 2)] * vec3[2] + matrix_4x4[INDEX(2, 3)];
+	float w = matrix_4x4[INDEX(3, 0)] * vec3[0] + matrix_4x4[INDEX(3, 1)] * vec3[1] + matrix_4x4[INDEX(3, 2)] * vec3[2] + matrix_4x4[INDEX(3, 3)];
+	vec3[0] = x / w;
+	vec3[1] = y / w;
+	vec3[2] = z / w;
+}
+
+
+// Matrix math implementations based on Wayne Cochran's (wcochran) matrix.c
 
 #define FILL_MATRIX_4x4(A, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15) \
 	A[0] = a0; \
@@ -84,6 +130,197 @@ void GPU_MatrixIdentity(float* result)
     result[0] = result[5] = result[10] = result[15] = 1;
 }
 
+
+void GPU_MatrixOrtho(float* result, float left, float right, float bottom, float top, float near, float far)
+{
+    if(result == NULL)
+		return;
+
+	{
+#ifdef ROW_MAJOR
+		float A[16];
+		FILL_MATRIX_4x4(A,
+				2/(right - left), 0,  0, -(right + left)/(right - left),
+				0, 2/(top - bottom), 0, -(top + bottom)/(top - bottom),
+				0, 0, -2/(far - near), -(far + near)/(far - near),
+				0, 0, 0, 1
+			);
+#else
+		float A[16];
+		FILL_MATRIX_4x4(A,
+				2 / (right - left), 0, 0, 0,
+				0, 2 / (top - bottom), 0, 0,
+				0, 0, -2 / (far - near), 0,
+				-(right + left) / (right - left), -(top + bottom) / (top - bottom), -(far + near) / (far - near), 1
+			);
+#endif
+
+		GPU_MultiplyAndAssign(result, A);
+	}
+}
+
+
+void GPU_MatrixFrustum(float* result, float left, float right, float bottom, float top, float near, float far)
+{
+    if(result == NULL)
+		return;
+
+	{
+		float A[16];
+		FILL_MATRIX_4x4(A, 
+				2 * near / (right - left), 0, 0, 0,
+				0, 2 * near / (top - bottom), 0, 0,
+				(right + left) / (right - left), (top + bottom) / (top - bottom), -(far + near) / (far - near), -1,
+				0, 0, -(2 * far * near) / (far - near), 0
+			);
+
+		GPU_MultiplyAndAssign(result, A);
+	}
+}
+
+void GPU_MatrixPerspective(float* result, float fovy, float aspect, float zNear, float zFar)
+{
+	float fW, fH;
+    
+    // Make it left-handed?
+    fovy = -fovy;
+    aspect = -aspect;
+    
+	fH = tanf(fovy / 360 * M_PI) * zNear;
+	fW = fH * aspect;
+	GPU_MatrixFrustum(result, -fW, fW, -fH, fH, zNear, zFar);
+}
+
+void GPU_MatrixLookAt(float* matrix, float eye_x, float eye_y, float eye_z, float target_x, float target_y, float target_z, float up_x, float up_y, float up_z)
+{
+	float forward[3] = {target_x - eye_x, target_y - eye_y, target_z - eye_z};
+	float up[3] = {up_x, up_y, up_z};
+	float side[3];
+	float view[16];
+
+	GPU_VectorNormalize(forward);
+	GPU_VectorNormalize(up);
+
+	// Calculate sideways vector
+	GPU_VectorCross(side, forward, up);
+
+	// Calculate new up vector
+	GPU_VectorCross(up, side, forward);
+
+	// Set up view matrix
+	view[0] = side[0];
+	view[4] = side[1];
+	view[8] = side[2];
+	view[12] = 0.0f;
+
+	view[1] = up[0];
+	view[5] = up[1];
+	view[9] = up[2];
+	view[13] = 0.0f;
+
+	view[2] = -forward[0];
+	view[6] = -forward[1];
+	view[10] = -forward[2];
+	view[14] = 0.0f;
+
+	view[3] = view[7] = view[11] = 0.0f;
+	view[15] = 1.0f;
+
+	GPU_MultiplyAndAssign(matrix, view);
+	GPU_MatrixTranslate(matrix, -eye_x, -eye_y, -eye_z);
+}
+
+void GPU_MatrixTranslate(float* result, float x, float y, float z)
+{
+    if(result == NULL)
+		return;
+
+	{
+#ifdef ROW_MAJOR
+		float A[16];
+		FILL_MATRIX_4x4(A,
+				1, 0, 0, x,
+				0, 1, 0, y,
+				0, 0, 1, z,
+				0, 0, 0, 1
+			);
+#else
+		float A[16];
+		FILL_MATRIX_4x4(A,
+				1, 0, 0, 0,
+				0, 1, 0, 0,
+				0, 0, 1, 0,
+				x, y, z, 1
+			);
+#endif
+
+		GPU_MultiplyAndAssign(result, A);
+	}
+}
+
+void GPU_MatrixScale(float* result, float sx, float sy, float sz)
+{
+    if(result == NULL)
+		return;
+
+	{
+		float A[16];
+		FILL_MATRIX_4x4(A,
+				sx, 0, 0, 0,
+				0, sy, 0, 0,
+				0, 0, sz, 0,
+				0, 0, 0, 1
+			);
+
+		GPU_MultiplyAndAssign(result, A);
+	}
+}
+
+void GPU_MatrixRotate(float* result, float degrees, float x, float y, float z)
+{
+	float p, radians, c, s, c_, zc_, yc_, xzc_, xyc_, yzc_, xs, ys, zs;
+
+    if(result == NULL)
+		return;
+
+    p = 1/sqrtf(x*x + y*y + z*z);
+    x *= p; y *= p; z *= p;
+    radians = degrees * (M_PI/180);
+    c = cosf(radians);
+    s = sinf(radians);
+    c_ = 1 - c;
+    zc_ = z*c_;
+    yc_ = y*c_;
+    xzc_ = x*zc_;
+    xyc_ = x*y*c_;
+    yzc_ = y*zc_;
+    xs = x*s;
+    ys = y*s;
+    zs = z*s;
+
+	{
+#ifdef ROW_MAJOR
+		float A[16];
+		FILL_MATRIX_4x4(A,
+				x*x*c_ + c,  xyc_ - zs,   xzc_ + ys, 0,
+				xyc_ + zs,   y*yc_ + c,   yzc_ - xs, 0,
+				xzc_ - ys,   yzc_ + xs,   z*zc_ + c, 0,
+				0,           0,           0,         1
+			);
+#else
+		float A[16];
+		FILL_MATRIX_4x4(A,
+				x*x*c_ + c, xyc_ + zs, xzc_ - ys, 0,
+				xyc_ - zs, y*yc_ + c, yzc_ + xs, 0,
+				xzc_ + ys, yzc_ - xs, z*zc_ + c, 0,
+				0, 0, 0, 1
+			);
+#endif
+
+		GPU_MultiplyAndAssign(result, A);
+	}
+}
+
 // Matrix multiply: result = A * B
 void GPU_Multiply4x4(float* result, float* A, float* B)
 {
@@ -102,10 +339,10 @@ void GPU_Multiply4x4(float* result, float* A, float* B)
     }
 }
 
-void GPU_MultiplyAndAssign(float* result, float* A)
+void GPU_MultiplyAndAssign(float* result, float* B)
 {
     float temp[16];
-    GPU_Multiply4x4(temp, result, A);
+    GPU_Multiply4x4(temp, result, B);
     GPU_MatrixCopy(result, temp);
 }
 
@@ -211,7 +448,8 @@ void GPU_PopMatrix(void)
 
     if(target == NULL || target->context == NULL)
         return;
-    
+        
+	GPU_FlushBlitBuffer();
     stack = (target->context->matrix_mode == GPU_MODELVIEW? &target->context->modelview_matrix : &target->context->projection_matrix);
     if(stack->size == 0)
     {
@@ -225,161 +463,40 @@ void GPU_LoadIdentity(void)
 {
     float* result = GPU_GetCurrentMatrix();
     if(result == NULL)
-        return;
+		return;
+    
+	GPU_FlushBlitBuffer();
     GPU_MatrixIdentity(result);
 }
 
 void GPU_Ortho(float left, float right, float bottom, float top, float near, float far)
 {
-    float* result = GPU_GetCurrentMatrix();
-    if(result == NULL)
-		return;
-
-	{
-#ifdef ROW_MAJOR
-		float A[16];
-		FILL_MATRIX_4x4(A,
-				2/(right - left), 0,  0, -(right + left)/(right - left),
-				0, 2/(top - bottom), 0, -(top + bottom)/(top - bottom),
-				0, 0, -2/(far - near), -(far + near)/(far - near),
-				0, 0, 0, 1
-			);
-#else
-		float A[16];
-		FILL_MATRIX_4x4(A,
-				2 / (right - left), 0, 0, 0,
-				0, 2 / (top - bottom), 0, 0,
-				0, 0, -2 / (far - near), 0,
-				-(right + left) / (right - left), -(top + bottom) / (top - bottom), -(far + near) / (far - near), 1
-			);
-#endif
-
-		GPU_MultiplyAndAssign(result, A);
-	}
+	GPU_FlushBlitBuffer();
+    GPU_MatrixOrtho(GPU_GetCurrentMatrix(), left, right, bottom, top, near, far);
 }
 
-void GPU_Frustum(float right, float left, float bottom, float top, float near, float far)
+void GPU_Frustum(float left, float right, float bottom, float top, float near, float far)
 {
-    float* result = GPU_GetCurrentMatrix();
-    if(result == NULL)
-		return;
-
-	{
-#ifdef ROW_MAJOR
-		float A[16];
-		FILL_MATRIX_4x4(A, 
-				2 * near / (right - left), 0, 0, 0,
-				0, 2 * near / (top - bottom), 0, 0,
-				(right + left) / (right - left), (top + bottom) / (top - bottom), -(far + near) / (far - near), -1,
-				0, 0, -(2 * far * near) / (far - near), 0
-			);
-#else
-		float A[16];
-		FILL_MATRIX_4x4(A,
-				2 * near / (right - left), 0, (right + left) / (right - left), 0,
-				0, 2 * near / (top - bottom), (top + bottom) / (top - bottom), 0,
-				0, 0, -(far + near) / (far - near), -(2 * far * near) / (far - near),
-				0, 0, -1, 0
-			);
-#endif
-
-		GPU_MultiplyAndAssign(result, A);
-	}
+	GPU_FlushBlitBuffer();
+    GPU_MatrixFrustum(GPU_GetCurrentMatrix(), left, right, bottom, top, near, far);
 }
 
 void GPU_Translate(float x, float y, float z)
 {
-    float* result = GPU_GetCurrentMatrix();
-    if(result == NULL)
-		return;
-
-	{
-#ifdef ROW_MAJOR
-		float A[16];
-		FILL_MATRIX_4x4(A,
-				1, 0, 0, x,
-				0, 1, 0, y,
-				0, 0, 1, z,
-				0, 0, 0, 1
-			);
-#else
-		float A[16];
-		FILL_MATRIX_4x4(A,
-				1, 0, 0, 0,
-				0, 1, 0, 0,
-				0, 0, 1, 0,
-				x, y, z, 1
-			);
-#endif
-
-		GPU_MultiplyAndAssign(result, A);
-	}
+	GPU_FlushBlitBuffer();
+    GPU_MatrixTranslate(GPU_GetCurrentMatrix(), x, y, z);
 }
 
 void GPU_Scale(float sx, float sy, float sz)
 {
-    float* result = GPU_GetCurrentMatrix();
-    if(result == NULL)
-		return;
-
-	{
-		float A[16];
-		FILL_MATRIX_4x4(A,
-				sx, 0, 0, 0,
-				0, sy, 0, 0,
-				0, 0, sz, 0,
-				0, 0, 0, 1
-			);
-
-		GPU_MultiplyAndAssign(result, A);
-	}
+	GPU_FlushBlitBuffer();
+    GPU_MatrixScale(GPU_GetCurrentMatrix(), sx, sy, sz);
 }
 
 void GPU_Rotate(float degrees, float x, float y, float z)
 {
-	float p, radians, c, s, c_, zc_, yc_, xzc_, xyc_, yzc_, xs, ys, zs;
-	float* result;
-
-    p = 1/sqrtf(x*x + y*y + z*z);
-    x *= p; y *= p; z *= p;
-    radians = degrees * (M_PI/180);
-    c = cosf(radians);
-    s = sinf(radians);
-    c_ = 1 - c;
-    zc_ = z*c_;
-    yc_ = y*c_;
-    xzc_ = x*zc_;
-    xyc_ = x*y*c_;
-    yzc_ = y*zc_;
-    xs = x*s;
-    ys = y*s;
-    zs = z*s;
-
-    result = GPU_GetCurrentMatrix();
-    if(result == NULL)
-		return;
-
-	{
-#ifdef ROW_MAJOR
-		float A[16];
-		FILL_MATRIX_4x4(A,
-				x*x*c_ + c,  xyc_ - zs,   xzc_ + ys, 0,
-				xyc_ + zs,   y*yc_ + c,   yzc_ - xs, 0,
-				xzc_ - ys,   yzc_ + xs,   z*zc_ + c, 0,
-				0,           0,           0,         1
-			);
-#else
-		float A[16];
-		FILL_MATRIX_4x4(A,
-				x*x*c_ + c, xyc_ + zs, xzc_ - ys, 0,
-				xyc_ - zs, y*yc_ + c, yzc_ + xs, 0,
-				xzc_ + ys, yzc_ - xs, z*zc_ + c, 0,
-				0, 0, 0, 1
-			);
-#endif
-
-		GPU_MultiplyAndAssign(result, A);
-	}
+	GPU_FlushBlitBuffer();
+    GPU_MatrixRotate(GPU_GetCurrentMatrix(), degrees, x, y, z);
 }
 
 void GPU_MultMatrix(float* A)
@@ -387,6 +504,9 @@ void GPU_MultMatrix(float* A)
     float* result = GPU_GetCurrentMatrix();
     if(result == NULL)
         return;
+	GPU_FlushBlitBuffer();
+	// BIG FIXME: All of these matrix stack manipulators should be flushing the blit buffer.
+	// A better solution would be to minimize the matrix stack API and make it clear that MultMatrix flushes.
     GPU_MultiplyAndAssign(result, A);
 }
 

@@ -362,6 +362,7 @@ struct GPU_Target
 	
 	/*! Perspective and object viewing transforms. */
 	GPU_Camera camera;
+	Uint8 use_camera;
 	
 	/*! Renderer context data.  NULL if the target does not represent a window or rendering context. */
 	GPU_Context* context;
@@ -902,6 +903,12 @@ DECLSPEC GPU_Camera SDLCALL GPU_GetCamera(GPU_Target* target);
  * \return The old camera. */
 DECLSPEC GPU_Camera SDLCALL GPU_SetCamera(GPU_Target* target, GPU_Camera* cam);
 
+/*! Enables or disables using the built-in camera matrix transforms. */
+DECLSPEC void SDLCALL GPU_EnableCamera(GPU_Target* target, Uint8 use_camera);
+
+/*! Returns 1 if the camera transforms are enabled, 0 otherwise. */
+DECLSPEC Uint8 SDLCALL GPU_IsCameraEnabled(GPU_Target* target);
+
 /*! \return The RGBA color of a pixel. */
 DECLSPEC SDL_Color SDLCALL GPU_GetPixel(GPU_Target* target, Sint16 x, Sint16 y);
 
@@ -1087,22 +1094,64 @@ DECLSPEC SDL_Surface* SDLCALL GPU_CopySurfaceFromImage(GPU_Image* image);
 /*! \ingroup Matrix
  *  @{ */
 
+// Basic vector operations (3D)
+
+/*! Returns the magnitude (length) of the given vector. */
+DECLSPEC float SDLCALL GPU_VectorLength(float* vec3);
+
+/*! Modifies the given vector so that it has a new length of 1. */
+DECLSPEC void SDLCALL GPU_VectorNormalize(float* vec3);
+
+/*! Returns the dot product of two vectors. */
+DECLSPEC float SDLCALL GPU_VectorDot(float* A, float* B);
+
+/*! Performs the cross product of vectors A and B (result = A x B).  Do not use A or B as 'result'. */
+DECLSPEC void SDLCALL GPU_VectorCross(float* result, float* A, float* B);
+
+/*! Overwrite 'result' vector with the values from vector A. */
+DECLSPEC void SDLCALL GPU_VectorCopy(float* result, float* A);
+
+/*! Multiplies the given matrix into the given vector (vec3 = matrix*vec3). */
+DECLSPEC void SDLCALL GPU_VectorApplyMatrix(float* vec3, float* matrix_4x4);
+
+
 
 // Basic matrix operations (4x4)
 
-/*! Copy matrix A to the given 'result' matrix. */
+/*! Overwrite 'result' matrix with the values from matrix A. */
 DECLSPEC void SDLCALL GPU_MatrixCopy(float* result, const float* A);
 
 /*! Fills 'result' matrix with the identity matrix. */
 DECLSPEC void SDLCALL GPU_MatrixIdentity(float* result);
+
+/*! Multiplies an orthographic projection matrix into the given matrix. */
+DECLSPEC void SDLCALL GPU_MatrixOrtho(float* result, float left, float right, float bottom, float top, float near, float far);
+
+/*! Multiplies a perspective projection matrix into the given matrix. */
+DECLSPEC void SDLCALL GPU_MatrixFrustum(float* result, float left, float right, float bottom, float top, float near, float far);
+
+/*! Multiplies a perspective projection matrix into the given matrix. */
+DECLSPEC void SDLCALL GPU_MatrixPerspective(float* result, float fovy, float aspect, float zNear, float zFar);
+
+/*! Multiplies a view matrix into the given matrix. */
+DECLSPEC void SDLCALL GPU_MatrixLookAt(float* matrix, float eye_x, float eye_y, float eye_z, float target_x, float target_y, float target_z, float up_x, float up_y, float up_z);
+
+/*! Adds a translation into the given matrix. */
+DECLSPEC void SDLCALL GPU_MatrixTranslate(float* result, float x, float y, float z);
+
+/*! Multiplies a scaling matrix into the given matrix. */
+DECLSPEC void SDLCALL GPU_MatrixScale(float* result, float sx, float sy, float sz);
+
+/*! Multiplies a rotation matrix into the given matrix. */
+DECLSPEC void SDLCALL GPU_MatrixRotate(float* result, float degrees, float x, float y, float z);
 
 /*! Multiplies matrices A and B and stores the result in the given 'result' matrix (result = A*B).  Do not use A or B as 'result'.
  * \see GPU_MultiplyAndAssign
 */
 DECLSPEC void SDLCALL GPU_Multiply4x4(float* result, float* A, float* B);
 
-/*! Multiplies matrices 'result' and A and stores the result in the given 'result' matrix (result = result * A). */
-DECLSPEC void SDLCALL GPU_MultiplyAndAssign(float* result, float* A);
+/*! Multiplies matrices 'result' and B and stores the result in the given 'result' matrix (result = result * B). */
+DECLSPEC void SDLCALL GPU_MultiplyAndAssign(float* result, float* B);
 
 
 // Matrix stack accessors
@@ -1141,7 +1190,7 @@ DECLSPEC void SDLCALL GPU_LoadIdentity(void);
 DECLSPEC void SDLCALL GPU_Ortho(float left, float right, float bottom, float top, float near, float far);
 
 /*! Multiplies a perspective projection matrix into the current matrix. */
-DECLSPEC void SDLCALL GPU_Frustum(float right, float left, float bottom, float top, float near, float far);
+DECLSPEC void SDLCALL GPU_Frustum(float left, float right, float bottom, float top, float near, float far);
 
 /*! Adds a translation into the current matrix. */
 DECLSPEC void SDLCALL GPU_Translate(float x, float y, float z);

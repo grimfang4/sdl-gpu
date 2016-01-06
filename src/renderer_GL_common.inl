@@ -903,34 +903,9 @@ static void changeViewport(GPU_Target* target)
 static void applyTargetCamera(GPU_Target* target)
 {
     GPU_CONTEXT_DATA* cdata = (GPU_CONTEXT_DATA*)GPU_GetContextTarget()->context->data;
-    Uint8 invert = (target->image != NULL);
-	float offsetX, offsetY;
 
     cdata->last_camera = target->camera;
-
-    cdata->last_camera_inverted = invert;
-
-    GPU_MatrixMode( GPU_PROJECTION );
-    GPU_LoadIdentity();
-
-    if((!invert ^ GPU_GetCoordinateMode()))
-        GPU_Ortho(target->camera.x, target->w + target->camera.x, target->h + target->camera.y, target->camera.y, -1.0f, 1.0f);
-    else
-        GPU_Ortho(target->camera.x, target->w + target->camera.x, target->camera.y, target->h + target->camera.y, -1.0f, 1.0f);  // Special inverted orthographic projection because tex coords are inverted already for render-to-texture
-
-    GPU_MatrixMode( GPU_MODELVIEW );
-    GPU_LoadIdentity();
-
-
-    offsetX = target->w/2.0f;
-    offsetY = target->h/2.0f;
-    GPU_Translate(offsetX, offsetY, 0);
-    GPU_Rotate(target->camera.angle, 0, 0, 1);
-    GPU_Translate(-offsetX, -offsetY, 0);
-
-    GPU_Translate(target->camera.x + offsetX, target->camera.y + offsetY, 0);
-    GPU_Scale(target->camera.zoom, target->camera.zoom, 1.0f);
-    GPU_Translate(-target->camera.x - offsetX, -target->camera.y - offsetY, 0);
+    cdata->last_camera_inverted = (target->image != NULL);
 }
 
 static Uint8 equal_cameras(GPU_Camera a, GPU_Camera b)
@@ -948,11 +923,81 @@ static void changeCamera(GPU_Target* target)
     }
 }
 
+static void get_camera_matrix(float* result, GPU_Camera camera)
+{
+    GPU_CONTEXT_DATA* cdata = (GPU_CONTEXT_DATA*)GPU_GetContextTarget()->context->data;
+    GPU_Target* target = cdata->last_target;
+    Uint8 invert = cdata->last_camera_inverted;
+	float offsetX, offsetY;
+
+    GPU_MatrixIdentity(result);
+
+    // Now multiply in the projection part
+    if(!invert ^ GPU_GetCoordinateMode())
+        GPU_MatrixOrtho(result, target->camera.x, target->w + target->camera.x, target->h + target->camera.y, target->camera.y, -1.0f, 1.0f);
+    else
+        GPU_MatrixOrtho(result, target->camera.x, target->w + target->camera.x, target->camera.y, target->h + target->camera.y, -1.0f, 1.0f);  // Special inverted orthographic projection because tex coords are inverted already for render-to-texture
+
+    // First the modelview part
+    offsetX = target->w/2.0f;
+    offsetY = target->h/2.0f;
+    GPU_MatrixTranslate(result, offsetX, offsetY, 0);
+    GPU_MatrixRotate(result, target->camera.angle, 0, 0, 1);
+    GPU_MatrixTranslate(result, -offsetX, -offsetY, 0);
+
+    GPU_MatrixTranslate(result, target->camera.x + offsetX, target->camera.y + offsetY, 0);
+    GPU_MatrixScale(result, target->camera.zoom, target->camera.zoom, 1.0f);
+    GPU_MatrixTranslate(result, -target->camera.x - offsetX, -target->camera.y - offsetY, 0);
+
+}
+
+static void get_camera_projection(float* result, GPU_Camera camera)
+{
+    GPU_CONTEXT_DATA* cdata = (GPU_CONTEXT_DATA*)GPU_GetContextTarget()->context->data;
+    GPU_Target* target = cdata->last_target;
+    Uint8 invert = cdata->last_camera_inverted;
+
+    GPU_MatrixIdentity(result);
+
+    if(!invert ^ GPU_GetCoordinateMode())
+        GPU_MatrixOrtho(result, target->camera.x, target->w + target->camera.x, target->h + target->camera.y, target->camera.y, -1.0f, 1.0f);
+    else
+        GPU_MatrixOrtho(result, target->camera.x, target->w + target->camera.x, target->camera.y, target->h + target->camera.y, -1.0f, 1.0f);  // Special inverted orthographic projection because tex coords are inverted already for render-to-texture
+}
+
+static void get_camera_modelview(float* result, GPU_Camera camera)
+{
+    GPU_CONTEXT_DATA* cdata = (GPU_CONTEXT_DATA*)GPU_GetContextTarget()->context->data;
+    GPU_Target* target = cdata->last_target;
+	float offsetX, offsetY;
+
+    GPU_MatrixIdentity(result);
+
+    offsetX = target->w/2.0f;
+    offsetY = target->h/2.0f;
+    GPU_MatrixTranslate(result, offsetX, offsetY, 0);
+    GPU_MatrixRotate(result, target->camera.angle, 0, 0, 1);
+    GPU_MatrixTranslate(result, -offsetX, -offsetY, 0);
+
+    GPU_MatrixTranslate(result, target->camera.x + offsetX, target->camera.y + offsetY, 0);
+    GPU_MatrixScale(result, target->camera.zoom, target->camera.zoom, 1.0f);
+    GPU_MatrixTranslate(result, -target->camera.x - offsetX, -target->camera.y - offsetY, 0);
+}
+
+
+
 #ifdef SDL_GPU_APPLY_TRANSFORMS_TO_GL_STACK
 static void applyTransforms(void)
 {
+    GPU_CONTEXT_DATA* cdata = (GPU_CONTEXT_DATA*)GPU_GetContextTarget()->context->data;
     float* p = GPU_GetProjection();
     float* m = GPU_GetModelView();
+    
+    float cam_matrix[16];
+    get_camera_matrix(cam_matrix, cdata->last_camera);
+    
+    GPU_MultiplyAndAssign(m, cam_matrix);
+    
     glMatrixMode(GL_PROJECTION);
     glLoadMatrixf(p);
     glMatrixMode(GL_MODELVIEW);
@@ -1338,6 +1383,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
 
     target->viewport = GPU_MakeRect(0, 0, target->context->drawable_w, target->context->drawable_h);
     target->camera = GPU_GetDefaultCamera();
+    target->use_camera = 1;
 
     target->context->line_thickness = 1.0f;
     target->context->use_texturing = 1;
@@ -3679,6 +3725,7 @@ static GPU_Target* LoadTarget(GPU_Renderer* renderer, GPU_Image* image)
     result->viewport = GPU_MakeRect(0, 0, result->w, result->h);
 
     result->camera = GPU_GetDefaultCamera();
+    result->use_camera = 1;
 
     result->use_clip_rect = 0;
     result->clip_rect.x = 0;
@@ -4486,6 +4533,8 @@ static_inline void submit_buffer_data(int bytes, float* values, int bytes_indice
     #endif
 }
 
+
+
 // Assumes the right format
 static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* target, unsigned short num_vertices, float* values, unsigned int num_indices, unsigned short* indices, GPU_BatchFlagEnum flags)
 {
@@ -4725,7 +4774,12 @@ static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* 
         if(cdata->current_shader_block.modelViewProjection_loc >= 0)
         {
             float mvp[16];
+            float cam_matrix[16];
             GPU_GetModelViewProjection(mvp);
+            get_camera_matrix(cam_matrix, cdata->last_camera);
+            
+            GPU_MultiplyAndAssign(mvp, cam_matrix);
+            
             glUniformMatrix4fv(cdata->current_shader_block.modelViewProjection_loc, 1, 0, mvp);
         }
 
@@ -5022,7 +5076,7 @@ static void ClearRGBA(GPU_Renderer* renderer, GPU_Target* target, Uint8 r, Uint8
     }
 }
 
-static void DoPartialFlush(GPU_Renderer* renderer, GPU_CONTEXT_DATA* cdata, unsigned short num_vertices, float* blit_buffer, unsigned int num_indices, unsigned short* index_buffer)
+static void DoPartialFlush(GPU_Renderer* renderer, GPU_Target* dest, GPU_CONTEXT_DATA* cdata, unsigned short num_vertices, float* blit_buffer, unsigned int num_indices, unsigned short* index_buffer)
 {
 	(void)renderer;
 #ifdef SDL_GPU_USE_ARRAY_PIPELINE
@@ -5082,8 +5136,25 @@ static void DoPartialFlush(GPU_Renderer* renderer, GPU_CONTEXT_DATA* cdata, unsi
             // Upload our modelviewprojection matrix
             if(cdata->current_shader_block.modelViewProjection_loc >= 0)
             {
+                float p[16];
+                float mv[16];
                 float mvp[16];
-                GPU_GetModelViewProjection(mvp);
+                
+                GPU_MatrixCopy(p, GPU_GetProjection());
+                GPU_MatrixCopy(mv, GPU_GetModelView());
+                
+                if(dest->use_camera)
+                {
+                    float cam_matrix[16];
+                    get_camera_matrix(cam_matrix, cdata->last_camera);
+                    
+                    GPU_MultiplyAndAssign(cam_matrix, p);
+                    GPU_MatrixCopy(p, cam_matrix);
+                }
+                
+                // MVP = P * MV
+                GPU_Multiply4x4(mvp, p, mv);
+                
                 glUniformMatrix4fv(cdata->current_shader_block.modelViewProjection_loc, 1, 0, mvp);
             }
 
@@ -5185,7 +5256,12 @@ static void DoUntexturedFlush(GPU_Renderer* renderer, GPU_CONTEXT_DATA* cdata, u
         if(cdata->current_shader_block.modelViewProjection_loc >= 0)
         {
             float mvp[16];
+            float cam_matrix[16];
             GPU_GetModelViewProjection(mvp);
+            get_camera_matrix(cam_matrix, cdata->last_camera);
+            
+            GPU_MultiplyAndAssign(mvp, cam_matrix);
+            
             glUniformMatrix4fv(cdata->current_shader_block.modelViewProjection_loc, 1, 0, mvp);
         }
 
@@ -5271,7 +5347,7 @@ static void FlushBlitBuffer(GPU_Renderer* renderer)
                 num_vertices = MAX(cdata->blit_buffer_num_vertices, get_lowest_attribute_num_values(cdata, cdata->blit_buffer_num_vertices));
                 num_indices = num_vertices * 3 / 2;  // 6 indices per sprite / 4 vertices per sprite = 3/2
 
-                DoPartialFlush(renderer, cdata, num_vertices, blit_buffer, num_indices, index_buffer);
+                DoPartialFlush(renderer, dest, cdata, num_vertices, blit_buffer, num_indices, index_buffer);
 
                 cdata->blit_buffer_num_vertices -= num_vertices;
                 // Move our pointers ahead

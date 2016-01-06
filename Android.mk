@@ -15,13 +15,20 @@ LOCAL_SRC_FILES := $(SDL_GPU_DIR)/src/SDL_gpu.c \
 				   $(SDL_GPU_DIR)/src/SDL_gpu_shapes.c \
 				   $(SDL_GPU_DIR)/src/renderer_GLES_1.c \
 				   $(SDL_GPU_DIR)/src/renderer_GLES_2.c \
+				   $(SDL_GPU_DIR)/src/renderer_GLES_3.c \
 				   $(STB_IMAGE_DIR)/stb_image.c \
 				   $(STB_IMAGE_DIR)/stb_image_write.c
 
 
 LOCAL_CFLAGS += -DSDL_GPU_DISABLE_OPENGL -DSTBI_FAILURE_USERMSG -O3
-#LOCAL_LDLIBS += -llog -lGLESv1_CM
-LOCAL_LDLIBS += -llog -lGLESv2 -lGLESv1_CM
+
+LOCAL_LDLIBS += -llog -lGLESv1_CM
+LOCAL_LDLIBS += -lGLESv2
+
+# Disable GLES version 3 support for now, since some environments aren't set up for it yet
+# Enable it if you want it!
+LOCAL_CFLAGS += -DSDL_GPU_DISABLE_GLES_3
+#LOCAL_LDLIBS += -lGLESv3
 
 LOCAL_SHARED_LIBRARIES := SDL2
 

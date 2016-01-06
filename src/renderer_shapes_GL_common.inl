@@ -203,9 +203,6 @@ static void Arc(GPU_Renderer* renderer, GPU_Target* target, float x, float y, fl
         c = cos(dt);
         s = sin(dt);
         
-        dx = 1.0f;
-        dy = 0.0f;
-        
         // Rotate to start
         start_angle *= M_PI/180;
         dx = cos(start_angle);
@@ -282,9 +279,6 @@ static void ArcFilled(GPU_Renderer* renderer, GPU_Target* target, float x, float
         
         c = cos(dt);
         s = sin(dt);
-        
-        dx = 1.0f;
-        dy = 0.0f;
         
         // Rotate to start
         start_angle *= M_PI/180;

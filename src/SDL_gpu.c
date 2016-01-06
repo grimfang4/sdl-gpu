@@ -880,8 +880,23 @@ GPU_Camera GPU_SetCamera(GPU_Target* target, GPU_Camera* cam)
     MAKE_CURRENT_IF_NONE(target);
     if(_gpu_current_renderer->current_context_target == NULL)
         return GPU_GetDefaultCamera();
-
+	// TODO: Remove from renderer and flush here
     return _gpu_current_renderer->impl->SetCamera(_gpu_current_renderer, target, cam);
+}
+
+void GPU_EnableCamera(GPU_Target* target, Uint8 use_camera)
+{
+	if (target == NULL)
+		return;
+	// TODO: Flush here
+	target->use_camera = use_camera;
+}
+
+Uint8 GPU_IsCameraEnabled(GPU_Target* target)
+{
+	if (target == NULL)
+		return 0;
+	return target->use_camera;
 }
 
 GPU_Image* GPU_CreateImage(Uint16 w, Uint16 h, GPU_FormatEnum format)
