@@ -789,9 +789,10 @@ const char* GPU_GetErrorString(GPU_ErrorEnum error)
 
 void GPU_GetVirtualCoords(GPU_Target* target, float* x, float* y, float displayX, float displayY)
 {
-    if(target == NULL)
+    if(target == NULL || _gpu_current_renderer == NULL)
         return;
 
+    // Scale from raw window/image coords to the virtual scale
     if(target->context != NULL)
     {
         if(x != NULL)
@@ -808,11 +809,16 @@ void GPU_GetVirtualCoords(GPU_Target* target, float* x, float* y, float displayX
     }
     else
     {
+        // What is the backing for this target?!
         if(x != NULL)
             *x = displayX;
         if(y != NULL)
             *y = displayY;
     }
+    
+    // Invert coordinates to math coords
+    if(_gpu_current_renderer->coordinate_mode)
+        *y = target->h - *y;
 }
 
 GPU_Rect GPU_MakeRect(float x, float y, float w, float h)

@@ -873,7 +873,7 @@ DECLSPEC void SDLCALL GPU_SetVirtualResolution(GPU_Target* target, Uint16 w, Uin
 /*! Query the logical size of the given target. */
 DECLSPEC void SDLCALL GPU_GetVirtualResolution(GPU_Target* target, Uint16* w, Uint16* h);
 
-/*! Converts screen space coordinates (such as from mouse input) to logical drawing coordinates. */
+/*! Converts screen space coordinates (such as from mouse input) to logical drawing coordinates.  This interacts with GPU_SetCoordinateMode() when the y-axis is flipped (screen space is assumed to be inverted: (0,0) in the upper-left corner). */
 DECLSPEC void SDLCALL GPU_GetVirtualCoords(GPU_Target* target, float* x, float* y, float displayX, float displayY);
 
 /*! Reset the logical size of the given target to its original value. */
