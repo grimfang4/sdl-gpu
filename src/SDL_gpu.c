@@ -815,6 +815,10 @@ void GPU_GetVirtualCoords(GPU_Target* target, float* x, float* y, float displayX
         if(y != NULL)
             *y = displayY;
     }
+    
+    // Invert coordinates to math coords
+    if(_gpu_current_renderer->coordinate_mode)
+        *y = target->h - *y;
 }
 
 GPU_Rect GPU_MakeRect(float x, float y, float w, float h)
