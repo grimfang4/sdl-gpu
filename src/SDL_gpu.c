@@ -815,10 +815,6 @@ void GPU_GetVirtualCoords(GPU_Target* target, float* x, float* y, float displayX
         if(y != NULL)
             *y = displayY;
     }
-    
-    // Invert coordinates to math coords
-    if(_gpu_current_renderer->coordinate_mode)
-        *y = target->h - *y;
 }
 
 GPU_Rect GPU_MakeRect(float x, float y, float w, float h)
@@ -1682,6 +1678,25 @@ void GPU_SetImageFilter(GPU_Image* image, GPU_FilterEnum filter)
         return;
 
     _gpu_current_renderer->impl->SetImageFilter(_gpu_current_renderer, image, filter);
+}
+
+
+void GPU_SetDefaultHotspot(float hotspot_x, float hotspot_y)
+{
+    if(_gpu_current_renderer == NULL)
+        return;
+
+    _gpu_current_renderer->default_image_hotspot_x = hotspot_x;
+    _gpu_current_renderer->default_image_hotspot_y = hotspot_y;
+}
+
+void GPU_SetHotspot(GPU_Image* image, float hotspot_x, float hotspot_y)
+{
+    if(image == NULL)
+        return;
+
+    image->hotspot_x = hotspot_x;
+    image->hotspot_y = hotspot_y;
 }
 
 GPU_SnapEnum GPU_GetSnapMode(GPU_Image* image)

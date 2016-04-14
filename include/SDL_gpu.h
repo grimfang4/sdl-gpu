@@ -231,6 +231,9 @@ typedef struct GPU_Image
 	Uint16 texture_w, texture_h;  // Underlying texture dimensions
 	Uint8 has_mipmaps;
 	
+	float hotspot_x; // Normalized coords for the point at which the image is blitted.  Default is (0.5, 0.5), that is, the image is drawn centered.
+	float hotspot_y; // These are always interpreted as inverted.  (0,0) is in the upper left and would draw as SDL_BlitSurface() does.
+	
 	SDL_Color color;
 	Uint8 use_blending;
 	GPU_BlendMode blend_mode;
@@ -590,6 +593,10 @@ struct GPU_Renderer
 	/*! 0 for inverted, 1 for mathematical */
 	Uint8 coordinate_mode;
 	
+	/*! Default is (0.5, 0.5) - images draw centered. */
+	float default_image_hotspot_x;
+	float default_image_hotspot_y;
+	
 	struct GPU_RendererImpl* impl;
 };
 
@@ -783,6 +790,11 @@ DECLSPEC void SDLCALL GPU_ResetRendererState(void);
 DECLSPEC void SDLCALL GPU_SetCoordinateMode(Uint8 use_math_coords);
 
 DECLSPEC Uint8 SDLCALL GPU_GetCoordinateMode(void);
+
+/*! Sets the default image blitting hotspot for newly created images.
+ * \see GPU_SetHotspot
+ */
+DECLSPEC void SDLCALL GPU_SetDefaultHotspot(float hotspot_x, float hotspot_y);
 
 // End of RendererControls
 /*! @} */
@@ -1054,6 +1066,9 @@ DECLSPEC void SDLCALL GPU_SetBlendMode(GPU_Image* image, GPU_BlendPresetEnum mod
 
 /*! Sets the image filtering mode, if supported by the renderer. */
 DECLSPEC void SDLCALL GPU_SetImageFilter(GPU_Image* image, GPU_FilterEnum filter);
+
+/*! Sets the image hotspot, which is the point about which the image is blitted.  The default is to blit the image on-center (0.5, 0.5).  The hotspot is in inverted (+y down) normalized coordinates (0.0-1.0). */
+DECLSPEC void SDLCALL GPU_SetHotspot(GPU_Image* image, float hotspot_x, float hotspot_y);
 
 /*! Gets the current pixel snap setting.  The default value is GPU_SNAP_POSITION_AND_DIMENSIONS.  */
 DECLSPEC GPU_SnapEnum SDLCALL GPU_GetSnapMode(GPU_Image* image);

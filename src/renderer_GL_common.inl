@@ -2053,7 +2053,10 @@ static GPU_Image* CreateUninitializedImage(GPU_Renderer* renderer, Uint16 w, Uin
     result->num_layers = num_layers;
     result->bytes_per_pixel = bytes_per_pixel;
     result->has_mipmaps = 0;
-
+    
+    result->hotspot_x = renderer->default_image_hotspot_x;
+    result->hotspot_y = renderer->default_image_hotspot_y;
+    
     result->color = white;
     result->use_blending = 1;
     result->blend_mode = GPU_GetBlendModeFromPreset(GPU_BLEND_NORMAL);
@@ -2300,6 +2303,9 @@ static GPU_Image* CreateImageUsingTexture(GPU_Renderer* renderer, Uint32 handle,
     result->num_layers = num_layers;
     result->bytes_per_pixel = bytes_per_pixel;
     result->has_mipmaps = 0;
+    
+    result->hotspot_x = renderer->default_image_hotspot_x;
+    result->hotspot_y = renderer->default_image_hotspot_y;
 
     result->color = white;
     result->use_blending = 1;
@@ -3991,10 +3997,10 @@ static void Blit(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, G
     }
 
     // Center the image on the given coords
-    dx1 = x - w/2.0f;
-    dy1 = y - h/2.0f;
-    dx2 = x + w/2.0f;
-    dy2 = y + h/2.0f;
+    dx1 = x - w * image->hotspot_x;
+    dy1 = y - h * image->hotspot_y;
+    dx2 = x + w * (1.0f - image->hotspot_x);
+    dy2 = y + h * (1.0f - image->hotspot_y);
 
     if(image->snap_mode == GPU_SNAP_DIMENSIONS || image->snap_mode == GPU_SNAP_POSITION_AND_DIMENSIONS)
     {
@@ -4085,7 +4091,7 @@ static void BlitRotate(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_r
 
     w = (src_rect == NULL? image->w : src_rect->w);
     h = (src_rect == NULL? image->h : src_rect->h);
-    renderer->impl->BlitTransformX(renderer, image, src_rect, target, x, y, w/2.0f, h/2.0f, degrees, 1.0f, 1.0f);
+    renderer->impl->BlitTransformX(renderer, image, src_rect, target, x, y, w*image->hotspot_x, h*image->hotspot_y, degrees, 1.0f, 1.0f);
 }
 
 static void BlitScale(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float scaleX, float scaleY)
@@ -4104,7 +4110,7 @@ static void BlitScale(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_re
 
     w = (src_rect == NULL? image->w : src_rect->w);
     h = (src_rect == NULL? image->h : src_rect->h);
-    renderer->impl->BlitTransformX(renderer, image, src_rect, target, x, y, w/2.0f, h/2.0f, 0.0f, scaleX, scaleY);
+    renderer->impl->BlitTransformX(renderer, image, src_rect, target, x, y, w*image->hotspot_x, h*image->hotspot_y, 0.0f, scaleX, scaleY);
 }
 
 static void BlitTransform(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float degrees, float scaleX, float scaleY)
@@ -4123,7 +4129,7 @@ static void BlitTransform(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* sr
 
     w = (src_rect == NULL? image->w : src_rect->w);
     h = (src_rect == NULL? image->h : src_rect->h);
-    renderer->impl->BlitTransformX(renderer, image, src_rect, target, x, y, w/2.0f, h/2.0f, degrees, scaleX, scaleY);
+    renderer->impl->BlitTransformX(renderer, image, src_rect, target, x, y, w*image->hotspot_x, h*image->hotspot_y, degrees, scaleX, scaleY);
 }
 
 static void BlitTransformX(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float pivot_x, float pivot_y, float degrees, float scaleX, float scaleY)
@@ -4219,11 +4225,11 @@ static void BlitTransformX(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* s
         y2 *= image->base_h/(float)image->h;
     }
 
-    // Center the image on the given coords (offset later)
-    dx1 = -w/2.0f;
-    dy1 = -h/2.0f;
-    dx2 = w/2.0f;
-    dy2 = h/2.0f;
+    // Create vertices about the hotspot
+    dx1 = -pivot_x;
+    dy1 = -pivot_y;
+    dx2 = w - pivot_x;
+    dy2 = h - pivot_y;
 
     if(image->snap_mode == GPU_SNAP_DIMENSIONS || image->snap_mode == GPU_SNAP_POSITION_AND_DIMENSIONS)
     {
@@ -4246,26 +4252,14 @@ static void BlitTransformX(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* s
 
     // Apply transforms
 
-    // Scale
+    // Scale about the hotspot
     if(scaleX != 1.0f || scaleY != 1.0f)
     {
-        float w = (dx2 - dx1)*scaleX;
-        float h = (dy2 - dy1)*scaleY;
-        dx1 = (dx2 + dx1)/2 - w/2;
-        dx2 = dx1 + w;
-        dy1 = (dy2 + dy1)/2 - h/2;
-        dy2 = dy1 + h;
+        dx1 *= scaleX;
+        dy1 *= scaleY;
+        dx2 *= scaleX;
+        dy2 *= scaleY;
     }
-
-    // Shift away from the center (these are relative to the image corner)
-    pivot_x -= w/2.0f;
-    pivot_y -= h/2.0f;
-
-    // Translate origin to pivot
-    dx1 -= pivot_x*scaleX;
-    dy1 -= pivot_y*scaleY;
-    dx2 -= pivot_x*scaleX;
-    dy2 -= pivot_y*scaleY;
 
     // Get extra vertices for rotation
     dx3 = dx2;
@@ -4273,7 +4267,7 @@ static void BlitTransformX(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* s
     dx4 = dx1;
     dy4 = dy2;
 
-    // Rotate about origin (the pivot)
+    // Rotate about the hotspot
     if(degrees != 0.0f)
     {
         float cosA = cos(degrees*M_PI/180);
@@ -4292,7 +4286,7 @@ static void BlitTransformX(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* s
         dy4 = tempX*sinA + dy4*cosA;
     }
 
-    // Translate to pos
+    // Translate to final position
     dx1 += x;
     dx2 += x;
     dx3 += x;

@@ -40,6 +40,9 @@ GPU_Renderer* GPU_CreateRenderer_GLES_1(GPU_RendererID request)
     renderer->min_shader_version = 0;
     renderer->max_shader_version = 0;
     
+    renderer->default_image_hotspot_x = 0.5f;
+    renderer->default_image_hotspot_y = 0.5f;
+    
     renderer->current_context_target = NULL;
     
     renderer->impl = (GPU_RendererImpl*)SDL_malloc(sizeof(GPU_RendererImpl));
