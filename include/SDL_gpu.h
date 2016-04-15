@@ -441,6 +441,17 @@ static const GPU_BatchFlagEnum GPU_BATCH_RGBA = 0x10;
 #define GPU_BATCH_XY_ST_RGBA (GPU_BATCH_XY | GPU_BATCH_ST | GPU_BATCH_RGBA)
 #define GPU_BATCH_XYZ_ST_RGBA (GPU_BATCH_XYZ | GPU_BATCH_ST | GPU_BATCH_RGBA)
 
+
+/*! Bit flags for blitting into a rectangular region.
+ * \see GPU_BlitRect
+ * \see GPU_BlitRectX
+ */
+typedef Uint32 GPU_FlipEnum;
+static const GPU_FlipEnum GPU_FLIP_NONE = 0x0;
+static const GPU_FlipEnum GPU_FLIP_HORIZONTAL = 0x1;
+static const GPU_FlipEnum GPU_FLIP_VERTICAL = 0x2;
+
+
 /*! \ingroup ShaderInterface
  * Type enumeration for GPU_AttributeFormat specifications.
  */
@@ -1251,20 +1262,20 @@ DECLSPEC void SDLCALL GPU_ClearRGB(GPU_Target* target, Uint8 r, Uint8 g, Uint8 b
 DECLSPEC void SDLCALL GPU_ClearRGBA(GPU_Target* target, Uint8 r, Uint8 g, Uint8 b, Uint8 a);
 
 /*! Draws the given image to the given render target.
-    * \param src_rect The region of the source image to use.
+    * \param src_rect The region of the source image to use.  Pass NULL for the entire image.
     * \param x Destination x-position
     * \param y Destination y-position */
 DECLSPEC void SDLCALL GPU_Blit(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y);
 
 /*! Rotates and draws the given image to the given render target.
-    * \param src_rect The region of the source image to use.
+    * \param src_rect The region of the source image to use.  Pass NULL for the entire image.
     * \param x Destination x-position
     * \param y Destination y-position
     * \param degrees Rotation angle (in degrees) */
 DECLSPEC void SDLCALL GPU_BlitRotate(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float degrees);
 
 /*! Scales and draws the given image to the given render target.
-    * \param src_rect The region of the source image to use.
+    * \param src_rect The region of the source image to use.  Pass NULL for the entire image.
     * \param x Destination x-position
     * \param y Destination y-position
     * \param scaleX Horizontal stretch factor
@@ -1272,7 +1283,7 @@ DECLSPEC void SDLCALL GPU_BlitRotate(GPU_Image* image, GPU_Rect* src_rect, GPU_T
 DECLSPEC void SDLCALL GPU_BlitScale(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float scaleX, float scaleY);
 
 /*! Scales, rotates, and draws the given image to the given render target.
-    * \param src_rect The region of the source image to use.
+    * \param src_rect The region of the source image to use.  Pass NULL for the entire image.
     * \param x Destination x-position
     * \param y Destination y-position
     * \param degrees Rotation angle (in degrees)
@@ -1281,7 +1292,7 @@ DECLSPEC void SDLCALL GPU_BlitScale(GPU_Image* image, GPU_Rect* src_rect, GPU_Ta
 DECLSPEC void SDLCALL GPU_BlitTransform(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float degrees, float scaleX, float scaleY);
 
 /*! Scales, rotates around a pivot point, and draws the given image to the given render target.  The drawing point (x, y) coincides with the pivot point on the src image (pivot_x, pivot_y).
-	* \param src_rect The region of the source image to use.
+	* \param src_rect The region of the source image to use.  Pass NULL for the entire image.
 	* \param x Destination x-position
 	* \param y Destination y-position
 	* \param pivot_x Pivot x-position (in image coordinates)
@@ -1290,6 +1301,23 @@ DECLSPEC void SDLCALL GPU_BlitTransform(GPU_Image* image, GPU_Rect* src_rect, GP
 	* \param scaleX Horizontal stretch factor
 	* \param scaleY Vertical stretch factor */
 DECLSPEC void SDLCALL GPU_BlitTransformX(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float pivot_x, float pivot_y, float degrees, float scaleX, float scaleY);
+
+/*! Draws the given image to the given render target, scaling it to fit the destination region.
+    * \param src_rect The region of the source image to use.  Pass NULL for the entire image.
+    * \param dest_rect The region of the destination target image to draw upon.  Pass NULL for the entire target.
+    */
+DECLSPEC void SDLCALL GPU_BlitRect(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, GPU_Rect* dest_rect);
+
+/*! Draws the given image to the given render target, scaling it to fit the destination region.
+    * \param src_rect The region of the source image to use.  Pass NULL for the entire image.
+    * \param dest_rect The region of the destination target image to draw upon.  Pass NULL for the entire target.
+	* \param degrees Rotation angle (in degrees)
+	* \param pivot_x Pivot x-position (in image coordinates)
+	* \param pivot_y Pivot y-position (in image coordinates)
+	* \param flip_direction A GPU_FlipEnum value (or bitwise OR'd combination) that specifies which direction the image should be flipped.
+    */
+DECLSPEC void SDLCALL GPU_BlitRectX(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, GPU_Rect* dest_rect, float degrees, float pivot_x, float pivot_y, GPU_FlipEnum flip_direction);
+
 
 /*! Renders triangles from the given set of vertices.  This lets you render arbitrary 2D geometry.  It is a direct path to the GPU, so the format is different than typical SDL_gpu calls.
  * \param values A tightly-packed array of vertex position (e.g. x,y), texture coordinates (e.g. s,t), and color (e.g. r,g,b,a) values.  Texture coordinates and color values are expected to be already normalized to 0.0 - 1.0.  Pass NULL to render with only custom shader attributes.

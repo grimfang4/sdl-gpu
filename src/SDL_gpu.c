@@ -1279,7 +1279,7 @@ void GPU_Blit(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x,
 }
 
 
-void GPU_BlitRotate(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float angle)
+void GPU_BlitRotate(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float degrees)
 {
     if(!CHECK_RENDERER)
         RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL renderer");
@@ -1292,7 +1292,7 @@ void GPU_BlitRotate(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, fl
     if(target == NULL)
         RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT, "target");
 
-    _gpu_current_renderer->impl->BlitRotate(_gpu_current_renderer, image, src_rect, target, x, y, angle);
+    _gpu_current_renderer->impl->BlitRotate(_gpu_current_renderer, image, src_rect, target, x, y, degrees);
 }
 
 void GPU_BlitScale(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float scaleX, float scaleY)
@@ -1311,7 +1311,7 @@ void GPU_BlitScale(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, flo
     _gpu_current_renderer->impl->BlitScale(_gpu_current_renderer, image, src_rect, target, x, y, scaleX, scaleY);
 }
 
-void GPU_BlitTransform(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float angle, float scaleX, float scaleY)
+void GPU_BlitTransform(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float degrees, float scaleX, float scaleY)
 {
     if(!CHECK_RENDERER)
         RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL renderer");
@@ -1324,10 +1324,10 @@ void GPU_BlitTransform(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target,
     if(target == NULL)
         RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT, "target");
 
-    _gpu_current_renderer->impl->BlitTransform(_gpu_current_renderer, image, src_rect, target, x, y, angle, scaleX, scaleY);
+    _gpu_current_renderer->impl->BlitTransform(_gpu_current_renderer, image, src_rect, target, x, y, degrees, scaleX, scaleY);
 }
 
-void GPU_BlitTransformX(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float pivot_x, float pivot_y, float angle, float scaleX, float scaleY)
+void GPU_BlitTransformX(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float pivot_x, float pivot_y, float degrees, float scaleX, float scaleY)
 {
     if(!CHECK_RENDERER)
         RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL renderer");
@@ -1340,7 +1340,76 @@ void GPU_BlitTransformX(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target
     if(target == NULL)
         RETURN_ERROR(GPU_ERROR_NULL_ARGUMENT, "target");
 
-    _gpu_current_renderer->impl->BlitTransformX(_gpu_current_renderer, image, src_rect, target, x, y, pivot_x, pivot_y, angle, scaleX, scaleY);
+    _gpu_current_renderer->impl->BlitTransformX(_gpu_current_renderer, image, src_rect, target, x, y, pivot_x, pivot_y, degrees, scaleX, scaleY);
+}
+
+void GPU_BlitRect(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, GPU_Rect* dest_rect)
+{
+    float w = 0.0f;
+    float h = 0.0f;
+    
+    if(image == NULL)
+        return;
+    
+    if(src_rect == NULL)
+    {
+        w = image->w;
+        h = image->h;
+    }
+    else
+    {
+        w = src_rect->w;
+        h = src_rect->h;
+    }
+    
+    GPU_BlitRectX(image, src_rect, target, dest_rect, 0.0f, w*0.5f, h*0.5f, GPU_FLIP_NONE);
+}
+
+void GPU_BlitRectX(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, GPU_Rect* dest_rect, float degrees, float pivot_x, float pivot_y, GPU_FlipEnum flip_direction)
+{
+    float w, h;
+    float dx, dy;
+    float dw, dh;
+    float scale_x, scale_y;
+    
+    if(image == NULL || target == NULL)
+        return;
+    
+    if(src_rect == NULL)
+    {
+        w = image->w;
+        h = image->h;
+    }
+    else
+    {
+        w = src_rect->w;
+        h = src_rect->h;
+    }
+    
+    if(dest_rect == NULL)
+    {
+        dx = 0.0f;
+        dy = 0.0f;
+        dw = target->w;
+        dh = target->h;
+    }
+    else
+    {
+        dx = dest_rect->x;
+        dy = dest_rect->y;
+        dw = dest_rect->w;
+        dh = dest_rect->h;
+    }
+    
+    scale_x = dw / w;
+    scale_y = dh / h;
+    
+    if(flip_direction & GPU_FLIP_HORIZONTAL)
+        scale_x = -scale_x;
+    if(flip_direction & GPU_FLIP_VERTICAL)
+        scale_y = -scale_y;
+    
+    GPU_BlitTransformX(image, src_rect, target, dx + pivot_x, dy + pivot_y, pivot_x, pivot_y, degrees, scale_x, scale_y);
 }
 
 void GPU_TriangleBatch(GPU_Image* image, GPU_Target* target, unsigned short num_vertices, float* values, unsigned int num_indices, unsigned short* indices, GPU_BatchFlagEnum flags)
