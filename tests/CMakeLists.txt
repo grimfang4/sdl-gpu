@@ -130,8 +130,8 @@ target_link_libraries (renderer-test ${TEST_LIBS})
 add_executable(transform-matrix-test transform-matrix/main.c)
 target_link_libraries (transform-matrix-test ${TEST_LIBS})
 
-add_executable(hotspot-test hotspot/main.c)
-target_link_libraries (hotspot-test ${TEST_LIBS})
+add_executable(anchor-test anchor/main.c)
+target_link_libraries (anchor-test ${TEST_LIBS})
 
 add_executable(video-test video/main.c)
 target_link_libraries (video-test ${TEST_LIBS})

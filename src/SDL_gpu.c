@@ -1685,22 +1685,46 @@ void GPU_SetImageFilter(GPU_Image* image, GPU_FilterEnum filter)
 }
 
 
-void GPU_SetDefaultHotspot(float hotspot_x, float hotspot_y)
+void GPU_SetDefaultAnchor(float anchor_x, float anchor_y)
 {
     if(_gpu_current_renderer == NULL)
         return;
-
-    _gpu_current_renderer->default_image_hotspot_x = hotspot_x;
-    _gpu_current_renderer->default_image_hotspot_y = hotspot_y;
+    
+    _gpu_current_renderer->default_image_anchor_x = anchor_x;
+    _gpu_current_renderer->default_image_anchor_y = anchor_y;
 }
 
-void GPU_SetHotspot(GPU_Image* image, float hotspot_x, float hotspot_y)
+void GPU_GetDefaultAnchor(float* anchor_x, float* anchor_y)
+{
+    if(_gpu_current_renderer == NULL)
+        return;
+    
+    if(anchor_x != NULL)
+        *anchor_x = _gpu_current_renderer->default_image_anchor_x;
+    
+    if(anchor_y != NULL)
+        *anchor_y = _gpu_current_renderer->default_image_anchor_y;
+}
+
+void GPU_SetAnchor(GPU_Image* image, float anchor_x, float anchor_y)
 {
     if(image == NULL)
         return;
 
-    image->hotspot_x = hotspot_x;
-    image->hotspot_y = hotspot_y;
+    image->anchor_x = anchor_x;
+    image->anchor_y = anchor_y;
+}
+
+void GPU_GetAnchor(GPU_Image* image, float* anchor_x, float* anchor_y)
+{
+    if(image == NULL)
+        return;
+    
+    if(anchor_x != NULL)
+        *anchor_x = image->anchor_x;
+    
+    if(anchor_y != NULL)
+        *anchor_y = image->anchor_y;
 }
 
 GPU_SnapEnum GPU_GetSnapMode(GPU_Image* image)

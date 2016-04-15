@@ -23,8 +23,8 @@ int main(int argc, char* argv[])
 		
 		Uint8 mode = 0;
 		
-		float hotspot_x = 0.5f;
-		float hotspot_y = 0.5f;
+		float anchor_x = 0.5f;
+		float anchor_y = 0.5f;
 		
 		float angle = 0.0f;
 		float scale = 1.0f;
@@ -49,39 +49,42 @@ int main(int argc, char* argv[])
                         done = 1;
                     if(event.key.keysym.sym == SDLK_1)
                     {
-                        hotspot_x = 0.5f;
-                        hotspot_y = 0.5f;
+                        anchor_x = 0.5f;
+                        anchor_y = 0.5f;
                     }
                     if(event.key.keysym.sym == SDLK_2)
                     {
-                        hotspot_x = 0.0f;
-                        hotspot_y = 0.0f;
+                        anchor_x = 0.0f;
+                        anchor_y = 0.0f;
                     }
                     if(event.key.keysym.sym == SDLK_3)
                     {
-                        hotspot_x = 1.0f;
-                        hotspot_y = 1.0f;
+                        anchor_x = 1.0f;
+                        anchor_y = 1.0f;
                     }
                     if(event.key.keysym.sym == SDLK_4)
                     {
-                        hotspot_x = 1.0f;
-                        hotspot_y = 0.5f;
+                        anchor_x = 1.0f;
+                        anchor_y = 0.5f;
                     }
                     if(event.key.keysym.sym == SDLK_SPACE)
 						mode = !mode;
+                    if(event.key.keysym.sym == SDLK_BACKSPACE)
+						GPU_SetCoordinateMode(!GPU_GetCoordinateMode());
                 }
             }
             
-            if(keystates[SDL_SCANCODE_UP])
-                hotspot_y -= dt;
-            if(keystates[SDL_SCANCODE_DOWN])
-                hotspot_y += dt;
-            if(keystates[SDL_SCANCODE_LEFT])
-                hotspot_x -= dt;
-            if(keystates[SDL_SCANCODE_RIGHT])
-                hotspot_x += dt;
             
-            GPU_SetHotspot(image, hotspot_x, hotspot_y);
+            if(keystates[SDL_SCANCODE_UP])
+                anchor_y -= (GPU_GetCoordinateMode()? -dt : dt);
+            if(keystates[SDL_SCANCODE_DOWN])
+                anchor_y += (GPU_GetCoordinateMode()? -dt : dt);
+            if(keystates[SDL_SCANCODE_LEFT])
+                anchor_x -= dt;
+            if(keystates[SDL_SCANCODE_RIGHT])
+                anchor_x += dt;
+            
+            GPU_SetAnchor(image, anchor_x, anchor_y);
             
             GPU_Clear(screen);
             
@@ -107,7 +110,7 @@ int main(int argc, char* argv[])
             
             GPU_Rectangle(screen, screen->w/2 - image->w/2, screen->h/2 - image->h/2, screen->w/2 + image->w/2, screen->h/2 + image->h/2, GPU_MakeColor(0, 255, 255, 255));
             
-            GPU_CircleFilled(screen, screen->w/2 - image->w/2 + image->hotspot_x * image->w, screen->h/2 - image->h/2 + image->hotspot_y * image->h, 5, GPU_MakeColor(255, 0, 0, 255));
+            GPU_CircleFilled(screen, screen->w/2 - image->w/2 + anchor_x * image->w, screen->h/2 - image->h/2 + anchor_y * image->h, 5, GPU_MakeColor(255, 0, 0, 255));
             
             GPU_Circle(screen, 0, 0, 5, GPU_MakeColor(255, 128, 0, 255));
             GPU_Circle(screen, screen->w, 0, 5, GPU_MakeColor(255, 128, 0, 255));

@@ -44,8 +44,8 @@ GPU_Renderer* GPU_CreateRenderer_GLES_2(GPU_RendererID request)
     renderer->min_shader_version = 100;
     renderer->max_shader_version = SDL_GPU_GLSL_VERSION;
     
-    renderer->default_image_hotspot_x = 0.5f;
-    renderer->default_image_hotspot_y = 0.5f;
+    renderer->default_image_anchor_x = 0.5f;
+    renderer->default_image_anchor_y = 0.5f;
     
     renderer->current_context_target = NULL;
     

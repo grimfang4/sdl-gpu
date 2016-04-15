@@ -2054,8 +2054,8 @@ static GPU_Image* CreateUninitializedImage(GPU_Renderer* renderer, Uint16 w, Uin
     result->bytes_per_pixel = bytes_per_pixel;
     result->has_mipmaps = 0;
     
-    result->hotspot_x = renderer->default_image_hotspot_x;
-    result->hotspot_y = renderer->default_image_hotspot_y;
+    result->anchor_x = renderer->default_image_anchor_x;
+    result->anchor_y = renderer->default_image_anchor_y;
     
     result->color = white;
     result->use_blending = 1;
@@ -2304,8 +2304,8 @@ static GPU_Image* CreateImageUsingTexture(GPU_Renderer* renderer, Uint32 handle,
     result->bytes_per_pixel = bytes_per_pixel;
     result->has_mipmaps = 0;
     
-    result->hotspot_x = renderer->default_image_hotspot_x;
-    result->hotspot_y = renderer->default_image_hotspot_y;
+    result->anchor_x = renderer->default_image_anchor_x;
+    result->anchor_y = renderer->default_image_anchor_y;
 
     result->color = white;
     result->use_blending = 1;
@@ -3997,10 +3997,10 @@ static void Blit(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, G
     }
 
     // Center the image on the given coords
-    dx1 = x - w * image->hotspot_x;
-    dy1 = y - h * image->hotspot_y;
-    dx2 = x + w * (1.0f - image->hotspot_x);
-    dy2 = y + h * (1.0f - image->hotspot_y);
+    dx1 = x - w * image->anchor_x;
+    dy1 = y - h * image->anchor_y;
+    dx2 = x + w * (1.0f - image->anchor_x);
+    dy2 = y + h * (1.0f - image->anchor_y);
 
     if(image->snap_mode == GPU_SNAP_DIMENSIONS || image->snap_mode == GPU_SNAP_POSITION_AND_DIMENSIONS)
     {
@@ -4091,7 +4091,7 @@ static void BlitRotate(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_r
 
     w = (src_rect == NULL? image->w : src_rect->w);
     h = (src_rect == NULL? image->h : src_rect->h);
-    renderer->impl->BlitTransformX(renderer, image, src_rect, target, x, y, w*image->hotspot_x, h*image->hotspot_y, degrees, 1.0f, 1.0f);
+    renderer->impl->BlitTransformX(renderer, image, src_rect, target, x, y, w*image->anchor_x, h*image->anchor_y, degrees, 1.0f, 1.0f);
 }
 
 static void BlitScale(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float scaleX, float scaleY)
@@ -4110,7 +4110,7 @@ static void BlitScale(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_re
 
     w = (src_rect == NULL? image->w : src_rect->w);
     h = (src_rect == NULL? image->h : src_rect->h);
-    renderer->impl->BlitTransformX(renderer, image, src_rect, target, x, y, w*image->hotspot_x, h*image->hotspot_y, 0.0f, scaleX, scaleY);
+    renderer->impl->BlitTransformX(renderer, image, src_rect, target, x, y, w*image->anchor_x, h*image->anchor_y, 0.0f, scaleX, scaleY);
 }
 
 static void BlitTransform(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float degrees, float scaleX, float scaleY)
@@ -4129,7 +4129,7 @@ static void BlitTransform(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* sr
 
     w = (src_rect == NULL? image->w : src_rect->w);
     h = (src_rect == NULL? image->h : src_rect->h);
-    renderer->impl->BlitTransformX(renderer, image, src_rect, target, x, y, w*image->hotspot_x, h*image->hotspot_y, degrees, scaleX, scaleY);
+    renderer->impl->BlitTransformX(renderer, image, src_rect, target, x, y, w*image->anchor_x, h*image->anchor_y, degrees, scaleX, scaleY);
 }
 
 static void BlitTransformX(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, float x, float y, float pivot_x, float pivot_y, float degrees, float scaleX, float scaleY)
@@ -4225,7 +4225,7 @@ static void BlitTransformX(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* s
         y2 *= image->base_h/(float)image->h;
     }
 
-    // Create vertices about the hotspot
+    // Create vertices about the anchor
     dx1 = -pivot_x;
     dy1 = -pivot_y;
     dx2 = w - pivot_x;
@@ -4252,7 +4252,7 @@ static void BlitTransformX(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* s
 
     // Apply transforms
 
-    // Scale about the hotspot
+    // Scale about the anchor
     if(scaleX != 1.0f || scaleY != 1.0f)
     {
         dx1 *= scaleX;
@@ -4267,7 +4267,7 @@ static void BlitTransformX(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* s
     dx4 = dx1;
     dy4 = dy2;
 
-    // Rotate about the hotspot
+    // Rotate about the anchor
     if(degrees != 0.0f)
     {
         float cosA = cos(degrees*M_PI/180);
