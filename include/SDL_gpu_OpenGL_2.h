@@ -95,13 +95,13 @@ void main(void)\n\
 typedef struct ContextData_OpenGL_2
 {
 	SDL_Color last_color;
-	Uint8 last_use_texturing;
+	GPU_bool last_use_texturing;
 	unsigned int last_shape;
-	Uint8 last_use_blending;
+	GPU_bool last_use_blending;
 	GPU_BlendMode last_blend_mode;
 	GPU_Rect last_viewport;
 	GPU_Camera last_camera;
-	Uint8 last_camera_inverted;
+	GPU_bool last_camera_inverted;
 	
 	GPU_Image* last_image;
 	GPU_Target* last_target;
@@ -115,7 +115,7 @@ typedef struct ContextData_OpenGL_2
     
     unsigned int blit_VBO[2];  // For double-buffering
     unsigned int blit_IBO;
-    Uint8 blit_VBO_flop;
+    GPU_bool blit_VBO_flop;
     GPU_ShaderBlock shader_block[2];
     GPU_ShaderBlock current_shader_block;
     
@@ -126,7 +126,7 @@ typedef struct ContextData_OpenGL_2
 typedef struct ImageData_OpenGL_2
 {
     int refcount;
-    Uint8 owns_handle;
+    GPU_bool owns_handle;
 	Uint32 handle;
 	Uint32 format;
 } ImageData_OpenGL_2;

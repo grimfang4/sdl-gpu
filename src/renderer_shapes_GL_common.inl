@@ -503,7 +503,7 @@ static void EllipseFilled(GPU_Renderer* renderer, GPU_Target* target, float x, f
 
 static void Sector(GPU_Renderer* renderer, GPU_Target* target, float x, float y, float inner_radius, float outer_radius, float start_angle, float end_angle, SDL_Color color)
 {
-	Uint8 circled;
+	GPU_bool circled;
 	float dx1, dy1, dx2, dy2, dx3, dy3, dx4, dy4;
 
     if(inner_radius < 0.0f)
@@ -607,7 +607,7 @@ static void SectorFilled(GPU_Renderer* renderer, GPU_Target* target, float x, fl
 
 	{
 		int i;
-		Uint8 use_inner;
+		GPU_bool use_inner;
 		BEGIN_UNTEXTURED("GPU_SectorFilled", GL_TRIANGLES, 3 + (numSegments - 1) + 1, 3 + (numSegments - 1) * 3 + 3);
 
 		use_inner = 0;  // Switches between the radii for the next point

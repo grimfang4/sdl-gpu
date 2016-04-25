@@ -21,7 +21,7 @@ typedef struct GPU_RendererRegistration
 	void (*freeFn)(GPU_Renderer*);
 } GPU_RendererRegistration;
 
-static Uint8 _gpu_renderer_register_is_initialized = 0;
+static GPU_bool _gpu_renderer_register_is_initialized = 0;
 
 static GPU_Renderer* _gpu_renderer_map[GPU_MAX_ACTIVE_RENDERERS];
 static GPU_RendererRegistration _gpu_renderer_register[GPU_MAX_REGISTERED_RENDERERS];

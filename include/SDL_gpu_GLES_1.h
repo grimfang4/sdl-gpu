@@ -59,13 +59,13 @@
 typedef struct ContextData_GLES_1
 {
 	SDL_Color last_color;
-	Uint8 last_use_texturing;
+	GPU_bool last_use_texturing;
 	unsigned int last_shape;
-	Uint8 last_use_blending;
+	GPU_bool last_use_blending;
 	GPU_BlendMode last_blend_mode;
 	GPU_Rect last_viewport;
 	GPU_Camera last_camera;
-	Uint8 last_camera_inverted;
+	GPU_bool last_camera_inverted;
 	
 	GPU_Image* last_image;
 	GPU_Target* last_target;
@@ -80,7 +80,7 @@ typedef struct ContextData_GLES_1
 typedef struct ImageData_GLES_1
 {
     int refcount;
-    Uint8 owns_handle;
+    GPU_bool owns_handle;
 	Uint32 handle;
 	Uint32 format;
 } ImageData_GLES_1;

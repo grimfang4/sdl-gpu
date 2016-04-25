@@ -24,6 +24,23 @@ extern "C" {
     #define SDL_GPU_USE_SDL1
 #endif
 
+// Use bool type if available
+#if defined(_MSC_VER)
+    // As of 2016, MSVC still doesn't have bool.
+    #include <WinDef.h>
+    #define GPU_bool BOOL
+#elif defined(__cplusplus)
+    #define GPU_bool bool
+#elif __STDC_VERSION__ >= 199901L
+    #define GPU_bool _Bool
+#else
+    // Fall back to compatibility with MSVC BOOL
+    #define GPU_bool int
+#endif
+
+static const GPU_bool GPU_FALSE = 0;
+static const GPU_bool GPU_TRUE = 1;
+
 typedef struct GPU_Renderer GPU_Renderer;
 typedef struct GPU_Target GPU_Target;
 
@@ -223,19 +240,19 @@ typedef struct GPU_Image
 	struct GPU_Renderer* renderer;
 	GPU_Target* target;
 	Uint16 w, h;
-	Uint8 using_virtual_resolution;
+	GPU_bool using_virtual_resolution;
 	GPU_FormatEnum format;
 	int num_layers;
 	int bytes_per_pixel;
 	Uint16 base_w, base_h;  // Original image dimensions
 	Uint16 texture_w, texture_h;  // Underlying texture dimensions
-	Uint8 has_mipmaps;
+	GPU_bool has_mipmaps;
 	
 	float anchor_x; // Normalized coords for the point at which the image is blitted.  Default is (0.5, 0.5), that is, the image is drawn centered.
 	float anchor_y; // These are interpreted according to GPU_SetCoordinateMode() and range from (0.0 - 1.0) normally.
 	
 	SDL_Color color;
-	Uint8 use_blending;
+	GPU_bool use_blending;
 	GPU_BlendMode blend_mode;
 	GPU_FilterEnum filter_mode;
 	GPU_SnapEnum snap_mode;
@@ -244,7 +261,7 @@ typedef struct GPU_Image
 	
 	void* data;
 	int refcount;
-	Uint8 is_alias;
+	GPU_bool is_alias;
 } GPU_Image;
 
 
@@ -303,7 +320,7 @@ typedef struct GPU_Context
 {
     /*! SDL_GLContext */
     void* context;
-    Uint8 failed;
+    GPU_bool failed;
     
     /*! SDL window ID */
 	Uint32 windowID;
@@ -325,10 +342,10 @@ typedef struct GPU_Context
 	Uint32 default_textured_shader_program;
 	Uint32 default_untextured_shader_program;
 	
-	Uint8 shapes_use_blending;
+	GPU_bool shapes_use_blending;
 	GPU_BlendMode shapes_blend_mode;
 	float line_thickness;
-	Uint8 use_texturing;
+	GPU_bool use_texturing;
 	
     int matrix_mode;
     GPU_MatrixStack projection_matrix;
@@ -354,23 +371,23 @@ struct GPU_Target
 	GPU_Image* image;
 	void* data;
 	Uint16 w, h;
-	Uint8 using_virtual_resolution;
+	GPU_bool using_virtual_resolution;
 	Uint16 base_w, base_h;  // The true dimensions of the underlying image or window
-	Uint8 use_clip_rect;
+	GPU_bool use_clip_rect;
 	GPU_Rect clip_rect;
-	Uint8 use_color;
+	GPU_bool use_color;
 	SDL_Color color;
 	
 	GPU_Rect viewport;
 	
 	/*! Perspective and object viewing transforms. */
 	GPU_Camera camera;
-	Uint8 use_camera;
+	GPU_bool use_camera;
 	
 	/*! Renderer context data.  NULL if the target does not represent a window or rendering context. */
 	GPU_Context* context;
 	int refcount;
-	Uint8 is_alias;
+	GPU_bool is_alias;
 };
 
 /*! \ingroup Initialization
@@ -501,10 +518,10 @@ typedef enum {
 /*! \ingroup ShaderInterface */
 typedef struct GPU_AttributeFormat
 {
-    Uint8 is_per_sprite;  // Per-sprite values are expanded to 4 vertices
+    GPU_bool is_per_sprite;  // Per-sprite values are expanded to 4 vertices
     int num_elems_per_value;
     GPU_TypeEnum type;  // GPU_TYPE_FLOAT, GPU_TYPE_INT, GPU_TYPE_UNSIGNED_INT, etc.
-    Uint8 normalize;
+    GPU_bool normalize;
     int stride_bytes;  // Number of bytes between two vertex specifications
     int offset_bytes;  // Number of bytes to skip at the beginning of 'values'
 } GPU_AttributeFormat;
@@ -520,7 +537,7 @@ typedef struct GPU_Attribute
 /*! \ingroup ShaderInterface */
 typedef struct GPU_AttributeSource
 {
-    Uint8 enabled;
+    GPU_bool enabled;
     int num_values;
     void* next_value;
     // Automatic storage format
@@ -602,7 +619,7 @@ struct GPU_Renderer
 	GPU_Target* current_context_target;
 	
 	/*! 0 for inverted, 1 for mathematical */
-	Uint8 coordinate_mode;
+	GPU_bool coordinate_mode;
 	
 	/*! Default is (0.5, 0.5) - images draw centered. */
 	float default_image_anchor_x;
@@ -679,7 +696,7 @@ DECLSPEC GPU_Target* SDLCALL GPU_InitRendererByID(GPU_RendererID renderer_reques
  * \return 1 if all of the passed features are enabled/supported
  * \return 0 if any of the passed features are disabled/unsupported
  */
-DECLSPEC Uint8 SDLCALL GPU_IsFeatureEnabled(GPU_FeatureEnum feature);
+DECLSPEC GPU_bool SDLCALL GPU_IsFeatureEnabled(GPU_FeatureEnum feature);
 
 /*! Clean up the renderer state. */
 DECLSPEC void SDLCALL GPU_CloseCurrentRenderer(void);
@@ -798,9 +815,9 @@ DECLSPEC void SDLCALL GPU_ResetRendererState(void);
 /*! Sets the coordinate mode for this renderer.  Target and image coordinates will be either "inverted" (0,0 is the upper left corner, y increases downward) or "mathematical" (0,0 is the bottom-left corner, y increases upward).
  * The default is inverted (0), as this is traditional for 2D graphics.
  * \param inverted 0 is for inverted coordinates, 1 is for mathematical coordinates */
-DECLSPEC void SDLCALL GPU_SetCoordinateMode(Uint8 use_math_coords);
+DECLSPEC void SDLCALL GPU_SetCoordinateMode(GPU_bool use_math_coords);
 
-DECLSPEC Uint8 SDLCALL GPU_GetCoordinateMode(void);
+DECLSPEC GPU_bool SDLCALL GPU_GetCoordinateMode(void);
 
 /*! Sets the default image blitting anchor for newly created images.
  * \see GPU_SetAnchor
@@ -840,20 +857,20 @@ DECLSPEC void SDLCALL GPU_MakeCurrent(GPU_Target* target, Uint32 windowID);
 
 /*! Change the actual size of the current context target's window.  This resets the virtual resolution and viewport of the context target.
  * Aside from direct resolution changes, this should also be called in response to SDL_WINDOWEVENT_RESIZED window events for resizable windows. */
-DECLSPEC Uint8 SDLCALL GPU_SetWindowResolution(Uint16 w, Uint16 h);
+DECLSPEC GPU_bool SDLCALL GPU_SetWindowResolution(Uint16 w, Uint16 h);
 
 /*! Enable/disable fullscreen mode for the current context target's window.
  * On some platforms, this may destroy the renderer context and require that textures be reloaded.  Unfortunately, SDL does not provide a notification mechanism for this.
  * \param enable_fullscreen If true, make the application go fullscreen.  If false, make the application go to windowed mode.
  * \param use_desktop_resolution If true, lets the window change its resolution when it enters fullscreen mode (via SDL_WINDOW_FULLSCREEN_DESKTOP).
  * \return 0 if the new mode is windowed, 1 if the new mode is fullscreen.  */
-DECLSPEC Uint8 SDLCALL GPU_SetFullscreen(Uint8 enable_fullscreen, Uint8 use_desktop_resolution);
+DECLSPEC GPU_bool SDLCALL GPU_SetFullscreen(GPU_bool enable_fullscreen, GPU_bool use_desktop_resolution);
 
 /*! Returns true if the current context target's window is in fullscreen mode. */
-DECLSPEC Uint8 SDLCALL GPU_GetFullscreen(void);
+DECLSPEC GPU_bool SDLCALL GPU_GetFullscreen(void);
 
 /*! Enables/disables alpha blending for shape rendering on the current window. */
-DECLSPEC void SDLCALL GPU_SetShapeBlending(Uint8 enable);
+DECLSPEC void SDLCALL GPU_SetShapeBlending(GPU_bool enable);
 
 /*! Translates a blend preset into a blend mode. */
 DECLSPEC GPU_BlendMode SDLCALL GPU_GetBlendModeFromPreset(GPU_BlendPresetEnum preset);
@@ -932,10 +949,10 @@ DECLSPEC GPU_Camera SDLCALL GPU_GetCamera(GPU_Target* target);
 DECLSPEC GPU_Camera SDLCALL GPU_SetCamera(GPU_Target* target, GPU_Camera* cam);
 
 /*! Enables or disables using the built-in camera matrix transforms. */
-DECLSPEC void SDLCALL GPU_EnableCamera(GPU_Target* target, Uint8 use_camera);
+DECLSPEC void SDLCALL GPU_EnableCamera(GPU_Target* target, GPU_bool use_camera);
 
 /*! Returns 1 if the camera transforms are enabled, 0 otherwise. */
-DECLSPEC Uint8 SDLCALL GPU_IsCameraEnabled(GPU_Target* target);
+DECLSPEC GPU_bool SDLCALL GPU_IsCameraEnabled(GPU_Target* target);
 
 /*! \return The RGBA color of a pixel. */
 DECLSPEC SDL_Color SDLCALL GPU_GetPixel(GPU_Target* target, Sint16 x, Sint16 y);
@@ -987,12 +1004,12 @@ DECLSPEC void SDLCALL GPU_UnsetTargetColor(GPU_Target* target);
 DECLSPEC SDL_Surface* SDLCALL GPU_LoadSurface(const char* filename);
 
 /*! Load surface from an image file in memory.  Don't forget to SDL_FreeSurface() it. */
-DECLSPEC SDL_Surface* SDLCALL GPU_LoadSurface_RW(SDL_RWops* rwops, Uint8 free_rwops);
+DECLSPEC SDL_Surface* SDLCALL GPU_LoadSurface_RW(SDL_RWops* rwops, GPU_bool free_rwops);
 
 /*! Save surface to a file.
  * With a format of GPU_FILE_AUTO, the file type is deduced from the extension.  Supported formats are: png, bmp, tga.
  * Returns 0 on failure. */
-DECLSPEC Uint8 SDLCALL GPU_SaveSurface(SDL_Surface* surface, const char* filename, GPU_FileFormatEnum format);
+DECLSPEC GPU_bool SDLCALL GPU_SaveSurface(SDL_Surface* surface, const char* filename, GPU_FileFormatEnum format);
 
 // End of SurfaceControls
 /*! @} */
@@ -1011,13 +1028,13 @@ DECLSPEC Uint8 SDLCALL GPU_SaveSurface(SDL_Surface* surface, const char* filenam
 DECLSPEC GPU_Image* SDLCALL GPU_CreateImage(Uint16 w, Uint16 h, GPU_FormatEnum format);
 
 /*! Create a new image that uses the given native texture handle as the image texture. */
-DECLSPEC GPU_Image* SDLCALL GPU_CreateImageUsingTexture(Uint32 handle, Uint8 take_ownership);
+DECLSPEC GPU_Image* SDLCALL GPU_CreateImageUsingTexture(Uint32 handle, GPU_bool take_ownership);
 
 /*! Load image from an image file that is supported by this renderer.  Don't forget to GPU_FreeImage() it. */
 DECLSPEC GPU_Image* SDLCALL GPU_LoadImage(const char* filename);
 
 /*! Load image from an image file in memory.  Don't forget to GPU_FreeImage() it. */
-DECLSPEC GPU_Image* SDLCALL GPU_LoadImage_RW(SDL_RWops* rwops, Uint8 free_rwops);
+DECLSPEC GPU_Image* SDLCALL GPU_LoadImage_RW(SDL_RWops* rwops, GPU_bool free_rwops);
 
 /*! Creates an image that aliases the given image.  Aliases can be used to store image settings (e.g. modulation color) for easy switching.
  * GPU_FreeImage() frees the alias's memory, but does not affect the original. */
@@ -1042,12 +1059,12 @@ DECLSPEC void SDLCALL GPU_UpdateImage(GPU_Image* image, const GPU_Rect* image_re
 DECLSPEC void SDLCALL GPU_UpdateImageBytes(GPU_Image* image, const GPU_Rect* image_rect, const unsigned char* bytes, int bytes_per_row);
 
 /*! Update an image from surface data, replacing its underlying texture to allow for size changes.  Ignores virtual resolution on the image so the number of pixels needed from the surface is known. */
-DECLSPEC Uint8 SDLCALL GPU_ReplaceImage(GPU_Image* image, SDL_Surface* surface, const GPU_Rect* surface_rect);
+DECLSPEC GPU_bool SDLCALL GPU_ReplaceImage(GPU_Image* image, SDL_Surface* surface, const GPU_Rect* surface_rect);
 
 /*! Save image to a file.
  * With a format of GPU_FILE_AUTO, the file type is deduced from the extension.  Supported formats are: png, bmp, tga.
  * Returns 0 on failure. */
-DECLSPEC Uint8 SDLCALL GPU_SaveImage(GPU_Image* image, const char* filename, GPU_FileFormatEnum format);
+DECLSPEC GPU_bool SDLCALL GPU_SaveImage(GPU_Image* image, const char* filename, GPU_FileFormatEnum format);
 
 /*! Loads mipmaps for the given image, if supported by the renderer. */
 DECLSPEC void SDLCALL GPU_GenerateMipmaps(GPU_Image* image);
@@ -1066,10 +1083,10 @@ DECLSPEC void SDLCALL GPU_SetRGBA(GPU_Image* image, Uint8 r, Uint8 g, Uint8 b, U
 DECLSPEC void SDLCALL GPU_UnsetColor(GPU_Image* image);
 
 /*! Gets the current alpha blending setting. */
-DECLSPEC Uint8 SDLCALL GPU_GetBlending(GPU_Image* image);
+DECLSPEC GPU_bool SDLCALL GPU_GetBlending(GPU_Image* image);
 
 /*! Enables/disables alpha blending for the given image. */
-DECLSPEC void SDLCALL GPU_SetBlending(GPU_Image* image, Uint8 enable);
+DECLSPEC void SDLCALL GPU_SetBlending(GPU_Image* image, GPU_bool enable);
 
 /*! Sets the blending component functions. */
 DECLSPEC void SDLCALL GPU_SetBlendFunction(GPU_Image* image, GPU_BlendFuncEnum source_color, GPU_BlendFuncEnum dest_color, GPU_BlendFuncEnum source_alpha, GPU_BlendFuncEnum dest_alpha);
@@ -1578,7 +1595,7 @@ DECLSPEC Uint32 SDLCALL GPU_CreateShaderProgram(void);
 DECLSPEC void SDLCALL GPU_FreeShaderProgram(Uint32 program_object);
 
 /*! Loads shader source from an SDL_RWops, compiles it, and returns the new shader object. */
-DECLSPEC Uint32 SDLCALL GPU_CompileShader_RW(GPU_ShaderEnum shader_type, SDL_RWops* shader_source, Uint8 free_rwops);
+DECLSPEC Uint32 SDLCALL GPU_CompileShader_RW(GPU_ShaderEnum shader_type, SDL_RWops* shader_source, GPU_bool free_rwops);
 
 /*! Compiles shader source and returns the new shader object. */
 DECLSPEC Uint32 SDLCALL GPU_CompileShader(GPU_ShaderEnum shader_type, const char* shader_source);
@@ -1602,13 +1619,13 @@ DECLSPEC void SDLCALL GPU_AttachShader(Uint32 program_object, Uint32 shader_obje
 DECLSPEC void SDLCALL GPU_DetachShader(Uint32 program_object, Uint32 shader_object);
 
 /*! Links a shader program with any attached shader objects. */
-DECLSPEC Uint8 SDLCALL GPU_LinkShaderProgram(Uint32 program_object);
+DECLSPEC GPU_bool SDLCALL GPU_LinkShaderProgram(Uint32 program_object);
 
 /*! \return The current shader program */
 DECLSPEC Uint32 SDLCALL GPU_GetCurrentShaderProgram(void);
 
 /*! Returns 1 if the given shader program is a default shader for the current context, 0 otherwise. */
-DECLSPEC Uint8 SDLCALL GPU_IsDefaultShaderProgram(Uint32 program_object);
+DECLSPEC GPU_bool SDLCALL GPU_IsDefaultShaderProgram(Uint32 program_object);
 
 /*! Activates the given shader program.  Passing NULL for 'block' will disable the built-in shader variables for custom shaders until a GPU_ShaderBlock is set again. */
 DECLSPEC void SDLCALL GPU_ActivateShaderProgram(Uint32 program_object, GPU_ShaderBlock* block);
@@ -1623,7 +1640,7 @@ DECLSPEC const char* SDLCALL GPU_GetShaderMessage(void);
 DECLSPEC int SDLCALL GPU_GetAttributeLocation(Uint32 program_object, const char* attrib_name);
 
 /*! Returns a filled GPU_AttributeFormat object. */
-DECLSPEC GPU_AttributeFormat SDLCALL GPU_MakeAttributeFormat(int num_elems_per_vertex, GPU_TypeEnum type, Uint8 normalize, int stride_bytes, int offset_bytes);
+DECLSPEC GPU_AttributeFormat SDLCALL GPU_MakeAttributeFormat(int num_elems_per_vertex, GPU_TypeEnum type, GPU_bool normalize, int stride_bytes, int offset_bytes);
 
 /*! Returns a filled GPU_Attribute object. */
 DECLSPEC GPU_Attribute SDLCALL GPU_MakeAttribute(int location, void* values, GPU_AttributeFormat format);
@@ -1677,7 +1694,7 @@ DECLSPEC void SDLCALL GPU_SetUniformfv(int location, int num_elements_per_value,
 DECLSPEC void SDLCALL GPU_GetUniformMatrixfv(Uint32 program_object, int location, float* values);
 
 /*! Sets the value of the matrix uniform shader variable at the given location.  The size of the matrices sent is specified by num_rows and num_columns.  Rows and columns must be between 2 and 4. */
-DECLSPEC void SDLCALL GPU_SetUniformMatrixfv(int location, int num_matrices, int num_rows, int num_columns, Uint8 transpose, float* values);
+DECLSPEC void SDLCALL GPU_SetUniformMatrixfv(int location, int num_matrices, int num_rows, int num_columns, GPU_bool transpose, float* values);
 
 /*! Sets a constant-value shader attribute that will be used for each rendered vertex. */
 DECLSPEC void SDLCALL GPU_SetAttributef(int location, float value);
