@@ -24,17 +24,20 @@ extern "C" {
     #define SDL_GPU_USE_SDL1
 #endif
 
-// Use bool type if available
-#if defined(_MSC_VER)
-    // As of 2016, MSVC still doesn't have bool.
-    #include <WinDef.h>
-    #define GPU_bool BOOL
-#elif defined(__cplusplus)
+
+// Check for bool support
+#define GPU_HAVE_C99 (defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L))
+#define GPU_HAVE_GNUC defined(__GNUC__) // catches both gcc and clang I believe
+#define GPU_HAVE_MSVC18 (defined(_MSC_VER) &&  (_MSC_VER >= 1800)) // VS2013+
+
+#if defined(GPU_USE_REAL_BOOL) && GPU_USE_REAL_BOOL  // allow user to specify
     #define GPU_bool bool
-#elif __STDC_VERSION__ >= 199901L
-    #define GPU_bool _Bool
+#elif defined(GPU_USE_INT_BOOL) && GPU_USE_INT_BOOL
+    #define GPU_bool int
+#elif GPU_HAVE_C99 || GPU_HAVE_GNUC || GPU_HAVE_MSVC18 || (defined(GPU_HAVE_STDBOOL) && GPU_HAVE_STDBOOL)
+    #include <stdbool.h>
+    #define GPU_bool bool
 #else
-    // Fall back to compatibility with MSVC BOOL
     #define GPU_bool int
 #endif
 
