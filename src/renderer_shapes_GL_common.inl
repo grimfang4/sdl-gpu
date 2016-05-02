@@ -610,7 +610,7 @@ static void SectorFilled(GPU_Renderer* renderer, GPU_Target* target, float x, fl
 		GPU_bool use_inner;
 		BEGIN_UNTEXTURED("GPU_SectorFilled", GL_TRIANGLES, 3 + (numSegments - 1) + 1, 3 + (numSegments - 1) * 3 + 3);
 
-		use_inner = 0;  // Switches between the radii for the next point
+		use_inner = GPU_FALSE;  // Switches between the radii for the next point
 
 		// First triangle
 		dx = inner_radius*cos(t*RADPERDEG);

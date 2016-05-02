@@ -67,8 +67,8 @@ static Uint32 _gpu_init_windowID = 0;
 static GPU_InitFlagEnum _gpu_preinit_flags = GPU_DEFAULT_INIT_FLAGS;
 static GPU_InitFlagEnum _gpu_required_features = 0;
 
-static GPU_bool _gpu_initialized_SDL_core = 0;
-static GPU_bool _gpu_initialized_SDL = 0;
+static GPU_bool _gpu_initialized_SDL_core = GPU_FALSE;
+static GPU_bool _gpu_initialized_SDL = GPU_FALSE;
 
 static int (*_gpu_print)(GPU_LogLevelEnum log_level, const char* format, va_list args) = &gpu_default_print;
 
@@ -105,7 +105,7 @@ void GPU_SetCoordinateMode(GPU_bool use_math_coords)
 GPU_bool GPU_GetCoordinateMode(void)
 {
     if(_gpu_current_renderer == NULL)
-        return 0;
+        return GPU_FALSE;
 
     return _gpu_current_renderer->coordinate_mode;
 }
@@ -191,20 +191,20 @@ static GPU_bool gpu_init_SDL(void)
             if(SDL_Init(SDL_INIT_VIDEO) < 0)
             {
                 GPU_PushErrorCode("GPU_Init", GPU_ERROR_BACKEND_ERROR, "Failed to initialize SDL video subsystem");
-                return 0;
+                return GPU_FALSE;
             }
-            _gpu_initialized_SDL_core = 1;
+            _gpu_initialized_SDL_core = GPU_TRUE;
         }
 
         // SDL is definitely ready now, but we're going to init the video subsystem to be sure that SDL_gpu keeps it available until GPU_Quit().
         if(SDL_InitSubSystem(SDL_INIT_VIDEO) < 0)
         {
             GPU_PushErrorCode("GPU_Init", GPU_ERROR_BACKEND_ERROR, "Failed to initialize SDL video subsystem");
-            return 0;
+            return GPU_FALSE;
         }
-        _gpu_initialized_SDL = 1;
+        _gpu_initialized_SDL = GPU_TRUE;
     }
-    return 1;
+    return GPU_TRUE;
 }
 
 void GPU_SetInitWindow(Uint32 windowID)
@@ -472,7 +472,7 @@ GPU_Target* GPU_InitRendererByID(GPU_RendererID renderer_request, Uint16 w, Uint
 GPU_bool GPU_IsFeatureEnabled(GPU_FeatureEnum feature)
 {
     if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL)
-        return 0;
+        return GPU_FALSE;
 
     return ((_gpu_current_renderer->enabled_features & feature) == feature);
 }
@@ -507,7 +507,7 @@ void GPU_MakeCurrent(GPU_Target* target, Uint32 windowID)
 GPU_bool GPU_SetFullscreen(GPU_bool enable_fullscreen, GPU_bool use_desktop_resolution)
 {
     if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL)
-        return 0;
+        return GPU_FALSE;
 
     return _gpu_current_renderer->impl->SetFullscreen(_gpu_current_renderer, enable_fullscreen, use_desktop_resolution);
 }
@@ -517,21 +517,21 @@ GPU_bool GPU_GetFullscreen(void)
 #ifdef SDL_GPU_USE_SDL2
     GPU_Target* target = GPU_GetContextTarget();
     if(target == NULL)
-        return 0;
-    return (GPU_bool)(SDL_GetWindowFlags(SDL_GetWindowFromID(target->context->windowID))
-                   & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP));
+        return GPU_FALSE;
+    return (SDL_GetWindowFlags(SDL_GetWindowFromID(target->context->windowID))
+                   & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP)) != 0;
 #else
     SDL_Surface* surf = SDL_GetVideoSurface();
     if(surf == NULL)
-        return 0;
-    return (surf->flags & SDL_FULLSCREEN);
+        return GPU_FALSE;
+    return (surf->flags & SDL_FULLSCREEN) != 0;
 #endif
 }
 
 GPU_bool GPU_SetWindowResolution(Uint16 w, Uint16 h)
 {
     if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL || w == 0 || h == 0)
-        return 0;
+        return GPU_FALSE;
 
     return _gpu_current_renderer->impl->SetWindowResolution(_gpu_current_renderer, w, h);
 }
@@ -901,7 +901,7 @@ void GPU_EnableCamera(GPU_Target* target, GPU_bool use_camera)
 GPU_bool GPU_IsCameraEnabled(GPU_Target* target)
 {
 	if (target == NULL)
-		return 0;
+		return GPU_FALSE;
 	return target->use_camera;
 }
 
@@ -957,7 +957,7 @@ GPU_Image* GPU_CreateAliasImage(GPU_Image* image)
 GPU_bool GPU_SaveImage(GPU_Image* image, const char* filename, GPU_FileFormatEnum format)
 {
     if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL)
-        return 0;
+        return GPU_FALSE;
 
     return _gpu_current_renderer->impl->SaveImage(_gpu_current_renderer, image, filename, format);
 }
@@ -989,7 +989,7 @@ void GPU_UpdateImageBytes(GPU_Image* image, const GPU_Rect* image_rect, const un
 GPU_bool GPU_ReplaceImage(GPU_Image* image, SDL_Surface* surface, const GPU_Rect* surface_rect)
 {
     if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL)
-        return 0;
+        return GPU_FALSE;
 
     return _gpu_current_renderer->impl->ReplaceImage(_gpu_current_renderer, image, surface, surface_rect);
 }
@@ -1144,7 +1144,7 @@ GPU_bool GPU_SaveSurface(SDL_Surface* surface, const char* filename, GPU_FileFor
     if(surface == NULL || filename == NULL ||
             surface->w < 1 || surface->h < 1)
     {
-        return 0;
+        return GPU_FALSE;
     }
 
 
@@ -1162,7 +1162,7 @@ GPU_bool GPU_SaveSurface(SDL_Surface* surface, const char* filename, GPU_FileFor
         else
         {
             GPU_PushErrorCode(__func__, GPU_ERROR_DATA_ERROR, "Could not detect output file format from file name");
-            return 0;
+            return GPU_FALSE;
         }
     }
 
@@ -1179,7 +1179,7 @@ GPU_bool GPU_SaveSurface(SDL_Surface* surface, const char* filename, GPU_FileFor
         break;
     default:
         GPU_PushErrorCode(__func__, GPU_ERROR_DATA_ERROR, "Unsupported output file format");
-        result = 0;
+        result = GPU_FALSE;
         break;
     }
 
@@ -1567,14 +1567,14 @@ void GPU_UnsetTargetColor(GPU_Target* target)
     if(target == NULL)
         return;
 
-    target->use_color = 0;
+    target->use_color = GPU_FALSE;
     target->color = c;
 }
 
 GPU_bool GPU_GetBlending(GPU_Image* image)
 {
     if(image == NULL)
-        return 0;
+        return GPU_FALSE;
 
     return image->use_blending;
 }
@@ -1916,7 +1916,7 @@ Uint32 GPU_CompileShader_RW(GPU_ShaderEnum shader_type, SDL_RWops* shader_source
     {
         if(free_rwops)
             SDL_RWclose(shader_source);
-        return 0;
+        return GPU_FALSE;
     }
 
     return _gpu_current_renderer->impl->CompileShader_RW(_gpu_current_renderer, shader_type, shader_source, free_rwops);
@@ -1953,7 +1953,7 @@ Uint32 GPU_CompileShader(GPU_ShaderEnum shader_type, const char* shader_source)
 GPU_bool GPU_LinkShaderProgram(Uint32 program_object)
 {
     if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL)
-        return 0;
+        return GPU_FALSE;
 
     return _gpu_current_renderer->impl->LinkShaderProgram(_gpu_current_renderer, program_object);
 }
@@ -2034,7 +2034,7 @@ GPU_bool GPU_IsDefaultShaderProgram(Uint32 program_object)
     GPU_Context* context;
 
     if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL)
-        return 0;
+        return GPU_FALSE;
 
     context = _gpu_current_renderer->current_context_target->context;
     return (program_object == context->default_textured_shader_program || program_object == context->default_untextured_shader_program);
@@ -2075,7 +2075,7 @@ int GPU_GetAttributeLocation(Uint32 program_object, const char* attrib_name)
 GPU_AttributeFormat GPU_MakeAttributeFormat(int num_elems_per_vertex, GPU_TypeEnum type, GPU_bool normalize, int stride_bytes, int offset_bytes)
 {
     GPU_AttributeFormat f;
-    f.is_per_sprite = 0;
+    f.is_per_sprite = GPU_FALSE;
     f.num_elems_per_value = num_elems_per_vertex;
     f.type = type;
     f.normalize = normalize;

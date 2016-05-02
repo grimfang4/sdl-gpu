@@ -38,8 +38,9 @@ extern "C" {
     #define GPU_bool int
 #endif
 
-static const GPU_bool GPU_FALSE = 0;
-static const GPU_bool GPU_TRUE = 1;
+#define GPU_FALSE 0
+#define GPU_TRUE 1
+
 
 typedef struct GPU_Renderer GPU_Renderer;
 typedef struct GPU_Target GPU_Target;
