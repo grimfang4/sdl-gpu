@@ -1474,7 +1474,69 @@ void GPU_UnsetClip(GPU_Target* target)
     _gpu_current_renderer->impl->UnsetClip(_gpu_current_renderer, target);
 }
 
+/* Adapted from SDL_IntersectRect() */
+GPU_bool GPU_IntersectRect(GPU_Rect A, GPU_Rect B, GPU_Rect* result)
+{
+    GPU_bool has_horiz_intersection = GPU_FALSE;
+    float Amin, Amax, Bmin, Bmax;
+    GPU_Rect intersection;
 
+    // Special case for empty rects
+    if (A.w <= 0.0f || A.h <= 0.0f || B.w <= 0.0f || B.h <= 0.0f)
+        return GPU_FALSE;
+
+    // Horizontal intersection
+    Amin = A.x;
+    Amax = Amin + A.w;
+    Bmin = B.x;
+    Bmax = Bmin + B.w;
+    if (Bmin > Amin)
+        Amin = Bmin;
+    if (Bmax < Amax)
+        Amax = Bmax;
+    
+    intersection.x = Amin;
+    intersection.w = Amax - Amin;
+    
+    has_horiz_intersection = (Amax > Amin);
+
+    // Vertical intersection
+    Amin = A.y;
+    Amax = Amin + A.h;
+    Bmin = B.y;
+    Bmax = Bmin + B.h;
+    if (Bmin > Amin)
+        Amin = Bmin;
+    if (Bmax < Amax)
+        Amax = Bmax;
+    
+    intersection.y = Amin;
+    intersection.h = Amax - Amin;
+    
+    if(has_horiz_intersection && Amax > Amin)
+    {
+        if(result != NULL)
+            *result = intersection;
+        return GPU_TRUE;
+    }
+    else
+        return GPU_FALSE;
+}
+
+
+GPU_bool GPU_IntersectClipRect(GPU_Target* target, GPU_Rect B, GPU_Rect* result)
+{
+    if(target == NULL)
+        return GPU_FALSE;
+    
+    if(!target->use_clip_rect)
+    {
+        GPU_Rect A = {0, 0, target->w, target->h};
+        return GPU_IntersectRect(A, B, result);
+    }
+    
+    return GPU_IntersectRect(target->clip_rect, B, result);
+}
 
 
 void GPU_SetColor(GPU_Image* image, SDL_Color color)

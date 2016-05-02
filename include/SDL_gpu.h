@@ -970,6 +970,14 @@ DECLSPEC GPU_Rect SDLCALL GPU_SetClip(GPU_Target* target, Sint16 x, Sint16 y, Ui
 /*! Turns off clipping for the given target. */
 DECLSPEC void SDLCALL GPU_UnsetClip(GPU_Target* target);
 
+/*! Returns GPU_TRUE if the given rects A and B overlap, in which case it also fills the given result rect with the intersection.  `result` can be NULL if you don't need the intersection. */
+DECLSPEC GPU_bool SDLCALL GPU_IntersectRect(GPU_Rect A, GPU_Rect B, GPU_Rect* result);
+
+/*! Returns GPU_TRUE if the given target's clip rect and the given B rect overlap, in which case it also fills the given result rect with the intersection.  `result` can be NULL if you don't need the intersection.
+ * If the target doesn't have a clip rect enabled, this uses the whole target area.
+ */
+DECLSPEC GPU_bool SDLCALL GPU_IntersectClipRect(GPU_Target* target, GPU_Rect B, GPU_Rect* result);
+
 /*! Sets the modulation color for subsequent drawing of images and shapes on the given target. 
  *  This has a cumulative effect with the image coloring functions.
  *  e.g. GPU_SetRGB(image, 255, 128, 0); GPU_SetTargetRGB(target, 128, 128, 128);
