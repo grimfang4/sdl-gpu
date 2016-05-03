@@ -58,6 +58,7 @@ void GPU_FreeRenderer_OpenGL_3(GPU_Renderer* renderer)
     if(renderer == NULL)
         return;
 
+    SDL_free(renderer->impl);
     SDL_free(renderer);
 }
 
