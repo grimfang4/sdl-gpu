@@ -42,8 +42,8 @@ if(STBI_WRITE_FOUND)
 	include_directories(${STBI_WRITE_INCLUDE_DIR})
 	link_libraries (${STBI_WRITE_LIBRARY})
 else(STBI_WRITE_FOUND)
-	SET(SDL_gpu_SRCS ${SDL_gpu_SRCS} externals/stb_image/stb_image_write.c)
-	SET(SDL_gpu_HDRS ${SDL_gpu_HDRS} externals/stb_image/stb_image_write.h)
+	SET(SDL_gpu_SRCS ${SDL_gpu_SRCS} externals/stb_image_write/stb_image_write.c)
+	SET(SDL_gpu_HDRS ${SDL_gpu_HDRS} externals/stb_image_write/stb_image_write.h)
 endif(STBI_WRITE_FOUND)
 
 

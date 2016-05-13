@@ -235,10 +235,19 @@ if(NOT GLEW_FOUND)
   include_directories(src/externals/glew/GL)
 endif(NOT GLEW_FOUND)
 
-if(NOT STBI_FOUND)
-  include_directories(src/externals/stb_image)
+# Set stuff up for using bundled stbi
+if(NOT STBI_FOUND OR NOT STBI_WRITE_FOUND)
   add_definitions("-DSTBI_FAILURE_USERMSG")
+  
+	if(NOT STBI_FOUND)
+	  include_directories(src/externals/stb_image)
+	endif(NOT STBI_FOUND)
+	
+	if(NOT STBI_WRITE_FOUND)
+	  include_directories(src/externals/stb_image_write)
+	endif(NOT STBI_WRITE_FOUND)
 endif(NOT STBI_FOUND)
+
 
 
 add_definitions("-Wall -std=c99 -pedantic")
