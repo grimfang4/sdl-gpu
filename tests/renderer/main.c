@@ -931,12 +931,6 @@ static GPU_ShaderBlock LoadShaderBlock(GPU_Renderer* renderer, Uint32 program_ob
 }
 
 
-static void SetShaderBlock(GPU_Renderer* renderer, GPU_ShaderBlock block)
-{
-    GPU_Log(" %s (dummy)\n", __func__);
-}
-
-
 static void SetShaderImage(GPU_Renderer* renderer, GPU_Image* image, int location, int image_unit)
 {
     GPU_Log(" %s (dummy)\n", __func__);
@@ -1238,7 +1232,6 @@ void set_renderer_functions(GPU_RendererImpl* impl)
     impl->GetAttributeLocation = &GetAttributeLocation;
     impl->GetUniformLocation = &GetUniformLocation;
     impl->LoadShaderBlock = &LoadShaderBlock;
-    impl->SetShaderBlock = &SetShaderBlock;
     impl->SetShaderImage = &SetShaderImage;
     impl->GetUniformiv = &GetUniformiv;
     impl->SetUniformi = &SetUniformi;

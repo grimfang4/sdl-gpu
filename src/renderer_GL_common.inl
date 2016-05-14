@@ -1528,7 +1528,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
         target->context->default_textured_shader_program = p;
 
         // Get locations of the attributes in the shader
-        cdata->shader_block[0] = GPU_LoadShaderBlock(p, "gpu_Vertex", "gpu_TexCoord", "gpu_Color", "gpu_ModelViewProjectionMatrix");
+        target->context->default_textured_shader_block = GPU_LoadShaderBlock(p, "gpu_Vertex", "gpu_TexCoord", "gpu_Color", "gpu_ModelViewProjectionMatrix");
 
 
         // Untextured shader
@@ -1567,8 +1567,8 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
         target->context->default_untextured_shader_program = target->context->current_shader_program = p;
 
         // Get locations of the attributes in the shader
-        cdata->shader_block[1] = GPU_LoadShaderBlock(p, "gpu_Vertex", NULL, "gpu_Color", "gpu_ModelViewProjectionMatrix");
-        GPU_SetShaderBlock(cdata->shader_block[1]);
+        target->context->default_untextured_shader_block = GPU_LoadShaderBlock(p, "gpu_Vertex", NULL, "gpu_Color", "gpu_ModelViewProjectionMatrix");
+        GPU_SetShaderBlock(target->context->default_untextured_shader_block);
 
     }
     else
@@ -4502,6 +4502,7 @@ static_inline void submit_buffer_data(int bytes, float* values, int bytes_indice
 // Assumes the right format
 static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* target, unsigned short num_vertices, float* values, unsigned int num_indices, unsigned short* indices, GPU_BatchFlagEnum flags)
 {
+    GPU_Context* context;
 	GPU_CONTEXT_DATA* cdata;
 	int stride, offset_texcoords, offset_colors;
 	int size_vertices, size_texcoords, size_colors;
@@ -4558,8 +4559,9 @@ static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* 
         applyTransforms();
     #endif
 
-
-    cdata = (GPU_CONTEXT_DATA*)renderer->current_context_target->context->data;
+    
+    context = renderer->current_context_target->context;
+    cdata = (GPU_CONTEXT_DATA*)context->data;
 
     renderer->impl->FlushBlitBuffer(renderer);
 
@@ -4722,11 +4724,11 @@ static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* 
 #ifdef SDL_GPU_USE_BUFFER_PIPELINE
     {
         // Skip uploads if we have no attribute location
-        if(cdata->current_shader_block.position_loc < 0)
+        if(context->current_shader_block.position_loc < 0)
             use_vertices = GPU_FALSE;
-        if(cdata->current_shader_block.texcoord_loc < 0)
+        if(context->current_shader_block.texcoord_loc < 0)
             use_texcoords = GPU_FALSE;
-        if(cdata->current_shader_block.color_loc < 0)
+        if(context->current_shader_block.color_loc < 0)
             use_colors = GPU_FALSE;
 
         // Update the vertex array object's buffers
@@ -4735,7 +4737,7 @@ static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* 
         #endif
 
         // Upload our modelviewprojection matrix
-        if(cdata->current_shader_block.modelViewProjection_loc >= 0)
+        if(context->current_shader_block.modelViewProjection_loc >= 0)
         {
             float mvp[16];
             float cam_matrix[16];
@@ -4744,7 +4746,7 @@ static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* 
             
             GPU_MultiplyAndAssign(mvp, cam_matrix);
             
-            glUniformMatrix4fv(cdata->current_shader_block.modelViewProjection_loc, 1, 0, mvp);
+            glUniformMatrix4fv(context->current_shader_block.modelViewProjection_loc, 1, 0, mvp);
         }
 
         if(values != NULL)
@@ -4760,18 +4762,18 @@ static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* 
             // Specify the formatting of the blit buffer
             if(use_vertices)
             {
-                glEnableVertexAttribArray(cdata->current_shader_block.position_loc);  // Tell GL to use client-side attribute data
-                glVertexAttribPointer(cdata->current_shader_block.position_loc, size_vertices, GL_FLOAT, GL_FALSE, stride, 0);  // Tell how the data is formatted
+                glEnableVertexAttribArray(context->current_shader_block.position_loc);  // Tell GL to use client-side attribute data
+                glVertexAttribPointer(context->current_shader_block.position_loc, size_vertices, GL_FLOAT, GL_FALSE, stride, 0);  // Tell how the data is formatted
             }
             if(use_texcoords)
             {
-                glEnableVertexAttribArray(cdata->current_shader_block.texcoord_loc);
-                glVertexAttribPointer(cdata->current_shader_block.texcoord_loc, size_texcoords, GL_FLOAT, GL_FALSE, stride, (void*)(offset_texcoords * sizeof(float)));
+                glEnableVertexAttribArray(context->current_shader_block.texcoord_loc);
+                glVertexAttribPointer(context->current_shader_block.texcoord_loc, size_texcoords, GL_FLOAT, GL_FALSE, stride, (void*)(offset_texcoords * sizeof(float)));
             }
             if(use_colors)
             {
-                glEnableVertexAttribArray(cdata->current_shader_block.color_loc);
-                glVertexAttribPointer(cdata->current_shader_block.color_loc, size_colors, GL_FLOAT, GL_FALSE, stride, (void*)(offset_colors * sizeof(float)));
+                glEnableVertexAttribArray(context->current_shader_block.color_loc);
+                glVertexAttribPointer(context->current_shader_block.color_loc, size_colors, GL_FLOAT, GL_FALSE, stride, (void*)(offset_colors * sizeof(float)));
             }
         }
 
@@ -4784,11 +4786,11 @@ static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* 
 
         // Disable the vertex arrays again
         if(use_vertices)
-            glDisableVertexAttribArray(cdata->current_shader_block.position_loc);
+            glDisableVertexAttribArray(context->current_shader_block.position_loc);
         if(use_texcoords)
-            glDisableVertexAttribArray(cdata->current_shader_block.texcoord_loc);
+            glDisableVertexAttribArray(context->current_shader_block.texcoord_loc);
         if(use_colors)
-            glDisableVertexAttribArray(cdata->current_shader_block.color_loc);
+            glDisableVertexAttribArray(context->current_shader_block.color_loc);
 
         disable_attribute_data(cdata);
 
@@ -5040,8 +5042,9 @@ static void ClearRGBA(GPU_Renderer* renderer, GPU_Target* target, Uint8 r, Uint8
     }
 }
 
-static void DoPartialFlush(GPU_Renderer* renderer, GPU_Target* dest, GPU_CONTEXT_DATA* cdata, unsigned short num_vertices, float* blit_buffer, unsigned int num_indices, unsigned short* index_buffer)
+static void DoPartialFlush(GPU_Renderer* renderer, GPU_Target* dest, GPU_Context* context, unsigned short num_vertices, float* blit_buffer, unsigned int num_indices, unsigned short* index_buffer)
 {
+    GPU_CONTEXT_DATA* cdata = (GPU_CONTEXT_DATA*)context->data;
 	(void)renderer;
 #ifdef SDL_GPU_USE_ARRAY_PIPELINE
     glEnableClientState(GL_VERTEX_ARRAY);
@@ -5098,7 +5101,7 @@ static void DoPartialFlush(GPU_Renderer* renderer, GPU_Target* dest, GPU_CONTEXT
             #endif
 
             // Upload our modelviewprojection matrix
-            if(cdata->current_shader_block.modelViewProjection_loc >= 0)
+            if(context->current_shader_block.modelViewProjection_loc >= 0)
             {
                 float p[16];
                 float mv[16];
@@ -5119,7 +5122,7 @@ static void DoPartialFlush(GPU_Renderer* renderer, GPU_Target* dest, GPU_CONTEXT
                 // MVP = P * MV
                 GPU_Multiply4x4(mvp, p, mv);
                 
-                glUniformMatrix4fv(cdata->current_shader_block.modelViewProjection_loc, 1, 0, mvp);
+                glUniformMatrix4fv(context->current_shader_block.modelViewProjection_loc, 1, 0, mvp);
             }
 
             // Upload blit buffer to a single buffer object
@@ -5131,20 +5134,20 @@ static void DoPartialFlush(GPU_Renderer* renderer, GPU_Target* dest, GPU_CONTEXT
             submit_buffer_data(GPU_BLIT_BUFFER_STRIDE * num_vertices, blit_buffer, sizeof(unsigned short)*num_indices, index_buffer);  // Fills GPU buffer with data.
 
             // Specify the formatting of the blit buffer
-            if(cdata->current_shader_block.position_loc >= 0)
+            if(context->current_shader_block.position_loc >= 0)
             {
-                glEnableVertexAttribArray(cdata->current_shader_block.position_loc);  // Tell GL to use client-side attribute data
-                glVertexAttribPointer(cdata->current_shader_block.position_loc, 2, GL_FLOAT, GL_FALSE, GPU_BLIT_BUFFER_STRIDE, 0);  // Tell how the data is formatted
+                glEnableVertexAttribArray(context->current_shader_block.position_loc);  // Tell GL to use client-side attribute data
+                glVertexAttribPointer(context->current_shader_block.position_loc, 2, GL_FLOAT, GL_FALSE, GPU_BLIT_BUFFER_STRIDE, 0);  // Tell how the data is formatted
             }
-            if(cdata->current_shader_block.texcoord_loc >= 0)
+            if(context->current_shader_block.texcoord_loc >= 0)
             {
-                glEnableVertexAttribArray(cdata->current_shader_block.texcoord_loc);
-                glVertexAttribPointer(cdata->current_shader_block.texcoord_loc, 2, GL_FLOAT, GL_FALSE, GPU_BLIT_BUFFER_STRIDE, (void*)(GPU_BLIT_BUFFER_TEX_COORD_OFFSET * sizeof(float)));
+                glEnableVertexAttribArray(context->current_shader_block.texcoord_loc);
+                glVertexAttribPointer(context->current_shader_block.texcoord_loc, 2, GL_FLOAT, GL_FALSE, GPU_BLIT_BUFFER_STRIDE, (void*)(GPU_BLIT_BUFFER_TEX_COORD_OFFSET * sizeof(float)));
             }
-            if(cdata->current_shader_block.color_loc >= 0)
+            if(context->current_shader_block.color_loc >= 0)
             {
-                glEnableVertexAttribArray(cdata->current_shader_block.color_loc);
-                glVertexAttribPointer(cdata->current_shader_block.color_loc, 4, GL_FLOAT, GL_FALSE, GPU_BLIT_BUFFER_STRIDE, (void*)(GPU_BLIT_BUFFER_COLOR_OFFSET * sizeof(float)));
+                glEnableVertexAttribArray(context->current_shader_block.color_loc);
+                glVertexAttribPointer(context->current_shader_block.color_loc, 4, GL_FLOAT, GL_FALSE, GPU_BLIT_BUFFER_STRIDE, (void*)(GPU_BLIT_BUFFER_COLOR_OFFSET * sizeof(float)));
             }
 
             upload_attribute_data(cdata, num_vertices);
@@ -5152,12 +5155,12 @@ static void DoPartialFlush(GPU_Renderer* renderer, GPU_Target* dest, GPU_CONTEXT
             glDrawElements(cdata->last_shape, num_indices, GL_UNSIGNED_SHORT, (void*)0);
 
             // Disable the vertex arrays again
-            if(cdata->current_shader_block.position_loc >= 0)
-                glDisableVertexAttribArray(cdata->current_shader_block.position_loc);
-            if(cdata->current_shader_block.texcoord_loc >= 0)
-                glDisableVertexAttribArray(cdata->current_shader_block.texcoord_loc);
-            if(cdata->current_shader_block.color_loc >= 0)
-                glDisableVertexAttribArray(cdata->current_shader_block.color_loc);
+            if(context->current_shader_block.position_loc >= 0)
+                glDisableVertexAttribArray(context->current_shader_block.position_loc);
+            if(context->current_shader_block.texcoord_loc >= 0)
+                glDisableVertexAttribArray(context->current_shader_block.texcoord_loc);
+            if(context->current_shader_block.color_loc >= 0)
+                glDisableVertexAttribArray(context->current_shader_block.color_loc);
 
             disable_attribute_data(cdata);
 
@@ -5168,8 +5171,9 @@ static void DoPartialFlush(GPU_Renderer* renderer, GPU_Target* dest, GPU_CONTEXT
 #endif
 }
 
-static void DoUntexturedFlush(GPU_Renderer* renderer, GPU_CONTEXT_DATA* cdata, unsigned short num_vertices, float* blit_buffer, unsigned int num_indices, unsigned short* index_buffer)
+static void DoUntexturedFlush(GPU_Renderer* renderer, GPU_Context* context, unsigned short num_vertices, float* blit_buffer, unsigned int num_indices, unsigned short* index_buffer)
 {
+    GPU_CONTEXT_DATA* cdata = (GPU_CONTEXT_DATA*)context->data;
 	(void)renderer;
 
 #ifdef SDL_GPU_USE_ARRAY_PIPELINE
@@ -5217,7 +5221,7 @@ static void DoUntexturedFlush(GPU_Renderer* renderer, GPU_CONTEXT_DATA* cdata, u
         #endif
 
         // Upload our modelviewprojection matrix
-        if(cdata->current_shader_block.modelViewProjection_loc >= 0)
+        if(context->current_shader_block.modelViewProjection_loc >= 0)
         {
             float mvp[16];
             float cam_matrix[16];
@@ -5226,7 +5230,7 @@ static void DoUntexturedFlush(GPU_Renderer* renderer, GPU_CONTEXT_DATA* cdata, u
             
             GPU_MultiplyAndAssign(mvp, cam_matrix);
             
-            glUniformMatrix4fv(cdata->current_shader_block.modelViewProjection_loc, 1, 0, mvp);
+            glUniformMatrix4fv(context->current_shader_block.modelViewProjection_loc, 1, 0, mvp);
         }
 
         // Upload blit buffer to a single buffer object
@@ -5238,15 +5242,15 @@ static void DoUntexturedFlush(GPU_Renderer* renderer, GPU_CONTEXT_DATA* cdata, u
         submit_buffer_data(GPU_BLIT_BUFFER_STRIDE * num_vertices, blit_buffer, sizeof(unsigned short)*num_indices, index_buffer);  // Fills GPU buffer with data.
 
         // Specify the formatting of the blit buffer
-        if(cdata->current_shader_block.position_loc >= 0)
+        if(context->current_shader_block.position_loc >= 0)
         {
-            glEnableVertexAttribArray(cdata->current_shader_block.position_loc);  // Tell GL to use client-side attribute data
-            glVertexAttribPointer(cdata->current_shader_block.position_loc, 2, GL_FLOAT, GL_FALSE, GPU_BLIT_BUFFER_STRIDE, 0);  // Tell how the data is formatted
+            glEnableVertexAttribArray(context->current_shader_block.position_loc);  // Tell GL to use client-side attribute data
+            glVertexAttribPointer(context->current_shader_block.position_loc, 2, GL_FLOAT, GL_FALSE, GPU_BLIT_BUFFER_STRIDE, 0);  // Tell how the data is formatted
         }
-        if(cdata->current_shader_block.color_loc >= 0)
+        if(context->current_shader_block.color_loc >= 0)
         {
-            glEnableVertexAttribArray(cdata->current_shader_block.color_loc);
-            glVertexAttribPointer(cdata->current_shader_block.color_loc, 4, GL_FLOAT, GL_FALSE, GPU_BLIT_BUFFER_STRIDE, (void*)(GPU_BLIT_BUFFER_COLOR_OFFSET * sizeof(float)));
+            glEnableVertexAttribArray(context->current_shader_block.color_loc);
+            glVertexAttribPointer(context->current_shader_block.color_loc, 4, GL_FLOAT, GL_FALSE, GPU_BLIT_BUFFER_STRIDE, (void*)(GPU_BLIT_BUFFER_COLOR_OFFSET * sizeof(float)));
         }
 
         upload_attribute_data(cdata, num_vertices);
@@ -5254,10 +5258,10 @@ static void DoUntexturedFlush(GPU_Renderer* renderer, GPU_CONTEXT_DATA* cdata, u
         glDrawElements(cdata->last_shape, num_indices, GL_UNSIGNED_SHORT, (void*)0);
 
         // Disable the vertex arrays again
-        if(cdata->current_shader_block.position_loc >= 0)
-            glDisableVertexAttribArray(cdata->current_shader_block.position_loc);
-        if(cdata->current_shader_block.color_loc >= 0)
-            glDisableVertexAttribArray(cdata->current_shader_block.color_loc);
+        if(context->current_shader_block.position_loc >= 0)
+            glDisableVertexAttribArray(context->current_shader_block.position_loc);
+        if(context->current_shader_block.color_loc >= 0)
+            glDisableVertexAttribArray(context->current_shader_block.color_loc);
 
         disable_attribute_data(cdata);
 
@@ -5272,11 +5276,13 @@ static void DoUntexturedFlush(GPU_Renderer* renderer, GPU_CONTEXT_DATA* cdata, u
 
 static void FlushBlitBuffer(GPU_Renderer* renderer)
 {
+    GPU_Context* context;
     GPU_CONTEXT_DATA* cdata;
     if(renderer->current_context_target == NULL)
         return;
 
-    cdata = (GPU_CONTEXT_DATA*)renderer->current_context_target->context->data;
+    context = renderer->current_context_target->context;
+    cdata = (GPU_CONTEXT_DATA*)context->data;
     if(cdata->blit_buffer_num_vertices > 0 && cdata->last_target != NULL)
     {
 		GPU_Target* dest = cdata->last_target;
@@ -5311,7 +5317,7 @@ static void FlushBlitBuffer(GPU_Renderer* renderer)
                 num_vertices = MAX(cdata->blit_buffer_num_vertices, get_lowest_attribute_num_values(cdata, cdata->blit_buffer_num_vertices));
                 num_indices = num_vertices * 3 / 2;  // 6 indices per sprite / 4 vertices per sprite = 3/2
 
-                DoPartialFlush(renderer, dest, cdata, num_vertices, blit_buffer, num_indices, index_buffer);
+                DoPartialFlush(renderer, dest, context, num_vertices, blit_buffer, num_indices, index_buffer);
 
                 cdata->blit_buffer_num_vertices -= num_vertices;
                 // Move our pointers ahead
@@ -5321,7 +5327,7 @@ static void FlushBlitBuffer(GPU_Renderer* renderer)
         }
         else
         {
-            DoUntexturedFlush(renderer, cdata, cdata->blit_buffer_num_vertices, blit_buffer, cdata->index_buffer_num_vertices, index_buffer);
+            DoUntexturedFlush(renderer, context, cdata->blit_buffer_num_vertices, blit_buffer, cdata->index_buffer_num_vertices, index_buffer);
         }
 
         cdata->blit_buffer_num_vertices = 0;
@@ -5787,13 +5793,12 @@ static void ActivateShaderProgram(GPU_Renderer* renderer, Uint32 program_object,
 
 		{
 			// Set up our shader attribute and uniform locations
-			GPU_CONTEXT_DATA* cdata = ((GPU_CONTEXT_DATA*)target->context->data);
 			if(block == NULL)
 			{
 				if(program_object == target->context->default_textured_shader_program)
-					cdata->current_shader_block = cdata->shader_block[0];
+					target->context->current_shader_block = target->context->default_textured_shader_block;
 				else if(program_object == target->context->default_untextured_shader_program)
-					cdata->current_shader_block = cdata->shader_block[1];
+					target->context->current_shader_block = target->context->default_untextured_shader_block;
 				else
 				{
 						GPU_ShaderBlock b;
@@ -5801,11 +5806,11 @@ static void ActivateShaderProgram(GPU_Renderer* renderer, Uint32 program_object,
 						b.texcoord_loc = -1;
 						b.color_loc = -1;
 						b.modelViewProjection_loc = -1;
-						cdata->current_shader_block = b;
+						target->context->current_shader_block = b;
 				}
 			}
 			else
-				cdata->current_shader_block = *block;
+				target->context->current_shader_block = *block;
 		}
     }
     #endif
@@ -5892,15 +5897,6 @@ static GPU_ShaderBlock LoadShaderBlock(GPU_Renderer* renderer, Uint32 program_ob
         b.modelViewProjection_loc = renderer->impl->GetUniformLocation(renderer, program_object, modelViewMatrix_name);
 
     return b;
-}
-
-static void SetShaderBlock(GPU_Renderer* renderer, GPU_ShaderBlock block)
-{
-	(void)renderer;
-	(void)block;
-    #ifndef SDL_GPU_DISABLE_SHADERS
-    ((GPU_CONTEXT_DATA*)renderer->current_context_target->context->data)->current_shader_block = block;
-    #endif
 }
 
 static void SetShaderImage(GPU_Renderer* renderer, GPU_Image* image, int location, int image_unit)
@@ -6555,7 +6551,6 @@ static void SetAttributeSource(GPU_Renderer* renderer, int num_values, GPU_Attri
     impl->GetAttributeLocation = &GetAttributeLocation; \
     impl->GetUniformLocation = &GetUniformLocation; \
     impl->LoadShaderBlock = &LoadShaderBlock; \
-    impl->SetShaderBlock = &SetShaderBlock; \
     impl->SetShaderImage = &SetShaderImage; \
     impl->GetUniformiv = &GetUniformiv; \
     impl->SetUniformi = &SetUniformi; \

@@ -2183,7 +2183,22 @@ void GPU_SetShaderBlock(GPU_ShaderBlock block)
     if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL)
         return;
 
-    _gpu_current_renderer->impl->SetShaderBlock(_gpu_current_renderer, block);
+    _gpu_current_renderer->current_context_target->context->current_shader_block = block;
+}
+
+GPU_ShaderBlock GPU_GetShaderBlock(void)
+{
+    if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL)
+    {
+        GPU_ShaderBlock b;
+        b.position_loc = -1;
+        b.texcoord_loc = -1;
+        b.color_loc = -1;
+        b.modelViewProjection_loc = -1;
+        return b;
+    }
+
+    return _gpu_current_renderer->current_context_target->context->current_shader_block;
 }
 
 void GPU_SetShaderImage(GPU_Image* image, int location, int image_unit)

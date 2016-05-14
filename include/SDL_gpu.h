@@ -346,6 +346,10 @@ typedef struct GPU_Context
 	Uint32 default_textured_shader_program;
 	Uint32 default_untextured_shader_program;
 	
+    GPU_ShaderBlock current_shader_block;
+    GPU_ShaderBlock default_textured_shader_block;
+    GPU_ShaderBlock default_untextured_shader_block;
+	
 	GPU_bool shapes_use_blending;
 	GPU_BlendMode shapes_blend_mode;
 	float line_thickness;
@@ -1665,6 +1669,9 @@ DECLSPEC GPU_ShaderBlock SDLCALL GPU_LoadShaderBlock(Uint32 program_object, cons
 
 /*! Sets the current shader block to use the given attribute and uniform locations. */
 DECLSPEC void SDLCALL GPU_SetShaderBlock(GPU_ShaderBlock block);
+
+/*! Gets the shader block for the current shader. */
+DECLSPEC GPU_ShaderBlock SDLCALL GPU_GetShaderBlock(void);
 
 /*! Sets the given image unit to the given image so that a custom shader can sample multiple textures.
     \param image The source image/texture.  Pass NULL to disable the image unit.

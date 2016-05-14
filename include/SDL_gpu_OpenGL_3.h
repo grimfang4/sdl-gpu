@@ -180,8 +180,6 @@ typedef struct ContextData_OpenGL_3
     unsigned int blit_VBO[2];  // For double-buffering
     unsigned int blit_IBO;
     GPU_bool blit_VBO_flop;
-    GPU_ShaderBlock shader_block[2];
-    GPU_ShaderBlock current_shader_block;
     
 	GPU_AttributeSource shader_attributes[16];
 	unsigned int attribute_VBO[16];
