@@ -815,6 +815,57 @@ static void disableTexturing(GPU_Renderer* renderer)
     }
 }
 
+static void upload_texture(const void* pixels, GPU_Rect update_rect, Uint32 format, int alignment, int row_length, int bytes_per_pixel)
+{
+    glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
+    #if defined(SDL_GPU_USE_OPENGL) || SDL_GPU_GLES_MAJOR_VERSION > 2
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, row_length);
+    
+    glTexSubImage2D(GL_TEXTURE_2D, 0,
+                    update_rect.x, update_rect.y, update_rect.w, update_rect.h,
+                    format, GL_UNSIGNED_BYTE, pixels);
+                    
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+    #else
+    unsigned int i;
+    unsigned int h = update_rect.h;
+    unsigned int pitch = row_length * bytes_per_pixel;
+    if(h > 0 && update_rect.w > 0.0f)
+    {
+        // Must upload row by row to account for row length
+        
+        for(i = 0; i < h; ++i)
+        {
+            glTexSubImage2D(GL_TEXTURE_2D, 0,
+                        update_rect.x, update_rect.y + i, update_rect.w, 1,
+                        format, GL_UNSIGNED_BYTE, pixels);
+            pixels += pitch;
+        }
+    }
+    #endif
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+}
+
+static void upload_new_texture(void* pixels, GPU_Rect update_rect, Uint32 format, int alignment, int row_length, int bytes_per_pixel)
+{
+    glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
+    #if defined(SDL_GPU_USE_OPENGL) || SDL_GPU_GLES_MAJOR_VERSION > 2
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, row_length);
+    
+    glTexImage2D(GL_TEXTURE_2D, 0, format, update_rect.w, update_rect.h, 0,
+                    format, GL_UNSIGNED_BYTE, pixels);
+                    
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+    #else
+    glTexImage2D(GL_TEXTURE_2D, 0, format, update_rect.w, update_rect.h, 0,
+                 format, GL_UNSIGNED_BYTE, NULL);
+    
+    // Alignment is reset in upload_texture()
+    upload_texture(pixels, update_rect, format, alignment, row_length, bytes_per_pixel);
+    #endif
+}
+
 #define MIX_COLOR_COMPONENT_NORMALIZED_RESULT(a, b) ((a)/255.0f * (b)/255.0f)
 #define MIX_COLOR_COMPONENT(a, b) (((a)/255.0f * (b)/255.0f)*255)
 
@@ -2130,23 +2181,15 @@ static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, GPU_Fo
         zero_buffer = (unsigned char*)SDL_malloc(zero_buffer_size);
         memset(zero_buffer, 0, zero_buffer_size);
     }
-
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    #ifdef SDL_GPU_USE_OPENGL
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, w);
-    #endif
-
-    glTexImage2D(GL_TEXTURE_2D, 0, internal_format, w, h, 0,
-                 internal_format, GL_UNSIGNED_BYTE, zero_buffer);
+    
+    
+    upload_new_texture(zero_buffer, GPU_MakeRect(0, 0, w, h), internal_format, 1, w, result->bytes_per_pixel);
+    
+    
     // Tell SDL_gpu what we got (power-of-two requirements have made this change)
     result->texture_w = w;
     result->texture_h = h;
 
-    // Restore GL defaults
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
-    #ifdef SDL_GPU_USE_OPENGL
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-    #endif
 
     return result;
 }
@@ -3075,22 +3118,12 @@ static GPU_Image* CopyImage(GPU_Renderer* renderer, GPU_Image* image)
                     h = getNearestPowerOf2(h);
             }
 
-            glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-            #ifdef SDL_GPU_USE_OPENGL
-            glPixelStorei(GL_UNPACK_ROW_LENGTH, w);
-            #endif
-
-            glTexImage2D(GL_TEXTURE_2D, 0, internal_format, w, h, 0,
-                         internal_format, GL_UNSIGNED_BYTE, texture_data);
+            upload_new_texture(texture_data, GPU_MakeRect(0, 0, w, h), internal_format, 1, w, result->bytes_per_pixel);
+            
+            
             // Tell SDL_gpu what we got.
             result->texture_w = w;
             result->texture_h = h;
-
-            // Restore GL defaults
-            glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
-            #ifdef SDL_GPU_USE_OPENGL
-            glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-            #endif
 
             SDL_free(texture_data);
         }
@@ -3219,10 +3252,6 @@ static void UpdateImage(GPU_Renderer* renderer, GPU_Image* image, const GPU_Rect
     alignment = 8;
     while(newSurface->pitch % alignment)
         alignment >>= 1;
-    glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
-    #ifdef SDL_GPU_USE_OPENGL
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, (newSurface->pitch / newSurface->format->BytesPerPixel));
-    #endif
 
     // Use the smaller of the image and surface rect dimensions
     if(sourceRect.w < updateRect.w)
@@ -3233,20 +3262,14 @@ static void UpdateImage(GPU_Renderer* renderer, GPU_Image* image, const GPU_Rect
     pixels = (Uint8*)newSurface->pixels;
     // Shift the pixels pointer to the proper source position
     pixels += (int)(newSurface->pitch * sourceRect.y + (newSurface->format->BytesPerPixel)*sourceRect.x);
-
-    glTexSubImage2D(GL_TEXTURE_2D, 0,
-                    updateRect.x, updateRect.y, updateRect.w, updateRect.h,
-                    original_format, GL_UNSIGNED_BYTE, pixels);
+    
+    upload_texture(pixels, updateRect, original_format, alignment, (newSurface->pitch / newSurface->format->BytesPerPixel), newSurface->format->BytesPerPixel);
+    
 
     // Delete temporary surface
     if(surface != newSurface)
         SDL_FreeSurface(newSurface);
 
-    // Restore GL defaults
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
-    #ifdef SDL_GPU_USE_OPENGL
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-    #endif
 }
 
 
@@ -3308,20 +3331,9 @@ static void UpdateImageBytes(GPU_Renderer* renderer, GPU_Image* image, const GPU
     alignment = 8;
     while(bytes_per_row % alignment)
         alignment >>= 1;
-    glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
-    #ifdef SDL_GPU_USE_OPENGL
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, (bytes_per_row / image->bytes_per_pixel));
-    #endif
-
-    glTexSubImage2D(GL_TEXTURE_2D, 0,
-                    updateRect.x, updateRect.y, updateRect.w, updateRect.h,
-                    original_format, GL_UNSIGNED_BYTE, bytes);
-
-    // Restore GL defaults
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
-    #ifdef SDL_GPU_USE_OPENGL
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-    #endif
+    
+    upload_texture(bytes, updateRect, original_format, alignment, (bytes_per_row / image->bytes_per_pixel), image->bytes_per_pixel);
+    
 }
 
 
@@ -3450,27 +3462,18 @@ static GPU_bool ReplaceImage(GPU_Renderer* renderer, GPU_Image* image, SDL_Surfa
     alignment = 8;
     while(newSurface->pitch % alignment)
         alignment >>= 1;
-    glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
-    #ifdef SDL_GPU_USE_OPENGL
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, (newSurface->pitch / newSurface->format->BytesPerPixel));
-    #endif
 
     pixels = (Uint8*)newSurface->pixels;
     // Shift the pixels pointer to the proper source position
     pixels += (int)(newSurface->pitch * sourceRect.y + (newSurface->format->BytesPerPixel)*sourceRect.x);
 
-    glTexImage2D(GL_TEXTURE_2D, 0, internal_format, w, h, 0,
-                 internal_format, GL_UNSIGNED_BYTE, pixels);
+    upload_new_texture(pixels, GPU_MakeRect(0, 0, w, h), internal_format, alignment, (newSurface->pitch / newSurface->format->BytesPerPixel), newSurface->format->BytesPerPixel);
+    
 
     // Delete temporary surface
     if(surface != newSurface)
         SDL_FreeSurface(newSurface);
 
-    // Restore GL defaults
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
-    #ifdef SDL_GPU_USE_OPENGL
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-    #endif
 
 
 
@@ -4500,7 +4503,7 @@ static_inline void submit_buffer_data(int bytes, float* values, int bytes_indice
 
 
 // Assumes the right format
-static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* target, unsigned short num_vertices, float* values, unsigned int num_indices, unsigned short* indices, GPU_BatchFlagEnum flags)
+static void TriangleBatchX(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* target, unsigned short num_vertices, void* values, unsigned int num_indices, unsigned short* indices, GPU_BatchFlagEnum flags)
 {
     GPU_Context* context;
 	GPU_CONTEXT_DATA* cdata;
@@ -4510,7 +4513,8 @@ static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* 
 	GPU_bool using_texture = (image != NULL);
 	GPU_bool use_vertices = (flags & (GPU_BATCH_XY | GPU_BATCH_XYZ));
 	GPU_bool use_texcoords = (flags & GPU_BATCH_ST);
-	GPU_bool use_colors = (flags & (GPU_BATCH_RGB | GPU_BATCH_RGBA));
+	GPU_bool use_colors = (flags & (GPU_BATCH_RGB | GPU_BATCH_RGBA | GPU_BATCH_RGB8 | GPU_BATCH_RGBA8));
+	GPU_bool use_byte_colors = (flags & (GPU_BATCH_RGB8 | GPU_BATCH_RGBA8));
 	GPU_bool use_z = (flags & GPU_BATCH_XYZ);
 	GPU_bool use_a = (flags & GPU_BATCH_RGBA);
 
@@ -4519,12 +4523,12 @@ static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* 
 
     if(target == NULL)
     {
-        GPU_PushErrorCode("GPU_TriangleBatch", GPU_ERROR_NULL_ARGUMENT, "target");
+        GPU_PushErrorCode("GPU_TriangleBatchX", GPU_ERROR_NULL_ARGUMENT, "target");
         return;
     }
     if((image != NULL && renderer != image->renderer) || renderer != target->renderer)
     {
-        GPU_PushErrorCode("GPU_TriangleBatch", GPU_ERROR_USER_ERROR, "Mismatched renderer");
+        GPU_PushErrorCode("GPU_TriangleBatchX", GPU_ERROR_USER_ERROR, "Mismatched renderer");
         return;
     }
 
@@ -4537,7 +4541,7 @@ static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* 
     // Bind the FBO
     if(!bindFramebuffer(renderer, target))
     {
-        GPU_PushErrorCode("GPU_TriangleBatch", GPU_ERROR_BACKEND_ERROR, "Failed to bind framebuffer.");
+        GPU_PushErrorCode("GPU_TriangleBatchX", GPU_ERROR_BACKEND_ERROR, "Failed to bind framebuffer.");
         return;
     }
 
@@ -4639,13 +4643,24 @@ static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* 
             size_colors = 4;
         else
             size_colors = 3;
-
+    }
+    
+    // Floating point color components (either 3 or 4 floats)
+    if(use_colors && !use_byte_colors)
+    {
         stride += size_colors;
     }
 
-    // Convert to a number of bytes
+    // Convert offsets to a number of bytes
     stride *= sizeof(float);
+    offset_texcoords *= sizeof(float);
+    offset_colors *= sizeof(float);
 
+    // Unsigned byte color components (either 3 or 4 bytes)
+    if(use_colors && use_byte_colors)
+    {
+        stride += size_colors;
+    }
 
 #ifdef SDL_GPU_USE_ARRAY_PIPELINE
 
@@ -4664,7 +4679,12 @@ static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* 
         if(use_texcoords)
             glTexCoordPointer(size_texcoords, GL_FLOAT, stride, values + offset_texcoords);
         if(use_colors)
-            glColorPointer(size_colors, GL_FLOAT, stride, values + offset_colors);
+        {
+            if(use_byte_colors)
+                glColorPointer(size_colors, GL_UNSIGNED_BYTE, stride, values + offset_colors);
+            else
+                glColorPointer(size_colors, GL_FLOAT, stride, values + offset_colors);
+        }
 
         // Upload
         if(indices == NULL)
@@ -4693,9 +4713,8 @@ static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* 
         {
             unsigned int i;
             unsigned int index;
-            float* vertex_pointer = values;
-            float* texcoord_pointer = values + offset_texcoords;
-            float* color_pointer = values + offset_colors;
+            float* vertex_pointer = (float*)(values);
+            float* texcoord_pointer = (float*)(values + offset_texcoords);
 
             glBegin(GL_TRIANGLES);
             for(i = 0; i < num_indices; i++)
@@ -4705,7 +4724,18 @@ static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* 
                 else
                     index = indices[i]*GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
                 if(use_colors)
-                    glColor4f(color_pointer[index], color_pointer[index+1], color_pointer[index+2], (use_a? color_pointer[index+3] : 1.0f));
+                {
+                    if(use_byte_colors)
+                    {
+                        Uint8* color_pointer = (Uint8*)(values + offset_colors);
+                        glColor4ub(color_pointer[index], color_pointer[index+1], color_pointer[index+2], (use_a? color_pointer[index+3] : 255));
+                    }
+                    else
+                    {
+                        float* color_pointer = (float*)(values + offset_colors);
+                        glColor4f(color_pointer[index], color_pointer[index+1], color_pointer[index+2], (use_a? color_pointer[index+3] : 1.0f));
+                    }
+                }
                 if(use_texcoords)
                     glTexCoord2f( texcoord_pointer[index], texcoord_pointer[index+1] );
                 if(use_vertices)
@@ -4768,12 +4798,12 @@ static void TriangleBatch(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* 
             if(use_texcoords)
             {
                 glEnableVertexAttribArray(context->current_shader_block.texcoord_loc);
-                glVertexAttribPointer(context->current_shader_block.texcoord_loc, size_texcoords, GL_FLOAT, GL_FALSE, stride, (void*)(offset_texcoords * sizeof(float)));
+                glVertexAttribPointer(context->current_shader_block.texcoord_loc, size_texcoords, GL_FLOAT, GL_FALSE, stride, (void*)(offset_texcoords));
             }
             if(use_colors)
             {
                 glEnableVertexAttribArray(context->current_shader_block.color_loc);
-                glVertexAttribPointer(context->current_shader_block.color_loc, size_colors, GL_FLOAT, GL_FALSE, stride, (void*)(offset_colors * sizeof(float)));
+                glVertexAttribPointer(context->current_shader_block.color_loc, size_colors, (use_byte_colors? GL_UNSIGNED_BYTE : GL_FLOAT), GL_FALSE, stride, (void*)(offset_colors));
             }
         }
 
@@ -6522,7 +6552,7 @@ static void SetAttributeSource(GPU_Renderer* renderer, int num_values, GPU_Attri
     impl->BlitScale = &BlitScale; \
     impl->BlitTransform = &BlitTransform; \
     impl->BlitTransformX = &BlitTransformX; \
-    impl->TriangleBatch = &TriangleBatch; \
+    impl->TriangleBatchX = &TriangleBatchX; \
  \
     impl->GenerateMipmaps = &GenerateMipmaps; \
  \

@@ -164,7 +164,8 @@ typedef enum {
     GPU_BLEND_SET_ALPHA = 6,
     GPU_BLEND_SET = 7,
     GPU_BLEND_NORMAL_KEEP_ALPHA = 8,
-    GPU_BLEND_NORMAL_ADD_ALPHA = 9
+    GPU_BLEND_NORMAL_ADD_ALPHA = 9,
+    GPU_BLEND_NORMAL_FACTOR_ALPHA = 10
 } GPU_BlendPresetEnum;
 
 /*! \ingroup ImageControls
@@ -449,6 +450,7 @@ static const Uint32 GPU_NONE = 0x0;
 /*! \ingroup Rendering
  * Bit flags for geometry batching.
  * \see GPU_TriangleBatch()
+ * \see GPU_TriangleBatchX()
  */
 typedef Uint32 GPU_BatchFlagEnum;
 static const GPU_BatchFlagEnum GPU_BATCH_XY = 0x1;
@@ -456,6 +458,8 @@ static const GPU_BatchFlagEnum GPU_BATCH_XYZ = 0x2;
 static const GPU_BatchFlagEnum GPU_BATCH_ST = 0x4;
 static const GPU_BatchFlagEnum GPU_BATCH_RGB = 0x8;
 static const GPU_BatchFlagEnum GPU_BATCH_RGBA = 0x10;
+static const GPU_BatchFlagEnum GPU_BATCH_RGB8 = 0x20;
+static const GPU_BatchFlagEnum GPU_BATCH_RGBA8 = 0x40;
 
 #define GPU_BATCH_XY_ST (GPU_BATCH_XY | GPU_BATCH_ST)
 #define GPU_BATCH_XYZ_ST (GPU_BATCH_XYZ | GPU_BATCH_ST)
@@ -465,6 +469,12 @@ static const GPU_BatchFlagEnum GPU_BATCH_RGBA = 0x10;
 #define GPU_BATCH_XYZ_RGBA (GPU_BATCH_XYZ | GPU_BATCH_RGBA)
 #define GPU_BATCH_XY_ST_RGBA (GPU_BATCH_XY | GPU_BATCH_ST | GPU_BATCH_RGBA)
 #define GPU_BATCH_XYZ_ST_RGBA (GPU_BATCH_XYZ | GPU_BATCH_ST | GPU_BATCH_RGBA)
+#define GPU_BATCH_XY_RGB8 (GPU_BATCH_XY | GPU_BATCH_RGB8)
+#define GPU_BATCH_XYZ_RGB8 (GPU_BATCH_XYZ | GPU_BATCH_RGB8)
+#define GPU_BATCH_XY_RGBA8 (GPU_BATCH_XY | GPU_BATCH_RGBA8)
+#define GPU_BATCH_XYZ_RGBA8 (GPU_BATCH_XYZ | GPU_BATCH_RGBA8)
+#define GPU_BATCH_XY_ST_RGBA8 (GPU_BATCH_XY | GPU_BATCH_ST | GPU_BATCH_RGBA8)
+#define GPU_BATCH_XYZ_ST_RGBA8 (GPU_BATCH_XYZ | GPU_BATCH_ST | GPU_BATCH_RGBA8)
 
 
 /*! Bit flags for blitting into a rectangular region.
@@ -1358,6 +1368,13 @@ DECLSPEC void SDLCALL GPU_BlitRectX(GPU_Image* image, GPU_Rect* src_rect, GPU_Ta
  * \param flags Bit flags to control the interpretation of the 'values' array parameters.
  */
 DECLSPEC void SDLCALL GPU_TriangleBatch(GPU_Image* image, GPU_Target* target, unsigned short num_vertices, float* values, unsigned int num_indices, unsigned short* indices, GPU_BatchFlagEnum flags);
+
+/*! Renders triangles from the given set of vertices.  This lets you render arbitrary 2D geometry.  It is a direct path to the GPU, so the format is different than typical SDL_gpu calls.
+ * \param values A tightly-packed array of vertex position (e.g. x,y), texture coordinates (e.g. s,t), and color (e.g. r,g,b,a) values.  Texture coordinates and color values are expected to be already normalized to 0.0 - 1.0 (or 0 - 255 for 8-bit color components).  Pass NULL to render with only custom shader attributes.
+ * \param indices If not NULL, this is used to specify which vertices to use and in what order (i.e. it indexes the vertices in the 'values' array).
+ * \param flags Bit flags to control the interpretation of the 'values' array parameters.
+ */
+DECLSPEC void SDLCALL GPU_TriangleBatchX(GPU_Image* image, GPU_Target* target, unsigned short num_vertices, void* values, unsigned int num_indices, unsigned short* indices, GPU_BatchFlagEnum flags);
 
 /*! Send all buffered blitting data to the current context target. */
 DECLSPEC void SDLCALL GPU_FlushBlitBuffer(void);
