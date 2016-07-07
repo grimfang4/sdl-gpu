@@ -5,6 +5,7 @@
 
 #define IMAGE_FILE "data/happy_52x63.bmp"
 #define SAVE_FILE "save.bmp"
+#define SAVE_FILE2 "save2.png"
 
 
 int main(int argc, char* argv[])
@@ -30,6 +31,7 @@ int main(int argc, char* argv[])
 		
 		GPU_Image* image;
 		GPU_Image* image1;
+		GPU_Image* image2;
         
         GPU_LogError("Loading image\n");
         image = GPU_LoadImage(IMAGE_FILE);
@@ -47,6 +49,19 @@ int main(int argc, char* argv[])
         if(image1 == NULL)
         {
             GPU_LogError("Failed to reload image.\n");
+            return -1;
+        }
+        
+        GPU_LogError("Saving image2\n");
+        SDL_RWops* rwops = SDL_RWFromFile(SAVE_FILE2, "wb");
+        GPU_SaveImage_RW(image, rwops, 1, GPU_FILE_PNG);
+        
+        GPU_LogError("Reloading image2\n");
+        rwops = SDL_RWFromFile(SAVE_FILE2, "rb");
+        image2 = GPU_LoadImage_RW(rwops, 1);
+        if(image2 == NULL)
+        {
+            GPU_LogError("Failed to reload image2.\n");
             return -1;
         }
         
@@ -72,6 +87,7 @@ int main(int argc, char* argv[])
             
             GPU_Blit(image, NULL, screen, screen->w/4, screen->h/2);
             GPU_Blit(image1, NULL, screen, 3*screen->w/4, screen->h/2);
+            GPU_Blit(image2, NULL, screen, screen->w/4, 3*screen->h/4);
             
             GPU_Flip(screen);
             

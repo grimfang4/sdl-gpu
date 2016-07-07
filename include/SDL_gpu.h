@@ -220,6 +220,8 @@ typedef enum {
  * File format enum
  * \see GPU_SaveSurface()
  * \see GPU_SaveImage()
+ * \see GPU_SaveSurface_RW()
+ * \see GPU_SaveImage_RW()
  */
 typedef enum {
     GPU_FILE_AUTO = 0,
@@ -1037,6 +1039,11 @@ DECLSPEC SDL_Surface* SDLCALL GPU_LoadSurface_RW(SDL_RWops* rwops, GPU_bool free
  * Returns 0 on failure. */
 DECLSPEC GPU_bool SDLCALL GPU_SaveSurface(SDL_Surface* surface, const char* filename, GPU_FileFormatEnum format);
 
+/*! Save surface to a RWops stream.
+ * Does not support format of GPU_FILE_AUTO, because the file type cannot be deduced.  Supported formats are: png, bmp, tga.
+ * Returns 0 on failure. */
+DECLSPEC GPU_bool SDLCALL GPU_SaveSurface_RW(SDL_Surface* surface, SDL_RWops* rwops, GPU_bool free_rwops, GPU_FileFormatEnum format);
+
 // End of SurfaceControls
 /*! @} */
 
@@ -1091,6 +1098,11 @@ DECLSPEC GPU_bool SDLCALL GPU_ReplaceImage(GPU_Image* image, SDL_Surface* surfac
  * With a format of GPU_FILE_AUTO, the file type is deduced from the extension.  Supported formats are: png, bmp, tga.
  * Returns 0 on failure. */
 DECLSPEC GPU_bool SDLCALL GPU_SaveImage(GPU_Image* image, const char* filename, GPU_FileFormatEnum format);
+
+/*! Save image to a RWops stream.
+ * Does not support format of GPU_FILE_AUTO, because the file type cannot be deduced.  Supported formats are: png, bmp, tga.
+ * Returns 0 on failure. */
+DECLSPEC GPU_bool SDLCALL GPU_SaveImage_RW(GPU_Image* image, SDL_RWops* rwops, GPU_bool free_rwops, GPU_FileFormatEnum format);
 
 /*! Loads mipmaps for the given image, if supported by the renderer. */
 DECLSPEC void SDLCALL GPU_GenerateMipmaps(GPU_Image* image);

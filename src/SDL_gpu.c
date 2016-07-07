@@ -962,6 +962,18 @@ GPU_bool GPU_SaveImage(GPU_Image* image, const char* filename, GPU_FileFormatEnu
     return _gpu_current_renderer->impl->SaveImage(_gpu_current_renderer, image, filename, format);
 }
 
+GPU_bool GPU_SaveImage_RW(GPU_Image* image, SDL_RWops* rwops, GPU_bool free_rwops, GPU_FileFormatEnum format)
+{
+    GPU_bool result;
+    if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL)
+        return GPU_FALSE;
+
+    SDL_Surface* surface = GPU_CopySurfaceFromImage(image);
+    result = GPU_SaveSurface_RW(surface, rwops, free_rwops, format);
+    SDL_FreeSurface(surface);
+    return result;
+}
+
 GPU_Image* GPU_CopyImage(GPU_Image* image)
 {
     if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL)
@@ -1183,6 +1195,53 @@ GPU_bool GPU_SaveSurface(SDL_Surface* surface, const char* filename, GPU_FileFor
         break;
     }
 
+    return result;
+}
+
+static void write_func(void *context, void *data, int size)
+{
+    SDL_RWwrite((SDL_RWops*)context, data, 1, size);
+}
+
+GPU_bool GPU_SaveSurface_RW(SDL_Surface* surface, SDL_RWops* rwops, GPU_bool free_rwops, GPU_FileFormatEnum format)
+{
+    GPU_bool result;
+    unsigned char* data;
+
+    if(surface == NULL || rwops == NULL ||
+            surface->w < 1 || surface->h < 1)
+    {
+        return GPU_FALSE;
+    }
+
+    data = surface->pixels;
+
+    if(format == GPU_FILE_AUTO)
+    {
+        GPU_PushErrorCode(__func__, GPU_ERROR_DATA_ERROR, "Invalid output file format (GPU_FILE_AUTO)");
+        return GPU_FALSE;
+    }
+
+    // FIXME: The limitations here are not communicated clearly.  BMP and TGA won't support arbitrary row length/pitch.
+    switch(format)
+    {
+    case GPU_FILE_PNG:
+        result = (stbi_write_png_to_func(write_func, rwops, surface->w, surface->h, surface->format->BytesPerPixel, (const unsigned char *const)data, surface->pitch) > 0);
+        break;
+    case GPU_FILE_BMP:
+        result = (stbi_write_bmp_to_func(write_func, rwops, surface->w, surface->h, surface->format->BytesPerPixel, (const unsigned char *const)data) > 0);
+        break;
+    case GPU_FILE_TGA:
+        result = (stbi_write_tga_to_func(write_func, rwops, surface->w, surface->h, surface->format->BytesPerPixel, (const unsigned char *const)data) > 0);
+        break;
+    default:
+        GPU_PushErrorCode(__func__, GPU_ERROR_DATA_ERROR, "Unsupported output file format");
+        result = GPU_FALSE;
+        break;
+    }
+
+    if(result && free_rwops)
+        SDL_RWclose(rwops);
     return result;
 }
 
