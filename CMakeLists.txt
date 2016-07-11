@@ -246,7 +246,7 @@ if(NOT STBI_FOUND OR NOT STBI_WRITE_FOUND)
 	if(NOT STBI_WRITE_FOUND)
 	  include_directories(src/externals/stb_image_write)
 	endif(NOT STBI_WRITE_FOUND)
-endif(NOT STBI_FOUND)
+endif(NOT STBI_FOUND OR NOT STBI_WRITE_FOUND)
 
 
 
