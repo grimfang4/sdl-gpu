@@ -245,6 +245,7 @@ typedef enum {
 typedef struct GPU_Image
 {
 	struct GPU_Renderer* renderer;
+	GPU_Target* context_target;
 	GPU_Target* target;
 	Uint16 w, h;
 	GPU_bool using_virtual_resolution;
@@ -379,6 +380,7 @@ typedef struct GPU_Context
 struct GPU_Target
 {
 	struct GPU_Renderer* renderer;
+	GPU_Target* context_target;
 	GPU_Image* image;
 	void* data;
 	Uint16 w, h;

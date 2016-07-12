@@ -366,7 +366,7 @@ void GPU_RemoveWindowMappingByTarget(GPU_Target* target)
     target->context->windowID = 0;
 
     // Find the occurrences
-    for(i = 0; i < _gpu_num_window_mappings; )
+    for(i = 0; i < _gpu_num_window_mappings; ++i)
     {
         if(_gpu_window_mappings[i].target == target)
         {
@@ -378,8 +378,6 @@ void GPU_RemoveWindowMappingByTarget(GPU_Target* target)
                 memmove(&_gpu_window_mappings[i], &_gpu_window_mappings[i+1], num_to_move * sizeof(GPU_WindowMapping));
             return;
         }
-        else
-            i++;
     }
 
 }
@@ -395,7 +393,7 @@ GPU_Target* GPU_GetWindowTarget(Uint32 windowID)
         return NULL;
 
     // Find the occurrence
-    for(i = 0; i < _gpu_num_window_mappings; i++)
+    for(i = 0; i < _gpu_num_window_mappings; ++i)
     {
         if(_gpu_window_mappings[i].windowID == windowID)
             return _gpu_window_mappings[i].target;

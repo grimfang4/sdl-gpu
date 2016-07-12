@@ -1390,6 +1390,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     ((GPU_TARGET_DATA*)target->data)->format = GL_RGBA;
 
     target->renderer = renderer;
+    target->context_target = renderer->current_context_target;
     target->w = target->context->drawable_w;
     target->h = target->context->drawable_h;
     target->base_w = target->context->drawable_w;
@@ -2103,6 +2104,7 @@ static GPU_Image* CreateUninitializedImage(GPU_Renderer* renderer, Uint16 w, Uin
     data->refcount = 1;
     result->target = NULL;
     result->renderer = renderer;
+    result->context_target = renderer->current_context_target;
     result->format = format;
     result->num_layers = num_layers;
     result->bytes_per_pixel = bytes_per_pixel;
@@ -2345,6 +2347,7 @@ static GPU_Image* CreateImageUsingTexture(GPU_Renderer* renderer, Uint32 handle,
     result->refcount = 1;
     result->target = NULL;
     result->renderer = renderer;
+    result->context_target = renderer->current_context_target;
     result->format = format;
     result->num_layers = num_layers;
     result->bytes_per_pixel = bytes_per_pixel;
@@ -3643,7 +3646,10 @@ static void FreeImage(GPU_Renderer* renderer, GPU_Image* image)
     else
     {
         if(data->owns_handle)
+        {
+            GPU_MakeCurrent(image->context_target, image->context_target->context->windowID);
             glDeleteTextures( 1, &data->handle);
+        }
         SDL_free(data);
     }
 
@@ -3693,6 +3699,7 @@ static GPU_Target* LoadTarget(GPU_Renderer* renderer, GPU_Image* image)
     data->format = ((GPU_IMAGE_DATA*)image->data)->format;
 
     result->renderer = renderer;
+    result->context_target = renderer->current_context_target;
     result->context = NULL;
     result->image = image;
     result->w = image->w;
@@ -3767,6 +3774,8 @@ static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
         renderer->impl->FlushBlitBuffer(renderer);
         renderer->current_context_target = NULL;
     }
+    else
+        GPU_MakeCurrent(target->context_target, target->context_target->context->windowID);
 
     if(!target->is_alias && target->image != NULL)
         target->image->target = NULL;  // Remove reference to this object
