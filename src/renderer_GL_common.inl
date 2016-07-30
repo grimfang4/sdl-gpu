@@ -869,6 +869,22 @@ static void upload_new_texture(void* pixels, GPU_Rect update_rect, Uint32 format
 #define MIX_COLOR_COMPONENT_NORMALIZED_RESULT(a, b) ((a)/255.0f * (b)/255.0f)
 #define MIX_COLOR_COMPONENT(a, b) (((a)/255.0f * (b)/255.0f)*255)
 
+static SDL_Color get_complete_mod_color(GPU_Renderer* renderer, GPU_Target* target, GPU_Image* image)
+{
+    if(target->use_color)
+    {
+		SDL_Color color;
+		color.r = MIX_COLOR_COMPONENT(target->color.r, image->color.r);
+		color.g = MIX_COLOR_COMPONENT(target->color.g, image->color.g);
+		color.b = MIX_COLOR_COMPONENT(target->color.b, image->color.b);
+		GET_ALPHA(color) = MIX_COLOR_COMPONENT(GET_ALPHA(target->color), GET_ALPHA(image->color));
+
+        return color;
+    }
+    else
+        return image->color;
+}
+
 static void prepareToRenderImage(GPU_Renderer* renderer, GPU_Target* target, GPU_Image* image)
 {
     GPU_Context* context = renderer->current_context_target->context;
@@ -881,18 +897,7 @@ static void prepareToRenderImage(GPU_Renderer* renderer, GPU_Target* target, GPU
     }
 
     // Blitting
-    if(target->use_color)
-    {
-		SDL_Color color;
-		color.r = MIX_COLOR_COMPONENT(target->color.r, image->color.r);
-		color.g = MIX_COLOR_COMPONENT(target->color.g, image->color.g);
-		color.b = MIX_COLOR_COMPONENT(target->color.b, image->color.b);
-		GET_ALPHA(color) = MIX_COLOR_COMPONENT(GET_ALPHA(target->color), GET_ALPHA(image->color));
-
-        changeColor(renderer, color);
-    }
-    else
-        changeColor(renderer, image->color);
+    changeColor(renderer, get_complete_mod_color(renderer, target, image));
     changeBlending(renderer, image->use_blending);
     changeBlendMode(renderer, image->blend_mode);
 
@@ -4510,6 +4515,7 @@ static_inline void submit_buffer_data(int bytes, float* values, int bytes_indice
 }
 
 
+static void SetAttributefv(GPU_Renderer* renderer, int location, int num_elements, float* value);
 
 // Assumes the right format
 static void TriangleBatchX(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* target, unsigned short num_vertices, void* values, unsigned int num_indices, unsigned short* indices, GPU_BatchFlagEnum flags)
@@ -4813,6 +4819,12 @@ static void TriangleBatchX(GPU_Renderer* renderer, GPU_Image* image, GPU_Target*
             {
                 glEnableVertexAttribArray(context->current_shader_block.color_loc);
                 glVertexAttribPointer(context->current_shader_block.color_loc, size_colors, (use_byte_colors? GL_UNSIGNED_BYTE : GL_FLOAT), GL_FALSE, stride, (void*)(offset_colors));
+            }
+            else
+            {
+                SDL_Color color = get_complete_mod_color(renderer, target, image);
+                float default_color[4] = {color.r/255.0f, color.g/255.0f, color.b/255.0f, color.a/255.0f};
+                SetAttributefv(renderer, context->current_shader_block.color_loc, 4, default_color);
             }
         }
 
