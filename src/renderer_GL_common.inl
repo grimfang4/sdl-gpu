@@ -4493,7 +4493,7 @@ static_inline void submit_buffer_data(int bytes, float* values, int bytes_indice
     #ifdef SDL_GPU_USE_BUFFER_PIPELINE
         #ifdef SDL_GPU_USE_BUFFER_MAPPING
         float* data = (float*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-        unsigned short* data_i = (unsigned short*)glMapBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_WRITE_ONLY);
+        unsigned short* data_i = (indices == NULL? NULL : (unsigned short*)glMapBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_WRITE_ONLY));
         if(data != NULL)
         {
             memcpy(data, values, bytes);
@@ -4506,10 +4506,12 @@ static_inline void submit_buffer_data(int bytes, float* values, int bytes_indice
         }
         #elif defined(SDL_GPU_USE_BUFFER_RESET)
         glBufferData(GL_ARRAY_BUFFER, bytes, values, GL_STREAM_DRAW);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, bytes_indices, indices, GL_DYNAMIC_DRAW);
+        if(indices != NULL)
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, bytes_indices, indices, GL_DYNAMIC_DRAW);
         #else
         glBufferSubData(GL_ARRAY_BUFFER, 0, bytes, values);
-        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, bytes_indices, indices);
+        if(indices != NULL)
+            glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, bytes_indices, indices);
         #endif
     #endif
 }
