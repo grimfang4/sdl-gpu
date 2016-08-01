@@ -2956,7 +2956,7 @@ static SDL_Surface* pack_surface_if_needed(SDL_Surface* surface)
         return NULL;
 
     // Reformat the data into a tightly packed array
-    result = SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, surface->format->BytesPerPixel, surface->format->Rmask, surface->format->Gmask, surface->format->Bmask, surface->format->Amask);
+    result = SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, surface->format->BitsPerPixel, surface->format->Rmask, surface->format->Gmask, surface->format->Bmask, surface->format->Amask);
 
     if(result == NULL)
     {
@@ -2970,7 +2970,7 @@ static SDL_Surface* pack_surface_if_needed(SDL_Surface* surface)
     // Copy to the new surface
     {
         int i;
-        for(i = 0; i < width; ++i)
+        for(i = 0; i < height; ++i)
         {
             memcpy((Uint8*)result->pixels + i*packed_pitch, surface->pixels + surface->pitch*i, packed_pitch);
         }
