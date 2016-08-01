@@ -5759,7 +5759,11 @@ static GPU_bool LinkShaderProgram(GPU_Renderer* renderer, Uint32 program_object)
 
     if(!IsFeatureEnabled(renderer, GPU_FEATURE_BASIC_SHADERS))
         return GPU_FALSE;
-
+    
+    // Bind the position attribute to location 0.
+    // We always pass position data (right?), but on some systems (e.g. GL 2 on OS X), color is bound to 0
+    // and the shader won't run when TriangleBatch uses GPU_BATCH_XY_ST (no color array).  Guess they didn't consider default attribute values...
+    glBindAttribLocation(program_object, 0, "gpu_Vertex");
 	glLinkProgram(program_object);
 
 	glGetProgramiv(program_object, GL_LINK_STATUS, &linked);
