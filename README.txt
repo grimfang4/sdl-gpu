@@ -5,6 +5,22 @@ SDL_gpu is licensed under the terms of the MIT License.
 See LICENSE.txt for details of the usage license granted to you for this code.
 
 
+========
+FEATURES
+========
+
+* High performance (it automatically collects and submits batches instead of separate draw commands for each sprite and redundant state changes)
+* Shader API
+* Arbitrary geometry rendering (triangles)
+* Can be integrated with explicit OpenGL calls (mixed 2D and 3D)
+* Full blend state control
+* Built-in primitive shapes (points, lines, tris, rects, ellipses, polygons, even arcs)
+* Uses a style familiar to SDL 1.2 users
+* Compatible with either SDL 1.2 or 2.0
+* Loads BMP, TGA, and PNG files via stb-image
+* Rotates and scales about the center of images, making reasoning about the resulting corner coordinates more obvious (adjustable via anchor settings)
+
+
 =============
 LATEST SOURCE
 =============
@@ -48,15 +64,49 @@ INCLUDING / LINKING
 Add the include for SDL_gpu.h to your sources.  Link to SDL_gpu (libSDL_gpu.a) or SDL2_gpu (if you use SDL2).
 
 
-=============
-DOCUMENTATION
-=============
+==================
+FULL DOCUMENTATION
+==================
 
 Documentation is automatically generated with Doxygen (http://sourceforge.net/projects/doxygen).
 Pre-generated documentation is hosted by DinoMage Games:
 http://dinomage.com/reference/SDL_gpu/
 
 
+==========
+CONVERSION
+==========
 
+SDL_gpu can be used to replace the SDL_Render subsystem of SDL2.  SDL_gpu uses GPU_Target to represent a render target (a render destination, e.g. the screen) instead of an SDL_Renderer object.  SDL_gpu also uses GPU_Image as a texture container (a render source) instead of SDL_Texture.
 
+Here is a list of most of the comparable functions:
+
+SDL_CreateWindow() : Either use GPU_SetInitWindow() or replace with GPU_Init()
+SDL_CreateRenderer() : GPU_Init()
+SDL_LoadBMP() : GPU_LoadImage() or GPU_LoadSurface()
+SDL_CreateTextureFromSurface() : GPU_CopyImageFromSurface()
+SDL_SetRenderDrawColor() : Pass color into rendering function (e.g. GPU_ClearRGBA(), GPU_Line())
+SDL_RenderClear() : GPU_Clear(), GPU_ClearRGBA()
+SDL_QueryTexture() : image->w, image->h
+SDL_RenderCopy() : GPU_Blit()
+SDL_RenderPresent() : GPU_Flip()
+SDL_DestroyTexture() : GPU_FreeImage()
+SDL_DestroyRenderer() : GPU_FreeTarget() (but don't free the screen target yourself)
+
+SDL_RenderDrawPoint() : GPU_Pixel()
+SDL_RenderDrawLine() : GPU_Line()
+SDL_RenderDrawRect() : GPU_Rectangle()
+SDL_RenderFillRect() : GPU_RectangleFilled()
+SDL_RenderCopyEx() : GPU_BlitRotate() or GPU_BlitScale() or GPU_BlitTransform()
+SDL_SetRenderDrawBlendMode() : GPU_SetShapeBlendMode()
+SDL_SetTextureBlendMode() : GPU_SetBlendMode()
+SDL_SetTextureColorMod() : GPU_SetRGBA() or GPU_SetColor()
+SDL_SetTextureAlphaMod() : GPU_SetRGBA() or GPU_SetColor()
+SDL_UpdateTexture() : GPU_UpdateImage() or GPU_UpdateImageBytes()
+SDL_RenderSetClipRect() : GPU_SetClip() or GPU_SetClipRect()
+SDL_RenderReadPixels() : GPU_CopySurfaceFromTarget() or GPU_CopySurfaceFromImage()
+SDL_RenderSetViewport() : GPU_SetViewport()
+SDL_SetRenderTarget() : GPU_LoadTarget()
+
+Some SDL functions use a rectangular region passed as an SDL_Rect.  SDL_gpu uses floating point coordinates for subpixel precision, so you may have to use GPU_Rect for some SDL_gpu functions.
 
