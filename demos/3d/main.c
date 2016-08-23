@@ -16,15 +16,23 @@ void begin_3d(GPU_Target* screen)
 {
     GPU_FlushBlitBuffer();
     
+    
     GPU_MatrixMode(GPU_MODELVIEW);
+    GPU_PushMatrix();
     GPU_LoadIdentity();
     GPU_MatrixMode(GPU_PROJECTION);
+    GPU_PushMatrix();
     GPU_LoadIdentity();
 }
 
 void end_3d(GPU_Target* screen)
 {
     GPU_ResetRendererState();
+    
+    GPU_MatrixMode(GPU_MODELVIEW);
+    GPU_PopMatrix();
+    GPU_MatrixMode(GPU_PROJECTION);
+    GPU_PopMatrix();
 }
 
 void draw_spinning_triangle()
