@@ -43,10 +43,10 @@ precision mediump int;\n\
 \
 in vec2 gpu_Vertex;\n\
 in vec2 gpu_TexCoord;\n\
-in vec4 gpu_Color;\n\
+in mediump vec4 gpu_Color;\n\
 uniform mat4 gpu_ModelViewProjectionMatrix;\n\
 \
-out vec4 color;\n\
+out mediump vec4 color;\n\
 out vec2 texCoord;\n\
 \
 void main(void)\n\
@@ -67,10 +67,10 @@ precision mediump float;\n\
 precision mediump int;\n\
 \
 in vec2 gpu_Vertex;\n\
-in vec4 gpu_Color;\n\
+in mediump vec4 gpu_Color;\n\
 uniform mat4 gpu_ModelViewProjectionMatrix;\n\
 \
-out vec4 color;\n\
+out mediump vec4 color;\n\
 \
 void main(void)\n\
 {\n\
@@ -88,7 +88,7 @@ precision mediump float;\n\
 #endif\n\
 precision mediump int;\n\
 \
-in vec4 color;\n\
+in mediump vec4 color;\n\
 in vec2 texCoord;\n\
 \
 uniform sampler2D tex;\n\
@@ -109,7 +109,7 @@ precision mediump float;\n\
 #endif\n\
 precision mediump int;\n\
 \
-in vec4 color;\n\
+in mediump vec4 color;\n\
 \
 out vec4 fragColor;\n\
 \
