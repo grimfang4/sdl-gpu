@@ -34,7 +34,11 @@
 
 #define GPU_DEFAULT_TEXTURED_VERTEX_SHADER_SOURCE \
 "#version 300 es\n\
+#ifdef GL_FRAGMENT_PRECISION_HIGH\n\
+precision highp float;\n\
+#else\n\
 precision mediump float;\n\
+#endif\n\
 precision mediump int;\n\
 \
 in vec2 gpu_Vertex;\n\
@@ -55,7 +59,11 @@ void main(void)\n\
 // Tier 3 uses shader attributes to send position, texcoord, and color data for each vertex.
 #define GPU_DEFAULT_UNTEXTURED_VERTEX_SHADER_SOURCE \
 "#version 300 es\n\
+#ifdef GL_FRAGMENT_PRECISION_HIGH\n\
+precision highp float;\n\
+#else\n\
 precision mediump float;\n\
+#endif\n\
 precision mediump int;\n\
 \
 in vec2 gpu_Vertex;\n\
@@ -73,7 +81,11 @@ void main(void)\n\
 
 #define GPU_DEFAULT_TEXTURED_FRAGMENT_SHADER_SOURCE \
 "#version 300 es\n\
+#ifdef GL_FRAGMENT_PRECISION_HIGH\n\
+precision highp float;\n\
+#else\n\
 precision mediump float;\n\
+#endif\n\
 precision mediump int;\n\
 \
 in vec4 color;\n\
@@ -90,7 +102,11 @@ void main(void)\n\
 
 #define GPU_DEFAULT_UNTEXTURED_FRAGMENT_SHADER_SOURCE \
 "#version 300 es\n\
+#ifdef GL_FRAGMENT_PRECISION_HIGH\n\
+precision highp float;\n\
+#else\n\
 precision mediump float;\n\
+#endif\n\
 precision mediump int;\n\
 \
 in vec4 color;\n\
