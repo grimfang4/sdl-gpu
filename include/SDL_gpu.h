@@ -26,9 +26,27 @@ extern "C" {
 
 
 // Check for bool support
-#define GPU_HAVE_C99 (defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L))
-#define GPU_HAVE_GNUC defined(__GNUC__) // catches both gcc and clang I believe
-#define GPU_HAVE_MSVC18 (defined(_MSC_VER) &&  (_MSC_VER >= 1800)) // VS2013+
+#ifdef __STDC_VERSION__
+    #define GPU_HAVE_STDC 1
+#else
+    #define GPU_HAVE_STDC 0
+#endif
+
+#define GPU_HAVE_C99 (GPU_HAVE_STDC && (__STDC_VERSION__ >= 199901L))
+
+#ifdef __GNUC__ // catches both gcc and clang I believe
+    #define GPU_HAVE_GNUC 1
+#else
+    #define GPU_HAVE_GNUC 0
+#endif
+
+#ifdef _MSC_VER
+    #define GPU_HAVE_MSVC 1
+#else
+    #define GPU_HAVE_MSVC 0
+#endif
+
+#define GPU_HAVE_MSVC18 (GPU_HAVE_MSVC && (_MSC_VER >= 1800)) // VS2013+
 
 #if defined(GPU_USE_REAL_BOOL) && GPU_USE_REAL_BOOL  // allow user to specify
     #define GPU_bool bool

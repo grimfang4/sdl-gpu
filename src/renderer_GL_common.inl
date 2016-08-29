@@ -4492,6 +4492,7 @@ static_inline void submit_buffer_data(int bytes, float* values, int bytes_indice
 {
     #ifdef SDL_GPU_USE_BUFFER_PIPELINE
         #ifdef SDL_GPU_USE_BUFFER_MAPPING
+        // NOTE: On the Raspberry Pi, you may have to use GL_DYNAMIC_DRAW instead of GL_STREAM_DRAW for textures to work with glMapBuffer().
         float* data = (float*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
         unsigned short* data_i = (indices == NULL? NULL : (unsigned short*)glMapBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_WRITE_ONLY));
         if(data != NULL)
