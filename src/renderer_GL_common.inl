@@ -4475,7 +4475,7 @@ static void TriangleBatchX(GPU_Renderer* renderer, GPU_Image* image, GPU_Target*
 	GPU_bool use_colors = (flags & (GPU_BATCH_RGB | GPU_BATCH_RGBA | GPU_BATCH_RGB8 | GPU_BATCH_RGBA8));
 	GPU_bool use_byte_colors = (flags & (GPU_BATCH_RGB8 | GPU_BATCH_RGBA8));
 	GPU_bool use_z = (flags & GPU_BATCH_XYZ);
-	GPU_bool use_a = (flags & GPU_BATCH_RGBA);
+	GPU_bool use_a = (flags & (GPU_BATCH_RGBA | GPU_BATCH_RGBA8));
 
     if(num_vertices == 0)
         return;
@@ -4762,7 +4762,14 @@ static void TriangleBatchX(GPU_Renderer* renderer, GPU_Image* image, GPU_Target*
             if(use_colors)
             {
                 glEnableVertexAttribArray(context->current_shader_block.color_loc);
-                glVertexAttribPointer(context->current_shader_block.color_loc, size_colors, (use_byte_colors? GL_UNSIGNED_BYTE : GL_FLOAT), GL_FALSE, stride, (void*)(offset_colors));
+                if(use_byte_colors)
+                {
+                    glVertexAttribPointer(context->current_shader_block.color_loc, size_colors, GL_UNSIGNED_BYTE, GL_TRUE, stride, (void*)(offset_colors));
+                }
+                else
+                {
+                    glVertexAttribPointer(context->current_shader_block.color_loc, size_colors, GL_FLOAT, GL_FALSE, stride, (void*)(offset_colors));
+                }
             }
             else
             {
