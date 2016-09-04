@@ -4673,7 +4673,7 @@ static void TriangleBatchX(GPU_Renderer* renderer, GPU_Image* image, GPU_Target*
             unsigned int i;
             unsigned int index;
             float* vertex_pointer = (float*)(values);
-            float* texcoord_pointer = (float*)(values + offset_texcoords);
+            float* texcoord_pointer = (float*)((char*)values + offset_texcoords);
 
             glBegin(GL_TRIANGLES);
             for(i = 0; i < num_indices; i++)
@@ -4686,12 +4686,12 @@ static void TriangleBatchX(GPU_Renderer* renderer, GPU_Image* image, GPU_Target*
                 {
                     if(use_byte_colors)
                     {
-                        Uint8* color_pointer = (Uint8*)(values + offset_colors);
+                        Uint8* color_pointer = (Uint8*)((char*)values + offset_colors);
                         glColor4ub(color_pointer[index], color_pointer[index+1], color_pointer[index+2], (use_a? color_pointer[index+3] : 255));
                     }
                     else
                     {
-                        float* color_pointer = (float*)(values + offset_colors);
+                        float* color_pointer = (float*)((char*)values + offset_colors);
                         glColor4f(color_pointer[index], color_pointer[index+1], color_pointer[index+2], (use_a? color_pointer[index+3] : 1.0f));
                     }
                 }
