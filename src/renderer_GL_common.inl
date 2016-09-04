@@ -4475,7 +4475,7 @@ static void TriangleBatchX(GPU_Renderer* renderer, GPU_Image* image, GPU_Target*
 	GPU_bool use_colors = (flags & (GPU_BATCH_RGB | GPU_BATCH_RGBA | GPU_BATCH_RGB8 | GPU_BATCH_RGBA8));
 	GPU_bool use_byte_colors = (flags & (GPU_BATCH_RGB8 | GPU_BATCH_RGBA8));
 	GPU_bool use_z = (flags & GPU_BATCH_XYZ);
-	GPU_bool use_a = (flags & GPU_BATCH_RGBA);
+	GPU_bool use_a = (flags & (GPU_BATCH_RGBA | GPU_BATCH_RGBA8));
 
     if(num_vertices == 0)
         return;
@@ -4673,7 +4673,7 @@ static void TriangleBatchX(GPU_Renderer* renderer, GPU_Image* image, GPU_Target*
             unsigned int i;
             unsigned int index;
             float* vertex_pointer = (float*)(values);
-            float* texcoord_pointer = (float*)(values + offset_texcoords);
+            float* texcoord_pointer = (float*)((char*)values + offset_texcoords);
 
             glBegin(GL_TRIANGLES);
             for(i = 0; i < num_indices; i++)
@@ -4686,12 +4686,12 @@ static void TriangleBatchX(GPU_Renderer* renderer, GPU_Image* image, GPU_Target*
                 {
                     if(use_byte_colors)
                     {
-                        Uint8* color_pointer = (Uint8*)(values + offset_colors);
+                        Uint8* color_pointer = (Uint8*)((char*)values + offset_colors);
                         glColor4ub(color_pointer[index], color_pointer[index+1], color_pointer[index+2], (use_a? color_pointer[index+3] : 255));
                     }
                     else
                     {
-                        float* color_pointer = (float*)(values + offset_colors);
+                        float* color_pointer = (float*)((char*)values + offset_colors);
                         glColor4f(color_pointer[index], color_pointer[index+1], color_pointer[index+2], (use_a? color_pointer[index+3] : 1.0f));
                     }
                 }
@@ -4762,7 +4762,14 @@ static void TriangleBatchX(GPU_Renderer* renderer, GPU_Image* image, GPU_Target*
             if(use_colors)
             {
                 glEnableVertexAttribArray(context->current_shader_block.color_loc);
-                glVertexAttribPointer(context->current_shader_block.color_loc, size_colors, (use_byte_colors? GL_UNSIGNED_BYTE : GL_FLOAT), GL_FALSE, stride, (void*)(offset_colors));
+                if(use_byte_colors)
+                {
+                    glVertexAttribPointer(context->current_shader_block.color_loc, size_colors, GL_UNSIGNED_BYTE, GL_TRUE, stride, (void*)(offset_colors));
+                }
+                else
+                {
+                    glVertexAttribPointer(context->current_shader_block.color_loc, size_colors, GL_FLOAT, GL_FALSE, stride, (void*)(offset_colors));
+                }
             }
             else
             {
