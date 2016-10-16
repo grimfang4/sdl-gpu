@@ -2026,6 +2026,13 @@ void GPU_Flip(GPU_Target* target)
 {
     if(!CHECK_RENDERER)
         RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL renderer");
+    
+    if(target != NULL && target->context == NULL)
+    {
+        _gpu_current_renderer->impl->FlushBlitBuffer(_gpu_current_renderer);
+        return;
+    }
+    
     MAKE_CURRENT_IF_NONE(target);
     if(!CHECK_CONTEXT)
         RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL context");

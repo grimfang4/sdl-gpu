@@ -1411,7 +1411,7 @@ DECLSPEC void SDLCALL GPU_TriangleBatchX(GPU_Image* image, GPU_Target* target, u
 /*! Send all buffered blitting data to the current context target. */
 DECLSPEC void SDLCALL GPU_FlushBlitBuffer(void);
 
-/*! Updates the given target's associated window. */
+/*! Updates the given target's associated window.  For non-context targets (e.g. image targets), this will flush the blit buffer. */
 DECLSPEC void SDLCALL GPU_Flip(GPU_Target* target);
 
 // End of Rendering
