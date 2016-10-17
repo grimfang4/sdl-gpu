@@ -2963,7 +2963,7 @@ static SDL_Surface* copySurfaceIfNeeded(GPU_Renderer* renderer, GLenum glFormat,
     return surface;
 }
 
-static GPU_Image* CopyImage(GPU_Renderer* renderer, GPU_Image* image)
+static GPU_Image* gpu_copy_image_pixels_only(GPU_Renderer* renderer, GPU_Image* image)
 {
     GPU_Image* result = NULL;
 
@@ -3081,6 +3081,18 @@ static GPU_Image* CopyImage(GPU_Renderer* renderer, GPU_Image* image)
             GPU_PushErrorCode("GPU_CopyImage", GPU_ERROR_BACKEND_ERROR, "Could not copy the given image format.");
         break;
     }
+
+    return result;
+}
+
+static GPU_Image* CopyImage(GPU_Renderer* renderer, GPU_Image* image)
+{
+    GPU_Image* result = NULL;
+
+    if(image == NULL)
+        return NULL;
+
+    result = gpu_copy_image_pixels_only(renderer, image);
 
     if(result != NULL)
     {
@@ -3546,17 +3558,23 @@ static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surf
 
 static GPU_Image* CopyImageFromTarget(GPU_Renderer* renderer, GPU_Target* target)
 {
-	SDL_Surface* surface;
-	GPU_Image* image;
+	GPU_Image* result;
 
     if(target == NULL)
         return NULL;
+    
+    if(target->image != NULL)
+    {
+        result = gpu_copy_image_pixels_only(renderer, target->image);
+    }
+    else
+    {
+        SDL_Surface* surface = renderer->impl->CopySurfaceFromTarget(renderer, target);
+        result = renderer->impl->CopyImageFromSurface(renderer, surface);
+        SDL_FreeSurface(surface);
+    }
 
-    surface = renderer->impl->CopySurfaceFromTarget(renderer, target);
-    image = renderer->impl->CopyImageFromSurface(renderer, surface);
-    SDL_FreeSurface(surface);
-
-    return image;
+    return result;
 }
 
 
