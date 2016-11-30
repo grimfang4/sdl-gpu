@@ -1,0 +1,12 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: SDL_gpu
+Description: SDL_gpu
+Version: @SDL_gpu_VERSION@
+Requires.private: sdl
+Libs: -L${libdir} -lSDL_gpu
+Libs.private: @private_libs@
+Cflags: -I${includedir}/SDL
