@@ -1466,7 +1466,7 @@ void GPU_BlitRectX(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, GPU
     if(flip_direction & GPU_FLIP_VERTICAL)
         scale_y = -scale_y;
     
-    GPU_BlitTransformX(image, src_rect, target, dx + pivot_x, dy + pivot_y, pivot_x, pivot_y, degrees, scale_x, scale_y);
+    GPU_BlitTransformX(image, src_rect, target, dx + pivot_x * scale_x, dy + pivot_y * scale_y, pivot_x, pivot_y, degrees, scale_x, scale_y);
 }
 
 void GPU_TriangleBatch(GPU_Image* image, GPU_Target* target, unsigned short num_vertices, float* values, unsigned int num_indices, unsigned short* indices, GPU_BatchFlagEnum flags)
