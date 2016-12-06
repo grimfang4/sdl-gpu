@@ -88,7 +88,7 @@ SDL_CreateTextureFromSurface() : GPU_CopyImageFromSurface()
 SDL_SetRenderDrawColor() : Pass color into rendering function (e.g. GPU_ClearRGBA(), GPU_Line())
 SDL_RenderClear() : GPU_Clear(), GPU_ClearRGBA()
 SDL_QueryTexture() : image->w, image->h
-SDL_RenderCopy() : GPU_Blit()
+SDL_RenderCopy() : GPU_Blit() or GPU_BlitRect()
 SDL_RenderPresent() : GPU_Flip()
 SDL_DestroyTexture() : GPU_FreeImage()
 SDL_DestroyRenderer() : GPU_FreeTarget() (but don't free the screen target yourself)
