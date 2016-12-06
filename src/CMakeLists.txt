@@ -153,7 +153,11 @@ source_group(Common FILES ${SDL_gpu_SRCS} ${SDL_gpu_HDRS})
 
 # Install the headers and library
 if(SDL_gpu_INSTALL)
-	install(FILES ${SDL_gpu_install_HDRS} DESTINATION include/SDL)
+	if(SDL_gpu_USE_SDL1)
+		install(FILES ${SDL_gpu_install_HDRS} DESTINATION include/SDL)
+	else(SDL_gpu_USE_SDL1)
+		install(FILES ${SDL_gpu_install_HDRS} DESTINATION include/SDL2)
+	endif(SDL_gpu_USE_SDL1)
 
 	if(SDL_gpu_BUILD_SHARED)
 		install(TARGETS SDL_gpu_shared EXPORT SDL_gpu-targets DESTINATION lib)
