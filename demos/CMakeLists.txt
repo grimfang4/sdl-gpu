@@ -1,4 +1,5 @@
 include_directories (${SDL_gpu_SOURCE_DIR})
+link_directories (${SDL_gpu_SOURCE_DIR}/src)
 
 set(DEMO_LIBS ${SDL_gpu_LIBRARY} ${SDL_gpu_GL_LIBRARIES})
 

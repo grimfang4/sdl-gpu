@@ -1,5 +1,6 @@
 include_directories (${SDL_gpu_SOURCE_DIR})
 include_directories (${SDL_gpu_SOURCE_DIR}/common)
+link_directories (${SDL_gpu_SOURCE_DIR}/src)
 
 set(TOOL_LIBS test-common ${SDL_gpu_LIBRARY})
 
