@@ -1,7 +1,7 @@
 include_directories (${SDL_gpu_SOURCE_DIR})
 include_directories (${SDL_gpu_SOURCE_DIR}/common)
 
-set(TEST_LIBS test-common SDL_gpu ${SDL_gpu_GL_LIBRARIES})
+set(TEST_LIBS test-common ${SDL_gpu_LIBRARY} ${SDL_gpu_GL_LIBRARIES})
 
 if(MINGW)
     set(TEST_LIBS ${TEST_LIBS} mingw32)

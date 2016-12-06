@@ -1,10 +1,10 @@
 include_directories (${SDL_gpu_SOURCE_DIR})
 include_directories (${SDL_gpu_SOURCE_DIR}/common)
 
-set(TEST_LIBS test-common SDL_gpu)
+set(TOOL_LIBS test-common ${SDL_gpu_LIBRARY})
 
 add_executable(compare-images compare-images-src/main.c)
-target_link_libraries (compare-images ${TEST_LIBS})
+target_link_libraries (compare-images ${TOOL_LIBS})
 
 add_executable(thumb-viewer thumb-viewer-src/main.c)
-target_link_libraries (thumb-viewer ${TEST_LIBS})
+target_link_libraries (thumb-viewer ${TOOL_LIBS})

@@ -78,6 +78,12 @@ endif()
 
 set(SDL_gpu_VERSION 0.11.0)
 
+if (SDL_gpu_USE_SDL1)
+    set(SDL_gpu_LIBRARY SDL_gpu)
+else (SDL_gpu_USE_SDL1)
+    set(SDL_gpu_LIBRARY SDL2_gpu)
+endif (SDL_gpu_USE_SDL1)
+
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/scripts)
 
 if(APPLE)
