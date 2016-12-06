@@ -1686,14 +1686,16 @@ static void MakeCurrent(GPU_Renderer* renderer, GPU_Target* target, Uint32 windo
 {
 	SDL_Window* window;
 
-    if(target == NULL)
+    if(target == NULL || target->context == NULL)
         return;
     
     if(target->image != NULL)
         return;
     
 
+    #ifdef SDL_GPU_USE_SDL2
     if(target->context->context != NULL)
+    #endif
     {
         renderer->current_context_target = target;
         #ifdef SDL_GPU_USE_SDL2
