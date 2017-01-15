@@ -1462,9 +1462,17 @@ void GPU_BlitRectX(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, GPU
     scale_y = dh / h;
     
     if(flip_direction & GPU_FLIP_HORIZONTAL)
+    {
         scale_x = -scale_x;
+        dx += dw;
+        pivot_x = w - pivot_x;
+    }
     if(flip_direction & GPU_FLIP_VERTICAL)
+    {
         scale_y = -scale_y;
+        dy += dh;
+        pivot_y = h - pivot_y;
+    }
     
     GPU_BlitTransformX(image, src_rect, target, dx + pivot_x * scale_x, dy + pivot_y * scale_y, pivot_x, pivot_y, degrees, scale_x, scale_y);
 }
