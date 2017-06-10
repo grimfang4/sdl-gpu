@@ -23,8 +23,9 @@ FEATURES
 HELP OUT
 ========
 
-SDL_gpu is free and open source!  You can help either by contributing a pull request, sending an email, or give me a chance to put more time into it by donating:
-[![paypal](https://www.paypalobjects.com/en_US/i/scr/pixel.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=3WJCLJ3P4BV9A)
+SDL_gpu is free and open source!  You can help either by contributing a pull request, filling out a bug report, sending an email, or give me a chance to put more time into it by donating:
+
+[![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=3WJCLJ3P4BV9A)
 
 Anything you can do to help is really appreciated!
 
