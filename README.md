@@ -5,7 +5,6 @@ SDL_gpu is licensed under the terms of the MIT License.
 See LICENSE.txt for details of the usage license granted to you for this code.
 
 
-========
 FEATURES
 ========
 
@@ -21,59 +20,71 @@ FEATURES
 * Rotates and scales about the center of images, making reasoning about the resulting corner coordinates more obvious (adjustable via anchor settings)
 
 
-=============
+HELP OUT
+========
+
+SDL_gpu is free and open source!  You can help either by contributing a pull request, sending an email, or give me a chance to put more time into it by donating:
+[![paypal](https://www.paypalobjects.com/en_US/i/scr/pixel.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=3WJCLJ3P4BV9A)
+
+Anything you can do to help is really appreciated!
+
+
 LATEST SOURCE
 =============
 
 SDL_gpu is hosted on Github (https://github.com/grimfang4/sdl-gpu).  You can check out the latest version of the source code with Git:
+```
 git clone https://github.com/grimfang4/sdl-gpu.git sdl-gpu
+```
 
 
-============
 DEPENDENCIES
 ============
 
+```
 SDL 1.2 or SDL 2.0 (www.libsdl.org)
 A rendering backend
 	Currently implemented:
 		OpenGL 1.1, 2.0, 3.0, 4.0
 		OpenGL ES 1.1, 2.0, 3.0
+```
 
 
-========
 BUILDING
 ========
 
 SDL_gpu uses CMake (www.cmake.org) to coordinate the library build process.  CMake is available as a GUI program or on the command line.
 
 For Linux/UNIX systems, run CMake in the base directory:
+```
 cmake -G "Unix Makefiles"
 make
 sudo make install
+```
 
 For Linux/UNIX systems, changing the default installation directory can be done like so:
+```
 cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX=/usr
+```
 
 For Windows systems, you can use cmake-gui and select appropriate options in there (warning: cmake-gui is messy!).
 
 
-===================
 INCLUDING / LINKING
 ===================
 
 Add the include for SDL_gpu.h to your sources.  Link to SDL_gpu (libSDL_gpu.a) or SDL2_gpu (if you use SDL2).
 
 
-==================
 FULL DOCUMENTATION
 ==================
 
 Documentation is automatically generated with Doxygen (http://sourceforge.net/projects/doxygen).
+
 Pre-generated documentation is hosted by DinoMage Games:
 http://dinomage.com/reference/SDL_gpu/
 
 
-==========
 CONVERSION
 ==========
 
@@ -81,6 +92,7 @@ SDL_gpu can be used to replace the SDL_Render subsystem of SDL2.  SDL_gpu uses G
 
 Here is a list of most of the comparable functions:
 
+```
 SDL_CreateWindow() : Either use GPU_SetInitWindow() or replace with GPU_Init()
 SDL_CreateRenderer() : GPU_Init()
 SDL_LoadBMP() : GPU_LoadImage() or GPU_LoadSurface()
@@ -107,6 +119,7 @@ SDL_RenderSetClipRect() : GPU_SetClip() or GPU_SetClipRect()
 SDL_RenderReadPixels() : GPU_CopySurfaceFromTarget() or GPU_CopySurfaceFromImage()
 SDL_RenderSetViewport() : GPU_SetViewport()
 SDL_SetRenderTarget() : GPU_LoadTarget()
+```
 
 Some SDL functions use a rectangular region passed as an SDL_Rect.  SDL_gpu uses floating point coordinates for subpixel precision, so you may have to use GPU_Rect for some SDL_gpu functions.
 
