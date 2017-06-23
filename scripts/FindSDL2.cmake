@@ -26,12 +26,20 @@ find_path(SDL2_INCLUDE_DIR NAMES SDL.h
           DOC "The SDL include directory"
 )
 
+if(CMAKE_SIZEOF_VOID_P EQUAL 4)
+   set(SDL2_LIBRARY_PATH_SUFFIXES lib/x86)
+else()
+   set(SDL2_LIBRARY_PATH_SUFFIXES lib/x64)
+endif()
+
 find_library(SDL2_LIBRARY NAMES SDL2 sdl2 sdl2 sdl-2.0
+          PATH_SUFFIXES ${SDL2_LIBRARY_PATH_SUFFIXES}
           DOC "The SDL library"
 )
 
 if(WIN32)
-	find_library(SDL2MAIN_LIBRARY NAMES SDL2main sdl2main 
+	find_library(SDL2MAIN_LIBRARY NAMES SDL2main sdl2main
+        PATH_SUFFIXES ${SDL2_LIBRARY_PATH_SUFFIXES}
 		DOC "The SDLmain library needed on some platforms when builing an application (opposed to a library)"
 )
 else()
