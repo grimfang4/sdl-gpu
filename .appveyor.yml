@@ -19,7 +19,7 @@ clone_folder: c:\projects\SDL_gpu
 
 install:
   # Download SDL.
-  - ps: Start-FileDownload 'https://www.libsdl.org/release/SDL2-devel-2.0.5-VC.zip' "%P%/SDL.zip"
+  - ps: Start-FileDownload 'https://www.libsdl.org/release/SDL2-devel-2.0.5-VC.zip' %P%/SDL.zip
   
   # Extract it, put it in the right place, and rename it.
   - cd %P% && 7z x SDL.zip && ren SDL2-2.0.5 SDL && cd c:\projects\SDL_gpu
