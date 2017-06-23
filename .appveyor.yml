@@ -18,6 +18,9 @@ shallow_clone: true
 clone_folder: c:\projects\SDL_gpu
 
 install:
+  - mkdir 'c:/projects'
+  - mkdir 'c:/projects/libs'
+  - mkdir 'c:/projects/SDL_gpu'
   # Download SDL.
   - ps: Start-FileDownload 'https://www.libsdl.org/release/SDL2-devel-2.0.5-VC.zip' 'c:/projects/libs/SDL.zip'
   
