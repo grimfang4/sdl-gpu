@@ -1,14 +1,6 @@
 language: c
 
-os:
-  - linux
-  - osx
-
 dist: trusty
-
-compiler:
-  - gcc
-  - clang
 
 addons:
   apt:
@@ -24,11 +16,18 @@ branches:
 
 matrix:
   include:
-  - compiler: gcc
-    env: BUILD=native
+  - os: linux
+    compiler: gcc
+  - os: linux
+    compiler: clang
+  - os: osx
+    compiler: gcc
+    before_install:
+    - brew update
+    - brew install
+        sdl2
   - os: osx
     compiler: clang
-    env: BUILD=native
     before_install:
     - brew update
     - brew install
