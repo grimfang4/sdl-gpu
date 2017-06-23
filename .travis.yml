@@ -1,0 +1,47 @@
+language: c
+
+os:
+  - linux
+  - osx
+
+dist: trusty
+
+compiler:
+  - gcc
+  - clang
+
+addons:
+  apt:
+    packages:
+    - libsdl2-dev
+    - cmake-data
+    - cmake
+
+branches:
+  only:
+    - master
+
+
+matrix:
+  include:
+  - compiler: gcc
+    env: BUILD=native
+  - os: osx
+    compiler: clang
+    env: BUILD=native
+    before_install:
+    - brew update
+    - brew install
+        sdl2
+
+before_script:
+    - if [[ "$BUILD" == "native" ]]; then
+      $CC --version;
+      cmake --version;
+      sdl2-config --version;
+      fi
+    - mkdir build
+    - cd build
+    - cmake -DSDL_gpu_BUILD_DEMOS=ON -DSDL_gpu_BUILD_TESTS=ON -DSDL_gpu_BUILD_TOOLS=ON -DSDL_gpu_BUILD_SHARED=ON -DSDL_gpu_BUILD_STATIC=ON ..
+
+script: make
