@@ -8,6 +8,8 @@ addons:
     - libsdl2-dev
     - cmake-data
     - cmake
+    - doxygen
+    - graphviz
 
 branches:
   only:
@@ -18,6 +20,9 @@ matrix:
   include:
   - os: linux
     compiler: gcc
+    after_success:
+    - make doc
+    #- COPY DOCS TO SERVER
   - os: linux
     compiler: clang
   - os: osx
