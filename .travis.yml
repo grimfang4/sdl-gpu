@@ -43,7 +43,7 @@ deploy:
   provider: pages
   skip_cleanup: true
   github_token: $GithubDocsToken
-  local_dir: doc/
+  #local_dir: doc/
   on:
     branch: master
         
