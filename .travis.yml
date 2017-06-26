@@ -22,9 +22,7 @@ matrix:
     compiler: gcc
     after_success:
     - make doc
-    - mkdir doc
-    - mv html doc/
-    - cp ../README.md doc/
+    - cd html
   - os: linux
     compiler: clang
   - os: osx
