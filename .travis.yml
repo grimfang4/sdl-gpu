@@ -23,6 +23,13 @@ matrix:
     after_success:
     - make doc
     - cd html
+    deploy:
+      provider: pages
+      skip_cleanup: true
+      github_token: $GithubDocsToken
+      #local_dir: html/
+      on:
+        branch: master
   - os: linux
     compiler: clang
   - os: osx
@@ -39,15 +46,6 @@ matrix:
         sdl2
 
 
-deploy:
-  provider: pages
-  skip_cleanup: true
-  github_token: $GithubDocsToken
-  #local_dir: html/
-  on:
-    branch: master
-    os: linux
-    compiler: gcc
 before_script:
     - if [[ "$BUILD" == "native" ]]; then
       $CC --version;
