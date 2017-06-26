@@ -14,13 +14,6 @@ addons:
 branches:
   only:
     - master
-
-deploy:
-  provider: pages
-  skip_cleanup: true
-  github_token: $GithubDocsToken
-  on:
-    branch: master
     
 
 matrix:
@@ -29,7 +22,9 @@ matrix:
     compiler: gcc
     after_success:
     - make doc
-    #- COPY DOCS TO SERVER
+    - mkdir doc
+    - mv html doc/
+    - cp ../README.md doc/
   - os: linux
     compiler: clang
   - os: osx
@@ -45,6 +40,15 @@ matrix:
     - brew install
         sdl2
 
+
+deploy:
+  provider: pages
+  skip_cleanup: true
+  github_token: $GithubDocsToken
+  local_dir: doc/
+  on:
+    branch: master
+        
 before_script:
     - if [[ "$BUILD" == "native" ]]; then
       $CC --version;
