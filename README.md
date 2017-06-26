@@ -54,6 +54,11 @@ A rendering backend
 BUILDING
 ========
 
+You can see automated build status at the project page on Travis CI:
+[![Build Status](https://travis-ci.org/grimfang4/sdl-gpu.svg?branch=master)](https://travis-ci.org/grimfang4/sdl-gpu)
+
+Automated builds will soon be available on the Github.io page.
+
 SDL_gpu uses CMake (www.cmake.org) to coordinate the library build process.  CMake is available as a GUI program or on the command line.
 
 For Linux/UNIX systems, run CMake in the base directory:
@@ -82,8 +87,8 @@ FULL DOCUMENTATION
 
 Documentation is automatically generated with Doxygen (http://sourceforge.net/projects/doxygen).
 
-Pre-generated documentation is hosted by DinoMage Games:
-http://dinomage.com/reference/SDL_gpu/
+Pre-generated documentation can be found on the Github.io page:
+https://grimfang4.github.io/sdl-gpu/
 
 
 CONVERSION
