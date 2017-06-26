@@ -43,10 +43,11 @@ deploy:
   provider: pages
   skip_cleanup: true
   github_token: $GithubDocsToken
-  #local_dir: doc/
+  #local_dir: html/
   on:
     branch: master
-        
+    os: linux
+    compiler: gcc
 before_script:
     - if [[ "$BUILD" == "native" ]]; then
       $CC --version;
