@@ -81,6 +81,15 @@ if(APPLE)
 	set(CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE)
 endif()
 
+
+# Copy includes to output lib/include
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/lib/include)
+foreach(INC_FILE ${SDL_gpu_install_HDRS})
+    get_filename_component(BASE ${INC_FILE} NAME)
+    configure_file(${INC_FILE} ${CMAKE_BINARY_DIR}/lib/include/${BASE} COPYONLY)
+endforeach(INC_FILE)
+
 # Build the shared library (.so or .dll)
 if(SDL_gpu_BUILD_SHARED)
 	add_library(SDL_gpu_shared SHARED
@@ -99,6 +108,9 @@ if(SDL_gpu_BUILD_SHARED)
 			VERSION ${SDL_gpu_VERSION}
 			SOVERSION ${SDL_gpu_VERSION}
 			OUTPUT_NAME ${SDL_gpu_OUTPUT_NAME}
+			ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+			LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+			RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 		)
 		# Short Version is the "marketing version". It is the version
 		# the user sees in an information panel.
@@ -115,12 +127,18 @@ if(SDL_gpu_BUILD_SHARED)
 			set_target_properties(SDL_gpu_shared PROPERTIES
 				OUTPUT_NAME ${SDL_gpu_OUTPUT_NAME}
 				CLEAN_DIRECT_OUTPUT 1
+				ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+				LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+				RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 			)
 		else()
 			set_target_properties(SDL_gpu_shared PROPERTIES
 				OUTPUT_NAME ${SDL_gpu_OUTPUT_NAME}
 				CLEAN_DIRECT_OUTPUT 1
 #				VERSION ${SDL_gpu_VERSION}
+				ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+				LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+				RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 			)
 		endif()
 
@@ -141,6 +159,9 @@ if(SDL_gpu_BUILD_STATIC)
 		OUTPUT_NAME ${SDL_gpu_OUTPUT_NAME}
 		CLEAN_DIRECT_OUTPUT 1
 		VERSION ${SDL_gpu_VERSION}
+		ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+		LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+		RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 	)
 	set_target_properties(SDL_gpu PROPERTIES LINKER_LANGUAGE C)
 	if(APPLE)
