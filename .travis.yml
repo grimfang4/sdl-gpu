@@ -41,7 +41,7 @@ matrix:
       api_key:
         secure: $GithubDocsToken
       on:
-        tags: true
+        branch: master
   - os: linux
     compiler: clang
   - os: osx
