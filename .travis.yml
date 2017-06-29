@@ -21,15 +21,27 @@ matrix:
   - os: linux
     compiler: gcc
     after_success:
+    - tar -zcvf SDL_gpu-bin-linux-gcc.tar.gz lib
     - make doc
-    - cd html
+    - tar -zcvf SDL_gpu-docs.tar.gz html
     deploy:
       provider: pages
       skip_cleanup: true
       github_token: $GithubDocsToken
-      #local_dir: html/
+      local_dir: html/
       on:
         branch: master
+    deploy:
+      provider: releases
+      skip_cleanup: true
+      tag_name: latest-linux-gcc
+      file:
+      - SDL_gpu-bin-linux-gcc.tar.gz
+      - SDL_gpu-docs.tar.gz
+      api_key:
+        secure: $GithubDocsToken
+      on:
+        tags: true
   - os: linux
     compiler: clang
   - os: osx
