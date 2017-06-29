@@ -40,6 +40,8 @@ matrix:
       - SDL_gpu-docs.tar.gz
       api_key:
         secure: $GithubDocsToken
+      prerelease: true
+      name: "Automated Linux GCC build"
       on:
         branch: master
   - os: linux
