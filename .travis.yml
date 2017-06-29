@@ -35,12 +35,13 @@ matrix:
       provider: releases
       skip_cleanup: true
       tag_name: latest-linux-gcc
+      overwrite: true
+      prerelease: true
       file:
       - SDL_gpu-bin-linux-gcc.tar.gz
       - SDL_gpu-docs.tar.gz
       api_key:
         secure: $GithubDocsToken
-      prerelease: true
       name: "Automated Linux GCC build"
       on:
         branch: master
