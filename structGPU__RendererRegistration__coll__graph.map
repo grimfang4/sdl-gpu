@@ -1,0 +1,15 @@
+<map id="GPU_RendererRegistration" name="GPU_RendererRegistration">
+<area shape="rect" id="node2" href="$structGPU__RendererID.html" title="GPU_RendererID" alt="" coords="77,5,203,32"/>
+<area shape="rect" id="node3" href="$structGPU__Renderer.html" title="GPU_Renderer" alt="" coords="186,155,296,181"/>
+<area shape="rect" id="node4" href="$structGPU__Target.html" title="GPU_Target" alt="" coords="591,259,685,285"/>
+<area shape="rect" id="node11" href="$structGPU__Image.html" title="GPU_Image" alt="" coords="662,437,756,464"/>
+<area shape="rect" id="node12" href="$structGPU__RendererImpl.html" title="GPU_RendererImpl" alt="" coords="527,792,661,819"/>
+<area shape="rect" id="node5" href="$structGPU__Context.html" title="GPU_Context" alt="" coords="579,155,683,181"/>
+<area shape="rect" id="node6" href="$structGPU__ShaderBlock.html" title="GPU_ShaderBlock" alt="" coords="494,5,625,32"/>
+<area shape="rect" id="node7" href="$structGPU__MatrixStack.html" title="GPU_MatrixStack" alt="" coords="693,5,821,32"/>
+<area shape="rect" id="node8" href="$structGPU__BlendMode.html" title="GPU_BlendMode" alt="" coords="911,5,1033,32"/>
+<area shape="rect" id="node9" href="$structGPU__Rect.html" title="GPU_Rect" alt="" coords="707,155,793,181"/>
+<area shape="rect" id="node10" href="$structGPU__Camera.html" title="GPU_Camera" alt="" coords="819,155,923,181"/>
+<area shape="rect" id="node13" href="$structGPU__Attribute.html" title="GPU_Attribute" alt="" coords="939,437,1045,464"/>
+<area shape="rect" id="node14" href="$structGPU__AttributeFormat.html" title="GPU_AttributeFormat" alt="" coords="1075,259,1223,285"/>
+</map>
