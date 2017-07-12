@@ -4452,7 +4452,11 @@ static int get_lowest_attribute_num_values(GPU_CONTEXT_DATA* cdata, int cap)
 static_inline void submit_buffer_data(int bytes, float* values, int bytes_indices, unsigned short* indices)
 {
     #ifdef SDL_GPU_USE_BUFFER_PIPELINE
-        #ifdef SDL_GPU_USE_BUFFER_MAPPING
+        #if defined(SDL_GPU_USE_BUFFER_RESET)
+        glBufferData(GL_ARRAY_BUFFER, bytes, values, GL_STREAM_DRAW);
+        if(indices != NULL)
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, bytes_indices, indices, GL_DYNAMIC_DRAW);
+        #elif defined(SDL_GPU_USE_BUFFER_MAPPING)
         // NOTE: On the Raspberry Pi, you may have to use GL_DYNAMIC_DRAW instead of GL_STREAM_DRAW for buffers to work with glMapBuffer().
         float* data = (float*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
         unsigned short* data_i = (indices == NULL? NULL : (unsigned short*)glMapBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_WRITE_ONLY));
@@ -4466,14 +4470,12 @@ static_inline void submit_buffer_data(int bytes, float* values, int bytes_indice
             memcpy(data_i, indices, bytes_indices);
             glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
         }
-        #elif defined(SDL_GPU_USE_BUFFER_RESET)
-        glBufferData(GL_ARRAY_BUFFER, bytes, values, GL_STREAM_DRAW);
-        if(indices != NULL)
-            glBufferData(GL_ELEMENT_ARRAY_BUFFER, bytes_indices, indices, GL_DYNAMIC_DRAW);
-        #else
+        #elif defined(SDL_GPU_USE_BUFFER_UPDATE)
         glBufferSubData(GL_ARRAY_BUFFER, 0, bytes, values);
         if(indices != NULL)
             glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, bytes_indices, indices);
+        #else
+            #error SDL_gpu's VBO upload needs to choose SDL_GPU_USE_BUFFER_RESET, SDL_GPU_USE_BUFFER_MAPPING, or SDL_GPU_USE_BUFFER_UPDATE and none is defined!
         #endif
     #endif
 }

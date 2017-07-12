@@ -58,6 +58,11 @@ option(SDL_gpu_DISABLE_GLES_3 "Disable OpenGLES 3.X renderer" OFF)
 
 option(SDL_gpu_USE_SYSTEM_GLEW "Attempt to use the system GLEW library (may not support GL 3+)" OFF)
 
+option(SDL_gpu_USE_BUFFER_RESET "Upload VBOs by requesting a new one each time (default).  This is often the best for driver optimization)" ON)
+option(SDL_gpu_USE_BUFFER_UPDATE "Upload VBOs by updating only the needed portion" OFF)
+option(SDL_gpu_USE_BUFFER_MAPPING "Upload VBOs by mapping to client memory" OFF)
+
+
 if(APPLE)
 	if(IOS)
 		# iOS 8 may need the framework option
@@ -267,6 +272,16 @@ if(DOXYGEN_FOUND)
 endif(DOXYGEN_FOUND)
 
 add_definitions("-Wall -std=c99 -pedantic")
+
+if (SDL_gpu_USE_BUFFER_RESET)
+    add_definitions("-DSDL_GPU_USE_BUFFER_RESET")
+endif (SDL_gpu_USE_BUFFER_RESET)
+if (SDL_gpu_USE_BUFFER_UPDATE)
+    add_definitions("-DSDL_GPU_USE_BUFFER_UPDATE")
+endif (SDL_gpu_USE_BUFFER_UPDATE)
+if (SDL_gpu_USE_BUFFER_MAPPING)
+    add_definitions("-DSDL_GPU_USE_BUFFER_MAPPING")
+endif (SDL_gpu_USE_BUFFER_MAPPING)
 
 # Build the SDL_gpu library.
 add_subdirectory(src)
