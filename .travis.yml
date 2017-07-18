@@ -22,8 +22,11 @@ matrix:
     compiler: gcc
     after_success:
     - tar -zcvf SDL_gpu-bin-linux-gcc.tar.gz lib
-    - make doc
     - tar -zcvf SDL_gpu-docs.tar.gz html
+    - cd ..
+    - git tag -d latest-linux-gcc;
+    - git push origin :latest-linux-gcc
+    - cd build
     deploy:
       provider: pages
       skip_cleanup: true
