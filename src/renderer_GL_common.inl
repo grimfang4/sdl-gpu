@@ -67,6 +67,12 @@ See a particular renderer's *.c file for specifics. */
 int gpu_strcasecmp(const char* s1, const char* s2);
 
 
+// Default to buffer reset VBO upload method
+#if defined(SDL_GPU_USE_BUFFER_PIPELINE) && !defined(SDL_GPU_USE_BUFFER_RESET) && !defined(SDL_GPU_USE_BUFFER_MAPPING) && !defined(SDL_GPU_USE_BUFFER_UPDATE)
+    #define SDL_GPU_USE_BUFFER_RESET
+#endif
+
+
 // Forces a flush when vertex limit is reached (roughly 1000 sprites)
 #define GPU_BLIT_BUFFER_VERTICES_PER_SPRITE 4
 #define GPU_BLIT_BUFFER_INIT_MAX_NUM_VERTICES (GPU_BLIT_BUFFER_VERTICES_PER_SPRITE*1000)
@@ -4475,7 +4481,7 @@ static_inline void submit_buffer_data(int bytes, float* values, int bytes_indice
         if(indices != NULL)
             glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, bytes_indices, indices);
         #else
-            #error SDL_gpu's VBO upload needs to choose SDL_GPU_USE_BUFFER_RESET, SDL_GPU_USE_BUFFER_MAPPING, or SDL_GPU_USE_BUFFER_UPDATE and none is defined!
+            #error "SDL_gpu's VBO upload needs to choose SDL_GPU_USE_BUFFER_RESET, SDL_GPU_USE_BUFFER_MAPPING, or SDL_GPU_USE_BUFFER_UPDATE and none is defined!"
         #endif
     #endif
 }

@@ -18,9 +18,6 @@ void GPU_FreeRenderer_GLES_2(GPU_Renderer* renderer) {}
 #define SDL_GPU_GLSL_VERSION 100
 
 #define SDL_GPU_USE_BUFFER_PIPELINE
-#ifdef __IPHONEOS__
-    #define SDL_GPU_USE_BUFFER_RESET
-#endif
 #define SDL_GPU_SKIP_ENABLE_TEXTURE_2D
 #define SDL_GPU_ASSUME_SHADERS
 #define SDL_GPU_DISABLE_TEXTURE_GETS
