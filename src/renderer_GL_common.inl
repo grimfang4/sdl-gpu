@@ -2,6 +2,7 @@
 See a particular renderer's *.c file for specifics. */
 
 
+#include <stdint.h>
 #include <stdlib.h>
 #include "SDL_platform.h"
 #include <math.h>
@@ -4494,7 +4495,7 @@ static void TriangleBatchX(GPU_Renderer* renderer, GPU_Image* image, GPU_Target*
 {
     GPU_Context* context;
 	GPU_CONTEXT_DATA* cdata;
-	int stride, offset_texcoords, offset_colors;
+	intptr_t stride, offset_texcoords, offset_colors;
 	int size_vertices, size_texcoords, size_colors;
 
 	GPU_bool using_texture = (image != NULL);

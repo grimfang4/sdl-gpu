@@ -223,7 +223,7 @@ static void ResetRendererState(GPU_Renderer* renderer)
     GPU_Log(" %s (dummy)\n", __func__);
 }
 	
-static Uint8 SetWindowResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
+static GPU_bool SetWindowResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
 {
     GPU_Target* target = renderer->current_context_target;
     
@@ -291,7 +291,7 @@ static void Quit(GPU_Renderer* renderer)
 }
 
 
-static Uint8 SetFullscreen(GPU_Renderer* renderer, Uint8 enable_fullscreen, Uint8 use_desktop_resolution)
+static GPU_bool SetFullscreen(GPU_Renderer* renderer, GPU_bool enable_fullscreen, GPU_bool use_desktop_resolution)
 {
     GPU_Target* target = renderer->current_context_target;
     
@@ -464,7 +464,7 @@ static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, GPU_Fo
 }
 
 
-static GPU_Image* CreateImageUsingTexture(GPU_Renderer* renderer, Uint32 handle, Uint8 take_ownership)
+static GPU_Image* CreateImageUsingTexture(GPU_Renderer* renderer, Uint32 handle, GPU_bool take_ownership)
 {
     GPU_Log(" %s (dummy)\n", __func__);
     
@@ -493,7 +493,7 @@ static GPU_Image* CreateAliasImage(GPU_Renderer* renderer, GPU_Image* image)
 }
 
 
-static Uint8 SaveImage(GPU_Renderer* renderer, GPU_Image* image, const char* filename, GPU_FileFormatEnum format)
+static GPU_bool SaveImage(GPU_Renderer* renderer, GPU_Image* image, const char* filename, GPU_FileFormatEnum format)
 {
     SDL_Surface* surface;
     
@@ -529,7 +529,7 @@ static void UpdateImageBytes(GPU_Renderer* renderer, GPU_Image* image, const GPU
     GPU_Log(" %s (dummy)\n", __func__);
 }
 
-static Uint8 ReplaceImage(GPU_Renderer* renderer, GPU_Image* image, SDL_Surface* surface, const GPU_Rect* surface_rect)
+static GPU_bool ReplaceImage(GPU_Renderer* renderer, GPU_Image* image, SDL_Surface* surface, const GPU_Rect* surface_rect)
 {
     GPU_Log(" %s (dummy)\n", __func__);
     return 0;
@@ -826,7 +826,7 @@ static void FreeShaderProgram(GPU_Renderer* renderer, Uint32 program_object)
     GPU_Log(" %s (dummy)\n", __func__);
 }
 
-static Uint32 CompileShader_RW(GPU_Renderer* renderer, GPU_ShaderEnum shader_type, SDL_RWops* shader_source, Uint8 free_rwops)
+static Uint32 CompileShader_RW(GPU_Renderer* renderer, GPU_ShaderEnum shader_type, SDL_RWops* shader_source, GPU_bool free_rwops)
 {
     GPU_Log(" %s (dummy)\n", __func__);
     
@@ -855,7 +855,7 @@ static void DetachShader(GPU_Renderer* renderer, Uint32 program_object, Uint32 s
     GPU_Log(" %s (dummy)\n", __func__);
 }
 
-static Uint8 LinkShaderProgram(GPU_Renderer* renderer, Uint32 program_object)
+static GPU_bool LinkShaderProgram(GPU_Renderer* renderer, Uint32 program_object)
 {
     GPU_Log(" %s (dummy)\n", __func__);
     
@@ -991,7 +991,7 @@ static void SetUniformfv(GPU_Renderer* renderer, int location, int num_elements_
 }
 
 
-static void SetUniformMatrixfv(GPU_Renderer* renderer, int location, int num_matrices, int num_rows, int num_columns, Uint8 transpose, float* values)
+static void SetUniformMatrixfv(GPU_Renderer* renderer, int location, int num_matrices, int num_rows, int num_columns, GPU_bool transpose, float* values)
 {
     GPU_Log(" %s (dummy)\n", __func__);
 }
