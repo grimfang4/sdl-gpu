@@ -24,8 +24,8 @@ matrix:
     - tar -zcvf SDL_gpu-bin-linux-gcc.tar.gz lib
     - tar -zcvf SDL_gpu-docs.tar.gz html
     - cd ..
-    - git tag -d latest-linux-gcc;
-    - git push origin :latest-linux-gcc
+#    - git tag -d latest-linux-gcc;
+#    - git push origin :latest-linux-gcc
     - cd build
     deploy:
       provider: pages
@@ -34,20 +34,20 @@ matrix:
       local_dir: html/
       on:
         branch: master
-    deploy:
-      provider: releases
-      skip_cleanup: true
-      tag_name: latest-linux-gcc
-      overwrite: true
-      prerelease: true
-      file:
-      - SDL_gpu-bin-linux-gcc.tar.gz
-      - SDL_gpu-docs.tar.gz
-      api_key:
-        secure: $GithubDocsToken
-      name: "Automated Linux GCC build"
-      on:
-        branch: master
+#    deploy:
+#      provider: releases
+#      skip_cleanup: true
+#      tag_name: latest-linux-gcc
+#      overwrite: true
+#      prerelease: true
+#      file:
+#      - SDL_gpu-bin-linux-gcc.tar.gz
+#      - SDL_gpu-docs.tar.gz
+#      api_key:
+#        secure: $GithubDocsToken
+#      name: "Automated Linux GCC build"
+#      on:
+#        branch: master
   - os: linux
     compiler: clang
   - os: osx
