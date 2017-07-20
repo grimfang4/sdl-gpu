@@ -31,7 +31,7 @@ matrix:
       provider: pages
       skip_cleanup: true
       github_token: $GithubDocsToken
-      local_dir: html/
+      local_dir: html
       on:
         branch: master
 #    deploy:
