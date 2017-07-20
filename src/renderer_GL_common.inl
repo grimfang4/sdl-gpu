@@ -6472,6 +6472,8 @@ static void SetAttributeSource(GPU_Renderer* renderer, int num_values, GPU_Attri
         return;
     if(source.location < 0 || source.location >= 16)
         return;
+    
+    FlushBlitBuffer(renderer);
     cdata = (GPU_CONTEXT_DATA*)renderer->current_context_target->context->data;
     a = &cdata->shader_attributes[source.location];
     if(source.format.is_per_sprite)

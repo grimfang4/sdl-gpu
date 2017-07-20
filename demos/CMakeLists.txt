@@ -15,3 +15,6 @@ target_link_libraries (3d-demo ${DEMO_LIBS})
 
 add_executable(tutorial-space-demo tutorial-space/main.c)
 target_link_libraries (tutorial-space-demo ${DEMO_LIBS})
+
+add_executable(simple-shader-demo simple-shader/main.c)
+target_link_libraries (simple-shader-demo ${DEMO_LIBS})
