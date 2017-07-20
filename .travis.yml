@@ -23,10 +23,10 @@ matrix:
     after_success:
     - tar -zcvf SDL_gpu-bin-linux-gcc.tar.gz lib
     - tar -zcvf SDL_gpu-docs.tar.gz html
-    - cd ..
+#    - cd ..
 #    - git tag -d latest-linux-gcc;
 #    - git push origin :latest-linux-gcc
-    - cd build
+#    - cd build
     deploy:
       provider: pages
       skip_cleanup: true

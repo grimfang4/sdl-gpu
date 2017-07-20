@@ -3712,7 +3712,7 @@ static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
         return;
     }
 
-    if(target->context != NULL && target->context->failed)
+    if(!target->is_alias && target->context != NULL && target->context->failed)
     {
         GPU_CONTEXT_DATA* cdata = (GPU_CONTEXT_DATA*)target->context->data;
 
@@ -3747,10 +3747,10 @@ static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
         renderer->impl->FlushBlitBuffer(renderer);
         renderer->current_context_target = NULL;
     }
-    else
+    else if(target->context_target != NULL)
         GPU_MakeCurrent(target->context_target, target->context_target->context->windowID);
 
-    if(!target->is_alias && target->image != NULL)
+    if(target->image != NULL && target->image->target == target)
         target->image->target = NULL;  // Remove reference to this object
 
 
@@ -3765,9 +3765,12 @@ static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
 
     if(renderer->enabled_features & GPU_FEATURE_RENDER_TARGETS)
     {
+        int default_framebuffer_handle = 0;
         if(renderer->current_context_target != NULL)
             flushAndClearBlitBufferIfCurrentFramebuffer(renderer, target);
-        if(data->handle != 0)
+            
+        glGetIntegerv(GL_FRAMEBUFFER_BINDING, &default_framebuffer_handle);
+        if(data->handle != default_framebuffer_handle)
             glDeleteFramebuffers(1, &data->handle);
     }
 
