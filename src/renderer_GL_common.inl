@@ -3036,6 +3036,7 @@ static GPU_Image* gpu_copy_image_pixels_only(GPU_Renderer* renderer, GPU_Image* 
 
             // Don't free the target yet (a waste of perf), but let it be freed next time...
             target->refcount--;
+            ((GPU_TARGET_DATA*)target->data)->refcount--;
         }
         break;
         case GPU_FORMAT_LUMINANCE:
