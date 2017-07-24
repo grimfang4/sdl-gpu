@@ -5,7 +5,7 @@ link_directories (${SDL_gpu_SOURCE_DIR}/src)
 set(TOOL_LIBS test-common SDL_gpu ${SDL_gpu_GL_LIBRARIES})
 
 if(MINGW)
-    set(DEMO_LIBS ${DEMO_LIBS} mingw32)
+    set(TOOL_LIBS ${TOOL_LIBS} mingw32)
 endif(MINGW)
 
 add_executable(compare-images compare-images-src/main.c)
