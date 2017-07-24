@@ -134,5 +134,11 @@ target_link_libraries (transform-matrix-test ${TEST_LIBS})
 add_executable(anchor-test anchor/main.c)
 target_link_libraries (anchor-test ${TEST_LIBS})
 
+add_executable(memory-test memory/main.c)
+target_link_libraries (memory-test ${TEST_LIBS})
+
+add_executable(reinit-test reinit/main.c)
+target_link_libraries (reinit-test ${TEST_LIBS})
+
 add_executable(video-test video/main.c)
 target_link_libraries (video-test ${TEST_LIBS})

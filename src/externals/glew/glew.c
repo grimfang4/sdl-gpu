@@ -225,6 +225,20 @@ static GLuint _glewStrLen (const GLubyte* s)
   return i;
 }
 
+static GLubyte* _glewStrDup (const GLubyte* s)
+{
+  GLuint length = _glewStrLen(s);
+  GLubyte* result = (GLubyte*)malloc(length * sizeof(GLubyte));
+  GLuint i=0;
+  while (s[i] != '\0')
+  {
+    result[i] = s[i];
+    ++i;
+  }
+  result[i] = '\0';
+  return result;
+}
+
 static GLuint _glewStrCLen (const GLubyte* s, GLubyte c)
 {
   GLuint i=0;
@@ -10325,7 +10339,8 @@ GLenum GLEWAPIENTRY glewContextInit (GLEW_CONTEXT_ARG_DEF_LIST)
   }
 
   /* query opengl extensions string */
-  if(GLEW_VERSION_3_0)
+  free(extStart);
+  if(major >= 3)
   {
       GLint n = 0;
       GLint count = 1;
@@ -10359,7 +10374,9 @@ GLenum GLEWAPIENTRY glewContextInit (GLEW_CONTEXT_ARG_DEF_LIST)
         extStart = NULL;
   }
   else
-    extStart = glGetString(GL_EXTENSIONS);
+  {
+    extStart = _glewStrDup(glGetString(GL_EXTENSIONS));
+  }
 
   extEnd = extStart + _glewStrLen(extStart);
 
