@@ -101,6 +101,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
         target->context = (GPU_Context*)malloc(sizeof(GPU_Context));
         memset(target->context, 0, sizeof(GPU_Context));
         
+        target->context->refcount = 1;
         target->context->windowID = windowID;
         target->context->data = NULL;  // Allocate a data structure as needed for other context data
         target->context->context = NULL;
@@ -175,6 +176,8 @@ static GPU_Target* CreateAliasTarget(GPU_Renderer* renderer, GPU_Target* target)
     // Alias info
     if(target->image != NULL)
         target->image->refcount++;
+    if(target->context != NULL)
+        target->context->refcount++;
     result->refcount = 1;
     result->is_alias = 1;
 

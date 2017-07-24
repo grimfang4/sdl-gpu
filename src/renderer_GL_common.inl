@@ -1324,6 +1324,8 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
         memset(target->context, 0, sizeof(GPU_Context));
         cdata = (GPU_CONTEXT_DATA*)SDL_malloc(sizeof(GPU_CONTEXT_DATA));
         memset(cdata, 0, sizeof(GPU_CONTEXT_DATA));
+        
+        target->context->refcount = 1;
         target->context->data = cdata;
         target->context->context = NULL;
 
@@ -1682,6 +1684,8 @@ static GPU_Target* CreateAliasTarget(GPU_Renderer* renderer, GPU_Target* target)
     // Alias info
     if(target->image != NULL)
         target->image->refcount++;
+    if(target->context != NULL)
+        target->context->refcount++;
     ((GPU_TARGET_DATA*)target->data)->refcount++;
     result->refcount = 1;
     result->is_alias = GPU_TRUE;
@@ -3700,10 +3704,72 @@ static GPU_Target* LoadTarget(GPU_Renderer* renderer, GPU_Image* image)
 
 
 
+static void FreeTargetData(GPU_Renderer* renderer, GPU_TARGET_DATA* data)
+{
+    if(data == NULL)
+        return;
+
+    if(data->refcount > 1)
+    {
+        data->refcount--;
+        return;
+    }
+    
+    // Time to actually free this target data
+    if(renderer->enabled_features & GPU_FEATURE_RENDER_TARGETS)
+    {
+        int default_framebuffer_handle = 0;
+            
+        glGetIntegerv(GL_FRAMEBUFFER_BINDING, &default_framebuffer_handle);
+        if(data->handle != default_framebuffer_handle)
+            glDeleteFramebuffers(1, &data->handle);
+    }
+    
+    SDL_free(data);
+}
+
+static void FreeContext(GPU_Context* context)
+{
+    GPU_CONTEXT_DATA* cdata;
+    
+    if(context == NULL)
+        return;
+
+    if(context->refcount > 1)
+    {
+        context->refcount--;
+        return;
+    }
+    
+    // Time to actually free this context and its data
+    cdata = (GPU_CONTEXT_DATA*)context->data;
+
+    SDL_free(cdata->blit_buffer);
+    SDL_free(cdata->index_buffer);
+
+    if(!context->failed)
+    {
+        #ifdef SDL_GPU_USE_BUFFER_PIPELINE
+        glDeleteBuffers(2, cdata->blit_VBO);
+        glDeleteBuffers(1, &cdata->blit_IBO);
+        glDeleteBuffers(16, cdata->attribute_VBO);
+        #if !defined(SDL_GPU_NO_VAO)
+        glDeleteVertexArrays(1, &cdata->blit_VAO);
+        #endif
+        #endif
+    }
+
+    #ifdef SDL_GPU_USE_SDL2
+    if(context->context != 0)
+        SDL_GL_DeleteContext(context->context);
+    #endif
+
+    SDL_free(cdata);
+    SDL_free(context);
+}
+
 static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
 {
-	GPU_TARGET_DATA* data;
-
     if(target == NULL)
         return;
 
@@ -3712,99 +3778,36 @@ static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
         target->refcount--;
         return;
     }
-
-    if(!target->is_alias && target->context != NULL && target->context->failed)
-    {
-        GPU_CONTEXT_DATA* cdata = (GPU_CONTEXT_DATA*)target->context->data;
-
-        if(target == renderer->current_context_target)
-            renderer->current_context_target = NULL;
-
-        SDL_free(cdata->blit_buffer);
-        SDL_free(cdata->index_buffer);
-
-        #ifdef SDL_GPU_USE_SDL2
-        if(target->context->context != 0)
-            SDL_GL_DeleteContext(target->context->context);
-        #endif
-
-        // Remove all of the window mappings that refer to this target
-        GPU_RemoveWindowMappingByTarget(target);
-
-        SDL_free(target->context->data);
-        SDL_free(target->context);
-
-        // Does the renderer data need to be freed too?
-        data = ((GPU_TARGET_DATA*)target->data);
-
-        SDL_free(data);
-        SDL_free(target);
-
-        return;
-    }
-
+    
+    // Time to actually free this target
+    
+    // Prepare to work in this target's context, if it has one
     if(target == renderer->current_context_target)
-    {
         renderer->impl->FlushBlitBuffer(renderer);
-        renderer->current_context_target = NULL;
-    }
     else if(target->context_target != NULL)
         GPU_MakeCurrent(target->context_target, target->context_target->context->windowID);
 
-    if(target->image != NULL && target->image->target == target)
-        target->image->target = NULL;  // Remove reference to this object
-
-
-    // Does the renderer data need to be freed too?
-    data = ((GPU_TARGET_DATA*)target->data);
-    if(data->refcount > 1)
-    {
-        data->refcount--;
-        SDL_free(target);
-        return;
-    }
-
-    if(renderer->enabled_features & GPU_FEATURE_RENDER_TARGETS)
-    {
-        int default_framebuffer_handle = 0;
-        if(renderer->current_context_target != NULL)
-            flushAndClearBlitBufferIfCurrentFramebuffer(renderer, target);
-            
-        glGetIntegerv(GL_FRAMEBUFFER_BINDING, &default_framebuffer_handle);
-        if(data->handle != default_framebuffer_handle)
-            glDeleteFramebuffers(1, &data->handle);
-    }
-
+    
+    // Release renderer data reference
+    FreeTargetData(renderer, (GPU_TARGET_DATA*)target->data);
+    
+    // Release context reference
     if(target->context != NULL)
     {
-        GPU_CONTEXT_DATA* cdata = (GPU_CONTEXT_DATA*)target->context->data;
-
-        SDL_free(cdata->blit_buffer);
-        SDL_free(cdata->index_buffer);
-
-        #ifdef SDL_GPU_USE_BUFFER_PIPELINE
-        glDeleteBuffers(2, cdata->blit_VBO);
-        glDeleteBuffers(1, &cdata->blit_IBO);
-        glDeleteBuffers(16, cdata->attribute_VBO);
-            #if !defined(SDL_GPU_NO_VAO)
-            glDeleteVertexArrays(1, &cdata->blit_VAO);
-            #endif
-        #endif
-
-        #ifdef SDL_GPU_USE_SDL2
-        if(target->context->context != 0)
-            SDL_GL_DeleteContext(target->context->context);
-        #endif
-
         // Remove all of the window mappings that refer to this target
         GPU_RemoveWindowMappingByTarget(target);
-
-        SDL_free(target->context->data);
-        SDL_free(target->context);
-        target->context = NULL;
+        
+        FreeContext(target->context);
     }
+    
+    // Clear references to this target
+    if(target == renderer->current_context_target)
+        renderer->current_context_target = NULL;
 
-    SDL_free(data);
+    if(target->image != NULL && target->image->target == target)
+        target->image->target = NULL;
+
+    
     SDL_free(target);
 }
 

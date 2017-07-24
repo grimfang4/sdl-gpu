@@ -380,6 +380,8 @@ typedef struct GPU_Context
     int matrix_mode;
     GPU_MatrixStack projection_matrix;
     GPU_MatrixStack modelview_matrix;
+    
+	int refcount;
 	
 	void* data;
 } GPU_Context;
