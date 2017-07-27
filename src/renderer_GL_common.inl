@@ -263,6 +263,99 @@ static GPU_bool isExtensionSupported(const char* extension_str)
 #endif
 }
 
+static_inline void fast_upload_texture(const void* pixels, GPU_Rect update_rect, Uint32 format, int alignment, int row_length)
+{
+    glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
+    #if defined(SDL_GPU_USE_OPENGL) || SDL_GPU_GLES_MAJOR_VERSION > 2
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, row_length);
+    #endif
+    
+    glTexSubImage2D(GL_TEXTURE_2D, 0,
+                    update_rect.x, update_rect.y, update_rect.w, update_rect.h,
+                    format, GL_UNSIGNED_BYTE, pixels);
+
+    #if defined(SDL_GPU_USE_OPENGL) || SDL_GPU_GLES_MAJOR_VERSION > 2
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+    #endif
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+}
+
+static void row_upload_texture(const unsigned char* pixels, GPU_Rect update_rect, Uint32 format, int alignment, unsigned int pitch, int bytes_per_pixel)
+{
+    unsigned int i;
+    unsigned int h = update_rect.h;
+    glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
+    if(h > 0 && update_rect.w > 0.0f)
+    {
+        // Must upload row by row to account for row length
+        for(i = 0; i < h; ++i)
+        {
+            glTexSubImage2D(GL_TEXTURE_2D, 0,
+                        update_rect.x, update_rect.y + i, update_rect.w, 1,
+                        format, GL_UNSIGNED_BYTE, pixels);
+            pixels += pitch;
+        }
+    }
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+}
+
+static void copy_upload_texture(const unsigned char* pixels, GPU_Rect update_rect, Uint32 format, int alignment, unsigned int pitch, int bytes_per_pixel)
+{
+    unsigned int i;
+    unsigned int h = update_rect.h;
+    unsigned int w = update_rect.w*bytes_per_pixel;
+    
+    if(h > 0 && w > 0)
+    {
+        // Account for padding
+        w += w % alignment;
+
+        unsigned char *copy = (unsigned char*)SDL_malloc(update_rect.h*w);
+        unsigned char *dst = copy;
+
+        for(i = 0; i < h; ++i)
+        {
+            memcpy(dst, pixels, w);
+            pixels += pitch;
+            dst += w;
+        }
+        fast_upload_texture(copy, update_rect, format, alignment, update_rect.w);
+        SDL_free(copy);
+    }
+}
+
+static void (*slow_upload_texture)(const unsigned char* pixels, GPU_Rect update_rect, Uint32 format, int alignment, unsigned int pitch, int bytes_per_pixel) = NULL;
+
+static_inline void upload_texture(const void* pixels, GPU_Rect update_rect, Uint32 format, int alignment, int row_length, unsigned int pitch, int bytes_per_pixel)
+{
+    #if defined(SDL_GPU_USE_OPENGL) || SDL_GPU_GLES_MAJOR_VERSION > 2
+    fast_upload_texture(pixels, update_rect, format, alignment, row_length);
+    #else
+    if(row_length == update_rect.w)
+        fast_upload_texture(pixels, update_rect, format, alignment, row_length);
+    else
+        slow_upload_texture(pixels, update_rect, format, alignment, pitch, bytes_per_pixel);
+    
+    #endif
+}
+
+static_inline void upload_new_texture(void* pixels, GPU_Rect update_rect, Uint32 format, int alignment, int row_length, int bytes_per_pixel)
+{
+    #if defined(SDL_GPU_USE_OPENGL) || SDL_GPU_GLES_MAJOR_VERSION > 2
+    glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, row_length);
+    glTexImage2D(GL_TEXTURE_2D, 0, format, update_rect.w, update_rect.h, 0,
+                    format, GL_UNSIGNED_BYTE, pixels);
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+    #else
+    glTexImage2D(GL_TEXTURE_2D, 0, format, update_rect.w, update_rect.h, 0,
+                 format, GL_UNSIGNED_BYTE, NULL);
+    upload_texture(pixels, update_rect, format, alignment, row_length, row_length*bytes_per_pixel, bytes_per_pixel);
+    #endif
+}
+
+
 static void init_features(GPU_Renderer* renderer)
 {
     // Reset supported features
@@ -820,56 +913,6 @@ static void disableTexturing(GPU_Renderer* renderer)
         renderer->impl->FlushBlitBuffer(renderer);
         renderer->current_context_target->context->use_texturing = 0;
     }
-}
-
-static void upload_texture(const void* pixels, GPU_Rect update_rect, Uint32 format, int alignment, int row_length, unsigned int pitch)
-{
-    glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
-    #if defined(SDL_GPU_USE_OPENGL) || SDL_GPU_GLES_MAJOR_VERSION > 2
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, row_length);
-    
-    glTexSubImage2D(GL_TEXTURE_2D, 0,
-                    update_rect.x, update_rect.y, update_rect.w, update_rect.h,
-                    format, GL_UNSIGNED_BYTE, pixels);
-                    
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-    #else
-    unsigned int i;
-    unsigned int h = update_rect.h;
-    if(h > 0 && update_rect.w > 0.0f)
-    {
-        // Must upload row by row to account for row length
-        
-        for(i = 0; i < h; ++i)
-        {
-            glTexSubImage2D(GL_TEXTURE_2D, 0,
-                        update_rect.x, update_rect.y + i, update_rect.w, 1,
-                        format, GL_UNSIGNED_BYTE, pixels);
-            pixels += pitch;
-        }
-    }
-    #endif
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
-}
-
-static void upload_new_texture(void* pixels, GPU_Rect update_rect, Uint32 format, int alignment, int row_length, int bytes_per_pixel)
-{
-    glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
-    #if defined(SDL_GPU_USE_OPENGL) || SDL_GPU_GLES_MAJOR_VERSION > 2
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, row_length);
-    
-    glTexImage2D(GL_TEXTURE_2D, 0, format, update_rect.w, update_rect.h, 0,
-                    format, GL_UNSIGNED_BYTE, pixels);
-                    
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
-    #else
-    glTexImage2D(GL_TEXTURE_2D, 0, format, update_rect.w, update_rect.h, 0,
-                 format, GL_UNSIGNED_BYTE, NULL);
-    
-    // Alignment is reset in upload_texture()
-    upload_texture(pixels, update_rect, format, alignment, row_length, row_length*bytes_per_pixel);
-    #endif
 }
 
 #define MIX_COLOR_COMPONENT_NORMALIZED_RESULT(a, b) ((a)/255.0f * (b)/255.0f)
@@ -1491,7 +1534,14 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     else if(renderer->GPU_init_flags & GPU_INIT_DISABLE_VSYNC)
         SDL_GL_SetSwapInterval(0);
     #endif
-
+    
+    // Set fallback texture upload method
+    if(renderer->GPU_init_flags & GPU_INIT_USE_COPY_TEXTURE_UPLOAD_FALLBACK)
+        slow_upload_texture = copy_upload_texture;
+    else
+        slow_upload_texture = row_upload_texture;
+    
+    
     // Set up GL state
 
     target->context->projection_matrix.size = 1;
@@ -2949,10 +2999,6 @@ static void FreeFormat(SDL_PixelFormat* format)
 // Returns NULL on failure.  Returns the original surface if no copy is needed.  Returns a new surface converted to the right format otherwise.
 static SDL_Surface* copySurfaceIfNeeded(GPU_Renderer* renderer, GLenum glFormat, SDL_Surface* surface, GLenum* surfaceFormatResult)
 {
-    #ifdef SDL_GPU_USE_GLES
-    SDL_Surface* original = surface;
-    #endif
-
     // If format doesn't match, we need to do a copy
     int format_compare = compareFormats(renderer, glFormat, surface, surfaceFormatResult);
 
@@ -3238,8 +3284,7 @@ static void UpdateImage(GPU_Renderer* renderer, GPU_Image* image, const GPU_Rect
     // Shift the pixels pointer to the proper source position
     pixels += (int)(newSurface->pitch * sourceRect.y + (newSurface->format->BytesPerPixel)*sourceRect.x);
     
-    upload_texture(pixels, updateRect, original_format, alignment, (newSurface->pitch / newSurface->format->BytesPerPixel), newSurface->pitch);
-    
+    upload_texture(pixels, updateRect, original_format, alignment, newSurface->pitch/newSurface->format->BytesPerPixel, newSurface->pitch, newSurface->format->BytesPerPixel);
 
     // Delete temporary surface
     if(surface != newSurface)
@@ -3307,8 +3352,7 @@ static void UpdateImageBytes(GPU_Renderer* renderer, GPU_Image* image, const GPU
     while(bytes_per_row % alignment)
         alignment >>= 1;
     
-    upload_texture(bytes, updateRect, original_format, alignment, (bytes_per_row / image->bytes_per_pixel), bytes_per_row);
-    
+    upload_texture(bytes, updateRect, original_format, alignment, bytes_per_row / image->bytes_per_pixel, bytes_per_row, image->bytes_per_pixel);
 }
 
 
