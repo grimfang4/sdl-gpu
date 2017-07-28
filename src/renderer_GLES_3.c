@@ -20,6 +20,7 @@ void GPU_FreeRenderer_GLES_3(GPU_Renderer* renderer) {}
 #define SDL_GPU_USE_BUFFER_PIPELINE
 #define SDL_GPU_SKIP_ENABLE_TEXTURE_2D
 #define SDL_GPU_ASSUME_SHADERS
+#define SDL_GPU_ASSUME_CORE_FBO
 // TODO: Make this dynamic because GLES 3.1 supports it
 #define SDL_GPU_DISABLE_TEXTURE_GETS
 

@@ -442,6 +442,7 @@ static const GPU_FeatureEnum GPU_FEATURE_FRAGMENT_SHADER = 0x200;
 static const GPU_FeatureEnum GPU_FEATURE_PIXEL_SHADER = 0x200;
 static const GPU_FeatureEnum GPU_FEATURE_GEOMETRY_SHADER = 0x400;
 static const GPU_FeatureEnum GPU_FEATURE_WRAP_REPEAT_MIRRORED = 0x800;
+static const GPU_FeatureEnum GPU_FEATURE_CORE_FRAMEBUFFER_OBJECTS = 0x1000;
 
 /*! Combined feature flags */
 #define GPU_FEATURE_ALL_BASE GPU_FEATURE_RENDER_TARGETS

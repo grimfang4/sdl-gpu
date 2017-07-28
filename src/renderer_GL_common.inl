@@ -355,6 +355,48 @@ static_inline void upload_new_texture(void* pixels, GPU_Rect update_rect, Uint32
     #endif
 }
 
+// Define intermediates for FBO functions in case we only have EXT or OES FBO support.
+#if defined(SDL_GPU_ASSUME_CORE_FBO)
+    #define glBindFramebufferPROC glBindFramebuffer
+    #define glCheckFramebufferStatusPROC glCheckFramebufferStatus
+    #define glDeleteFramebuffersPROC glDeleteFramebuffers
+    #define glFramebufferTexture2DPROC glFramebufferTexture2D
+    #define glGenFramebuffersPROC glGenFramebuffers
+    #define glGenerateMipmapPROC glGenerateMipmap
+#else
+    static void GLAPIENTRY glBindFramebufferNOOP(GLenum target, GLuint framebuffer)
+    {
+        GPU_LogError("%s: Unsupported operation\n", __func__);
+    }
+    static GLenum GLAPIENTRY glCheckFramebufferStatusNOOP(GLenum target)
+    {
+        GPU_LogError("%s: Unsupported operation\n", __func__);
+        return 0;
+    }
+    static void GLAPIENTRY glDeleteFramebuffersNOOP(GLsizei n, const GLuint* framebuffers)
+    {
+        GPU_LogError("%s: Unsupported operation\n", __func__);
+    }
+    static void GLAPIENTRY glFramebufferTexture2DNOOP(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level)
+    {
+        GPU_LogError("%s: Unsupported operation\n", __func__);
+    }
+    static void GLAPIENTRY glGenFramebuffersNOOP(GLsizei n, GLuint *ids)
+    {
+        GPU_LogError("%s: Unsupported operation\n", __func__);
+    }
+    static void GLAPIENTRY glGenerateMipmapNOOP(GLenum target)
+    {
+        GPU_LogError("%s: Unsupported operation\n", __func__);
+    }
+    
+    static void (GLAPIENTRY *glBindFramebufferPROC)(GLenum target, GLuint framebuffer) = glBindFramebufferNOOP;
+    static GLenum (GLAPIENTRY *glCheckFramebufferStatusPROC)(GLenum target) = glCheckFramebufferStatusNOOP;
+    static void (GLAPIENTRY *glDeleteFramebuffersPROC)(GLsizei n, const GLuint* framebuffers) = glDeleteFramebuffersNOOP;
+    static void (GLAPIENTRY *glFramebufferTexture2DPROC)(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level) = glFramebufferTexture2DNOOP;
+    static void (GLAPIENTRY *glGenFramebuffersPROC)(GLsizei n, GLuint *ids) = glGenFramebuffersNOOP;
+    static void (GLAPIENTRY *glGenerateMipmapPROC)(GLenum target) = glGenerateMipmapNOOP;
+#endif
 
 static void init_features(GPU_Renderer* renderer)
 {
@@ -390,27 +432,47 @@ static void init_features(GPU_Renderer* renderer)
     #endif
 #endif
 
-    // FBO
-#ifdef SDL_GPU_USE_OPENGL
-    #if SDL_GPU_GL_MAJOR_VERSION >= 3
-        // Core in GL 3+
+    // FBO support
+#ifdef SDL_GPU_ASSUME_CORE_FBO
+    renderer->enabled_features |= GPU_FEATURE_RENDER_TARGETS;
+    renderer->enabled_features |= GPU_FEATURE_CORE_FRAMEBUFFER_OBJECTS;
+#elif defined(SDL_GPU_USE_OPENGL)
+    if(isExtensionSupported("GL_ARB_framebuffer_object"))
+    {
         renderer->enabled_features |= GPU_FEATURE_RENDER_TARGETS;
-    #else
-        if(isExtensionSupported("GL_EXT_framebuffer_object"))
-            renderer->enabled_features |= GPU_FEATURE_RENDER_TARGETS;
-        else
-            renderer->enabled_features &= ~GPU_FEATURE_RENDER_TARGETS;
-    #endif
+        renderer->enabled_features |= GPU_FEATURE_CORE_FRAMEBUFFER_OBJECTS;
+        glBindFramebufferPROC = glBindFramebuffer;
+        glCheckFramebufferStatusPROC = glCheckFramebufferStatus;
+        glDeleteFramebuffersPROC = glDeleteFramebuffers;
+        glFramebufferTexture2DPROC = glFramebufferTexture2D;
+        glGenFramebuffersPROC = glGenFramebuffers;
+        glGenerateMipmapPROC = glGenerateMipmap;
+    }
+    else if(isExtensionSupported("GL_EXT_framebuffer_object"))
+    {
+        renderer->enabled_features |= GPU_FEATURE_RENDER_TARGETS;
+        glBindFramebufferPROC = glBindFramebufferEXT;
+        glCheckFramebufferStatusPROC = glCheckFramebufferStatusEXT;
+        glDeleteFramebuffersPROC = glDeleteFramebuffersEXT;
+        glFramebufferTexture2DPROC = glFramebufferTexture2DEXT;
+        glGenFramebuffersPROC = glGenFramebuffersEXT;
+        glGenerateMipmapPROC = glGenerateMipmapEXT;
+    }
+    else
+        renderer->enabled_features &= ~GPU_FEATURE_RENDER_TARGETS;
 #elif defined(SDL_GPU_USE_GLES)
-    #if SDL_GPU_GLES_MAJOR_VERSION >= 2
-        // Core in GLES 2+
+    if(isExtensionSupported("GL_OES_framebuffer_object"))
+    {
         renderer->enabled_features |= GPU_FEATURE_RENDER_TARGETS;
-    #else
-        if(isExtensionSupported("GL_OES_framebuffer_object"))
-            renderer->enabled_features |= GPU_FEATURE_RENDER_TARGETS;
-        else
-            renderer->enabled_features &= ~GPU_FEATURE_RENDER_TARGETS;
-    #endif
+        glBindFramebufferPROC = glBindFramebufferOES;
+        glCheckFramebufferStatusPROC = glCheckFramebufferStatusOES;
+        glDeleteFramebuffersPROC = glDeleteFramebuffersOES;
+        glFramebufferTexture2DPROC = glFramebufferTexture2DOES;
+        glGenFramebuffersPROC = glGenFramebuffersOES;
+        glGenerateMipmapPROC = glGenerateMipmapOES;
+    }
+    else
+        renderer->enabled_features &= ~GPU_FEATURE_RENDER_TARGETS;
 #endif
 
     // Blending
@@ -507,7 +569,7 @@ static void init_features(GPU_Renderer* renderer)
 static void extBindFramebuffer(GPU_Renderer* renderer, GLuint handle)
 {
     if(renderer->enabled_features & GPU_FEATURE_RENDER_TARGETS)
-        glBindFramebuffer(GL_FRAMEBUFFER, handle);
+        glBindFramebufferPROC(GL_FRAMEBUFFER, handle);
 }
 
 
@@ -3396,7 +3458,7 @@ static GPU_bool ReplaceImage(GPU_Renderer* renderer, GPU_Image* image, SDL_Surfa
         if(renderer->current_context_target != NULL)
             flushAndClearBlitBufferIfCurrentFramebuffer(renderer, image->target);
         if(tdata->handle != 0)
-            glDeleteFramebuffers(1, &tdata->handle);
+            glDeleteFramebuffersPROC(1, &tdata->handle);
         tdata->handle = 0;
     }
 
@@ -3504,7 +3566,7 @@ static GPU_bool ReplaceImage(GPU_Renderer* renderer, GPU_Image* image, SDL_Surfa
         GPU_TARGET_DATA* tdata = (GPU_TARGET_DATA*)target->data;
 
         // Create framebuffer object
-        glGenFramebuffers(1, &tdata->handle);
+        glGenFramebuffersPROC(1, &tdata->handle);
         if(tdata->handle == 0)
         {
             GPU_PushErrorCode("GPU_ReplaceImage", GPU_ERROR_BACKEND_ERROR, "Failed to create new framebuffer target.");
@@ -3514,9 +3576,9 @@ static GPU_bool ReplaceImage(GPU_Renderer* renderer, GPU_Image* image, SDL_Surfa
         flushAndBindFramebuffer(renderer, tdata->handle);
 
         // Attach the texture to it
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, data->handle, 0);
+        glFramebufferTexture2DPROC(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, data->handle, 0);
 
-        status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+        status = glCheckFramebufferStatusPROC(GL_FRAMEBUFFER);
         if(status != GL_FRAMEBUFFER_COMPLETE)
         {
             GPU_PushErrorCode("GPU_ReplaceImage", GPU_ERROR_BACKEND_ERROR, "Failed to recreate framebuffer target.");
@@ -3701,13 +3763,13 @@ static GPU_Target* LoadTarget(GPU_Renderer* renderer, GPU_Image* image)
         return NULL;
 
     // Create framebuffer object
-    glGenFramebuffers(1, &handle);
+    glGenFramebuffersPROC(1, &handle);
     flushAndBindFramebuffer(renderer, handle);
 
     // Attach the texture to it
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ((GPU_IMAGE_DATA*)image->data)->handle, 0);
+    glFramebufferTexture2DPROC(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ((GPU_IMAGE_DATA*)image->data)->handle, 0);
 
-    status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    status = glCheckFramebufferStatusPROC(GL_FRAMEBUFFER);
     if(status != GL_FRAMEBUFFER_COMPLETE)
         return NULL;
 
@@ -3766,7 +3828,7 @@ static void FreeTargetData(GPU_Renderer* renderer, GPU_TARGET_DATA* data)
             
         glGetIntegerv(GL_FRAMEBUFFER_BINDING, &default_framebuffer_handle);
         if(data->handle != default_framebuffer_handle)
-            glDeleteFramebuffers(1, &data->handle);
+            glDeleteFramebuffersPROC(1, &data->handle);
     }
     
     SDL_free(data);
@@ -4899,7 +4961,7 @@ static void GenerateMipmaps(GPU_Renderer* renderer, GPU_Image* image)
     if(image->target != NULL && isCurrentTarget(renderer, image->target))
         renderer->impl->FlushBlitBuffer(renderer);
     bindTexture(renderer, image);
-    glGenerateMipmap(GL_TEXTURE_2D);
+    glGenerateMipmapPROC(GL_TEXTURE_2D);
     image->has_mipmaps = GPU_TRUE;
 
     glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, &filter);

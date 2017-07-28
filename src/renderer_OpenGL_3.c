@@ -14,6 +14,7 @@ void GPU_FreeRenderer_OpenGL_3(GPU_Renderer* renderer) {}
 // Most of the code pulled in from here...
 #define SDL_GPU_USE_OPENGL
 #define SDL_GPU_USE_BUFFER_PIPELINE
+#define SDL_GPU_ASSUME_CORE_FBO
 #define SDL_GPU_ASSUME_SHADERS
 #define SDL_GPU_SKIP_ENABLE_TEXTURE_2D
 #define SDL_GPU_SKIP_LINE_WIDTH
