@@ -9,6 +9,8 @@
 #ifdef __IPHONEOS__
     #include <OpenGLES/ES3/gl.h>
     #include <OpenGLES/ES3/glext.h>
+#elif defined(SDL_GPU_DYNAMIC_GLES_3)
+    #include "gl3stub.h"
 #else
     #include "GLES3/gl3.h"
     #include "GLES2/gl2ext.h"

@@ -57,6 +57,7 @@ option(SDL_gpu_DISABLE_GLES_2 "Disable OpenGLES 2.X renderer" OFF)
 option(SDL_gpu_DISABLE_GLES_3 "Disable OpenGLES 3.X renderer" OFF)
 
 option(SDL_gpu_USE_SYSTEM_GLEW "Attempt to use the system GLEW library (may not support GL 3+)" OFF)
+option(SDL_gpu_DYNAMIC_GLES_3 "Attempt to run-time link to GLES 3" OFF)
 
 option(SDL_gpu_USE_BUFFER_RESET "Upload VBOs by requesting a new one each time (default).  This is often the best for driver optimization)" ON)
 option(SDL_gpu_USE_BUFFER_UPDATE "Upload VBOs by updating only the needed portion" OFF)
@@ -218,7 +219,12 @@ else (SDL_gpu_DISABLE_GLES)
 	if (SDL_gpu_DISABLE_GLES_3)
 		add_definitions("-DSDL_GPU_DISABLE_GLES_3")
 	endif (SDL_gpu_DISABLE_GLES_3)
-
+    
+    include_directories(src/externals/gl3stub)
+    if (SDL_gpu_DYNAMIC_GLES_3)
+        SET(SDL_gpu_HDRS ${SDL_gpu_HDRS} externals/gl3stub/gl3stub.c externals/gl3stub/gl3stub.h)
+        add_definitions("-DSDL_GPU_DYNAMIC_GLES_3")
+    endif(SDL_gpu_DYNAMIC_GLES_3)
 endif (SDL_gpu_DISABLE_GLES)
 
 # If stb-image is not found here, we’ll use the bundled version

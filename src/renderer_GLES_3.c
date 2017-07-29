@@ -10,6 +10,9 @@ void GPU_FreeRenderer_GLES_3(GPU_Renderer* renderer) {}
 
 #else
 
+#if defined(SDL_GPU_DYNAMIC_GLES_3)
+    #include "gl3stub.c"
+#endif
 
 // Most of the code pulled in from here...
 #define SDL_GPU_USE_GLES
@@ -30,7 +33,13 @@ void GPU_FreeRenderer_GLES_3(GPU_Renderer* renderer) {}
 
 GPU_Renderer* GPU_CreateRenderer_GLES_3(GPU_RendererID request)
 {
-    GPU_Renderer* renderer = (GPU_Renderer*)SDL_malloc(sizeof(GPU_Renderer));
+    GPU_Renderer* renderer;
+    #ifdef SDL_GPU_DYNAMIC_GLES_3
+    if(!gl3stubInit())
+        return NULL;
+    #endif
+
+    renderer = (GPU_Renderer*)SDL_malloc(sizeof(GPU_Renderer));
     if(renderer == NULL)
         return NULL;
 
