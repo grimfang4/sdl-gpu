@@ -27,13 +27,13 @@ matrix:
 #    - git tag -d latest-linux-gcc;
 #    - git push origin :latest-linux-gcc
 #    - cd build
-    deploy:
-      provider: pages
-      skip_cleanup: true
-      github_token: $GithubDocsToken
-      local_dir: html
-      on:
-        branch: master
+#    deploy:
+#      provider: pages
+#      skip_cleanup: true
+#      github_token: $GithubDocsToken
+#      local_dir: html
+#      on:
+#        branch: master
 #    deploy:
 #      provider: releases
 #      skip_cleanup: true
