@@ -1,6 +1,13 @@
 /* This is an implementation file to be included after certain #defines have been set.
 See a particular renderer's *.c file for specifics. */
 
+#if !defined(GLAPIENTRY)
+    #if defined(GL_APIENTRY)
+        #define GLAPIENTRY GL_APIENTRY
+    #else
+        #define GLAPIENTRY
+    #endif
+#endif
 
 #include <stdint.h>
 #include <stdlib.h>
