@@ -5488,14 +5488,17 @@ static void FlushBlitBuffer(GPU_Renderer* renderer)
 static void Flip(GPU_Renderer* renderer, GPU_Target* target)
 {
     renderer->impl->FlushBlitBuffer(renderer);
+    
+    if(target != NULL && target->context != NULL)
+    {
+        makeContextCurrent(renderer, target);
 
-    makeContextCurrent(renderer, target);
-
-#ifdef SDL_GPU_USE_SDL2
-    SDL_GL_SwapWindow(SDL_GetWindowFromID(renderer->current_context_target->context->windowID));
-#else
-    SDL_GL_SwapBuffers();
-#endif
+    #ifdef SDL_GPU_USE_SDL2
+        SDL_GL_SwapWindow(SDL_GetWindowFromID(renderer->current_context_target->context->windowID));
+    #else
+        SDL_GL_SwapBuffers();
+    #endif
+    }
 
     #ifdef SDL_GPU_USE_OPENGL
     if(vendor_is_Intel)
