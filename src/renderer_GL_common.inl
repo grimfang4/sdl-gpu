@@ -3831,11 +3831,8 @@ static void FreeTargetData(GPU_Renderer* renderer, GPU_TARGET_DATA* data)
     // Time to actually free this target data
     if(renderer->enabled_features & GPU_FEATURE_RENDER_TARGETS)
     {
-        int default_framebuffer_handle = 0;
-            
-        glGetIntegerv(GL_FRAMEBUFFER_BINDING, &default_framebuffer_handle);
-        if(data->handle != default_framebuffer_handle)
-            glDeleteFramebuffersPROC(1, &data->handle);
+        // It might be possible to check against the default framebuffer (save that binding in the context data) and avoid deleting that...  Is that desired?
+        glDeleteFramebuffersPROC(1, &data->handle);
     }
     
     SDL_free(data);
