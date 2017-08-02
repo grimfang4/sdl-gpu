@@ -2570,7 +2570,7 @@ static GPU_bool readImagePixels(GPU_Renderer* renderer, GPU_Image* source, GLint
     created_target = GPU_FALSE;
     if(source->target == NULL)
     {
-        renderer->impl->LoadTarget(renderer, source);
+        renderer->impl->GetTarget(renderer, source);
         created_target = GPU_TRUE;
     }
     // Get the data
@@ -3113,7 +3113,8 @@ static GPU_Image* gpu_copy_image_pixels_only(GPU_Renderer* renderer, GPU_Image* 
                 return NULL;
             }
 
-            target = GPU_LoadTarget(result);
+            // Don't free the target yet (a waste of perf), but let it be freed when the image is freed...
+            target = GPU_GetTarget(result);
             if(target == NULL)
             {
                 GPU_FreeImage(result);
@@ -3152,10 +3153,6 @@ static GPU_Image* gpu_copy_image_pixels_only(GPU_Renderer* renderer, GPU_Image* 
                     GPU_SetImageVirtualResolution(image, w, h);
                 }
 			}
-
-            // Don't free the target yet (a waste of perf), but let it be freed next time...
-            target->refcount--;
-            ((GPU_TARGET_DATA*)target->data)->refcount--;
         }
         break;
         case GPU_FORMAT_LUMINANCE:
@@ -3723,6 +3720,9 @@ static void FreeImage(GPU_Renderer* renderer, GPU_Image* image)
     {
         GPU_Target* target = image->target;
         image->target = NULL;
+        
+        // Freeing it will decrement the refcount.  If this is the only increment, it will be freed.  This means GPU_LoadTarget() needs to be paired with GPU_FreeTarget().
+        target->refcount++;
         renderer->impl->FreeTarget(renderer, target);
     }
 
@@ -3749,7 +3749,7 @@ static void FreeImage(GPU_Renderer* renderer, GPU_Image* image)
 
 
 
-static GPU_Target* LoadTarget(GPU_Renderer* renderer, GPU_Image* image)
+static GPU_Target* GetTarget(GPU_Renderer* renderer, GPU_Image* image)
 {
     GLuint handle;
 	GLenum status;
@@ -3760,11 +3760,7 @@ static GPU_Target* LoadTarget(GPU_Renderer* renderer, GPU_Image* image)
         return NULL;
 
     if(image->target != NULL)
-    {
-        image->target->refcount++;
-        ((GPU_TARGET_DATA*)image->target->data)->refcount++;
         return image->target;
-    }
 
     if(!(renderer->enabled_features & GPU_FEATURE_RENDER_TARGETS))
         return NULL;
@@ -3782,7 +3778,7 @@ static GPU_Target* LoadTarget(GPU_Renderer* renderer, GPU_Image* image)
 
     result = (GPU_Target*)SDL_malloc(sizeof(GPU_Target));
     memset(result, 0, sizeof(GPU_Target));
-    result->refcount = 1;
+    result->refcount = 0;
     data = (GPU_TARGET_DATA*)SDL_malloc(sizeof(GPU_TARGET_DATA));
     data->refcount = 1;
     result->data = data;
@@ -6671,7 +6667,7 @@ static void SetAttributeSource(GPU_Renderer* renderer, int num_values, GPU_Attri
     impl->CopySurfaceFromImage = &CopySurfaceFromImage; \
     impl->FreeImage = &FreeImage; \
  \
-    impl->LoadTarget = &LoadTarget; \
+    impl->GetTarget = &GetTarget; \
     impl->FreeTarget = &FreeTarget; \
  \
     impl->Blit = &Blit; \

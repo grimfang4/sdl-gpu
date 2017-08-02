@@ -607,7 +607,7 @@ static void FreeImage(GPU_Renderer* renderer, GPU_Image* image)
 }
 
 
-static GPU_Target* LoadTarget(GPU_Renderer* renderer, GPU_Image* image)
+static GPU_Target* GetTarget(GPU_Renderer* renderer, GPU_Image* image)
 {
 	GPU_Target* result;
 	
@@ -617,17 +617,14 @@ static GPU_Target* LoadTarget(GPU_Renderer* renderer, GPU_Image* image)
         return NULL;
 
     if(image->target != NULL)
-    {
-        image->target->refcount++;
         return image->target;
-    }
 
     if(!(renderer->enabled_features & GPU_FEATURE_RENDER_TARGETS))
         return NULL;
 
     result = (GPU_Target*)malloc(sizeof(GPU_Target));
     memset(result, 0, sizeof(GPU_Target));
-    result->refcount = 1;
+    result->refcount = 0;
     result->data = NULL;  // Allocate a data structure as needed for other render target data
     
     result->renderer = renderer;
@@ -1198,7 +1195,7 @@ void set_renderer_functions(GPU_RendererImpl* impl)
     impl->CopySurfaceFromImage = &CopySurfaceFromImage;
     impl->FreeImage = &FreeImage;
 
-    impl->LoadTarget = &LoadTarget;
+    impl->GetTarget = &GetTarget;
     impl->FreeTarget = &FreeTarget;
 
     impl->Blit = &Blit;

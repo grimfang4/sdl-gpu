@@ -1301,10 +1301,21 @@ GPU_Target* GPU_GetContextTarget(void)
 
 GPU_Target* GPU_LoadTarget(GPU_Image* image)
 {
+	GPU_Target* result = GPU_GetTarget(image);
+	
+	if(result != NULL)
+        result->refcount++;
+    
+    return result;
+}
+
+
+GPU_Target* GPU_GetTarget(GPU_Image* image)
+{
     if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL)
         return NULL;
 
-    return _gpu_current_renderer->impl->LoadTarget(_gpu_current_renderer, image);
+    return _gpu_current_renderer->impl->GetTarget(_gpu_current_renderer, image);
 }
 
 

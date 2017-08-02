@@ -951,8 +951,11 @@ DECLSPEC float SDLCALL GPU_GetLineThickness(void);
  * GPU_FreeTarget() frees the alias's memory, but does not affect the original. */
 DECLSPEC GPU_Target* SDLCALL GPU_CreateAliasTarget(GPU_Target* target);
 
-/*! Creates a new render target from the given image.  It can then be accessed from image->target. */
+/*! Creates a new render target from the given image.  It can then be accessed from image->target.  This increments the internal refcount of the target, so it should be matched with a GPU_FreeTarget(). */
 DECLSPEC GPU_Target* SDLCALL GPU_LoadTarget(GPU_Image* image);
+
+/*! Creates a new render target from the given image.  It can then be accessed from image->target.  This does not increment the internal refcount of the target, so it will be invalidated when the image is freed. */
+DECLSPEC GPU_Target* SDLCALL GPU_GetTarget(GPU_Image* image);
 
 /*! Deletes a render target in the proper way for this renderer. */
 DECLSPEC void SDLCALL GPU_FreeTarget(GPU_Target* target);

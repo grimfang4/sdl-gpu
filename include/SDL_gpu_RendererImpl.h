@@ -94,8 +94,8 @@ typedef struct GPU_RendererImpl
 	/*! \see GPU_FreeImage() */
 	void (SDLCALL *FreeImage)(GPU_Renderer* renderer, GPU_Image* image);
 	
-	/*! \see GPU_LoadTarget() */
-	GPU_Target* (SDLCALL *LoadTarget)(GPU_Renderer* renderer, GPU_Image* image);
+	/*! \see GPU_GetTarget() */
+	GPU_Target* (SDLCALL *GetTarget)(GPU_Renderer* renderer, GPU_Image* image);
 	
 	/*! \see GPU_FreeTarget() */
 	void (SDLCALL *FreeTarget)(GPU_Renderer* renderer, GPU_Target* target);
