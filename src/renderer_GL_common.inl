@@ -5001,8 +5001,6 @@ static void UnsetClip(GPU_Renderer* renderer, GPU_Target* target)
     if(target == NULL)
         return;
 
-    makeContextCurrent(renderer, target);
-
     if(isCurrentTarget(renderer, target))
         renderer->impl->FlushBlitBuffer(renderer);
     // Leave the clip rect values intact so they can still be useful as storage
