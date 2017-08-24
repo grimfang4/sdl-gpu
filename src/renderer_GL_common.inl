@@ -2192,6 +2192,27 @@ static GPU_Image* CreateUninitializedImage(GPU_Renderer* renderer, Uint16 w, Uin
             num_layers = 1;
             bytes_per_pixel = 4;
             break;
+        #ifdef GL_BGR
+        case GPU_FORMAT_BGR:
+            gl_format = GL_BGR;
+            num_layers = 1;
+            bytes_per_pixel = 3;
+            break;
+        #endif
+        #ifdef GL_BGRA
+        case GPU_FORMAT_BGRA:
+            gl_format = GL_BGRA;
+            num_layers = 1;
+            bytes_per_pixel = 4;
+            break;
+        #endif
+        #ifdef GL_ABGR
+        case GPU_FORMAT_ABGR:
+            gl_format = GL_ABGR;
+            num_layers = 1;
+            bytes_per_pixel = 4;
+            break;
+        #endif
         case GPU_FORMAT_ALPHA:
             gl_format = GL_ALPHA;
             num_layers = 1;
@@ -2388,6 +2409,27 @@ static GPU_Image* CreateImageUsingTexture(GPU_Renderer* renderer, Uint32 handle,
             num_layers = 1;
             bytes_per_pixel = 4;
             break;
+        #ifdef GL_BGR
+        case GL_BGR:
+            format = GPU_FORMAT_BGR;
+            num_layers = 1;
+            bytes_per_pixel = 3;
+            break;
+        #endif
+        #ifdef GL_BGRA
+        case GL_BGRA:
+            format = GPU_FORMAT_BGRA;
+            num_layers = 1;
+            bytes_per_pixel = 4;
+            break;
+        #endif
+        #ifdef GL_ABGR
+        case GL_ABGR:
+            format = GPU_FORMAT_ABGR;
+            num_layers = 1;
+            bytes_per_pixel = 4;
+            break;
+        #endif
         case GL_ALPHA:
             format = GPU_FORMAT_ALPHA;
             num_layers = 1;
@@ -3102,6 +3144,9 @@ static GPU_Image* gpu_copy_image_pixels_only(GPU_Renderer* renderer, GPU_Image* 
     {
         case GPU_FORMAT_RGB:
         case GPU_FORMAT_RGBA:
+        case GPU_FORMAT_BGR:
+        case GPU_FORMAT_BGRA:
+        case GPU_FORMAT_ABGR:
         // Copy via framebuffer blitting (fast)
 		{
 			GPU_Target* target;
@@ -3668,7 +3713,10 @@ static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surf
             format = GPU_FORMAT_RGB;
     }
     else
+    {
+        // TODO: Choose the best format for the texture depending on endianness.
         format = GPU_FORMAT_RGBA;
+    }
 
     image = renderer->impl->CreateImage(renderer, surface->w, surface->h, format);
     if(image == NULL)
@@ -3774,7 +3822,10 @@ static GPU_Target* GetTarget(GPU_Renderer* renderer, GPU_Image* image)
 
     status = glCheckFramebufferStatusPROC(GL_FRAMEBUFFER);
     if(status != GL_FRAMEBUFFER_COMPLETE)
+    {
+        GPU_PushErrorCode("GPU_GetTarget", GPU_ERROR_DATA_ERROR, "Framebuffer incomplete with status: 0x%x.  Format 0x%x for framebuffers might not be supported on this hardware.", status, ((GPU_IMAGE_DATA*)image->data)->format);
         return NULL;
+    }
 
     result = (GPU_Target*)SDL_malloc(sizeof(GPU_Target));
     memset(result, 0, sizeof(GPU_Target));
@@ -5010,7 +5061,68 @@ static void UnsetClip(GPU_Renderer* renderer, GPU_Target* target)
 
 
 
-
+static void swizzle_for_format(SDL_Color* color, GLenum format, unsigned char pixel[4])
+{
+    switch(format)
+    {
+    case GL_LUMINANCE:
+        color->b = color->g = color->r = pixel[0];
+        GET_ALPHA(*color) = 255;
+        break;
+    case GL_LUMINANCE_ALPHA:
+        color->b = color->g = color->r = pixel[0];
+        GET_ALPHA(*color) = pixel[3];
+        break;
+    #ifdef GL_BGR
+    case GL_BGR:
+        color->b = pixel[0];
+        color->g = pixel[1];
+        color->r = pixel[2];
+        GET_ALPHA(*color) = 255;
+        break;
+    #endif
+    #ifdef GL_BGRA
+    case GL_BGRA:
+        color->b = pixel[0];
+        color->g = pixel[1];
+        color->r = pixel[2];
+        GET_ALPHA(*color) = pixel[3];
+        break;
+    #endif
+    #ifdef GL_ABGR
+    case GL_ABGR:
+        GET_ALPHA(*color) = pixel[0];
+        color->b = pixel[1];
+        color->g = pixel[2];
+        color->r = pixel[3];
+        break;
+    #endif
+    case GL_ALPHA:
+        break;
+    #ifndef SDL_GPU_USE_GLES
+    case GL_RG:
+        color->r = pixel[0];
+        color->g = pixel[1];
+        color->b = 0;
+        GET_ALPHA(*color) = 255;
+        break;
+    #endif
+    case GL_RGB:
+        color->r = pixel[0];
+        color->g = pixel[1];
+        color->b = pixel[2];
+        GET_ALPHA(*color) = 255;
+        break;
+    case GL_RGBA:
+        color->r = pixel[0];
+        color->g = pixel[1];
+        color->b = pixel[2];
+        GET_ALPHA(*color) = pixel[3];
+        break;
+    default:
+        break;
+    }
+}
 
 static SDL_Color GetPixel(GPU_Renderer* renderer, GPU_Target* target, Sint16 x, Sint16 y)
 {
@@ -5027,12 +5139,10 @@ static SDL_Color GetPixel(GPU_Renderer* renderer, GPU_Target* target, Sint16 x, 
     if(bindFramebuffer(renderer, target))
     {
         unsigned char pixels[4];
-        glReadPixels(x, y, 1, 1, ((GPU_TARGET_DATA*)target->data)->format, GL_UNSIGNED_BYTE, pixels);
-
-        result.r = pixels[0];
-        result.g = pixels[1];
-        result.b = pixels[2];
-        GET_ALPHA(result) = pixels[3];
+        GLenum format = ((GPU_TARGET_DATA*)target->data)->format;
+        glReadPixels(x, y, 1, 1, format, GL_UNSIGNED_BYTE, pixels);
+        
+        swizzle_for_format(&result, format, pixels);
     }
 
     return result;

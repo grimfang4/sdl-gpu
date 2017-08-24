@@ -231,7 +231,10 @@ typedef enum {
     GPU_FORMAT_ALPHA = 5,
     GPU_FORMAT_RG = 6,
     GPU_FORMAT_YCbCr422 = 7,
-    GPU_FORMAT_YCbCr420P = 8
+    GPU_FORMAT_YCbCr420P = 8,
+    GPU_FORMAT_BGR = 9,
+    GPU_FORMAT_BGRA = 10,
+    GPU_FORMAT_ABGR = 11
 } GPU_FormatEnum;
 
 /*! \ingroup ImageControls

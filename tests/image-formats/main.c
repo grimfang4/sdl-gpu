@@ -71,6 +71,113 @@ void update_luminance_alpha_data(GPU_Image* image)
     free(bytes);
 }
 
+void update_bgr_data(GPU_Image* image)
+{
+    if(image == NULL)
+        return;
+    
+    int bytes_per_row = image->bytes_per_pixel * image->w;
+    unsigned int num_pixels = image->w * image->h;
+    unsigned char* bytes = (unsigned char*)malloc(image->bytes_per_pixel * num_pixels);
+    
+    // Alternating columns of red and white
+    int i;
+    for(i = 0; i < num_pixels; i++)
+    {
+        if((i/4)%2 == 0)
+        {
+            bytes[i*image->bytes_per_pixel] = 0;
+            bytes[i*image->bytes_per_pixel+1] = 0;
+            bytes[i*image->bytes_per_pixel+2] = 255;
+        }
+        else
+        {
+            bytes[i*image->bytes_per_pixel] = 255;
+            bytes[i*image->bytes_per_pixel+1] = 255;
+            bytes[i*image->bytes_per_pixel+2] = 255;
+        }
+    }
+    
+    GPU_UpdateImageBytes(image, NULL, bytes, bytes_per_row);
+    free(bytes);
+}
+
+void update_bgra_data(GPU_Image* image)
+{
+    if(image == NULL)
+        return;
+    
+    int bytes_per_row = image->bytes_per_pixel * image->w;
+    unsigned int num_pixels = image->w * image->h;
+    unsigned char* bytes = (unsigned char*)malloc(image->bytes_per_pixel * num_pixels);
+    
+    // Alternating columns of blue and white
+    int i;
+    for(i = 0; i < num_pixels; i++)
+    {
+        if((i/4)%2 == 0)
+        {
+            bytes[i*image->bytes_per_pixel] = 255;
+            bytes[i*image->bytes_per_pixel+1] = 0;
+            bytes[i*image->bytes_per_pixel+2] = 0;
+            bytes[i*image->bytes_per_pixel+3] = 255;
+        }
+        else
+        {
+            bytes[i*image->bytes_per_pixel] = 255;
+            bytes[i*image->bytes_per_pixel+1] = 255;
+            bytes[i*image->bytes_per_pixel+2] = 255;
+            bytes[i*image->bytes_per_pixel+3] = 255;
+        }
+    }
+    
+    GPU_UpdateImageBytes(image, NULL, bytes, bytes_per_row);
+    free(bytes);
+}
+
+void update_abgr_data(GPU_Image* image)
+{
+    if(image == NULL)
+        return;
+    
+    int bytes_per_row = image->bytes_per_pixel * image->w;
+    unsigned int num_pixels = image->w * image->h;
+    unsigned char* bytes = (unsigned char*)malloc(image->bytes_per_pixel * num_pixels);
+    
+    // Alternating columns of green and white
+    int i;
+    for(i = 0; i < num_pixels; i++)
+    {
+        if((i/4)%2 == 0)
+        {
+            bytes[i*image->bytes_per_pixel] = 255;
+            bytes[i*image->bytes_per_pixel+1] = 0;
+            bytes[i*image->bytes_per_pixel+2] = 255;
+            bytes[i*image->bytes_per_pixel+3] = 0;
+        }
+        else
+        {
+            bytes[i*image->bytes_per_pixel] = 255;
+            bytes[i*image->bytes_per_pixel+1] = 255;
+            bytes[i*image->bytes_per_pixel+2] = 255;
+            bytes[i*image->bytes_per_pixel+3] = 255;
+        }
+    }
+    
+    GPU_UpdateImageBytes(image, NULL, bytes, bytes_per_row);
+    free(bytes);
+}
+
+void blit_copy(GPU_Image* src, GPU_Image* dst)
+{
+    GPU_Target* target = GPU_GetTarget(dst);
+    
+    if(target != NULL)
+        GPU_Blit(src, NULL, target, target->w/2, target->h/2);
+    else
+        GPU_LogError("Failed to load target.\n");
+}
+
 int main(int argc, char* argv[])
 {
 	GPU_Target* screen;
@@ -96,6 +203,11 @@ int main(int argc, char* argv[])
         GPU_Image* image_png;
         GPU_Image* image_luminance;
         GPU_Image* image_luminance_alpha;
+        GPU_Image* image_bgr;
+        GPU_Image* image_bgra;
+        GPU_Image* image_abgr;
+        
+        SDL_Color corner_color;
         
         surface = SDL_LoadBMP("data/test_8bit.bmp");
         image8 = copy_and_log(surface);
@@ -137,6 +249,35 @@ int main(int argc, char* argv[])
         log_image_details(image_luminance_alpha);
         update_luminance_alpha_data(image_luminance_alpha);
         
+        GPU_Log("BGR\n");
+        image_bgr = GPU_CreateImage(200, 200, GPU_FORMAT_BGR);
+        if(image_bgr == NULL)
+            return -7;
+        
+        log_image_details(image_bgr);
+        update_bgr_data(image_bgr);
+        
+        GPU_Log("BGRA\n");
+        image_bgra = GPU_CreateImage(200, 200, GPU_FORMAT_BGRA);
+        if(image_bgra == NULL)
+            return -8;
+        
+        log_image_details(image_bgra);
+        update_bgra_data(image_bgra);
+        corner_color = GPU_GetPixel(GPU_GetTarget(image_bgra), 0, 0);
+        GPU_Log("BGRA upper corner in RGBA: (%u, %u, %u, %u)\n", corner_color.r, corner_color.g, corner_color.b, corner_color.a);
+        
+        GPU_Log("ABGR\n");
+        image_abgr = GPU_CreateImage(200, 200, GPU_FORMAT_ABGR);
+        if(image_abgr == NULL)
+            return -9;
+        
+        log_image_details(image_abgr);
+        update_abgr_data(image_abgr);
+        
+        
+        GPU_Log("  Ready\n");
+        
         startTime = SDL_GetTicks();
         frameCount = 0;
         
@@ -156,14 +297,17 @@ int main(int argc, char* argv[])
             
             GPU_Clear(screen);
             
-            GPU_Blit(image8, NULL, screen, image8->w/2, image8->h/2);
-            GPU_Blit(image24, NULL, screen, image8->w + image24->w/2, image24->h/2);
-            GPU_Blit(image32, NULL, screen, image32->w/2, image8->h + image32->h/2);
-            GPU_Blit(image_png, NULL, screen, image8->w + image_png->w/2, image24->h + image_png->h/2);
+            //GPU_Blit(image8, NULL, screen, image8->w/2, image8->h/2);
+            //GPU_Blit(image24, NULL, screen, image8->w + image24->w/2, image24->h/2);
+            //GPU_Blit(image32, NULL, screen, image32->w/2, image8->h + image32->h/2);
+            //GPU_Blit(image_png, NULL, screen, image8->w + image_png->w/2, image24->h + image_png->h/2);
             
             
-            GPU_Blit(image_luminance, NULL, screen, image8->w + image24->w + image_luminance->w/2, image_luminance->h/2);
-            GPU_Blit(image_luminance_alpha, NULL, screen, image8->w + image24->w + image_luminance_alpha->w/2, image_luminance->h + image_luminance_alpha->h/2);
+            //GPU_Blit(image_luminance, NULL, screen, image8->w + image24->w + image_luminance->w/2, image_luminance->h/2);
+            //GPU_Blit(image_luminance_alpha, NULL, screen, image8->w + image24->w + image_luminance_alpha->w/2, image_luminance->h + image_luminance_alpha->h/2);
+            GPU_Blit(image_bgr, NULL, screen, image8->w/2, image8->h/2);
+            GPU_Blit(image_bgra, NULL, screen, image8->w + image24->w/2, image24->h/2);
+            GPU_Blit(image_abgr, NULL, screen, image32->w/2, image8->h + image32->h/2);
             
             GPU_Flip(screen);
             
