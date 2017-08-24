@@ -5423,7 +5423,7 @@ static void DoPartialFlush(GPU_Renderer* renderer, GPU_Target* dest, GPU_Context
 #endif
 }
 
-static void DoUntexturedFlush(GPU_Renderer* renderer, GPU_Context* context, unsigned short num_vertices, float* blit_buffer, unsigned int num_indices, unsigned short* index_buffer)
+static void DoUntexturedFlush(GPU_Renderer* renderer, GPU_Target* dest, GPU_Context* context, unsigned short num_vertices, float* blit_buffer, unsigned int num_indices, unsigned short* index_buffer)
 {
     GPU_CONTEXT_DATA* cdata = (GPU_CONTEXT_DATA*)context->data;
 	(void)renderer;
@@ -5475,12 +5475,24 @@ static void DoUntexturedFlush(GPU_Renderer* renderer, GPU_Context* context, unsi
         // Upload our modelviewprojection matrix
         if(context->current_shader_block.modelViewProjection_loc >= 0)
         {
+            float p[16];
+            float mv[16];
             float mvp[16];
-            float cam_matrix[16];
-            GPU_GetModelViewProjection(mvp);
-            get_camera_matrix(cam_matrix, cdata->last_camera);
             
-            GPU_MultiplyAndAssign(mvp, cam_matrix);
+            GPU_MatrixCopy(p, GPU_GetProjection());
+            GPU_MatrixCopy(mv, GPU_GetModelView());
+            
+            if(dest->use_camera)
+            {
+                float cam_matrix[16];
+                get_camera_matrix(cam_matrix, cdata->last_camera);
+                
+                GPU_MultiplyAndAssign(cam_matrix, p);
+                GPU_MatrixCopy(p, cam_matrix);
+            }
+            
+            // MVP = P * MV
+            GPU_Multiply4x4(mvp, p, mv);
             
             glUniformMatrix4fv(context->current_shader_block.modelViewProjection_loc, 1, 0, mvp);
         }
@@ -5579,7 +5591,7 @@ static void FlushBlitBuffer(GPU_Renderer* renderer)
         }
         else
         {
-            DoUntexturedFlush(renderer, context, cdata->blit_buffer_num_vertices, blit_buffer, cdata->index_buffer_num_vertices, index_buffer);
+            DoUntexturedFlush(renderer, dest, context, cdata->blit_buffer_num_vertices, blit_buffer, cdata->index_buffer_num_vertices, index_buffer);
         }
 
         cdata->blit_buffer_num_vertices = 0;
