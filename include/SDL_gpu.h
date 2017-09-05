@@ -726,8 +726,28 @@ DECLSPEC void SDLCALL GPU_GetRendererOrder(int* order_size, GPU_RendererID* orde
 /*! Sets the renderer ID order to use for initialization.  If 'order' is NULL, it will restore the default order. */
 DECLSPEC void SDLCALL GPU_SetRendererOrder(int order_size, GPU_RendererID* order);
 
-/*! Initializes SDL and SDL_gpu.  Creates a window and goes through the renderer order to create a renderer context.
+/*! Initializes SDL's video subsystem (if necessary) and all of SDL_gpu's internal structures.
+ * Chooses a renderer and creates a window with the given dimensions and window creation flags.
+ * A pointer to the resulting window's render target is returned.
+ * 
+ * \param w Desired window width in pixels
+ * \param h Desired window height in pixels
+ * \param SDL_flags The bit flags to pass to SDL when creating the window.  Use GPU_DEFAULT_INIT_FLAGS if you don't care.
+ * \return On success, returns the new context target (i.e. render target backed by a window).  On failure, returns NULL.
+ * 
+ * Initializes these systems:
+ *  The 'error queue': Stores error codes and description strings.
+ *  The 'renderer registry': An array of information about the supported renderers on the current platform,
+ *    such as the renderer name and id and its life cycle functions.
+ *  The SDL library and its video subsystem: Calls SDL_Init() if SDL has not already been initialized.
+ *    Use SDL_InitSubsystem() to initialize more parts of SDL.
+ *  The current renderer:  Walks through each renderer in the renderer registry and tries to initialize them until one succeeds.
+ *
+ * \see GPU_RendererID
+ * \see GPU_InitRenderer()
+ * \see GPU_InitRendererByID()
  * \see GPU_SetRendererOrder()
+ * \see GPU_PushErrorCode()
  */
 DECLSPEC GPU_Target* SDLCALL GPU_Init(Uint16 w, Uint16 h, GPU_WindowFlagEnum SDL_flags);
 

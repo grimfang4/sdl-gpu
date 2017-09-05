@@ -9,6 +9,28 @@ See LICENSE.txt for details of the usage license granted to you for this code.</
 <p>A good way to use this documentation is to start on the <a href="modules.html">Modules page</a>.</p>
 
 
+\section features FEATURES
+
+* High performance (it automatically collects and submits batches instead of separate draw commands for each sprite and redundant state changes)
+* Shader API
+* Arbitrary geometry rendering (triangles)
+* Can be integrated with explicit OpenGL calls (mixed 2D and 3D)
+* Full blend state control
+* Built-in primitive shapes (points, lines, tris, rects, ellipses, polygons, even arcs)
+* Uses a style familiar to SDL 1.2 users
+* Compatible with either SDL 1.2 or 2.0
+* Loads BMP, TGA, and PNG files via stb-image
+* Rotates and scales about the center of images, making reasoning about the resulting corner coordinates more obvious (adjustable via anchor settings)
+
+\section help_out HELP OUT
+
+SDL_gpu is free and open source!  You can help either by contributing a pull request, filling out a bug report, sending an email, or give me a chance to put more time into it by donating:
+
+<a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=3WJCLJ3P4BV9A">Donate to SDL_gpu development
+</a>
+
+Anything you can do to help is really appreciated!
+
 \section latest_source LATEST SOURCE
 
 <p>SDL_gpu is hosted on Github (https://github.com/grimfang4/sdl-gpu).  You can check out the latest version of the source code with Git:<br>
@@ -19,10 +41,16 @@ See LICENSE.txt for details of the usage license granted to you for this code.</
 
 <p>SDL 1.2 or SDL 2.0 (www.libsdl.org)<br>
 A rendering backend<br>
-	Currently implemented: OpenGL 1.1, OpenGL 2.0, OpenGL 3.0, OpenGL ES 1.1, OpenGL ES 2.0</p>
+	Currently implemented: OpenGL 1.1, OpenGL 2.0, OpenGL 3.0, OpenGL 4.0, OpenGL ES 1.1, OpenGL ES 2.0, OpenGL ES 3.0</p>
 
 
 \section building BUILDING
+
+You can see automated build status at the project page on Travis CI:
+
+<a href="https://travis-ci.org/grimfang4/sdl-gpu.svg?branch=master">[Build Status]</a>
+
+Automated builds will soon be available on the Github.io page.
 
 <p>SDL_gpu uses CMake (www.cmake.org) to coordinate the library build process.  CMake is available as a GUI program or on the command line.</p>
 
@@ -39,13 +67,16 @@ sudo make install</pre></p>
 
 \section including_linking INCLUDING / LINKING
 
-<p>Add the include for SDL_gpu.h to your sources.  Link to SDL_gpu (libSDL_gpu.a) or SDL2_gpu (if you use SDL2).</p>
+<p>Add the include for SDL_gpu.h to your sources.  Link to SDL2_gpu (libSDL2_gpu.a) or SDL_gpu (if you use the old SDL 1.2).</p>
 
 
-\section documentation DOCUMENTATION
+\section documentation FULL DOCUMENTATION
 
-<p>Documentation is automatically generated with Doxygen (http://sourceforge.net/projects/doxygen).<br>
-Pre-generated documentation is hosted by DinoMage Games:
+<p>Documentation is automatically generated with Doxygen (http://sourceforge.net/projects/doxygen).<br><br>
+
+Pre-generated documentation can be found on the Github.io page:<br>
+https://grimfang4.github.io/sdl-gpu/<br>
+And at DinoMage Games:<br>
 http://dinomage.com/reference/SDL_gpu/</p>
 
 */

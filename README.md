@@ -81,7 +81,7 @@ For Windows systems, you can use cmake-gui and select appropriate options in the
 INCLUDING / LINKING
 ===================
 
-Add the include for SDL_gpu.h to your sources.  Link to SDL_gpu (libSDL_gpu.a) or SDL2_gpu (if you use SDL2).
+Add the include for SDL_gpu.h to your sources.  Link to SDL2_gpu (libSDL2_gpu.a) or SDL_gpu (if you use the old SDL 1.2).
 
 
 FULL DOCUMENTATION
