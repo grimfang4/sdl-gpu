@@ -4654,6 +4654,37 @@ static_inline void submit_buffer_data(int bytes, float* values, int bytes_indice
 
 static void SetAttributefv(GPU_Renderer* renderer, int location, int num_elements, float* value);
 
+#ifdef SDL_GPU_USE_BUFFER_PIPELINE
+static void gpu_upload_modelviewprojection(GPU_Target* dest, GPU_Context* context)
+{
+    GPU_CONTEXT_DATA* cdata = (GPU_CONTEXT_DATA*)context->data;
+    if(context->current_shader_block.modelViewProjection_loc >= 0)
+    {
+        float p[16];
+        float mv[16];
+        float mvp[16];
+        
+        GPU_MatrixCopy(p, GPU_GetProjection());
+        GPU_MatrixCopy(mv, GPU_GetModelView());
+        
+        if(dest->use_camera)
+        {
+            float cam_matrix[16];
+            get_camera_matrix(cam_matrix, cdata->last_camera);
+            
+            GPU_MultiplyAndAssign(cam_matrix, p);
+            GPU_MatrixCopy(p, cam_matrix);
+        }
+        
+        // MVP = P * MV
+        GPU_Multiply4x4(mvp, p, mv);
+        
+        glUniformMatrix4fv(context->current_shader_block.modelViewProjection_loc, 1, 0, mvp);
+    }
+}
+#endif
+
+
 // Assumes the right format
 static void TriangleBatchX(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* target, unsigned short num_vertices, void* values, unsigned int num_indices, unsigned short* indices, GPU_BatchFlagEnum flags)
 {
@@ -4918,18 +4949,7 @@ static void TriangleBatchX(GPU_Renderer* renderer, GPU_Image* image, GPU_Target*
         glBindVertexArray(cdata->blit_VAO);
         #endif
 
-        // Upload our modelviewprojection matrix
-        if(context->current_shader_block.modelViewProjection_loc >= 0)
-        {
-            float mvp[16];
-            float cam_matrix[16];
-            GPU_GetModelViewProjection(mvp);
-            get_camera_matrix(cam_matrix, cdata->last_camera);
-            
-            GPU_MultiplyAndAssign(mvp, cam_matrix);
-            
-            glUniformMatrix4fv(context->current_shader_block.modelViewProjection_loc, 1, 0, mvp);
-        }
+        gpu_upload_modelviewprojection(target, context);
 
         if(values != NULL)
         {
@@ -5344,7 +5364,6 @@ static void DoPartialFlush(GPU_Renderer* renderer, GPU_Target* dest, GPU_Context
 
 
 
-
 #ifdef SDL_GPU_USE_BUFFER_PIPELINE
         {
             // Update the vertex array object's buffers
@@ -5352,30 +5371,7 @@ static void DoPartialFlush(GPU_Renderer* renderer, GPU_Target* dest, GPU_Context
             glBindVertexArray(cdata->blit_VAO);
             #endif
 
-            // Upload our modelviewprojection matrix
-            if(context->current_shader_block.modelViewProjection_loc >= 0)
-            {
-                float p[16];
-                float mv[16];
-                float mvp[16];
-                
-                GPU_MatrixCopy(p, GPU_GetProjection());
-                GPU_MatrixCopy(mv, GPU_GetModelView());
-                
-                if(dest->use_camera)
-                {
-                    float cam_matrix[16];
-                    get_camera_matrix(cam_matrix, cdata->last_camera);
-                    
-                    GPU_MultiplyAndAssign(cam_matrix, p);
-                    GPU_MatrixCopy(p, cam_matrix);
-                }
-                
-                // MVP = P * MV
-                GPU_Multiply4x4(mvp, p, mv);
-                
-                glUniformMatrix4fv(context->current_shader_block.modelViewProjection_loc, 1, 0, mvp);
-            }
+            gpu_upload_modelviewprojection(dest, context);
 
             // Upload blit buffer to a single buffer object
             glBindBuffer(GL_ARRAY_BUFFER, cdata->blit_VBO[cdata->blit_VBO_flop]);
@@ -5472,30 +5468,7 @@ static void DoUntexturedFlush(GPU_Renderer* renderer, GPU_Target* dest, GPU_Cont
         glBindVertexArray(cdata->blit_VAO);
         #endif
 
-        // Upload our modelviewprojection matrix
-        if(context->current_shader_block.modelViewProjection_loc >= 0)
-        {
-            float p[16];
-            float mv[16];
-            float mvp[16];
-            
-            GPU_MatrixCopy(p, GPU_GetProjection());
-            GPU_MatrixCopy(mv, GPU_GetModelView());
-            
-            if(dest->use_camera)
-            {
-                float cam_matrix[16];
-                get_camera_matrix(cam_matrix, cdata->last_camera);
-                
-                GPU_MultiplyAndAssign(cam_matrix, p);
-                GPU_MatrixCopy(p, cam_matrix);
-            }
-            
-            // MVP = P * MV
-            GPU_Multiply4x4(mvp, p, mv);
-            
-            glUniformMatrix4fv(context->current_shader_block.modelViewProjection_loc, 1, 0, mvp);
-        }
+        gpu_upload_modelviewprojection(dest, context);
 
         // Upload blit buffer to a single buffer object
         glBindBuffer(GL_ARRAY_BUFFER, cdata->blit_VBO[cdata->blit_VBO_flop]);
