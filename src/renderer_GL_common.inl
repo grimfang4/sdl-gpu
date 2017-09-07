@@ -1111,9 +1111,9 @@ static void get_camera_matrix(float* result, GPU_Camera camera)
 
     // Now multiply in the projection part
     if(!invert ^ GPU_GetCoordinateMode())
-        GPU_MatrixOrtho(result, target->camera.x, target->w + target->camera.x, target->h + target->camera.y, target->camera.y, -1.0f, 1.0f);
+        GPU_MatrixOrtho(result, target->camera.x, target->w + target->camera.x, target->h + target->camera.y, target->camera.y, -100.0f, 100.0f);
     else
-        GPU_MatrixOrtho(result, target->camera.x, target->w + target->camera.x, target->camera.y, target->h + target->camera.y, -1.0f, 1.0f);  // Special inverted orthographic projection because tex coords are inverted already for render-to-texture
+        GPU_MatrixOrtho(result, target->camera.x, target->w + target->camera.x, target->camera.y, target->h + target->camera.y, -100.0f, 100.0f);  // Special inverted orthographic projection because tex coords are inverted already for render-to-texture
 
     // First the modelview part
     offsetX = target->w/2.0f;
@@ -1633,7 +1633,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     // Viewport and Framebuffer
     glViewport(0.0f, 0.0f, target->viewport.w, target->viewport.h);
 
-    glClear( GL_COLOR_BUFFER_BIT );
+    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
     #if SDL_GPU_GL_TIER < 3
     glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
     #endif
@@ -1950,7 +1950,7 @@ static GPU_bool SetWindowResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
 
     // Clear target (no state change)
     glClearColor( 0.0f, 0.0f, 0.0f, 0.0f );
-    glClear( GL_COLOR_BUFFER_BIT );
+    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 #endif
 
     // Store the resolution for fullscreen_desktop changes
@@ -5309,7 +5309,7 @@ static void ClearRGBA(GPU_Renderer* renderer, GPU_Target* target, Uint8 r, Uint8
         setClipRect(renderer, target);
 
         glClearColor(r/255.0f, g/255.0f, b/255.0f, a/255.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         unsetClipRect(renderer, target);
     }
