@@ -1092,7 +1092,7 @@ SDL_Surface* GPU_LoadSurface_RW(SDL_RWops* rwops, GPU_bool free_rwops)
     unsigned char* data;
     SDL_Surface* result;
     
-    int data_bytes;
+    Sint64 data_bytes;
     unsigned char* c_data;
 
     if(rwops == NULL)
@@ -1111,7 +1111,7 @@ SDL_Surface* GPU_LoadSurface_RW(SDL_RWops* rwops, GPU_bool free_rwops)
     SDL_RWread(rwops, c_data, 1, data_bytes);
     
     // Load image
-    data = stbi_load_from_memory(c_data, data_bytes, &width, &height, &channels, 0);
+    data = stbi_load_from_memory(c_data, (int)data_bytes, &width, &height, &channels, 0);
     
     // Clean up temp data
     SDL_free(c_data);

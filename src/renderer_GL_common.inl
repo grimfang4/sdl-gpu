@@ -4690,7 +4690,8 @@ static void TriangleBatchX(GPU_Renderer* renderer, GPU_Image* image, GPU_Target*
 {
     GPU_Context* context;
 	GPU_CONTEXT_DATA* cdata;
-	intptr_t stride, offset_texcoords, offset_colors;
+    int stride;
+	intptr_t offset_texcoords, offset_colors;
 	int size_vertices, size_texcoords, size_colors;
 
 	GPU_bool using_texture = (image != NULL);
@@ -4860,13 +4861,13 @@ static void TriangleBatchX(GPU_Renderer* renderer, GPU_Image* image, GPU_Target*
         if(use_vertices)
             glVertexPointer(size_vertices, GL_FLOAT, stride, values);
         if(use_texcoords)
-            glTexCoordPointer(size_texcoords, GL_FLOAT, stride, values + offset_texcoords);
+            glTexCoordPointer(size_texcoords, GL_FLOAT, stride, (GLubyte*)values + offset_texcoords);
         if(use_colors)
         {
             if(use_byte_colors)
-                glColorPointer(size_colors, GL_UNSIGNED_BYTE, stride, values + offset_colors);
+                glColorPointer(size_colors, GL_UNSIGNED_BYTE, stride, (GLubyte*)values + offset_colors);
             else
-                glColorPointer(size_colors, GL_FLOAT, stride, values + offset_colors);
+                glColorPointer(size_colors, GL_FLOAT, stride, (GLubyte*)values + offset_colors);
         }
 
         // Upload
