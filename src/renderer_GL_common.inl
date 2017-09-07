@@ -4987,10 +4987,9 @@ static void TriangleBatchX(GPU_Renderer* renderer, GPU_Image* image, GPU_Target*
             else
             {
                 SDL_Color color = get_complete_mod_color(renderer, target, image);
-                #if SDL_MAJOR_VERSION > 1
+                #if SDL_GPU_USE_SDL2
                 float default_color[4] = {color.r/255.0f, color.g/255.0f, color.b/255.0f, color.a/255.0f};
                 #else
-		// SDL1's SDL_Color does not have a .a property. Use unused instead.
                 float default_color[4] = {color.r/255.0f, color.g/255.0f, color.b/255.0f, color.unused/255.0f};
                 #endif
                 SetAttributefv(renderer, context->current_shader_block.color_loc, 4, default_color);
