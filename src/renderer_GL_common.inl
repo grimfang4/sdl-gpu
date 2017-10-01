@@ -4988,7 +4988,7 @@ static void TriangleBatchX(GPU_Renderer* renderer, GPU_Image* image, GPU_Target*
             else
             {
                 SDL_Color color = get_complete_mod_color(renderer, target, image);
-                float default_color[4] = {color.r/255.0f, color.g/255.0f, color.b/255.0f, color.a/255.0f};
+                float default_color[4] = {color.r/255.0f, color.g/255.0f, color.b/255.0f, GET_ALPHA(color)/255.0f};
                 SetAttributefv(renderer, context->current_shader_block.color_loc, 4, default_color);
             }
         }
