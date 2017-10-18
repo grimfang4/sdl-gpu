@@ -9,11 +9,9 @@
 #ifdef __IPHONEOS__
     #include <OpenGLES/ES3/gl.h>
     #include <OpenGLES/ES3/glext.h>
-#elif defined(SDL_GPU_DYNAMIC_GLES_3)
-    #include "gl3stub.h"
 #else
     #include "GLES3/gl3.h"
-    #include "GLES2/gl2ext.h"
+    #include "GLES3/gl3ext.h"
 #endif
 
 	#define glVertexAttribI1i glVertexAttrib1f
@@ -125,7 +123,7 @@ typedef struct ContextData_GLES_3
 	GPU_Rect last_viewport;
 	GPU_Camera last_camera;
 	GPU_bool last_camera_inverted;
-	
+
 	GPU_Image* last_image;
 	GPU_Target* last_target;
 	float* blit_buffer;  // Holds sets of 4 vertices, each with interleaved position, tex coords, and colors (e.g. [x0, y0, z0, s0, t0, r0, g0, b0, a0, ...]).
@@ -134,13 +132,13 @@ typedef struct ContextData_GLES_3
 	unsigned short* index_buffer;  // Indexes into the blit buffer so we can use 4 vertices for every 2 triangles (1 quad)
 	unsigned int index_buffer_num_vertices;
 	unsigned int index_buffer_max_num_vertices;
-    
+
     // Tier 3 rendering
     unsigned int blit_VAO;
     unsigned int blit_VBO[2];  // For double-buffering
     unsigned int blit_IBO;
     GPU_bool blit_VBO_flop;
-    
+
 	GPU_AttributeSource shader_attributes[16];
 	unsigned int attribute_VBO[16];
 } ContextData_GLES_3;

@@ -1,0 +1,55 @@
+/*!
+\mainpage
+
+<p>SDL_gpu is a C code library for making hardware-accelerated 2D graphics easy.</p>
+
+<p>SDL_gpu is licensed under the terms of the MIT License.<br>
+See LICENSE.txt for details of the usage license granted to you for this code.</p>
+
+<p>A good way to use this documentation is to start on the <a href="modules.html">Modules page</a>.</p>
+
+
+\section latest_source LATEST SOURCE
+
+<p>SDL_gpu is hosted on Github (https://github.com/grimfang4/sdl-gpu).  You can check out the latest version of the source code with Git:<br>
+<pre>git clone https://github.com/grimfang4/sdl-gpu.git sdl-gpu</pre></p>
+
+
+\section dependencies DEPENDENCIES
+
+<p>SDL 1.2 or SDL 2.0 (www.libsdl.org)<br>
+A rendering backend<br>
+	Currently implemented: OpenGL 1.1, OpenGL 2.0, OpenGL 3.0, OpenGL ES 1.1, OpenGL ES 2.0</p>
+
+
+\section building BUILDING
+
+<p>SDL_gpu uses CMake (www.cmake.org) to coordinate the library build process.  CMake is available as a GUI program or on the command line.</p>
+
+<p>For Linux/UNIX systems, run CMake in the base directory:<br>
+<pre>cmake -G "Unix Makefiles"
+make
+sudo make install</pre></p>
+
+<p>For Linux/UNIX systems, changing the default installation directory can be done like so:<br>
+<pre>cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX=/usr</pre></p>
+
+<p>For Windows systems, you can use cmake-gui and select appropriate options in there (warning: cmake-gui is messy!).</p>
+
+
+\section including_linking INCLUDING / LINKING
+
+<p>Add the include for SDL_gpu.h to your sources.  Link to SDL_gpu (libSDL_gpu.a) or SDL2_gpu (if you use SDL2).</p>
+
+
+\section documentation DOCUMENTATION
+
+<p>Documentation is automatically generated with Doxygen (http://sourceforge.net/projects/doxygen).<br>
+Pre-generated documentation is hosted by DinoMage Games:
+http://dinomage.com/reference/SDL_gpu/</p>
+
+*/
+
+
+
+ 
