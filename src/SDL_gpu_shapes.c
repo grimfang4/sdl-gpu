@@ -1,6 +1,5 @@
 #include "SDL_gpu.h"
 #include "SDL_gpu_RendererImpl.h"
-#include <string.h>
 
 #define CHECK_RENDERER() \
 GPU_Renderer* renderer = GPU_GetCurrentRenderer(); \
@@ -31,10 +30,16 @@ void GPU_Pixel(GPU_Target* target, float x, float y, SDL_Color color)
 	renderer->impl->Pixel(renderer, target, x, y, color);
 }
 
-void GPU_Line(GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color)
+
+void GPU_Pixels(GPU_Target* target, float* coords, SDL_Color* colors,unsigned int count)
 {
 	CHECK_RENDERER();
-	renderer->impl->Line(renderer, target, x1, y1, x2, y2, color);
+	int c;
+	int coords_len = count*2;
+	for (c=0;c<coords_len;c+=2){
+	CHECK_RENDERER();
+		renderer->impl->Pixel(renderer, target, coords[c], coords[c+1], colors[c]);
+	}
 }
 
 

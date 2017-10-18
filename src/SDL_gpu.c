@@ -5,7 +5,7 @@
 #include "stb_image_write.h"
 #include <stdlib.h>
 #include <string.h>
-
+#include <SDL_Image.h>
 #ifdef __ANDROID__
 #include <android/log.h>
 #endif
@@ -69,6 +69,7 @@ static GPU_InitFlagEnum _gpu_required_features = 0;
 
 static GPU_bool _gpu_initialized_SDL_core = GPU_FALSE;
 static GPU_bool _gpu_initialized_SDL = GPU_FALSE;
+static GPU_bool _gpu_was_initialized = GPU_FALSE;
 
 static int (*_gpu_print)(GPU_LogLevelEnum log_level, const char* format, va_list args) = &gpu_default_print;
 
@@ -119,7 +120,7 @@ Uint32 GPU_GetCurrentShaderProgram(void)
 {
     if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL)
         return 0;
-    
+
     return _gpu_current_renderer->current_context_target->context->current_shader_program;
 }
 
@@ -423,11 +424,17 @@ GPU_Target* GPU_Init(Uint16 w, Uint16 h, GPU_WindowFlagEnum SDL_flags)
     {
         GPU_Target* screen = GPU_InitRendererByID(renderer_order[i], w, h, SDL_flags);
         if(screen != NULL)
+        {
             return screen;
+        }
     }
 
     GPU_PushErrorCode("GPU_Init", GPU_ERROR_BACKEND_ERROR, "No renderer out of %d was able to initialize properly", renderer_order_size);
     return NULL;
+}
+GPU_bool GPU_WasInitialized()
+{
+   return _gpu_was_initialized;
 }
 
 GPU_Target* GPU_InitRenderer(GPU_RendererEnum renderer_enum, Uint16 w, Uint16 h, GPU_WindowFlagEnum SDL_flags)
@@ -464,6 +471,7 @@ GPU_Target* GPU_InitRendererByID(GPU_RendererID renderer_request, Uint16 w, Uint
     }
     else
         GPU_SetInitWindow(0);
+    _gpu_was_initialized = GPU_TRUE;
     return screen;
 }
 
@@ -675,6 +683,7 @@ void GPU_Quit(void)
             _gpu_initialized_SDL_core = 0;
         }
     }
+    _gpu_was_initialized = GPU_FALSE;
 }
 
 void GPU_SetDebugLevel(GPU_DebugLevelEnum level)
@@ -813,7 +822,7 @@ void GPU_GetVirtualCoords(GPU_Target* target, float* x, float* y, float displayX
         if(y != NULL)
             *y = displayY;
     }
-    
+
     // Invert coordinates to math coords
     if(_gpu_current_renderer->coordinate_mode)
         *y = target->h - *y;
@@ -866,7 +875,7 @@ void GPU_UnsetViewport(GPU_Target* target)
 
 GPU_Camera GPU_GetDefaultCamera(void)
 {
-    GPU_Camera cam = {0.0f, 0.0f, -10.0f, 0.0f, 1.0f};
+    GPU_Camera cam = {0.0f, 0.0f, -10.0f, 0.0f, 1.0f,1.0f};
     return cam;
 }
 
@@ -930,7 +939,7 @@ GPU_Image* GPU_LoadImage_RW(SDL_RWops* rwops, GPU_bool free_rwops)
 	SDL_Surface* surface;
     if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL)
         return NULL;
-        
+
     surface = GPU_LoadSurface_RW(rwops, free_rwops);
     if(surface == NULL)
     {
@@ -1009,13 +1018,13 @@ static SDL_Surface* gpu_copy_raw_surface_data(unsigned char* data, int width, in
     int i;
     Uint32 Rmask, Gmask, Bmask, Amask = 0;
     SDL_Surface* result;
-    
+
     if(data == NULL)
     {
         GPU_PushErrorCode(__func__, GPU_ERROR_DATA_ERROR, "Got NULL data");
         return NULL;
     }
-    
+
     switch(channels)
     {
     case 1:
@@ -1061,7 +1070,7 @@ static SDL_Surface* gpu_copy_raw_surface_data(unsigned char* data, int width, in
     {
         memcpy((Uint8*)result->pixels + i*result->pitch, data + channels*width*i, channels*width);
     }
-    
+
     if(result != NULL && result->format->palette != NULL)
     {
         // SDL_CreateRGBSurface has no idea what palette to use, so it uses a blank one.
@@ -1082,7 +1091,7 @@ static SDL_Surface* gpu_copy_raw_surface_data(unsigned char* data, int width, in
         SDL_SetPalette(result, SDL_LOGPAL, colors, 0, 256);
 #endif
     }
-    
+
     return result;
 }
 
@@ -1091,8 +1100,8 @@ SDL_Surface* GPU_LoadSurface_RW(SDL_RWops* rwops, GPU_bool free_rwops)
     int width, height, channels;
     unsigned char* data;
     SDL_Surface* result;
-    
-    Sint64 data_bytes;
+
+    int data_bytes;
     unsigned char* c_data;
 
     if(rwops == NULL)
@@ -1105,14 +1114,14 @@ SDL_Surface* GPU_LoadSurface_RW(SDL_RWops* rwops, GPU_bool free_rwops)
     SDL_RWseek(rwops, 0, SEEK_SET);
     data_bytes = SDL_RWseek(rwops, 0, SEEK_END);
     SDL_RWseek(rwops, 0, SEEK_SET);
-    
+
     // Read in the rwops data
     c_data = (unsigned char*)SDL_malloc(data_bytes);
     SDL_RWread(rwops, c_data, 1, data_bytes);
-    
+
     // Load image
-    data = stbi_load_from_memory(c_data, (int)data_bytes, &width, &height, &channels, 0);
-    
+    data = stbi_load_from_memory(c_data, data_bytes, &width, &height, &channels, 0);
+
     // Clean up temp data
     SDL_free(c_data);
     if(free_rwops)
@@ -1130,7 +1139,9 @@ SDL_Surface* GPU_LoadSurface_RW(SDL_RWops* rwops, GPU_bool free_rwops)
     stbi_image_free(data);
 
     return result;
+   // return IMG_Load_RW(rwops,free_rwops);
 }
+
 
 SDL_Surface* GPU_LoadSurface(const char* filename)
 {
@@ -1179,7 +1190,8 @@ GPU_bool GPU_SaveSurface(SDL_Surface* surface, const char* filename, GPU_FileFor
     switch(format)
     {
     case GPU_FILE_PNG:
-        result = (stbi_write_png(filename, surface->w, surface->h, surface->format->BytesPerPixel, (const unsigned char *const)data, 0) > 0);
+       // result = (stbi_write_png(filename, surface->w, surface->h, surface->format->BytesPerPixel, (const unsigned char *const)data, 0) > 0);
+         result =  !IMG_SavePNG(surface,filename);
         break;
     case GPU_FILE_BMP:
         result = (stbi_write_bmp(filename, surface->w, surface->h, surface->format->BytesPerPixel, (void*)data) > 0);
@@ -1224,7 +1236,8 @@ GPU_bool GPU_SaveSurface_RW(SDL_Surface* surface, SDL_RWops* rwops, GPU_bool fre
     switch(format)
     {
     case GPU_FILE_PNG:
-        result = (stbi_write_png_to_func(write_func, rwops, surface->w, surface->h, surface->format->BytesPerPixel, (const unsigned char *const)data, surface->pitch) > 0);
+     //   result = (stbi_write_png_to_func(write_func, rwops, surface->w, surface->h, surface->format->BytesPerPixel, (const unsigned char *const)data, surface->pitch) > 0);
+      result =   !IMG_SavePNG_RW(surface,rwops,false);
         break;
     case GPU_FILE_BMP:
         result = (stbi_write_bmp_to_func(write_func, rwops, surface->w, surface->h, surface->format->BytesPerPixel, (const unsigned char *const)data) > 0);
@@ -1301,21 +1314,10 @@ GPU_Target* GPU_GetContextTarget(void)
 
 GPU_Target* GPU_LoadTarget(GPU_Image* image)
 {
-	GPU_Target* result = GPU_GetTarget(image);
-	
-	if(result != NULL)
-        result->refcount++;
-    
-    return result;
-}
-
-
-GPU_Target* GPU_GetTarget(GPU_Image* image)
-{
     if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL)
         return NULL;
 
-    return _gpu_current_renderer->impl->GetTarget(_gpu_current_renderer, image);
+    return _gpu_current_renderer->impl->LoadTarget(_gpu_current_renderer, image);
 }
 
 
@@ -1415,10 +1417,10 @@ void GPU_BlitRect(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, GPU_
 {
     float w = 0.0f;
     float h = 0.0f;
-    
+
     if(image == NULL)
         return;
-    
+
     if(src_rect == NULL)
     {
         w = image->w;
@@ -1429,7 +1431,7 @@ void GPU_BlitRect(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, GPU_
         w = src_rect->w;
         h = src_rect->h;
     }
-    
+
     GPU_BlitRectX(image, src_rect, target, dest_rect, 0.0f, w*0.5f, h*0.5f, GPU_FLIP_NONE);
 }
 
@@ -1439,10 +1441,10 @@ void GPU_BlitRectX(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, GPU
     float dx, dy;
     float dw, dh;
     float scale_x, scale_y;
-    
+
     if(image == NULL || target == NULL)
         return;
-    
+
     if(src_rect == NULL)
     {
         w = image->w;
@@ -1453,7 +1455,7 @@ void GPU_BlitRectX(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, GPU
         w = src_rect->w;
         h = src_rect->h;
     }
-    
+
     if(dest_rect == NULL)
     {
         dx = 0.0f;
@@ -1468,24 +1470,16 @@ void GPU_BlitRectX(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, GPU
         dw = dest_rect->w;
         dh = dest_rect->h;
     }
-    
+
     scale_x = dw / w;
     scale_y = dh / h;
-    
+
     if(flip_direction & GPU_FLIP_HORIZONTAL)
-    {
         scale_x = -scale_x;
-        dx += dw;
-        pivot_x = w - pivot_x;
-    }
     if(flip_direction & GPU_FLIP_VERTICAL)
-    {
         scale_y = -scale_y;
-        dy += dh;
-        pivot_y = h - pivot_y;
-    }
-    
-    GPU_BlitTransformX(image, src_rect, target, dx + pivot_x * scale_x, dy + pivot_y * scale_y, pivot_x, pivot_y, degrees, scale_x, scale_y);
+
+    GPU_BlitTransformX(image, src_rect, target, dx + pivot_x, dy + pivot_y, pivot_x, pivot_y, degrees, scale_x, scale_y);
 }
 
 void GPU_TriangleBatch(GPU_Image* image, GPU_Target* target, unsigned short num_vertices, float* values, unsigned int num_indices, unsigned short* indices, GPU_BatchFlagEnum flags)
@@ -1575,10 +1569,10 @@ GPU_bool GPU_IntersectRect(GPU_Rect A, GPU_Rect B, GPU_Rect* result)
         Amin = Bmin;
     if (Bmax < Amax)
         Amax = Bmax;
-    
+
     intersection.x = Amin;
     intersection.w = Amax - Amin;
-    
+
     has_horiz_intersection = (Amax > Amin);
 
     // Vertical intersection
@@ -1590,10 +1584,10 @@ GPU_bool GPU_IntersectRect(GPU_Rect A, GPU_Rect B, GPU_Rect* result)
         Amin = Bmin;
     if (Bmax < Amax)
         Amax = Bmax;
-    
+
     intersection.y = Amin;
     intersection.h = Amax - Amin;
-    
+
     if(has_horiz_intersection && Amax > Amin)
     {
         if(result != NULL)
@@ -1609,13 +1603,13 @@ GPU_bool GPU_IntersectClipRect(GPU_Target* target, GPU_Rect B, GPU_Rect* result)
 {
     if(target == NULL)
         return GPU_FALSE;
-    
+
     if(!target->use_clip_rect)
     {
         GPU_Rect A = {0, 0, target->w, target->h};
         return GPU_IntersectRect(A, B, result);
     }
-    
+
     return GPU_IntersectRect(target->clip_rect, B, result);
 }
 
@@ -1891,7 +1885,17 @@ void GPU_SetShapeBlendMode(GPU_BlendPresetEnum preset)
     GPU_SetShapeBlendFunction(b.source_color, b.dest_color, b.source_alpha, b.dest_alpha);
     GPU_SetShapeBlendEquation(b.color_equation, b.alpha_equation);
 }
+Uint32 GPU_GetImageHandle(GPU_Image* image)
+{
+    if (image == NULL)
+        return 0;
+    if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL)
+        return 0;
+    if(image == NULL)
+        return 0;
 
+    return _gpu_current_renderer->impl->GetImageHandle(image);
+}
 void GPU_SetImageFilter(GPU_Image* image, GPU_FilterEnum filter)
 {
     if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL)
@@ -1907,7 +1911,7 @@ void GPU_SetDefaultAnchor(float anchor_x, float anchor_y)
 {
     if(_gpu_current_renderer == NULL)
         return;
-    
+
     _gpu_current_renderer->default_image_anchor_x = anchor_x;
     _gpu_current_renderer->default_image_anchor_y = anchor_y;
 }
@@ -1916,10 +1920,10 @@ void GPU_GetDefaultAnchor(float* anchor_x, float* anchor_y)
 {
     if(_gpu_current_renderer == NULL)
         return;
-    
+
     if(anchor_x != NULL)
         *anchor_x = _gpu_current_renderer->default_image_anchor_x;
-    
+
     if(anchor_y != NULL)
         *anchor_y = _gpu_current_renderer->default_image_anchor_y;
 }
@@ -1937,10 +1941,10 @@ void GPU_GetAnchor(GPU_Image* image, float* anchor_x, float* anchor_y)
 {
     if(image == NULL)
         return;
-    
+
     if(anchor_x != NULL)
         *anchor_x = image->anchor_x;
-    
+
     if(anchor_y != NULL)
         *anchor_y = image->anchor_y;
 }
@@ -2045,13 +2049,6 @@ void GPU_Flip(GPU_Target* target)
 {
     if(!CHECK_RENDERER)
         RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL renderer");
-    
-    if(target != NULL && target->context == NULL)
-    {
-        _gpu_current_renderer->impl->FlushBlitBuffer(_gpu_current_renderer);
-        return;
-    }
-    
     MAKE_CURRENT_IF_NONE(target);
     if(!CHECK_CONTEXT)
         RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL context");
@@ -2087,14 +2084,14 @@ Uint32 GPU_LoadShader(GPU_ShaderEnum shader_type, const char* filename)
         GPU_PushErrorCode(__func__, GPU_ERROR_NULL_ARGUMENT, "filename");
         return 0;
     }
-    
+
     rwops = SDL_RWFromFile(filename, "r");
     if(rwops == NULL)
     {
         GPU_PushErrorCode(__func__, GPU_ERROR_FILE_NOT_FOUND, "%s", filename);
         return 0;
     }
-    
+
     return GPU_CompileShader_RW(shader_type, rwops, 1);
 }
 
@@ -2527,6 +2524,6 @@ int gpu_strcasecmp(const char* s1, const char* s2)
 
 
 #ifdef _MSC_VER
-    #pragma warning(pop) 
+    #pragma warning(pop)
 #endif
 
