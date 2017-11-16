@@ -1251,6 +1251,9 @@ DECLSPEC void SDLCALL GPU_VectorCopy(float* result, const float* A);
 /*! Multiplies the given matrix into the given vector (vec3 = matrix*vec3). */
 DECLSPEC void SDLCALL GPU_VectorApplyMatrix(float* vec3, const float* matrix_4x4);
 
+/*! Multiplies the given matrix into the given vector (vec4 = matrix*vec4). */
+DECLSPEC void SDLCALL GPU_Vector4ApplyMatrix(float* vec4, const float* matrix_4x4);
+
 
 
 // Basic matrix operations (4x4)
