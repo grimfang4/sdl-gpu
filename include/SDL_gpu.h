@@ -330,16 +330,13 @@ typedef struct GPU_ShaderBlock
 #define GPU_MODELVIEW 0
 #define GPU_PROJECTION 1
 
-#ifndef GPU_MATRIX_STACK_MAX
-#define GPU_MATRIX_STACK_MAX 5
-#endif
-
 /*! \ingroup Matrix
  * Matrix stack data structure for global vertex transforms.  */
 typedef struct GPU_MatrixStack
 {
+    unsigned int storage_size;
     unsigned int size;
-    float matrix[GPU_MATRIX_STACK_MAX][16];
+    float** matrix;
 } GPU_MatrixStack;
 
 
@@ -1237,22 +1234,22 @@ DECLSPEC SDL_Surface* SDLCALL GPU_CopySurfaceFromImage(GPU_Image* image);
 // Basic vector operations (3D)
 
 /*! Returns the magnitude (length) of the given vector. */
-DECLSPEC float SDLCALL GPU_VectorLength(float* vec3);
+DECLSPEC float SDLCALL GPU_VectorLength(const float* vec3);
 
 /*! Modifies the given vector so that it has a new length of 1. */
 DECLSPEC void SDLCALL GPU_VectorNormalize(float* vec3);
 
 /*! Returns the dot product of two vectors. */
-DECLSPEC float SDLCALL GPU_VectorDot(float* A, float* B);
+DECLSPEC float SDLCALL GPU_VectorDot(const float* A, const float* B);
 
 /*! Performs the cross product of vectors A and B (result = A x B).  Do not use A or B as 'result'. */
-DECLSPEC void SDLCALL GPU_VectorCross(float* result, float* A, float* B);
+DECLSPEC void SDLCALL GPU_VectorCross(float* result, const float* A, const float* B);
 
 /*! Overwrite 'result' vector with the values from vector A. */
-DECLSPEC void SDLCALL GPU_VectorCopy(float* result, float* A);
+DECLSPEC void SDLCALL GPU_VectorCopy(float* result, const float* A);
 
 /*! Multiplies the given matrix into the given vector (vec3 = matrix*vec3). */
-DECLSPEC void SDLCALL GPU_VectorApplyMatrix(float* vec3, float* matrix_4x4);
+DECLSPEC void SDLCALL GPU_VectorApplyMatrix(float* vec3, const float* matrix_4x4);
 
 
 
@@ -1288,16 +1285,16 @@ DECLSPEC void SDLCALL GPU_MatrixRotate(float* result, float degrees, float x, fl
 /*! Multiplies matrices A and B and stores the result in the given 'result' matrix (result = A*B).  Do not use A or B as 'result'.
  * \see GPU_MultiplyAndAssign
 */
-DECLSPEC void SDLCALL GPU_Multiply4x4(float* result, float* A, float* B);
+DECLSPEC void SDLCALL GPU_MatrixMultiply(float* result, const float* A, const float* B);
 
 /*! Multiplies matrices 'result' and B and stores the result in the given 'result' matrix (result = result * B). */
-DECLSPEC void SDLCALL GPU_MultiplyAndAssign(float* result, float* B);
+DECLSPEC void SDLCALL GPU_MultiplyAndAssign(float* result, const float* B);
 
 
 // Matrix stack accessors
 
 /*! Returns an internal string that represents the contents of matrix A. */
-DECLSPEC const char* SDLCALL GPU_GetMatrixString(float* A);
+DECLSPEC const char* SDLCALL GPU_GetMatrixString(const float* A);
 
 /*! Returns the current matrix from the top of the matrix stack.  Returns NULL if stack is empty. */
 DECLSPEC float* SDLCALL GPU_GetCurrentMatrix(void);
@@ -1314,6 +1311,9 @@ DECLSPEC void SDLCALL GPU_GetModelViewProjection(float* result);
 
 // Matrix stack manipulators
 
+/*! Allocate new matrices for the given stack. */
+DECLSPEC void SDLCALL GPU_InitMatrixStack(GPU_MatrixStack* stack);
+
 /*! Changes matrix mode to either GPU_PROJECTION or GPU_MODELVIEW.  Further matrix stack operations manipulate that particular stack. */
 DECLSPEC void SDLCALL GPU_MatrixMode(int matrix_mode);
 
@@ -1325,6 +1325,9 @@ DECLSPEC void SDLCALL GPU_PopMatrix(void);
 
 /*! Fills current matrix with the identity matrix. */
 DECLSPEC void SDLCALL GPU_LoadIdentity(void);
+
+/*! Copies a given matrix to be the current matrix. */
+DECLSPEC void SDLCALL GPU_LoadMatrix(const float* matrix4x4);
 
 /*! Multiplies an orthographic projection matrix into the current matrix. */
 DECLSPEC void SDLCALL GPU_Ortho(float left, float right, float bottom, float top, float near, float far);
@@ -1342,7 +1345,7 @@ DECLSPEC void SDLCALL GPU_Scale(float sx, float sy, float sz);
 DECLSPEC void SDLCALL GPU_Rotate(float degrees, float x, float y, float z);
 
 /*! Multiplies a given matrix into the current matrix. */
-DECLSPEC void SDLCALL GPU_MultMatrix(float* matrix4x4);
+DECLSPEC void SDLCALL GPU_MultMatrix(const float* matrix4x4);
 
 // End of Matrix
 /*! @} */

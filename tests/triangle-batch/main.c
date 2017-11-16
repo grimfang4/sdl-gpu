@@ -380,6 +380,50 @@ int do_indexed(GPU_Target* screen)
 		GPU_Clear(screen);
 		
         GPU_TriangleBatch(image, screen, num_vertices, vertex_values, num_vertices, indices, GPU_BATCH_XY_ST_RGBA);
+        
+        {
+            // Quad
+            int n_v = 4;
+            float v[] = {0, 0, 0, 0,
+                       100, 0, 1, 0,
+                       0, 100, 0, 1,
+                       100, 100, 1, 1};
+            
+            int n_i = 6;
+            unsigned short i[] = {0, 1, 2, 1, 3, 2};
+            GPU_TriangleBatch(image, screen, n_v, v, n_i, i, GPU_BATCH_XY_ST);
+        }
+        
+        {
+            // Star
+            int n_v = 10;
+            float v[] = {0, -300,    0.5, 0,  // top
+                         100, -110,  0.667, 0.317,  // top to right
+                         300, -70,   1,   0.383,  // right
+                         160, 90,    0.767,   0.65,  // right to bot
+                         190, 300,   0.817, 1,  // bot right
+                         0, 210,     0.5, 0.75,  // bot right to bot left
+                         -190, 300,  0.183, 1,  // bot left
+                         -160, 90,   0.233, 0.65,  // bot left to left
+                         -300, -70,  0, 0.383,  // left
+                         -100, -110, 0.333, 0.317};  // left to top
+            
+            int n_i = 15+9;
+            unsigned short i[] = {0, 1, 9,
+                                  1, 2, 3,
+                                  3, 4, 5,
+                                  5, 6, 7,
+                                  7, 8, 9,
+                                  9, 1, 7,
+                                  1, 3, 7,
+                                  3, 5, 7};
+            
+            GPU_MatrixMode(GPU_MODELVIEW);
+            GPU_PushMatrix();
+            GPU_Translate(300, 300, 0);
+            GPU_TriangleBatch(image, screen, n_v, v, n_i, i, GPU_BATCH_XY_ST);
+            GPU_PopMatrix();
+        }
 		
 		GPU_Flip(screen);
 		

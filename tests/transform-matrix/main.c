@@ -167,12 +167,33 @@ int main(int argc, char* argv[])
 
             GPU_MultMatrix(matrix);
             
-            
             GPU_SetCamera(screen, &camera);
+            
             GPU_Blit(image, NULL, screen, 0, 0);
             
+            GPU_SetLineThickness(10.0f);
+            GPU_Rectangle(screen, -image->w/2, -image->w/2, image->w/2, image->w/2, GPU_MakeColor(0, 0, 255, 255));
+            GPU_Circle(screen, 0, 0, image->w/2, GPU_MakeColor(255, 0, 0, 255));
+            
+            GPU_RectangleFilled(screen, -image->w/8, -image->w/8, image->w/8, image->w/8, GPU_MakeColor(0, 255, 0, 255));
+            GPU_SetLineThickness(1.0f);
             
             GPU_BlitScale(image, NULL, screen, 200, 200, 0.5f, 0.5f);
+            
+            float scale = 200;
+            GPU_MatrixMode(GPU_MODELVIEW);
+            GPU_PushMatrix();
+            GPU_SetLineThickness(4.0f);
+            GPU_Translate(40, 40, 0.0f);
+            GPU_Rotate(90, 0.0f, 0.0f, 1.0f);
+            //GPU_Translate(-screen->w/2, -screen->h/2, 0.0f);
+            GPU_Translate(-40, -40, 0.0f);
+            GPU_Line(screen, 0, 0, scale, 0, GPU_MakeColor(255, 0, 0, 255));
+            GPU_CircleFilled(screen, 0, 0, scale/16, GPU_MakeColor(255, 0, 0, 255));
+            GPU_Circle(screen, 0, 0, scale, GPU_MakeColor(255, 0, 0, 255));
+            GPU_Circle(screen, 0, 0, scale*4, GPU_MakeColor(0, 255, 0, 255));
+            GPU_SetLineThickness(1.0f);
+            GPU_PopMatrix();
             
             GPU_Flip(screen);
             

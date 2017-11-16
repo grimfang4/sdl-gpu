@@ -105,6 +105,11 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
         target->context->windowID = windowID;
         target->context->data = NULL;  // Allocate a data structure as needed for other context data
         target->context->context = NULL;
+
+        GPU_InitMatrixStack(&target->context->projection_matrix);
+        GPU_InitMatrixStack(&target->context->modelview_matrix);
+
+        target->context->matrix_mode = GPU_MODELVIEW;
     }
     else
     {
@@ -139,12 +144,6 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     target->context->use_texturing = 1;
     target->context->shapes_use_blending = 1;
     target->context->shapes_blend_mode = GPU_GetBlendModeFromPreset(GPU_BLEND_NORMAL);
-    
-    target->context->projection_matrix.size = 1;
-    GPU_MatrixIdentity(target->context->projection_matrix.matrix[0]);
-    
-    target->context->modelview_matrix.size = 1;
-    GPU_MatrixIdentity(target->context->modelview_matrix.matrix[0]);
     
     target->context->matrix_mode = GPU_MODELVIEW;
     

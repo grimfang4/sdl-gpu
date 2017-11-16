@@ -51,11 +51,25 @@
 
 
 
+void GPU_InitMatrixStack(GPU_MatrixStack* stack)
+{
+    if(stack == NULL)
+        return;
+    
+    stack->storage_size = 1;
+    stack->size = 1;
+    
+    stack->matrix = (float**)SDL_malloc(sizeof(float*) * stack->storage_size);
+    stack->matrix[0] = (float*)SDL_malloc(sizeof(float) * 16);
+    GPU_MatrixIdentity(stack->matrix[0]);
+}
+
+
 // Column-major
 #define INDEX(row,col) ((col)*4 + (row))
 
 
-float GPU_VectorLength(float* vec3)
+float GPU_VectorLength(const float* vec3)
 {
 	return sqrtf(vec3[0] * vec3[0] + vec3[1] * vec3[1] + vec3[2] * vec3[2]);
 }
@@ -68,34 +82,54 @@ void GPU_VectorNormalize(float* vec3)
 	vec3[2] /= mag;
 }
 
-float GPU_VectorDot(float* A, float* B)
+float GPU_VectorDot(const float* A, const float* B)
 {
 	return A[0] * B[0] + A[1] * B[1] + A[2] * B[2];
 }
 
-void GPU_VectorCross(float* result, float* A, float* B)
+void GPU_VectorCross(float* result, const float* A, const float* B)
 {
 	result[0] = A[1] * B[2] - A[2] * B[1];
 	result[1] = A[2] * B[0] - A[0] * B[2];
 	result[2] = A[0] * B[1] - A[1] * B[0];
 }
 
-void GPU_VectorCopy(float* result, float* A)
+void GPU_VectorCopy(float* result, const float* A)
 {
 	result[0] = A[0];
 	result[1] = A[1];
 	result[2] = A[2];
 }
 
-void GPU_VectorApplyMatrix(float* vec3, float* matrix_4x4)
+void GPU_VectorApplyMatrix(float* vec3, const float* matrix_4x4)
 {
-	float x = matrix_4x4[INDEX(0, 0)] * vec3[0] + matrix_4x4[INDEX(0, 1)] * vec3[1] + matrix_4x4[INDEX(0, 2)] * vec3[2] + matrix_4x4[INDEX(0, 3)];
-	float y = matrix_4x4[INDEX(1, 0)] * vec3[0] + matrix_4x4[INDEX(1, 1)] * vec3[1] + matrix_4x4[INDEX(1, 2)] * vec3[2] + matrix_4x4[INDEX(1, 3)];
-	float z = matrix_4x4[INDEX(2, 0)] * vec3[0] + matrix_4x4[INDEX(2, 1)] * vec3[1] + matrix_4x4[INDEX(2, 2)] * vec3[2] + matrix_4x4[INDEX(2, 3)];
-	float w = matrix_4x4[INDEX(3, 0)] * vec3[0] + matrix_4x4[INDEX(3, 1)] * vec3[1] + matrix_4x4[INDEX(3, 2)] * vec3[2] + matrix_4x4[INDEX(3, 3)];
+	float x = matrix_4x4[0] * vec3[0] + matrix_4x4[4] * vec3[1] + matrix_4x4[8] * vec3[2] + matrix_4x4[12];
+	float y = matrix_4x4[1] * vec3[0] + matrix_4x4[5] * vec3[1] + matrix_4x4[9] * vec3[2] + matrix_4x4[13];
+	float z = matrix_4x4[2] * vec3[0] + matrix_4x4[6] * vec3[1] + matrix_4x4[10] * vec3[2] + matrix_4x4[14];
+	float w = matrix_4x4[3] * vec3[0] + matrix_4x4[7] * vec3[1] + matrix_4x4[11] * vec3[2] + matrix_4x4[15];
 	vec3[0] = x / w;
 	vec3[1] = y / w;
 	vec3[2] = z / w;
+}
+
+void GPU_Vector4ApplyMatrix(float* vec4, const float* matrix_4x4)
+{
+	float x = matrix_4x4[0] * vec4[0] + matrix_4x4[4] * vec4[1] + matrix_4x4[8] * vec4[2] + matrix_4x4[12] * vec4[3];
+	float y = matrix_4x4[1] * vec4[0] + matrix_4x4[5] * vec4[1] + matrix_4x4[9] * vec4[2] + matrix_4x4[13] * vec4[3];
+	float z = matrix_4x4[2] * vec4[0] + matrix_4x4[6] * vec4[1] + matrix_4x4[10] * vec4[2] + matrix_4x4[14] * vec4[3];
+	float w = matrix_4x4[3] * vec4[0] + matrix_4x4[7] * vec4[1] + matrix_4x4[11] * vec4[2] + matrix_4x4[15] * vec4[3];
+	
+    vec4[0] = x;
+    vec4[1] = y;
+    vec4[2] = z;
+    vec4[3] = w;
+	if(w != 0.0f)
+    {
+        vec4[0] = x / w;
+        vec4[1] = y / w;
+        vec4[2] = z / w;
+        vec4[3] = 1;
+    }
 }
 
 
@@ -322,7 +356,7 @@ void GPU_MatrixRotate(float* result, float degrees, float x, float y, float z)
 }
 
 // Matrix multiply: result = A * B
-void GPU_Multiply4x4(float* result, float* A, float* B)
+void GPU_MatrixMultiply(float* result, const float* A, const float* B)
 {
     float (*matR)[4] = (float(*)[4])result;
     float (*matA)[4] = (float(*)[4])A;
@@ -345,10 +379,10 @@ void GPU_Multiply4x4(float* result, float* A, float* B)
     matR[3][3] = matB[3][0] * matA[0][3] + matB[3][1] * matA[1][3] + matB[3][2] * matA[2][3] + matB[3][3] * matA[3][3];
 }
 
-void GPU_MultiplyAndAssign(float* result, float* B)
+void GPU_MultiplyAndAssign(float* result, const float* B)
 {
     float temp[16];
-    GPU_Multiply4x4(temp, result, B);
+    GPU_MatrixMultiply(temp, result, B);
     GPU_MatrixCopy(result, temp);
 }
 
@@ -357,7 +391,7 @@ void GPU_MultiplyAndAssign(float* result, float* B)
 
 
 // Can be used up to two times per line evaluation...
-const char* GPU_GetMatrixString(float* A)
+const char* GPU_GetMatrixString(const float* A)
 {
     static char buffer[512];
     static char buffer2[512];
@@ -438,10 +472,33 @@ void GPU_PushMatrix(void)
         return;
     
     stack = (target->context->matrix_mode == GPU_MODELVIEW? &target->context->modelview_matrix : &target->context->projection_matrix);
-    if(stack->size + 1 >= GPU_MATRIX_STACK_MAX)
+    if(stack->size + 1 >= stack->storage_size)
     {
-        GPU_PushErrorCode(__func__, GPU_ERROR_USER_ERROR, "Matrix stack is full (%d)", GPU_MATRIX_STACK_MAX);
-        return;
+        // Grow matrix stack (1, 6, 16, 36, ...)
+        
+        // Alloc new one
+        unsigned int new_storage_size = stack->storage_size*2 + 4;
+        float** new_stack = (float**)SDL_malloc(sizeof(float*) * new_storage_size);
+        int i;
+        for(i = 0; i < new_storage_size; ++i)
+        {
+            new_stack[i] = (float*)SDL_malloc(sizeof(float) * 16);
+        }
+        // Copy old one
+        for(i = 0; i < stack->size; ++i)
+        {
+            GPU_MatrixCopy(new_stack[i], stack->matrix[i]);
+        }
+        // Free old one
+        for(i = 0; i < stack->storage_size; ++i)
+        {
+            SDL_free(stack->matrix[i]);
+        }
+        SDL_free(stack->matrix);
+        
+        // Switch to new one
+        stack->storage_size = new_storage_size;
+        stack->matrix = new_stack;
     }
     GPU_MatrixCopy(stack->matrix[stack->size], stack->matrix[stack->size-1]);
     stack->size++;
@@ -460,9 +517,13 @@ void GPU_PopMatrix(void)
     if(stack->size == 0)
     {
         GPU_PushErrorCode(__func__, GPU_ERROR_USER_ERROR, "Matrix stack is empty.");
-        return;
     }
-    stack->size--;
+    else if(stack->size == 1)
+    {
+        GPU_PushErrorCode(__func__, GPU_ERROR_USER_ERROR, "Matrix stack would become empty!");
+    }
+    else
+        stack->size--;
 }
 
 void GPU_LoadIdentity(void)
@@ -473,6 +534,15 @@ void GPU_LoadIdentity(void)
     
 	GPU_FlushBlitBuffer();
     GPU_MatrixIdentity(result);
+}
+
+void GPU_LoadMatrix(const float* A)
+{
+    float* result = GPU_GetCurrentMatrix();
+    if(result == NULL)
+        return;
+	GPU_FlushBlitBuffer();
+    GPU_MatrixCopy(result, A);
 }
 
 void GPU_Ortho(float left, float right, float bottom, float top, float near, float far)
@@ -505,7 +575,7 @@ void GPU_Rotate(float degrees, float x, float y, float z)
     GPU_MatrixRotate(GPU_GetCurrentMatrix(), degrees, x, y, z);
 }
 
-void GPU_MultMatrix(float* A)
+void GPU_MultMatrix(const float* A)
 {
     float* result = GPU_GetCurrentMatrix();
     if(result == NULL)
@@ -519,5 +589,5 @@ void GPU_MultMatrix(float* A)
 void GPU_GetModelViewProjection(float* result)
 {
     // MVP = P * MV
-    GPU_Multiply4x4(result, GPU_GetProjection(), GPU_GetModelView());
+    GPU_MatrixMultiply(result, GPU_GetProjection(), GPU_GetModelView());
 }

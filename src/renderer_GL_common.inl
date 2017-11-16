@@ -1440,6 +1440,11 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
         target->context->refcount = 1;
         target->context->data = cdata;
         target->context->context = NULL;
+        
+        GPU_InitMatrixStack(&target->context->projection_matrix);
+        GPU_InitMatrixStack(&target->context->modelview_matrix);
+
+        target->context->matrix_mode = GPU_MODELVIEW;
 
         cdata->last_image = NULL;
         cdata->last_target = NULL;
@@ -1612,14 +1617,6 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     
     
     // Set up GL state
-
-    target->context->projection_matrix.size = 1;
-    GPU_MatrixIdentity(target->context->projection_matrix.matrix[0]);
-
-    target->context->modelview_matrix.size = 1;
-    GPU_MatrixIdentity(target->context->modelview_matrix.matrix[0]);
-
-    target->context->matrix_mode = GPU_MODELVIEW;
 
     // Modes
     #ifndef SDL_GPU_SKIP_ENABLE_TEXTURE_2D
@@ -3888,6 +3885,7 @@ static void FreeTargetData(GPU_Renderer* renderer, GPU_TARGET_DATA* data)
 static void FreeContext(GPU_Context* context)
 {
     GPU_CONTEXT_DATA* cdata;
+    int i;
     
     if(context == NULL)
         return;
@@ -3920,6 +3918,19 @@ static void FreeContext(GPU_Context* context)
     if(context->context != 0)
         SDL_GL_DeleteContext(context->context);
     #endif
+    
+    for(i = 0; i < context->projection_matrix.storage_size; ++i)
+    {
+        SDL_free(context->projection_matrix.matrix[i]);
+    }
+    SDL_free(context->projection_matrix.matrix);
+    
+    for(i = 0; i < context->modelview_matrix.storage_size; ++i)
+    {
+        SDL_free(context->modelview_matrix.matrix[i]);
+    }
+    SDL_free(context->modelview_matrix.matrix);
+    
 
     SDL_free(cdata);
     SDL_free(context);
@@ -4677,7 +4688,7 @@ static void gpu_upload_modelviewprojection(GPU_Target* dest, GPU_Context* contex
         }
         
         // MVP = P * MV
-        GPU_Multiply4x4(mvp, p, mv);
+        GPU_MatrixMultiply(mvp, p, mv);
         
         glUniformMatrix4fv(context->current_shader_block.modelViewProjection_loc, 1, 0, mvp);
     }

@@ -8,6 +8,8 @@ if(MINGW)
     set(TEST_LIBS ${TEST_LIBS} mingw32)
 endif(MINGW)
 
+SET(CMAKE_BUILD_TYPE Debug)
+
 add_executable(create-test create/main.c)
 target_link_libraries (create-test ${TEST_LIBS})
 
