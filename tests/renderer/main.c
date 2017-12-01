@@ -224,6 +224,12 @@ static void ResetRendererState(GPU_Renderer* renderer)
 {
     GPU_Log(" %s (dummy)\n", __func__);
 }
+
+static GPU_bool AddDepthBuffer(GPU_Renderer* renderer, GPU_Target* target)
+{
+    GPU_Log(" %s (dummy)\n", __func__);
+    return GPU_TRUE;
+}
 	
 static GPU_bool SetWindowResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
 {
@@ -1172,6 +1178,7 @@ void set_renderer_functions(GPU_RendererImpl* impl)
     impl->MakeCurrent = &MakeCurrent;
     impl->SetAsCurrent = &SetAsCurrent;
     impl->ResetRendererState = &ResetRendererState;
+    impl->AddDepthBuffer = &AddDepthBuffer;
     impl->SetWindowResolution = &SetWindowResolution;
     impl->SetVirtualResolution = &SetVirtualResolution;
     impl->UnsetVirtualResolution = &UnsetVirtualResolution;

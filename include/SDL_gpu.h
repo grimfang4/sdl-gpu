@@ -1027,6 +1027,11 @@ DECLSPEC void SDLCALL GPU_EnableCamera(GPU_Target* target, GPU_bool use_camera);
 /*! Returns 1 if the camera transforms are enabled, 0 otherwise. */
 DECLSPEC GPU_bool SDLCALL GPU_IsCameraEnabled(GPU_Target* target);
 
+/*! Attach a new depth buffer to the given target so that it can use depth testing.  Context targets automatically have a depth buffer already.
+ *  If successful, also enables depth testing for this target.
+ */
+DECLSPEC GPU_bool SDLCALL GPU_AddDepthBuffer(GPU_Target* target);
+
 /*! Enables or disables the depth test, which will skip drawing pixels/fragments behind other fragments.  Disabled by default.
  *  This has implications for alpha blending, where compositing might not work correctly depending on render order.
  */

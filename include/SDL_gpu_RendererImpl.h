@@ -37,6 +37,9 @@ typedef struct GPU_RendererImpl
 	/*! \see GPU_ResetRendererState() */
 	void (SDLCALL *ResetRendererState)(GPU_Renderer* renderer);
 	
+	/*! \see GPU_AddDepthBuffer() */
+	GPU_bool (SDLCALL *AddDepthBuffer)(GPU_Renderer* renderer, GPU_Target* target);
+	
 	/*! \see GPU_SetWindowResolution() */
 	GPU_bool (SDLCALL *SetWindowResolution)(GPU_Renderer* renderer, Uint16 w, Uint16 h);
 	

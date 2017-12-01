@@ -1954,6 +1954,55 @@ static void ResetRendererState(GPU_Renderer* renderer)
         extBindFramebuffer(renderer, ((GPU_TARGET_DATA*)target->data)->handle);
 }
 
+
+static GPU_bool AddDepthBuffer(GPU_Renderer* renderer, GPU_Target* target)
+{
+    #if defined(SDL_GPU_USE_GLES) && SDL_GPU_GLES_MAJOR_VERSION == 1
+    GPU_PushErrorCode("GPU_AddDepthBuffer", GPU_ERROR_USER_ERROR, "Not supported in GL ES 1.1.");
+    return GPU_FALSE;
+    #else
+    GLuint depth_buffer;
+    GLenum status;
+    GPU_CONTEXT_DATA* cdata;
+    
+    if(renderer->current_context_target == NULL)
+    {
+        GPU_PushErrorCode("GPU_AddDepthBuffer", GPU_ERROR_BACKEND_ERROR, "NULL context.");
+        return GPU_FALSE;
+    }
+
+    if(isCurrentTarget(renderer, target))
+        renderer->impl->FlushBlitBuffer(renderer);
+
+    if(!bindFramebuffer(renderer, target))
+    {
+        GPU_PushErrorCode("GPU_AddDepthBuffer", GPU_ERROR_BACKEND_ERROR, "Failed to bind target framebuffer.");
+        return GPU_FALSE;
+    }
+    
+    glGenRenderbuffers(1, &depth_buffer);
+    glBindRenderbuffer(GL_RENDERBUFFER, depth_buffer);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, target->base_w, target->base_h);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_buffer);
+    
+    status = glCheckFramebufferStatusPROC(GL_FRAMEBUFFER);
+    if(status != GL_FRAMEBUFFER_COMPLETE)
+    {
+        GPU_PushErrorCode("GPU_AddDepthBuffer", GPU_ERROR_BACKEND_ERROR, "Failed to attach depth buffer to target.");
+        return GPU_FALSE;
+    }
+    
+    
+    cdata = (GPU_CONTEXT_DATA*)renderer->current_context_target->context->data;
+    cdata->last_depth_write = target->use_depth_write;
+    glDepthMask(target->use_depth_write);
+    
+    GPU_SetDepthTest(target, 1);
+    
+    return GPU_TRUE;
+    #endif
+}
+
 static GPU_bool SetWindowResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
 {
     GPU_Target* target = renderer->current_context_target;
@@ -3886,6 +3935,9 @@ static GPU_Target* GetTarget(GPU_Renderer* renderer, GPU_Image* image)
 
     result->camera = GPU_GetDefaultCamera();
     result->use_camera = GPU_TRUE;
+    
+    result->use_depth_test = GPU_FALSE;
+    result->use_depth_write = GPU_TRUE;
 
     result->use_clip_rect = GPU_FALSE;
     result->clip_rect.x = 0;
@@ -6788,6 +6840,7 @@ static void SetAttributeSource(GPU_Renderer* renderer, int num_values, GPU_Attri
     impl->MakeCurrent = &MakeCurrent; \
     impl->SetAsCurrent = &SetAsCurrent; \
     impl->ResetRendererState = &ResetRendererState; \
+    impl->AddDepthBuffer = &AddDepthBuffer; \
     impl->SetWindowResolution = &SetWindowResolution; \
     impl->SetVirtualResolution = &SetVirtualResolution; \
     impl->UnsetVirtualResolution = &UnsetVirtualResolution; \

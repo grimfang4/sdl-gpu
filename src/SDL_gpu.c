@@ -526,6 +526,13 @@ GPU_bool GPU_GetFullscreen(void)
 #endif
 }
 
+GPU_bool GPU_AddDepthBuffer(GPU_Target* target)
+{
+    if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL || target == NULL)
+        return GPU_FALSE;
+
+    return _gpu_current_renderer->impl->AddDepthBuffer(_gpu_current_renderer, target);
+}
 
 void GPU_SetDepthTest(GPU_Target* target, GPU_bool enable)
 {
