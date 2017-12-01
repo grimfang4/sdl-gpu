@@ -822,10 +822,37 @@ static void unsetClipRect(GPU_Renderer* renderer, GPU_Target* target)
         glDisable(GL_SCISSOR_TEST);
 }
 
+
+static void changeDepthTest(GPU_Renderer* renderer, GPU_bool enable)
+{
+    GPU_CONTEXT_DATA* cdata = (GPU_CONTEXT_DATA*)renderer->current_context_target->context->data;
+    if(cdata->last_depth_test == enable)
+        return;
+
+    cdata->last_depth_test = enable;
+    if(enable)
+        glEnable(GL_DEPTH_TEST);
+    else
+        glDisable(GL_DEPTH_TEST);
+    glEnable(GL_ALPHA_TEST);
+}
+
+static void changeDepthWrite(GPU_Renderer* renderer, GPU_bool enable)
+{
+    GPU_CONTEXT_DATA* cdata = (GPU_CONTEXT_DATA*)renderer->current_context_target->context->data;
+    if(cdata->last_depth_write == enable)
+        return;
+
+    cdata->last_depth_write = enable;
+    glDepthMask(enable);
+}
+
 static void prepareToRenderToTarget(GPU_Renderer* renderer, GPU_Target* target)
 {
     // Set up the camera
     renderer->impl->SetCamera(renderer, target, &target->camera);
+    changeDepthTest(renderer, target->use_depth_test);
+    changeDepthWrite(renderer, target->use_depth_write);
 }
 
 
@@ -1100,7 +1127,7 @@ static void changeCamera(GPU_Target* target)
     }
 }
 
-static void get_camera_matrix(float* result, GPU_Camera camera)
+static void get_camera_matrix(float* result)
 {
     GPU_CONTEXT_DATA* cdata = (GPU_CONTEXT_DATA*)GPU_GetContextTarget()->context->data;
     GPU_Target* target = cdata->last_target;
@@ -1111,9 +1138,9 @@ static void get_camera_matrix(float* result, GPU_Camera camera)
 
     // Now multiply in the projection part
     if(!invert ^ GPU_GetCoordinateMode())
-        GPU_MatrixOrtho(result, target->camera.x, target->w + target->camera.x, target->h + target->camera.y, target->camera.y, -100.0f, 100.0f);
+        GPU_MatrixOrtho(result, target->camera.x, target->w + target->camera.x, target->h + target->camera.y, target->camera.y, target->camera.near, target->camera.far);
     else
-        GPU_MatrixOrtho(result, target->camera.x, target->w + target->camera.x, target->camera.y, target->h + target->camera.y, -100.0f, 100.0f);  // Special inverted orthographic projection because tex coords are inverted already for render-to-texture
+        GPU_MatrixOrtho(result, target->camera.x, target->w + target->camera.x, target->camera.y, target->h + target->camera.y, target->camera.near, target->camera.far);  // Special inverted orthographic projection because tex coords are inverted already for render-to-texture
 
     // First the modelview part
     offsetX = target->w/2.0f;
@@ -1133,12 +1160,11 @@ static void get_camera_matrix(float* result, GPU_Camera camera)
 #ifdef SDL_GPU_APPLY_TRANSFORMS_TO_GL_STACK
 static void applyTransforms(void)
 {
-    GPU_CONTEXT_DATA* cdata = (GPU_CONTEXT_DATA*)GPU_GetContextTarget()->context->data;
     float* p = GPU_GetProjection();
     float* m = GPU_GetModelView();
     
     float cam_matrix[16];
-    get_camera_matrix(cam_matrix, cdata->last_camera);
+    get_camera_matrix(cam_matrix);
     
     GPU_MultiplyAndAssign(m, cam_matrix);
     
@@ -1445,7 +1471,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
         GPU_InitMatrixStack(&target->context->modelview_matrix);
 
         target->context->matrix_mode = GPU_MODELVIEW;
-
+        
         cdata->last_image = NULL;
         cdata->last_target = NULL;
         // Initialize the blit buffer
@@ -1536,6 +1562,9 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     target->viewport = GPU_MakeRect(0, 0, target->context->drawable_w, target->context->drawable_h);
     target->camera = GPU_GetDefaultCamera();
     target->use_camera = GPU_TRUE;
+    
+    target->use_depth_test = GPU_FALSE;
+    target->use_depth_write = GPU_TRUE;
 
     target->context->line_thickness = 1.0f;
     target->context->use_texturing = GPU_TRUE;
@@ -1553,6 +1582,9 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     cdata->last_viewport = target->viewport;
     cdata->last_camera = target->camera;  // Redundant due to applyTargetCamera(), below
     cdata->last_camera_inverted = GPU_FALSE;
+    
+    cdata->last_depth_test = GPU_FALSE;
+    cdata->last_depth_write = GPU_TRUE;
 
     #ifdef SDL_GPU_USE_OPENGL
     glewExperimental = GL_TRUE;  // Force GLEW to get exported functions instead of checking via extension string
@@ -1904,6 +1936,13 @@ static void ResetRendererState(GPU_Renderer* renderer)
 
     forceChangeBlendMode(renderer, cdata->last_blend_mode);
 
+    if(cdata->last_depth_test)
+        glEnable(GL_DEPTH_TEST);
+    else
+        glDisable(GL_DEPTH_TEST);
+
+    glDepthMask(cdata->last_depth_write);
+    
     forceChangeViewport(target, target->viewport);
 
     if(cdata->last_image != NULL)
@@ -4668,7 +4707,6 @@ static void SetAttributefv(GPU_Renderer* renderer, int location, int num_element
 #ifdef SDL_GPU_USE_BUFFER_PIPELINE
 static void gpu_upload_modelviewprojection(GPU_Target* dest, GPU_Context* context)
 {
-    GPU_CONTEXT_DATA* cdata = (GPU_CONTEXT_DATA*)context->data;
     if(context->current_shader_block.modelViewProjection_loc >= 0)
     {
         float p[16];
@@ -4681,7 +4719,7 @@ static void gpu_upload_modelviewprojection(GPU_Target* dest, GPU_Context* contex
         if(dest->use_camera)
         {
             float cam_matrix[16];
-            get_camera_matrix(cam_matrix, cdata->last_camera);
+            get_camera_matrix(cam_matrix);
             
             GPU_MultiplyAndAssign(cam_matrix, p);
             GPU_MatrixCopy(p, cam_matrix);

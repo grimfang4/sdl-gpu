@@ -305,6 +305,7 @@ typedef struct GPU_Camera
 	float x, y, z;
 	float angle;
 	float zoom;
+	float near, far;  // z clipping planes
 } GPU_Camera;
 
 
@@ -416,6 +417,9 @@ struct GPU_Target
 	/*! Perspective and object viewing transforms. */
 	GPU_Camera camera;
 	GPU_bool use_camera;
+	
+	GPU_bool use_depth_test;
+	GPU_bool use_depth_write;
 	
 	/*! Renderer context data.  NULL if the target does not represent a window or rendering context. */
 	GPU_Context* context;
@@ -958,6 +962,7 @@ DECLSPEC float SDLCALL GPU_SetLineThickness(float thickness);
 /*! Returns the current line thickness value. */
 DECLSPEC float SDLCALL GPU_GetLineThickness(void);
 
+
 // End of ContextControls
 /*! @} */
 
@@ -1004,7 +1009,7 @@ DECLSPEC void SDLCALL GPU_SetViewport(GPU_Target* target, GPU_Rect viewport);
 /*! Resets the given target's viewport to the entire target area. */
 DECLSPEC void SDLCALL GPU_UnsetViewport(GPU_Target* target);
 
-/*! \return A GPU_Camera with position (0, 0, -10), angle of 0, and zoom of 1. */
+/*! \return A GPU_Camera with position (0, 0, 0), angle of 0, zoom of 1, and near/far clipping planes of -100 and 100. */
 DECLSPEC GPU_Camera SDLCALL GPU_GetDefaultCamera(void);
 
 /*! \return The camera of the given render target.  If target is NULL, returns the default camera. */
@@ -1021,6 +1026,14 @@ DECLSPEC void SDLCALL GPU_EnableCamera(GPU_Target* target, GPU_bool use_camera);
 
 /*! Returns 1 if the camera transforms are enabled, 0 otherwise. */
 DECLSPEC GPU_bool SDLCALL GPU_IsCameraEnabled(GPU_Target* target);
+
+/*! Enables or disables the depth test, which will skip drawing pixels/fragments behind other fragments.  Disabled by default.
+ *  This has implications for alpha blending, where compositing might not work correctly depending on render order.
+ */
+DECLSPEC void SDLCALL GPU_SetDepthTest(GPU_Target* target, GPU_bool enable);
+
+/*! Enables or disables writing the depth (effective view z-coordinate) of new pixels to the depth buffer.  Enabled by default, but you must call GPU_SetDepthTest() to use it. */
+DECLSPEC void SDLCALL GPU_SetDepthWrite(GPU_Target* target, GPU_bool enable);
 
 /*! \return The RGBA color of a pixel. */
 DECLSPEC SDL_Color SDLCALL GPU_GetPixel(GPU_Target* target, Sint16 x, Sint16 y);

@@ -47,6 +47,9 @@ typedef struct ContextData_OpenGL_1_BASE
 	GPU_Camera last_camera;
 	GPU_bool last_camera_inverted;
 	
+	GPU_bool last_depth_test;
+	GPU_bool last_depth_write;
+	
 	GPU_Image* last_image;
 	GPU_Target* last_target;
 	float* blit_buffer;  // Holds sets of 4 vertices and 4 tex coords interleaved (e.g. [x0, y0, z0, s0, t0, ...]).

@@ -126,6 +126,9 @@ typedef struct ContextData_GLES_3
 	GPU_Camera last_camera;
 	GPU_bool last_camera_inverted;
 	
+	GPU_bool last_depth_test;
+	GPU_bool last_depth_write;
+	
 	GPU_Image* last_image;
 	GPU_Target* last_target;
 	float* blit_buffer;  // Holds sets of 4 vertices, each with interleaved position, tex coords, and colors (e.g. [x0, y0, z0, s0, t0, r0, g0, b0, a0, ...]).

@@ -142,5 +142,8 @@ target_link_libraries (memory-test ${TEST_LIBS})
 add_executable(reinit-test reinit/main.c)
 target_link_libraries (reinit-test ${TEST_LIBS})
 
+add_executable(depth-test depth/main.c)
+target_link_libraries (depth-test ${TEST_LIBS})
+
 add_executable(video-test video/main.c)
 target_link_libraries (video-test ${TEST_LIBS})

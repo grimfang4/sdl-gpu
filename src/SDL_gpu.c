@@ -526,6 +526,19 @@ GPU_bool GPU_GetFullscreen(void)
 #endif
 }
 
+
+void GPU_SetDepthTest(GPU_Target* target, GPU_bool enable)
+{
+    if(target != NULL)
+        target->use_depth_test = enable;
+}
+
+void GPU_SetDepthWrite(GPU_Target* target, GPU_bool enable)
+{
+    if(target != NULL)
+        target->use_depth_write = enable;
+}
+
 GPU_bool GPU_SetWindowResolution(Uint16 w, Uint16 h)
 {
     if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL || w == 0 || h == 0)
@@ -866,7 +879,7 @@ void GPU_UnsetViewport(GPU_Target* target)
 
 GPU_Camera GPU_GetDefaultCamera(void)
 {
-    GPU_Camera cam = {0.0f, 0.0f, -10.0f, 0.0f, 1.0f};
+    GPU_Camera cam = {0.0f, 0.0f, 0.0f, 0.0f, 1.0f, -100.0f, 100.0f};
     return cam;
 }
 
