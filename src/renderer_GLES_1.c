@@ -12,7 +12,6 @@ void GPU_FreeRenderer_GLES_1(GPU_Renderer* renderer) {}
 
 // Most of the code pulled in from here...
 #define SDL_GPU_USE_GLES
-#define SDL_GPU_GL_TIER 2
 #define SDL_GPU_GLES_MAJOR_VERSION 1
 
 #define SDL_GPU_USE_ARRAY_PIPELINE

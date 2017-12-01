@@ -18,7 +18,6 @@ void GPU_FreeRenderer_OpenGL_4(GPU_Renderer* renderer) {}
 #define SDL_GPU_ASSUME_SHADERS
 #define SDL_GPU_SKIP_ENABLE_TEXTURE_2D
 #define SDL_GPU_SKIP_LINE_WIDTH
-#define SDL_GPU_GL_TIER 3
 #define SDL_GPU_GLSL_VERSION 150
 #define SDL_GPU_GL_MAJOR_VERSION 4
 

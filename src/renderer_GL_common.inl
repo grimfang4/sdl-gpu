@@ -1663,7 +1663,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     glViewport(0.0f, 0.0f, target->viewport.w, target->viewport.h);
 
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-    #if SDL_GPU_GL_TIER < 3
+    #if defined(SDL_GPU_USE_FIXED_FUNCTION_PIPELINE) || defined(SDL_GPU_USE_ARRAY_PIPELINE)
     glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
     #endif
 
@@ -2238,7 +2238,7 @@ static GLuint CreateUninitializedTexture(GPU_Renderer* renderer)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    #if defined(SDL_GPU_USE_GLES) && (SDL_GPU_GLES_TIER == 1)
+    #if defined(SDL_GPU_USE_GLES) && (SDL_GPU_GLES_MAJOR_VERSION == 1)
     glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
     glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);

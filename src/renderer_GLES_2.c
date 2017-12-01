@@ -13,7 +13,6 @@ void GPU_FreeRenderer_GLES_2(GPU_Renderer* renderer) {}
 
 // Most of the code pulled in from here...
 #define SDL_GPU_USE_GLES
-#define SDL_GPU_GL_TIER 3
 #define SDL_GPU_GLES_MAJOR_VERSION 2
 #define SDL_GPU_GLSL_VERSION 100
 
