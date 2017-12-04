@@ -834,7 +834,8 @@ static void changeDepthTest(GPU_Renderer* renderer, GPU_bool enable)
         glEnable(GL_DEPTH_TEST);
     else
         glDisable(GL_DEPTH_TEST);
-    glEnable(GL_ALPHA_TEST);
+    
+    //glEnable(GL_ALPHA_TEST);
 }
 
 static void changeDepthWrite(GPU_Renderer* renderer, GPU_bool enable)

@@ -326,13 +326,13 @@ void GPU_GetDefaultRendererOrder(int* order_size, GPU_RendererID* order)
     GPU_RendererID default_order[GPU_RENDERER_ORDER_MAX];
     
     #ifndef SDL_GPU_DISABLE_GLES
-        #ifndef SDL_GPU_DISABLE_GLES3
+        #ifndef SDL_GPU_DISABLE_GLES_3
             default_order[count++] = GPU_MakeRendererID("OpenGLES 3", GPU_RENDERER_GLES_3, 3, 0);
         #endif
-        #ifndef SDL_GPU_DISABLE_GLES2
+        #ifndef SDL_GPU_DISABLE_GLES_2
             default_order[count++] = GPU_MakeRendererID("OpenGLES 2", GPU_RENDERER_GLES_2, 2, 0);
         #endif
-        #ifndef SDL_GPU_DISABLE_GLES1
+        #ifndef SDL_GPU_DISABLE_GLES_1
             default_order[count++] = GPU_MakeRendererID("OpenGLES 1", GPU_RENDERER_GLES_1, 1, 1);
         #endif
     #endif

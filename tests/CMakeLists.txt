@@ -8,6 +8,19 @@ if(MINGW)
     set(TEST_LIBS ${TEST_LIBS} mingw32)
 endif(MINGW)
 
+if(EMSCRIPTEN)
+    set(CMAKE_EXECUTABLE_SUFFIX ".html")
+    set(EMCC_COMPILER_FLAGS "-O2 -s USE_WEBGL2=1 --preload-file ../../tests/data@/data --emrun")
+    set(EMCC_LINKER_FLAGS ${EMCC_COMPILER_FLAGS})
+    add_definitions(${EMCC_COMPILER_FLAGS})
+    
+    add_executable(sprite-emscripten-test sprite-emscripten/main.c)
+    set_target_properties(sprite-emscripten-test PROPERTIES LINK_FLAGS "${EMCC_LINKER_FLAGS}")
+    target_link_libraries (sprite-emscripten-test ${TEST_LIBS})
+    
+    return()
+endif(EMSCRIPTEN)
+
 SET(CMAKE_BUILD_TYPE Debug)
 
 add_executable(create-test create/main.c)

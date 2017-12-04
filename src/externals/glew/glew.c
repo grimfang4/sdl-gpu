@@ -40,6 +40,7 @@
 
 #include <stddef.h>  /* For size_t */
 #include <stdlib.h>
+#include <string.h>
 
 /*
  * Define glewGetContext and related helper macros.

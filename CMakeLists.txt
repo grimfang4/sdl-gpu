@@ -2,13 +2,14 @@ cmake_minimum_required(VERSION 2.6)
 
 project(SDL_gpu)
 
-if(UNIX)
-	set(SDL_gpu_INSTALL_BY_DEFAULT ON)
-elseif(WIN32)
-	set(SDL_gpu_INSTALL_BY_DEFAULT ON)
-else(UNIX)
-	set(SDL_gpu_INSTALL_BY_DEFAULT OFF)
-endif(UNIX)
+
+
+set(SDL_gpu_INSTALL_BY_DEFAULT ON)
+set(SDL_gpu_DEFAULT_BUILD_SHARED ON)
+set(SDL_gpu_DEFAULT_BUILD_STATIC ON)
+set(SDL_gpu_DEFAULT_BUILD_DEMOS ON)
+set(SDL_gpu_DEFAULT_DISABLE_OPENGL OFF)
+set(SDL_gpu_DEFAULT_DISABLE_GLES ON)
 
 if(IOS)
   message(" Using iOS defaults.")
@@ -16,11 +17,22 @@ if(IOS)
   set(SDL_gpu_DEFAULT_BUILD_DEMOS OFF)
   set(SDL_gpu_DEFAULT_DISABLE_OPENGL ON)
   set(SDL_gpu_DEFAULT_DISABLE_GLES OFF)
+  # iOS 8 may need the framework option
+  set(SDL_gpu_DEFAULT_BUILD_SHARED OFF)
+  set(SDL_gpu_DEFAULT_BUILD_STATIC ON)
+elseif(APPLE)
+  set(SDL_gpu_DEFAULT_BUILD_SHARED ON)
+  option(SDL_gpu_BUILD_FRAMEWORK "Build SDL_gpu as Apple framework" ON)
+  set(SDL_gpu_DEFAULT_BUILD_STATIC ON)
 elseif(ANDROID)
   set(SDL_gpu_INSTALL_BY_DEFAULT OFF)
   set(SDL_gpu_DEFAULT_BUILD_DEMOS OFF)
   set(SDL_gpu_DEFAULT_DISABLE_OPENGL ON)
   set(SDL_gpu_DEFAULT_DISABLE_GLES OFF)
+  set(SDL_gpu_DEFAULT_BUILD_SHARED ON)
+  set(SDL_gpu_DEFAULT_BUILD_STATIC OFF)
+elseif(WIN32)
+  set(SDL_gpu_INSTALL_BY_DEFAULT OFF)
 elseif(("${CMAKE_SYSTEM}" MATCHES "Linux") AND ("${CMAKE_SYSTEM_PROCESSOR}" MATCHES "arm"))
   
   # Assuming Raspberry Pi 2 for now.
@@ -32,11 +44,14 @@ elseif(("${CMAKE_SYSTEM}" MATCHES "Linux") AND ("${CMAKE_SYSTEM_PROCESSOR}" MATC
   set(SDL_gpu_DEFAULT_BUILD_DEMOS OFF)
   set(SDL_gpu_DEFAULT_DISABLE_OPENGL ON)
   set(SDL_gpu_DEFAULT_DISABLE_GLES OFF)
-else()
-  set(SDL_gpu_DEFAULT_BUILD_DEMOS ON)
-  set(SDL_gpu_DEFAULT_DISABLE_OPENGL OFF)
-  set(SDL_gpu_DEFAULT_DISABLE_GLES ON)
+elseif(EMSCRIPTEN)
+  set(SDL_gpu_INSTALL_BY_DEFAULT OFF)
+  set(SDL_gpu_DEFAULT_BUILD_DEMOS OFF)
+  set(SDL_gpu_DEFAULT_DISABLE_OPENGL ON)
+  set(SDL_gpu_DEFAULT_DISABLE_GLES OFF)
+  set(SDL_gpu_DEFAULT_BUILD_SHARED OFF)
 endif()
+
 
 option(SDL_gpu_INSTALL "Install SDL_gpu libs, includes, and CMake scripts" ${SDL_gpu_INSTALL_BY_DEFAULT})
 #option(SDL_gpu_BUILD_DEBUG "Build with debugging symbols" ON)
@@ -64,23 +79,9 @@ option(SDL_gpu_USE_BUFFER_UPDATE "Upload VBOs by updating only the needed portio
 option(SDL_gpu_USE_BUFFER_MAPPING "Upload VBOs by mapping to client memory" OFF)
 
 
-if(APPLE)
-	if(IOS)
-		# iOS 8 may need the framework option
-		option(SDL_gpu_BUILD_SHARED "Build SDL_gpu shared libraries" OFF)
-		option(SDL_gpu_BUILD_STATIC "Build SDL_gpu static libraries" ON)
-	else()
-		option(SDL_gpu_BUILD_SHARED "Build SDL_gpu shared libraries" ON)
-		option(SDL_gpu_BUILD_FRAMEWORK "Build SDL_gpu as Apple framework" ON)
-		option(SDL_gpu_BUILD_STATIC "Build SDL_gpu static libraries" ON)
-	endif()
-elseif(ANDROID)
-	option(SDL_gpu_BUILD_SHARED "Build SDL_gpu shared libraries" ON)
-	option(SDL_gpu_BUILD_STATIC "Build SDL_gpu static libraries" OFF)
-else()
-	option(SDL_gpu_BUILD_SHARED "Build SDL_gpu shared libraries" ON)
-	option(SDL_gpu_BUILD_STATIC "Build SDL_gpu static libraries" ON)
-endif()
+
+option(SDL_gpu_BUILD_SHARED "Build SDL_gpu shared libraries" ${SDL_gpu_DEFAULT_BUILD_SHARED})
+option(SDL_gpu_BUILD_STATIC "Build SDL_gpu static libraries" ${SDL_gpu_DEFAULT_BUILD_STATIC})
 
 set(SDL_gpu_VERSION 0.11.0)
 
@@ -238,10 +239,10 @@ if(NOT STBI_WRITE_FOUND)
   message(" Using bundled version of stb-image-write")
 endif(NOT STBI_WRITE_FOUND)
 
-if(NOT WIN32)
+if(NOT WIN32 AND NOT EMSCRIPTEN)
   find_library(M_LIB m)
   link_libraries(${M_LIB})
-endif (NOT WIN32)
+endif (NOT WIN32 AND NOT EMSCRIPTEN)
 
 # Make local includes look in the right places
 include_directories(include)
