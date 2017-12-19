@@ -1087,7 +1087,7 @@ static void forceChangeViewport(GPU_Target* target, GPU_Rect viewport)
     {
         // Need the real height to flip the y-coord (from OpenGL coord system)
         if(target->image != NULL)
-            y = target->image->h - viewport.h - viewport.y;
+            y = target->image->texture_h - viewport.h - viewport.y;
         else if(target->context != NULL)
             y = target->context->drawable_h - viewport.h - viewport.y;
     }

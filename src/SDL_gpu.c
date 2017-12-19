@@ -601,6 +601,7 @@ void GPU_SetImageVirtualResolution(GPU_Image* image, Uint16 w, Uint16 h)
     if(image == NULL)
         return;
 
+    GPU_FlushBlitBuffer();  // TODO: Perhaps move SetImageVirtualResolution into the renderer so we can check to see if this image is bound first.
     image->w = w;
     image->h = h;
     image->using_virtual_resolution = 1;
@@ -614,6 +615,7 @@ void GPU_UnsetImageVirtualResolution(GPU_Image* image)
     if(image == NULL)
         return;
 
+    GPU_FlushBlitBuffer();  // TODO: Perhaps move SetImageVirtualResolution into the renderer so we can check to see if this image is bound first.
     image->w = image->base_w;
     image->h = image->base_h;
     image->using_virtual_resolution = 0;
