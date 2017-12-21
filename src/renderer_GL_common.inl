@@ -1983,7 +1983,7 @@ static GPU_bool AddDepthBuffer(GPU_Renderer* renderer, GPU_Target* target)
     
     glGenRenderbuffers(1, &depth_buffer);
     glBindRenderbuffer(GL_RENDERBUFFER, depth_buffer);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, target->base_w, target->base_h);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, target->base_w, target->base_h);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_buffer);
     
     status = glCheckFramebufferStatusPROC(GL_FRAMEBUFFER);
