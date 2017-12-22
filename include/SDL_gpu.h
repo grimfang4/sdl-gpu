@@ -479,9 +479,25 @@ static const GPU_InitFlagEnum GPU_INIT_USE_COPY_TEXTURE_UPLOAD_FALLBACK = 0x40;
 static const Uint32 GPU_NONE = 0x0;
 
 /*! \ingroup Rendering
- * Bit flags for geometry batching.
+ * Primitive types for rendering arbitrary geometry.  The values are intentionally identical to the GL_* primitives.
+ * \see GPU_PrimitiveBatch()
+ * \see GPU_PrimitiveBatchV()
+ */
+typedef Uint32 GPU_PrimitiveEnum;
+static const GPU_PrimitiveEnum GPU_POINTS = 0x0;
+static const GPU_PrimitiveEnum GPU_LINES = 0x1;
+static const GPU_PrimitiveEnum GPU_LINE_LOOP = 0x2;
+static const GPU_PrimitiveEnum GPU_LINE_STRIP = 0x3;
+static const GPU_PrimitiveEnum GPU_TRIANGLES = 0x4;
+static const GPU_PrimitiveEnum GPU_TRIANGLE_STRIP = 0x5;
+static const GPU_PrimitiveEnum GPU_TRIANGLE_FAN = 0x6;
+
+ 
+/*! Bit flags for geometry batching.
  * \see GPU_TriangleBatch()
  * \see GPU_TriangleBatchX()
+ * \see GPU_PrimitiveBatch()
+ * \see GPU_PrimitiveBatchV()
  */
 typedef Uint32 GPU_BatchFlagEnum;
 static const GPU_BatchFlagEnum GPU_BATCH_XY = 0x1;
@@ -1449,19 +1465,35 @@ DECLSPEC void SDLCALL GPU_BlitRect(GPU_Image* image, GPU_Rect* src_rect, GPU_Tar
 DECLSPEC void SDLCALL GPU_BlitRectX(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, GPU_Rect* dest_rect, float degrees, float pivot_x, float pivot_y, GPU_FlipEnum flip_direction);
 
 
-/*! Renders triangles from the given set of vertices.  This lets you render arbitrary 2D geometry.  It is a direct path to the GPU, so the format is different than typical SDL_gpu calls.
+/*! Renders triangles from the given set of vertices.  This lets you render arbitrary geometry.  It is a direct path to the GPU, so the format is different than typical SDL_gpu calls.
  * \param values A tightly-packed array of vertex position (e.g. x,y), texture coordinates (e.g. s,t), and color (e.g. r,g,b,a) values.  Texture coordinates and color values are expected to be already normalized to 0.0 - 1.0.  Pass NULL to render with only custom shader attributes.
  * \param indices If not NULL, this is used to specify which vertices to use and in what order (i.e. it indexes the vertices in the 'values' array).
  * \param flags Bit flags to control the interpretation of the 'values' array parameters.
  */
 DECLSPEC void SDLCALL GPU_TriangleBatch(GPU_Image* image, GPU_Target* target, unsigned short num_vertices, float* values, unsigned int num_indices, unsigned short* indices, GPU_BatchFlagEnum flags);
 
-/*! Renders triangles from the given set of vertices.  This lets you render arbitrary 2D geometry.  It is a direct path to the GPU, so the format is different than typical SDL_gpu calls.
+/*! Renders triangles from the given set of vertices.  This lets you render arbitrary geometry.  It is a direct path to the GPU, so the format is different than typical SDL_gpu calls.
  * \param values A tightly-packed array of vertex position (e.g. x,y), texture coordinates (e.g. s,t), and color (e.g. r,g,b,a) values.  Texture coordinates and color values are expected to be already normalized to 0.0 - 1.0 (or 0 - 255 for 8-bit color components).  Pass NULL to render with only custom shader attributes.
  * \param indices If not NULL, this is used to specify which vertices to use and in what order (i.e. it indexes the vertices in the 'values' array).
  * \param flags Bit flags to control the interpretation of the 'values' array parameters.
  */
 DECLSPEC void SDLCALL GPU_TriangleBatchX(GPU_Image* image, GPU_Target* target, unsigned short num_vertices, void* values, unsigned int num_indices, unsigned short* indices, GPU_BatchFlagEnum flags);
+
+/*! Renders primitives from the given set of vertices.  This lets you render arbitrary geometry.  It is a direct path to the GPU, so the format is different than typical SDL_gpu calls.
+ * \param primitive_type The kind of primitive to render.
+ * \param values A tightly-packed array of vertex position (e.g. x,y), texture coordinates (e.g. s,t), and color (e.g. r,g,b,a) values.  Texture coordinates and color values are expected to be already normalized to 0.0 - 1.0 (or 0 - 255 for 8-bit color components).  Pass NULL to render with only custom shader attributes.
+ * \param indices If not NULL, this is used to specify which vertices to use and in what order (i.e. it indexes the vertices in the 'values' array).
+ * \param flags Bit flags to control the interpretation of the 'values' array parameters.
+ */
+DECLSPEC void SDLCALL GPU_PrimitiveBatch(GPU_Image* image, GPU_Target* target, GPU_PrimitiveEnum primitive_type, unsigned short num_vertices, float* values, unsigned int num_indices, unsigned short* indices, GPU_BatchFlagEnum flags);
+
+/*! Renders primitives from the given set of vertices.  This lets you render arbitrary geometry.  It is a direct path to the GPU, so the format is different than typical SDL_gpu calls.
+ * \param primitive_type The kind of primitive to render.
+ * \param values A tightly-packed array of vertex position (e.g. x,y), texture coordinates (e.g. s,t), and color (e.g. r,g,b,a) values.  Texture coordinates and color values are expected to be already normalized to 0.0 - 1.0 (or 0 - 255 for 8-bit color components).  Pass NULL to render with only custom shader attributes.
+ * \param indices If not NULL, this is used to specify which vertices to use and in what order (i.e. it indexes the vertices in the 'values' array).
+ * \param flags Bit flags to control the interpretation of the 'values' array parameters.
+ */
+DECLSPEC void SDLCALL GPU_PrimitiveBatchV(GPU_Image* image, GPU_Target* target, GPU_PrimitiveEnum primitive_type, unsigned short num_vertices, void* values, unsigned int num_indices, unsigned short* indices, GPU_BatchFlagEnum flags);
 
 /*! Send all buffered blitting data to the current context target. */
 DECLSPEC void SDLCALL GPU_FlushBlitBuffer(void);

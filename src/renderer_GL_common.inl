@@ -4788,7 +4788,7 @@ static void gpu_upload_modelviewprojection(GPU_Target* dest, GPU_Context* contex
 
 
 // Assumes the right format
-static void TriangleBatchX(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* target, unsigned short num_vertices, void* values, unsigned int num_indices, unsigned short* indices, GPU_BatchFlagEnum flags)
+static void PrimitiveBatchV(GPU_Renderer* renderer, GPU_Image* image, GPU_Target* target, GPU_PrimitiveEnum primitive_type, unsigned short num_vertices, void* values, unsigned int num_indices, unsigned short* indices, GPU_BatchFlagEnum flags)
 {
     GPU_Context* context;
 	GPU_CONTEXT_DATA* cdata;
@@ -4809,12 +4809,12 @@ static void TriangleBatchX(GPU_Renderer* renderer, GPU_Image* image, GPU_Target*
 
     if(target == NULL)
     {
-        GPU_PushErrorCode("GPU_TriangleBatchX", GPU_ERROR_NULL_ARGUMENT, "target");
+        GPU_PushErrorCode("GPU_PrimitiveBatchX", GPU_ERROR_NULL_ARGUMENT, "target");
         return;
     }
     if((image != NULL && renderer != image->renderer) || renderer != target->renderer)
     {
-        GPU_PushErrorCode("GPU_TriangleBatchX", GPU_ERROR_USER_ERROR, "Mismatched renderer");
+        GPU_PushErrorCode("GPU_PrimitiveBatchX", GPU_ERROR_USER_ERROR, "Mismatched renderer");
         return;
     }
 
@@ -4827,7 +4827,7 @@ static void TriangleBatchX(GPU_Renderer* renderer, GPU_Image* image, GPU_Target*
     // Bind the FBO
     if(!bindFramebuffer(renderer, target))
     {
-        GPU_PushErrorCode("GPU_TriangleBatchX", GPU_ERROR_BACKEND_ERROR, "Failed to bind framebuffer.");
+        GPU_PushErrorCode("GPU_PrimitiveBatchX", GPU_ERROR_BACKEND_ERROR, "Failed to bind framebuffer.");
         return;
     }
 
@@ -4835,7 +4835,7 @@ static void TriangleBatchX(GPU_Renderer* renderer, GPU_Image* image, GPU_Target*
     if(using_texture)
         prepareToRenderImage(renderer, target, image);
     else
-        prepareToRenderShapes(renderer, GL_TRIANGLES);
+        prepareToRenderShapes(renderer, primitive_type);
     changeViewport(target);
     changeCamera(target);
 
@@ -5002,7 +5002,7 @@ static void TriangleBatchX(GPU_Renderer* renderer, GPU_Image* image, GPU_Target*
             float* vertex_pointer = (float*)(values);
             float* texcoord_pointer = (float*)((char*)values + offset_texcoords);
 
-            glBegin(GL_TRIANGLES);
+            glBegin(primitive_type);
             for(i = 0; i < num_indices; i++)
             {
                 if(indices == NULL)
@@ -6872,7 +6872,7 @@ static void SetAttributeSource(GPU_Renderer* renderer, int num_values, GPU_Attri
     impl->BlitScale = &BlitScale; \
     impl->BlitTransform = &BlitTransform; \
     impl->BlitTransformX = &BlitTransformX; \
-    impl->TriangleBatchX = &TriangleBatchX; \
+    impl->PrimitiveBatchV = &PrimitiveBatchV; \
  \
     impl->GenerateMipmaps = &GenerateMipmaps; \
  \

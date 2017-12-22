@@ -1512,10 +1512,20 @@ void GPU_BlitRectX(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, GPU
 
 void GPU_TriangleBatch(GPU_Image* image, GPU_Target* target, unsigned short num_vertices, float* values, unsigned int num_indices, unsigned short* indices, GPU_BatchFlagEnum flags)
 {
-    GPU_TriangleBatchX(image, target, num_vertices, (void*)values, num_indices, indices, flags);
+    GPU_PrimitiveBatchV(image, target, GPU_TRIANGLES, num_vertices, (void*)values, num_indices, indices, flags);
 }
 
 void GPU_TriangleBatchX(GPU_Image* image, GPU_Target* target, unsigned short num_vertices, void* values, unsigned int num_indices, unsigned short* indices, GPU_BatchFlagEnum flags)
+{
+    GPU_PrimitiveBatchV(image, target, GPU_TRIANGLES, num_vertices, values, num_indices, indices, flags);
+}
+
+void GPU_PrimitiveBatch(GPU_Image* image, GPU_Target* target, GPU_PrimitiveEnum primitive_type, unsigned short num_vertices, float* values, unsigned int num_indices, unsigned short* indices, GPU_BatchFlagEnum flags)
+{
+    GPU_PrimitiveBatchV(image, target, primitive_type, num_vertices, (void*)values, num_indices, indices, flags);
+}
+
+void GPU_PrimitiveBatchV(GPU_Image* image, GPU_Target* target, GPU_PrimitiveEnum primitive_type, unsigned short num_vertices, void* values, unsigned int num_indices, unsigned short* indices, GPU_BatchFlagEnum flags)
 {
     if(!CHECK_RENDERER)
         RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL renderer");
@@ -1530,7 +1540,7 @@ void GPU_TriangleBatchX(GPU_Image* image, GPU_Target* target, unsigned short num
         return;
 
 
-    _gpu_current_renderer->impl->TriangleBatchX(_gpu_current_renderer, image, target, num_vertices, values, num_indices, indices, flags);
+    _gpu_current_renderer->impl->PrimitiveBatchV(_gpu_current_renderer, image, target, primitive_type, num_vertices, values, num_indices, indices, flags);
 }
 
 
