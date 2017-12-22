@@ -305,7 +305,7 @@ typedef struct GPU_Camera
 	float x, y, z;
 	float angle;
 	float zoom;
-	float near, far;  // z clipping planes
+	float z_near, z_far;  // z clipping planes
 } GPU_Camera;
 
 
@@ -1283,13 +1283,13 @@ DECLSPEC void SDLCALL GPU_MatrixCopy(float* result, const float* A);
 DECLSPEC void SDLCALL GPU_MatrixIdentity(float* result);
 
 /*! Multiplies an orthographic projection matrix into the given matrix. */
-DECLSPEC void SDLCALL GPU_MatrixOrtho(float* result, float left, float right, float bottom, float top, float near, float far);
+DECLSPEC void SDLCALL GPU_MatrixOrtho(float* result, float left, float right, float bottom, float top, float z_near, float z_far);
 
 /*! Multiplies a perspective projection matrix into the given matrix. */
-DECLSPEC void SDLCALL GPU_MatrixFrustum(float* result, float left, float right, float bottom, float top, float near, float far);
+DECLSPEC void SDLCALL GPU_MatrixFrustum(float* result, float left, float right, float bottom, float top, float z_near, float z_far);
 
 /*! Multiplies a perspective projection matrix into the given matrix. */
-DECLSPEC void SDLCALL GPU_MatrixPerspective(float* result, float fovy, float aspect, float zNear, float zFar);
+DECLSPEC void SDLCALL GPU_MatrixPerspective(float* result, float fovy, float aspect, float z_near, float z_far);
 
 /*! Multiplies a view matrix into the given matrix. */
 DECLSPEC void SDLCALL GPU_MatrixLookAt(float* matrix, float eye_x, float eye_y, float eye_z, float target_x, float target_y, float target_z, float up_x, float up_y, float up_z);
@@ -1351,10 +1351,10 @@ DECLSPEC void SDLCALL GPU_LoadIdentity(void);
 DECLSPEC void SDLCALL GPU_LoadMatrix(const float* matrix4x4);
 
 /*! Multiplies an orthographic projection matrix into the current matrix. */
-DECLSPEC void SDLCALL GPU_Ortho(float left, float right, float bottom, float top, float near, float far);
+DECLSPEC void SDLCALL GPU_Ortho(float left, float right, float bottom, float top, float z_near, float z_far);
 
 /*! Multiplies a perspective projection matrix into the current matrix. */
-DECLSPEC void SDLCALL GPU_Frustum(float left, float right, float bottom, float top, float near, float far);
+DECLSPEC void SDLCALL GPU_Frustum(float left, float right, float bottom, float top, float z_near, float z_far);
 
 /*! Adds a translation into the current matrix. */
 DECLSPEC void SDLCALL GPU_Translate(float x, float y, float z);

@@ -1139,9 +1139,9 @@ static void get_camera_matrix(float* result)
 
     // Now multiply in the projection part
     if(!invert ^ GPU_GetCoordinateMode())
-        GPU_MatrixOrtho(result, target->camera.x, target->w + target->camera.x, target->h + target->camera.y, target->camera.y, target->camera.near, target->camera.far);
+        GPU_MatrixOrtho(result, target->camera.x, target->w + target->camera.x, target->h + target->camera.y, target->camera.y, target->camera.z_near, target->camera.z_far);
     else
-        GPU_MatrixOrtho(result, target->camera.x, target->w + target->camera.x, target->camera.y, target->h + target->camera.y, target->camera.near, target->camera.far);  // Special inverted orthographic projection because tex coords are inverted already for render-to-texture
+        GPU_MatrixOrtho(result, target->camera.x, target->w + target->camera.x, target->camera.y, target->h + target->camera.y, target->camera.z_near, target->camera.z_far);  // Special inverted orthographic projection because tex coords are inverted already for render-to-texture
 
     // First the modelview part
     offsetX = target->w/2.0f;

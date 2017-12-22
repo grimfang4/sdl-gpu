@@ -165,7 +165,7 @@ void GPU_MatrixIdentity(float* result)
 }
 
 
-void GPU_MatrixOrtho(float* result, float left, float right, float bottom, float top, float near, float far)
+void GPU_MatrixOrtho(float* result, float left, float right, float bottom, float top, float z_near, float z_far)
 {
     if(result == NULL)
 		return;
@@ -176,7 +176,7 @@ void GPU_MatrixOrtho(float* result, float left, float right, float bottom, float
 		FILL_MATRIX_4x4(A,
 				2/(right - left), 0,  0, -(right + left)/(right - left),
 				0, 2/(top - bottom), 0, -(top + bottom)/(top - bottom),
-				0, 0, -2/(far - near), -(far + near)/(far - near),
+				0, 0, -2/(z_far - z_near), -(z_far + z_near)/(z_far - z_near),
 				0, 0, 0, 1
 			);
 #else
@@ -184,8 +184,8 @@ void GPU_MatrixOrtho(float* result, float left, float right, float bottom, float
 		FILL_MATRIX_4x4(A,
 				2 / (right - left), 0, 0, 0,
 				0, 2 / (top - bottom), 0, 0,
-				0, 0, -2 / (far - near), 0,
-				-(right + left) / (right - left), -(top + bottom) / (top - bottom), -(far + near) / (far - near), 1
+				0, 0, -2 / (z_far - z_near), 0,
+				-(right + left) / (right - left), -(top + bottom) / (top - bottom), -(z_far + z_near) / (z_far - z_near), 1
 			);
 #endif
 
@@ -194,7 +194,7 @@ void GPU_MatrixOrtho(float* result, float left, float right, float bottom, float
 }
 
 
-void GPU_MatrixFrustum(float* result, float left, float right, float bottom, float top, float near, float far)
+void GPU_MatrixFrustum(float* result, float left, float right, float bottom, float top, float z_near, float z_far)
 {
     if(result == NULL)
 		return;
@@ -202,17 +202,17 @@ void GPU_MatrixFrustum(float* result, float left, float right, float bottom, flo
 	{
 		float A[16];
 		FILL_MATRIX_4x4(A, 
-				2 * near / (right - left), 0, 0, 0,
-				0, 2 * near / (top - bottom), 0, 0,
-				(right + left) / (right - left), (top + bottom) / (top - bottom), -(far + near) / (far - near), -1,
-				0, 0, -(2 * far * near) / (far - near), 0
+				2 * z_near / (right - left), 0, 0, 0,
+				0, 2 * z_near / (top - bottom), 0, 0,
+				(right + left) / (right - left), (top + bottom) / (top - bottom), -(z_far + z_near) / (z_far - z_near), -1,
+				0, 0, -(2 * z_far * z_near) / (z_far - z_near), 0
 			);
 
 		GPU_MultiplyAndAssign(result, A);
 	}
 }
 
-void GPU_MatrixPerspective(float* result, float fovy, float aspect, float zNear, float zFar)
+void GPU_MatrixPerspective(float* result, float fovy, float aspect, float z_near, float z_far)
 {
 	float fW, fH;
     
@@ -220,9 +220,9 @@ void GPU_MatrixPerspective(float* result, float fovy, float aspect, float zNear,
     fovy = -fovy;
     aspect = -aspect;
     
-	fH = tanf(fovy / 360 * M_PI) * zNear;
+	fH = tanf(fovy / 360 * M_PI) * z_near;
 	fW = fH * aspect;
-	GPU_MatrixFrustum(result, -fW, fW, -fH, fH, zNear, zFar);
+	GPU_MatrixFrustum(result, -fW, fW, -fH, fH, z_near, z_far);
 }
 
 void GPU_MatrixLookAt(float* matrix, float eye_x, float eye_y, float eye_z, float target_x, float target_y, float target_z, float up_x, float up_y, float up_z)
@@ -545,16 +545,16 @@ void GPU_LoadMatrix(const float* A)
     GPU_MatrixCopy(result, A);
 }
 
-void GPU_Ortho(float left, float right, float bottom, float top, float near, float far)
+void GPU_Ortho(float left, float right, float bottom, float top, float z_near, float z_far)
 {
 	GPU_FlushBlitBuffer();
-    GPU_MatrixOrtho(GPU_GetCurrentMatrix(), left, right, bottom, top, near, far);
+    GPU_MatrixOrtho(GPU_GetCurrentMatrix(), left, right, bottom, top, z_near, z_far);
 }
 
-void GPU_Frustum(float left, float right, float bottom, float top, float near, float far)
+void GPU_Frustum(float left, float right, float bottom, float top, float z_near, float z_far)
 {
 	GPU_FlushBlitBuffer();
-    GPU_MatrixFrustum(GPU_GetCurrentMatrix(), left, right, bottom, top, near, far);
+    GPU_MatrixFrustum(GPU_GetCurrentMatrix(), left, right, bottom, top, z_near, z_far);
 }
 
 void GPU_Translate(float x, float y, float z)
