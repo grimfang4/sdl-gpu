@@ -145,6 +145,11 @@ static_inline GPU_bool has_colorkey(SDL_Surface* surface)
     return (SDL_GetColorKey(surface, NULL) == 0);
 }
 
+static_inline GPU_bool is_alpha_format(SDL_PixelFormat* format)
+{
+    return SDL_ISPIXELFORMAT_ALPHA(format->format);
+}
+
 #else
 
 #define SDL_Window SDL_Surface
@@ -191,6 +196,11 @@ static_inline GPU_bool get_fullscreen_state(SDL_Window* window)
 static_inline GPU_bool has_colorkey(SDL_Surface* surface)
 {
     return (surface->flags & SDL_SRCCOLORKEY);
+}
+
+static_inline GPU_bool is_alpha_format(SDL_PixelFormat* format)
+{
+    return (format->BitsPerPixel == 32);  // Not great, as it misses many packed formats.  Might be the best we can do.
 }
 
 #endif
@@ -3793,7 +3803,7 @@ static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surf
     // See what the best image format is.
     if(surface->format->Amask == 0)
     {
-        if(has_colorkey(surface))
+        if(has_colorkey(surface) || is_alpha_format(surface->format))
             format = GPU_FORMAT_RGBA;
         else
             format = GPU_FORMAT_RGB;
