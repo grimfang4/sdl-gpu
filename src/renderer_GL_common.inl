@@ -324,8 +324,10 @@ static void copy_upload_texture(const unsigned char* pixels, GPU_Rect update_rec
     
     if(h > 0 && w > 0)
     {
-        // Account for padding
-        w += w % alignment;
+        unsigned int rem = w % alignment;
+        // If not already aligned, account for padding on each row
+        if(rem > 0)
+            w += alignment - rem;
 
         unsigned char *copy = (unsigned char*)SDL_malloc(update_rect.h*w);
         unsigned char *dst = copy;
