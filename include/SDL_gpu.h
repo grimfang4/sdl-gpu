@@ -125,6 +125,23 @@ typedef struct GPU_RendererID
 } GPU_RendererID;
 
 
+/*! \ingroup TargetControls
+ * Comparison operations (for depth testing)
+ * \see GPU_SetDepthFunction()
+ * Values chosen for direct OpenGL compatibility.
+ */
+typedef enum {
+    GPU_NEVER = 0x0200,
+    GPU_LESS = 0x0201,
+    GPU_EQUAL = 0x0202,
+    GPU_LEQUAL = 0x0203,
+    GPU_GREATER = 0x0204,
+    GPU_NOTEQUAL = 0x0205,
+    GPU_GEQUAL = 0x0206,
+    GPU_ALWAYS = 0x0207
+} GPU_ComparisonEnum;
+
+
 /*! \ingroup ImageControls
  * Blend component functions
  * \see GPU_SetBlendFunction()
@@ -420,6 +437,7 @@ struct GPU_Target
 	
 	GPU_bool use_depth_test;
 	GPU_bool use_depth_write;
+	GPU_ComparisonEnum depth_function;
 	
 	/*! Renderer context data.  NULL if the target does not represent a window or rendering context. */
 	GPU_Context* context;
@@ -1055,6 +1073,9 @@ DECLSPEC void SDLCALL GPU_SetDepthTest(GPU_Target* target, GPU_bool enable);
 
 /*! Enables or disables writing the depth (effective view z-coordinate) of new pixels to the depth buffer.  Enabled by default, but you must call GPU_SetDepthTest() to use it. */
 DECLSPEC void SDLCALL GPU_SetDepthWrite(GPU_Target* target, GPU_bool enable);
+
+/*! Sets the operation to perform when depth testing. */
+DECLSPEC void SDLCALL GPU_SetDepthFunction(GPU_Target* target, GPU_ComparisonEnum compare_operation);
 
 /*! \return The RGBA color of a pixel. */
 DECLSPEC SDL_Color SDLCALL GPU_GetPixel(GPU_Target* target, Sint16 x, Sint16 y);

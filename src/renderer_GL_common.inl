@@ -860,12 +860,23 @@ static void changeDepthWrite(GPU_Renderer* renderer, GPU_bool enable)
     glDepthMask(enable);
 }
 
+static void changeDepthFunction(GPU_Renderer* renderer, GPU_ComparisonEnum compare_operation)
+{
+    GPU_CONTEXT_DATA* cdata = (GPU_CONTEXT_DATA*)renderer->current_context_target->context->data;
+    if(cdata->last_depth_function == compare_operation)
+        return;
+
+    cdata->last_depth_function = compare_operation;
+    glDepthFunc(compare_operation);
+}
+
 static void prepareToRenderToTarget(GPU_Renderer* renderer, GPU_Target* target)
 {
     // Set up the camera
     renderer->impl->SetCamera(renderer, target, &target->camera);
     changeDepthTest(renderer, target->use_depth_test);
     changeDepthWrite(renderer, target->use_depth_write);
+    changeDepthFunction(renderer, target->depth_function);
 }
 
 

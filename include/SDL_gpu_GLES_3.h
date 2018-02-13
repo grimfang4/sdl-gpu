@@ -128,6 +128,7 @@ typedef struct ContextData_GLES_3
 	
 	GPU_bool last_depth_test;
 	GPU_bool last_depth_write;
+	GPU_ComparisonEnum last_depth_function;
 	
 	GPU_Image* last_image;
 	GPU_Target* last_target;

@@ -546,6 +546,12 @@ void GPU_SetDepthWrite(GPU_Target* target, GPU_bool enable)
         target->use_depth_write = enable;
 }
 
+void GPU_SetDepthFunction(GPU_Target* target, GPU_ComparisonEnum compare_operation)
+{
+    if(target != NULL)
+        target->depth_function = compare_operation;
+}
+
 GPU_bool GPU_SetWindowResolution(Uint16 w, Uint16 h)
 {
     if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL || w == 0 || h == 0)
