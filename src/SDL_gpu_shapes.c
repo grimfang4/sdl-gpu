@@ -153,6 +153,12 @@ void GPU_Polygon(GPU_Target* target, unsigned int num_vertices, float* vertices,
 	renderer->impl->Polygon(renderer, target, num_vertices, vertices, color);
 }
 
+void GPU_Polygon2(GPU_Target* target, unsigned int num_vertices, float* vertices, SDL_Color color, GPU_bool open)
+{
+	CHECK_RENDERER();
+	renderer->impl->Polygon2(renderer, target, num_vertices, vertices, color, open );
+}
+
 void GPU_PolygonFilled(GPU_Target* target, unsigned int num_vertices, float* vertices, SDL_Color color)
 {
 	CHECK_RENDERER();

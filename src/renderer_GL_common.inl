@@ -1040,18 +1040,25 @@ static void disableTexturing(GPU_Renderer* renderer)
 
 static SDL_Color get_complete_mod_color(GPU_Renderer* renderer, GPU_Target* target, GPU_Image* image)
 {
-    if(target->use_color)
-    {
-		SDL_Color color;
-		color.r = MIX_COLOR_COMPONENT(target->color.r, image->color.r);
-		color.g = MIX_COLOR_COMPONENT(target->color.g, image->color.g);
-		color.b = MIX_COLOR_COMPONENT(target->color.b, image->color.b);
-		GET_ALPHA(color) = MIX_COLOR_COMPONENT(GET_ALPHA(target->color), GET_ALPHA(image->color));
-
-        return color;
-    }
-    else
-        return image->color;
+	SDL_Color color = { 255, 255, 255, 255 };
+	if(target->use_color)
+	{
+		if ( image != NULL )
+		{
+			color.r = MIX_COLOR_COMPONENT(target->color.r, image->color.r);
+			color.g = MIX_COLOR_COMPONENT(target->color.g, image->color.g);
+			color.b = MIX_COLOR_COMPONENT(target->color.b, image->color.b);
+			GET_ALPHA(color) = MIX_COLOR_COMPONENT(GET_ALPHA(target->color), GET_ALPHA(image->color));
+		} else {
+			color = target->color;
+		}
+		
+		return color;
+	}
+	else if ( image != NULL )
+		return image->color;
+	else
+		return color;
 }
 
 static void prepareToRenderImage(GPU_Renderer* renderer, GPU_Target* target, GPU_Image* image)
@@ -4997,9 +5004,9 @@ static void PrimitiveBatchV(GPU_Renderer* renderer, GPU_Image* image, GPU_Target
 
         // Upload
         if(indices == NULL)
-            glDrawArrays(GL_TRIANGLES, 0, num_indices);
+            glDrawArrays(primitive_type, 0, num_indices);
         else
-            glDrawElements(GL_TRIANGLES, num_indices, GL_UNSIGNED_SHORT, indices);
+            glDrawElements(primitive_type, num_indices, GL_UNSIGNED_SHORT, indices);
 
         // Disable
         if(use_colors)
@@ -5121,9 +5128,9 @@ static void PrimitiveBatchV(GPU_Renderer* renderer, GPU_Image* image, GPU_Target
         upload_attribute_data(cdata, num_indices);
 
         if(indices == NULL)
-            glDrawArrays(GL_TRIANGLES, 0, num_indices);
+            glDrawArrays(primitive_type, 0, num_indices);
         else
-            glDrawElements(GL_TRIANGLES, num_indices, GL_UNSIGNED_SHORT, (void*)0);
+            glDrawElements(primitive_type, num_indices, GL_UNSIGNED_SHORT, (void*)0);
 
         // Disable the vertex arrays again
         if(use_vertices)
@@ -6964,5 +6971,6 @@ static void SetAttributeSource(GPU_Renderer* renderer, int num_values, GPU_Attri
     impl->RectangleRound = &RectangleRound; \
     impl->RectangleRoundFilled = &RectangleRoundFilled; \
     impl->Polygon = &Polygon; \
+	impl->Polygon2 = &Polygon2; \
     impl->PolygonFilled = &PolygonFilled;
 

@@ -1014,6 +1014,62 @@ static void Polygon(GPU_Renderer* renderer, GPU_Target* target, unsigned int num
 	}
 }
 
+static void Polygon2(GPU_Renderer* renderer, GPU_Target* target, unsigned int num_vertices, float* vertices, SDL_Color color, GPU_bool open)
+{
+	if (num_vertices < 2) return;
+	
+	float t = GetLineThickness(renderer) * 0.5f;
+	float x1, x2, y1, y2, line_angle, tc, ts;
+	
+	int num_v = num_vertices * 4;
+	int num_i = num_v + 2;
+	int last_vert = num_vertices;
+	
+	if ( open )
+	{
+		num_v -= 4;
+		num_i = num_v;
+		last_vert--;
+	}
+	
+	BEGIN_UNTEXTURED("GPU_Polygon", GL_TRIANGLE_STRIP, num_v, num_i );
+	
+	int i = 0;
+	do
+	{
+		x1 = vertices[ i * 2 ];
+		y1 = vertices[ i * 2 + 1 ];
+		i++;
+		if ( i == num_vertices )
+		{
+			x2 = vertices[ 0 ];
+			y2 = vertices[ 1 ];
+		}
+		else
+		{
+			x2 = vertices[ i * 2 ];
+			y2 = vertices[ i * 2 + 1 ];
+		}
+		
+		line_angle = atan2f(y2 - y1, x2 - x1);
+		tc = t * cosf(line_angle);
+		ts = t * sinf(line_angle);
+		
+		SET_UNTEXTURED_VERTEX(x1 + ts, y1 - tc, r, g, b, a);
+		SET_UNTEXTURED_VERTEX(x1 - ts, y1 + tc, r, g, b, a);
+		SET_UNTEXTURED_VERTEX(x2 + ts, y2 - tc, r, g, b, a);
+		SET_UNTEXTURED_VERTEX(x2 - ts, y2 + tc, r, g, b, a);
+		
+	} while ( i < last_vert );
+	
+	if ( !open ) // end cap for closed
+	{
+		SET_INDEXED_VERTEX(0);
+		SET_INDEXED_VERTEX(1)
+	}
+	
+}
+
 static void PolygonFilled(GPU_Renderer* renderer, GPU_Target* target, unsigned int num_vertices, float* vertices, SDL_Color color)
 {
     if(num_vertices < 3)

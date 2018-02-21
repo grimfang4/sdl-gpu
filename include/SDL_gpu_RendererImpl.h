@@ -306,6 +306,9 @@ typedef struct GPU_RendererImpl
     /*! \see GPU_Polygon() */
 	void (SDLCALL *Polygon)(GPU_Renderer* renderer, GPU_Target* target, unsigned int num_vertices, float* vertices, SDL_Color color);
 
+	/*! \see GPU_Polygon2() */
+	void (SDLCALL *Polygon2)(GPU_Renderer* renderer, GPU_Target* target, unsigned int num_vertices, float* vertices, SDL_Color color, GPU_bool open);
+	
     /*! \see GPU_PolygonFilled() */
 	void (SDLCALL *PolygonFilled)(GPU_Renderer* renderer, GPU_Target* target, unsigned int num_vertices, float* vertices, SDL_Color color);
 	
