@@ -1740,14 +1740,14 @@ DECLSPEC void SDLCALL GPU_RectangleRoundFilled2(GPU_Target* target, GPU_Rect rec
  */
 DECLSPEC void SDLCALL GPU_Polygon(GPU_Target* target, unsigned int num_vertices, float* vertices, SDL_Color color);
 
-/*! Renders a colored polygon outline, optionally open or closed.
+/*! Renders a colored sequence of line segments.
  * \param target The destination render target
  * \param num_vertices Number of vertices (x and y pairs)
  * \param vertices An array of vertex positions stored as interlaced x and y coords, e.g. {x1, y1, x2, y2, ...}
  * \param color The color of the shape to render
- * \param open Skip last segment and draw an open polygon
+ * \param close_loop Make a closed polygon by drawing a line at the end back to the start point
  */
-DECLSPEC void SDLCALL GPU_Polygon2(GPU_Target* target, unsigned int num_vertices, float* vertices, SDL_Color color, GPU_bool open);	
+DECLSPEC void SDLCALL GPU_Polyline(GPU_Target* target, unsigned int num_vertices, float* vertices, SDL_Color color, GPU_bool close_loop);
 	
 /*! Renders a colored filled polygon.  The vertices are expected to define a convex polygon.
  * \param target The destination render target

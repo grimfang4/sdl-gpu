@@ -6971,6 +6971,6 @@ static void SetAttributeSource(GPU_Renderer* renderer, int num_values, GPU_Attri
     impl->RectangleRound = &RectangleRound; \
     impl->RectangleRoundFilled = &RectangleRoundFilled; \
     impl->Polygon = &Polygon; \
-	impl->Polygon2 = &Polygon2; \
+	impl->Polyline = &Polyline; \
     impl->PolygonFilled = &PolygonFilled;
 

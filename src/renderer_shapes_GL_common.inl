@@ -1014,7 +1014,7 @@ static void Polygon(GPU_Renderer* renderer, GPU_Target* target, unsigned int num
 	}
 }
 
-static void Polygon2(GPU_Renderer* renderer, GPU_Target* target, unsigned int num_vertices, float* vertices, SDL_Color color, GPU_bool open)
+static void Polyline(GPU_Renderer* renderer, GPU_Target* target, unsigned int num_vertices, float* vertices, SDL_Color color, GPU_bool close_loop)
 {
 	if (num_vertices < 2) return;
 	
@@ -1025,7 +1025,7 @@ static void Polygon2(GPU_Renderer* renderer, GPU_Target* target, unsigned int nu
 	int num_i = num_v + 2;
 	int last_vert = num_vertices;
 	
-	if ( open )
+	if ( !close_loop )
 	{
 		num_v -= 4;
 		num_i = num_v;
@@ -1062,7 +1062,7 @@ static void Polygon2(GPU_Renderer* renderer, GPU_Target* target, unsigned int nu
 		
 	} while ( i < last_vert );
 	
-	if ( !open ) // end cap for closed
+	if ( close_loop ) // end cap for closed
 	{
 		SET_INDEXED_VERTEX(0);
 		SET_INDEXED_VERTEX(1)
