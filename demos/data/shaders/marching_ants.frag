@@ -1,7 +1,7 @@
 
-in vec4 color;
-in vec2 texCoord;
-out vec4 fragColor;
+varying vec4 color;
+varying vec2 texCoord;
+#define fragColor gl_FragColor
 
 uniform sampler2D tex;
 
