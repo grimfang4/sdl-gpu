@@ -939,7 +939,7 @@ GPU_Image* GPU_CreateImage(Uint16 w, Uint16 h, GPU_FormatEnum format)
     return _gpu_current_renderer->impl->CreateImage(_gpu_current_renderer, w, h, format);
 }
 
-GPU_Image* GPU_CreateImageUsingTexture(Uint32 handle, GPU_bool take_ownership)
+GPU_Image* GPU_CreateImageUsingTexture(GPU_TextureHandle handle, GPU_bool take_ownership)
 {
     if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL)
         return NULL;
@@ -2007,6 +2007,13 @@ void GPU_SetWrapMode(GPU_Image* image, GPU_WrapEnum wrap_mode_x, GPU_WrapEnum wr
         return;
 
     _gpu_current_renderer->impl->SetWrapMode(_gpu_current_renderer, image, wrap_mode_x, wrap_mode_y);
+}
+
+GPU_TextureHandle GPU_GetTextureHandle(GPU_Image* image)
+{
+    if(image == NULL || image->renderer == NULL)
+        return 0;
+    return image->renderer->impl->GetTextureHandle(image->renderer, image);
 }
 
 

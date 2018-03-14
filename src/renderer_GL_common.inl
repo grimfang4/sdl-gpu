@@ -2470,7 +2470,7 @@ static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, GPU_Fo
 }
 
 
-static GPU_Image* CreateImageUsingTexture(GPU_Renderer* renderer, Uint32 handle, GPU_bool take_ownership)
+static GPU_Image* CreateImageUsingTexture(GPU_Renderer* renderer, GPU_TextureHandle handle, GPU_bool take_ownership)
 {
     #ifdef SDL_GPU_DISABLE_TEXTURE_GETS
     GPU_PushErrorCode("GPU_CreateImageUsingTexture", GPU_ERROR_UNSUPPORTED_FUNCTION, "Renderer %s does not support this function", renderer->id.name);
@@ -2632,7 +2632,7 @@ static GPU_Image* CreateImageUsingTexture(GPU_Renderer* renderer, Uint32 handle,
 
     data = (GPU_IMAGE_DATA*)SDL_malloc(sizeof(GPU_IMAGE_DATA));
     data->refcount = 1;
-    data->handle = handle;
+    data->handle = (GLuint)handle;
     data->owns_handle = take_ownership;
     data->format = gl_format;
 
@@ -5421,7 +5421,10 @@ static void SetWrapMode(GPU_Renderer* renderer, GPU_Image* image, GPU_WrapEnum w
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap_y );
 }
 
-
+static GPU_TextureHandle GetTextureHandle(GPU_Renderer* renderer, GPU_Image* image)
+{
+    return ((GPU_IMAGE_DATA*)image->data)->handle;
+}
 
 
 
@@ -6912,6 +6915,7 @@ static void SetAttributeSource(GPU_Renderer* renderer, int num_values, GPU_Attri
     impl->GetPixel = &GetPixel; \
     impl->SetImageFilter = &SetImageFilter; \
     impl->SetWrapMode = &SetWrapMode; \
+    impl->GetTextureHandle = &GetTextureHandle; \
  \
     impl->ClearRGBA = &ClearRGBA; \
     impl->FlushBlitBuffer = &FlushBlitBuffer; \

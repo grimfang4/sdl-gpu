@@ -310,6 +310,13 @@ typedef struct GPU_Image
 	GPU_bool is_alias;
 } GPU_Image;
 
+/*! \ingroup ImageControls
+ * A backend-neutral type that is intended to hold a backend-specific handle/pointer to a texture.
+ * \see GPU_CreateImageUsingTexture()
+ * \see GPU_GetTextureHandle()
+ */
+typedef uintptr_t GPU_TextureHandle;
+
 
 /*! \ingroup TargetControls
  * Camera object that determines viewing transform.
@@ -1164,7 +1171,7 @@ DECLSPEC GPU_bool SDLCALL GPU_SaveSurface_RW(SDL_Surface* surface, SDL_RWops* rw
 DECLSPEC GPU_Image* SDLCALL GPU_CreateImage(Uint16 w, Uint16 h, GPU_FormatEnum format);
 
 /*! Create a new image that uses the given native texture handle as the image texture. */
-DECLSPEC GPU_Image* SDLCALL GPU_CreateImageUsingTexture(Uint32 handle, GPU_bool take_ownership);
+DECLSPEC GPU_Image* SDLCALL GPU_CreateImageUsingTexture(GPU_TextureHandle handle, GPU_bool take_ownership);
 
 /*! Load image from an image file that is supported by this renderer.  Don't forget to GPU_FreeImage() it. */
 DECLSPEC GPU_Image* SDLCALL GPU_LoadImage(const char* filename);
@@ -1255,6 +1262,9 @@ DECLSPEC void SDLCALL GPU_SetSnapMode(GPU_Image* image, GPU_SnapEnum mode);
 
 /*! Sets the image wrapping mode, if supported by the renderer. */
 DECLSPEC void SDLCALL GPU_SetWrapMode(GPU_Image* image, GPU_WrapEnum wrap_mode_x, GPU_WrapEnum wrap_mode_y);
+
+/*! Returns the backend-specific texture handle associated with the given image.  Note that SDL_gpu will be unaware of changes made to the texture.  */
+DECLSPEC GPU_TextureHandle SDLCALL GPU_GetTextureHandle(GPU_Image* image);
 
 // End of ImageControls
 /*! @} */

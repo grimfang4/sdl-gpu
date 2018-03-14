@@ -472,7 +472,7 @@ static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, GPU_Fo
 }
 
 
-static GPU_Image* CreateImageUsingTexture(GPU_Renderer* renderer, Uint32 handle, GPU_bool take_ownership)
+static GPU_Image* CreateImageUsingTexture(GPU_Renderer* renderer, GPU_TextureHandle handle, GPU_bool take_ownership)
 {
     GPU_Log(" %s (dummy)\n", __func__);
     
@@ -803,6 +803,11 @@ static void SetWrapMode(GPU_Renderer* renderer, GPU_Image* image, GPU_WrapEnum w
 	image->wrap_mode_y = wrap_mode_y;
 }
 
+static GPU_TextureHandle GetTextureHandle(GPU_Renderer* renderer, GPU_Image* image)
+{
+    GPU_Log(" %s (dummy)\n", __func__);
+    return 0;
+}
 
 static void ClearRGBA(GPU_Renderer* renderer, GPU_Target* target, Uint8 r, Uint8 g, Uint8 b, Uint8 a)
 {
@@ -1219,6 +1224,7 @@ void set_renderer_functions(GPU_RendererImpl* impl)
     impl->GetPixel = &GetPixel;
     impl->SetImageFilter = &SetImageFilter;
     impl->SetWrapMode = &SetWrapMode;
+    impl->GetTextureHandle = &GetTextureHandle;
 
     impl->ClearRGBA = &ClearRGBA;
     impl->FlushBlitBuffer = &FlushBlitBuffer;

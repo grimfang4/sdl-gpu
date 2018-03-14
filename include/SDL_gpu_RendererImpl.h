@@ -62,7 +62,7 @@ typedef struct GPU_RendererImpl
 	GPU_Image* (SDLCALL *CreateImage)(GPU_Renderer* renderer, Uint16 w, Uint16 h, GPU_FormatEnum format);
 	
     /*! \see GPU_CreateImageUsingTexture() */
-	GPU_Image* (SDLCALL *CreateImageUsingTexture)(GPU_Renderer* renderer, Uint32 handle, GPU_bool take_ownership);
+	GPU_Image* (SDLCALL *CreateImageUsingTexture)(GPU_Renderer* renderer, GPU_TextureHandle handle, GPU_bool take_ownership);
 	
     /*! \see GPU_CreateAliasImage() */
 	GPU_Image* (SDLCALL *CreateAliasImage)(GPU_Renderer* renderer, GPU_Image* image);
@@ -138,7 +138,10 @@ typedef struct GPU_RendererImpl
 	
 	/*! \see GPU_SetWrapMode() */
 	void (SDLCALL *SetWrapMode)(GPU_Renderer* renderer, GPU_Image* image, GPU_WrapEnum wrap_mode_x, GPU_WrapEnum wrap_mode_y);
-
+    
+    /*! \see GPU_GetTextureHandle() */
+    GPU_TextureHandle (SDLCALL *GetTextureHandle)(GPU_Renderer* renderer, GPU_Image* image);
+    
 	/*! \see GPU_ClearRGBA() */
 	void (SDLCALL *ClearRGBA)(GPU_Renderer* renderer, GPU_Target* target, Uint8 r, Uint8 g, Uint8 b, Uint8 a);
 	/*! \see GPU_FlushBlitBuffer() */
