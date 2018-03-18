@@ -11,8 +11,8 @@
 
 /* Create a GPU_Image from a NanoVG Framebuffer */
 GPU_Image* generateFBO(NVGcontext* _vg, const float _w, const float _h, void (*draw)(NVGcontext*, const float, const float, const float, const float)) {
-    // GPU_FlushBlitBuffer(); // you may want to call this if you're doing this in the middle of SDL_gpu blitting
-    NVGLUframebuffer* fb = nvgluCreateFramebuffer(_vg, _w, _h, 0); // IMPORTANT: don't run nvgluDeleteFramebuffer
+    // GPU_FlushBlitBuffer(); // call GPU_FlushBlitBuffer if you're doing this in the middle of SDL_gpu blitting
+    NVGLUframebuffer* fb = nvgluCreateFramebuffer(_vg, _w, _h, NVG_IMAGE_NODELETE); // IMPORTANT: don't run nvgluDeleteFramebuffer
     nvgluBindFramebuffer(fb);
     glViewport(0, 0, _w, _h);
     glClearColor(0, 0, 0, 0);
@@ -23,7 +23,9 @@ GPU_Image* generateFBO(NVGcontext* _vg, const float _w, const float _h, void (*d
     /* nvgluBindFramebuffer(0); // official documentation says to unbind, but I haven't had issues not doing it */
     GPU_ResetRendererState(); // not calling GPU_ResetRendererState can cause problems with SDL_gpu depending on your order of operations
     // IMPORTANT: don't run nvgluDeleteFramebuffer, GPU_CreateImageUsingTexture takes the handle
-    return GPU_CreateImageUsingTexture(fb->texture, false); // should take_ownership be true?
+    GPU_Image* return_image = GPU_CreateImageUsingTexture(fb->texture, false); // should take_ownership be true?
+    nvgluDeleteFramebuffer(fb);
+    return return_image;
 }
 
 /* Simple Drawing Example */
@@ -97,11 +99,11 @@ void main_loop(GPU_Target* _screen, NVGcontext* _vg, const Uint16 _screen_w, con
         /* SDL_gpu + NanoVG Rendering */
         GPU_ClearRGBA(_screen, 0x00, 0x00, 0x00, 0xFF); // GPU_ClearRGBA clears GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT
         glClear(GL_STENCIL_BUFFER_BIT); // IMPORTANT: GPU_ClearRGBA does not clear GL_STENCIL_BUFFER_BIT
-        
+
         /* SDL_gpu Blitting */
         GPU_BlitRectX(fbo_complex, NULL, _screen, &fbo_complex_rect, 0.0f, 0.0f, 0.0f, GPU_FLIP_VERTICAL); // IMPORTANT: GPU_BlitRectX is required to use GPU_FLIP_VERTICAL which is required for NVGLUframebuffer data (why???)
         GPU_BlitRectX(fbo_simple, NULL, _screen, &fbo_simple_rect, 0.0f, 0.0f, 0.0f, GPU_FLIP_VERTICAL); // IMPORTANT: GPU_BlitRectX is required to use GPU_FLIP_VERTICAL which is required for NVGLUframebuffer data (why???)
-        
+
         /* NanoVG Section */
         GPU_FlushBlitBuffer(); // IMPORTANT: run GPU_FlushBlitBuffer before nvgBeginFrame
         nvgBeginFrame(_vg, _screen_w, _screen_h, px_ratio); // Do your normal NanoVG stuff
@@ -110,7 +112,7 @@ void main_loop(GPU_Target* _screen, NVGcontext* _vg, const Uint16 _screen_w, con
         /* drawComplexNVG(_vg); */
         nvgEndFrame(_vg); // Finish our NanoVG pass
         GPU_ResetRendererState(); // IMPORTANT: run GPU_ResetRendererState after nvgEndFrame
-        
+
         /* Finish */
         GPU_Flip(_screen); // Render to screen
     } while (loop);
