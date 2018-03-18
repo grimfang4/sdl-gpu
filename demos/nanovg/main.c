@@ -12,7 +12,7 @@
 /* Create a GPU_Image from a NanoVG Framebuffer */
 GPU_Image* generateFBO(NVGcontext* _vg, const float _w, const float _h, void (*draw)(NVGcontext*, const float, const float, const float, const float)) {
     // GPU_FlushBlitBuffer(); // call GPU_FlushBlitBuffer if you're doing this in the middle of SDL_gpu blitting
-    NVGLUframebuffer* fb = nvgluCreateFramebuffer(_vg, _w, _h, NVG_IMAGE_NODELETE); // IMPORTANT: don't run nvgluDeleteFramebuffer
+    NVGLUframebuffer* fb = nvgluCreateFramebuffer(_vg, _w, _h, NVG_IMAGE_NODELETE); // IMPORTANT: NVG_IMAGE_NODELETE allows us to run nvgluDeleteFramebuffer without freeing the GPU_Image data
     nvgluBindFramebuffer(fb);
     glViewport(0, 0, _w, _h);
     glClearColor(0, 0, 0, 0);
