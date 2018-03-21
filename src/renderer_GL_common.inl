@@ -12,6 +12,7 @@ See a particular renderer's *.c file for specifics. */
 #include <stdint.h>
 #include <stdlib.h>
 #include "SDL_platform.h"
+#include "SDL_gpu.h"  // For poor, dumb Intellisense
 #include <math.h>
 #include <string.h>
 
@@ -26,9 +27,12 @@ See a particular renderer's *.c file for specifics. */
 #include "stb_image.h"
 #include "stb_image_write.h"
 
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
+#ifndef PI
+#define PI 3.1415926f
 #endif
+
+#define RAD_PER_DEG 0.017453293f
+#define DEG_PER_RAD 57.2957795f
 
 // Visual C does not support static inline
 #ifndef static_inline
@@ -288,7 +292,7 @@ static_inline void fast_upload_texture(const void* pixels, GPU_Rect update_rect,
     #endif
     
     glTexSubImage2D(GL_TEXTURE_2D, 0,
-                    update_rect.x, update_rect.y, update_rect.w, update_rect.h,
+                    (GLint)update_rect.x, (GLint)update_rect.y, (GLsizei)update_rect.w, (GLsizei)update_rect.h,
                     format, GL_UNSIGNED_BYTE, pixels);
 
     #if defined(SDL_GPU_USE_OPENGL) || SDL_GPU_GLES_MAJOR_VERSION > 2
@@ -300,7 +304,8 @@ static_inline void fast_upload_texture(const void* pixels, GPU_Rect update_rect,
 static void row_upload_texture(const unsigned char* pixels, GPU_Rect update_rect, Uint32 format, int alignment, unsigned int pitch, int bytes_per_pixel)
 {
     unsigned int i;
-    unsigned int h = update_rect.h;
+    unsigned int h = (unsigned int)update_rect.h;
+	(void)bytes_per_pixel;
     glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
     if(h > 0 && update_rect.w > 0.0f)
     {
@@ -308,7 +313,7 @@ static void row_upload_texture(const unsigned char* pixels, GPU_Rect update_rect
         for(i = 0; i < h; ++i)
         {
             glTexSubImage2D(GL_TEXTURE_2D, 0,
-                        update_rect.x, update_rect.y + i, update_rect.w, 1,
+                        (GLint)update_rect.x, (GLint)(update_rect.y + i), (GLsizei)update_rect.w, 1,
                         format, GL_UNSIGNED_BYTE, pixels);
             pixels += pitch;
         }
@@ -319,8 +324,8 @@ static void row_upload_texture(const unsigned char* pixels, GPU_Rect update_rect
 static void copy_upload_texture(const unsigned char* pixels, GPU_Rect update_rect, Uint32 format, int alignment, unsigned int pitch, int bytes_per_pixel)
 {
     unsigned int i;
-    unsigned int h = update_rect.h;
-    unsigned int w = update_rect.w*bytes_per_pixel;
+    unsigned int h = (unsigned int)update_rect.h;
+    unsigned int w = ((unsigned int)update_rect.w)*bytes_per_pixel;
     
     if(h > 0 && w > 0)
     {
@@ -329,7 +334,7 @@ static void copy_upload_texture(const unsigned char* pixels, GPU_Rect update_rec
         if(rem > 0)
             w += alignment - rem;
 
-        unsigned char *copy = (unsigned char*)SDL_malloc(update_rect.h*w);
+        unsigned char *copy = (unsigned char*)SDL_malloc(w*h);
         unsigned char *dst = copy;
 
         for(i = 0; i < h; ++i)
@@ -338,7 +343,7 @@ static void copy_upload_texture(const unsigned char* pixels, GPU_Rect update_rec
             pixels += pitch;
             dst += w;
         }
-        fast_upload_texture(copy, update_rect, format, alignment, update_rect.w);
+        fast_upload_texture(copy, update_rect, format, alignment, (int)update_rect.w);
         SDL_free(copy);
     }
 }
@@ -347,7 +352,9 @@ static void (*slow_upload_texture)(const unsigned char* pixels, GPU_Rect update_
 
 static_inline void upload_texture(const void* pixels, GPU_Rect update_rect, Uint32 format, int alignment, int row_length, unsigned int pitch, int bytes_per_pixel)
 {
+	(void)pitch;
     #if defined(SDL_GPU_USE_OPENGL) || SDL_GPU_GLES_MAJOR_VERSION > 2
+	(void)bytes_per_pixel;
     fast_upload_texture(pixels, update_rect, format, alignment, row_length);
     #else
     if(row_length == update_rect.w)
@@ -361,14 +368,15 @@ static_inline void upload_texture(const void* pixels, GPU_Rect update_rect, Uint
 static_inline void upload_new_texture(void* pixels, GPU_Rect update_rect, Uint32 format, int alignment, int row_length, int bytes_per_pixel)
 {
     #if defined(SDL_GPU_USE_OPENGL) || SDL_GPU_GLES_MAJOR_VERSION > 2
+	(void)bytes_per_pixel;
     glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
     glPixelStorei(GL_UNPACK_ROW_LENGTH, row_length);
-    glTexImage2D(GL_TEXTURE_2D, 0, format, update_rect.w, update_rect.h, 0,
+    glTexImage2D(GL_TEXTURE_2D, 0, format, (GLsizei)update_rect.w, (GLsizei)update_rect.h, 0,
                     format, GL_UNSIGNED_BYTE, pixels);
     glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
     glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
     #else
-    glTexImage2D(GL_TEXTURE_2D, 0, format, update_rect.w, update_rect.h, 0,
+    glTexImage2D(GL_TEXTURE_2D, 0, format, (GLsizei)update_rect.w, (GLsizei)update_rect.h, 0,
                  format, GL_UNSIGNED_BYTE, NULL);
     upload_texture(pixels, update_rect, format, alignment, row_length, row_length*bytes_per_pixel, bytes_per_pixel);
     #endif
@@ -726,7 +734,7 @@ static GPU_bool growBlitBuffer(GPU_CONTEXT_DATA* cdata, unsigned int minimum_ver
     memcpy(new_buffer, cdata->blit_buffer, cdata->blit_buffer_num_vertices * GPU_BLIT_BUFFER_STRIDE);
     SDL_free(cdata->blit_buffer);
     cdata->blit_buffer = new_buffer;
-    cdata->blit_buffer_max_num_vertices = new_max_num_vertices;
+    cdata->blit_buffer_max_num_vertices = (unsigned short)new_max_num_vertices;
 
     #ifdef SDL_GPU_USE_BUFFER_PIPELINE
         // Resize the VBOs
@@ -813,17 +821,17 @@ static void setClipRect(GPU_Renderer* renderer, GPU_Target* target)
         glEnable(GL_SCISSOR_TEST);
         if(target->context != NULL)
         {
-            int y;
+            float y;
             if(renderer->coordinate_mode == 0)
                 y = context_target->h - (target->clip_rect.y + target->clip_rect.h);
             else
                 y = target->clip_rect.y;
             float xFactor = ((float)context_target->context->drawable_w)/context_target->w;
             float yFactor = ((float)context_target->context->drawable_h)/context_target->h;
-            glScissor(target->clip_rect.x * xFactor, y * yFactor, target->clip_rect.w * xFactor, target->clip_rect.h * yFactor);
+            glScissor((GLint)(target->clip_rect.x * xFactor), (GLint)(y * yFactor), (GLsizei)(target->clip_rect.w * xFactor), (GLsizei)(target->clip_rect.h * yFactor));
         }
         else
-            glScissor(target->clip_rect.x, target->clip_rect.y, target->clip_rect.w, target->clip_rect.h);
+            glScissor((GLint)target->clip_rect.x, (GLint)target->clip_rect.y, (GLsizei)target->clip_rect.w, (GLsizei)target->clip_rect.h);
     }
 }
 
@@ -1036,10 +1044,11 @@ static void disableTexturing(GPU_Renderer* renderer)
 }
 
 #define MIX_COLOR_COMPONENT_NORMALIZED_RESULT(a, b) ((a)/255.0f * (b)/255.0f)
-#define MIX_COLOR_COMPONENT(a, b) (((a)/255.0f * (b)/255.0f)*255)
+#define MIX_COLOR_COMPONENT(a, b) ((Uint8)(((a)/255.0f * (b)/255.0f)*255))
 
 static SDL_Color get_complete_mod_color(GPU_Renderer* renderer, GPU_Target* target, GPU_Image* image)
 {
+	(void)renderer;
 	SDL_Color color = { 255, 255, 255, 255 };
 	if(target->use_color)
 	{
@@ -1122,7 +1131,7 @@ static void forceChangeViewport(GPU_Target* target, GPU_Rect viewport)
             y = target->context->drawable_h - viewport.h - viewport.y;
     }
 
-    glViewport(viewport.x, y, viewport.w, viewport.h);
+    glViewport((GLint)viewport.x, (GLint)y, (GLsizei)viewport.w, (GLsizei)viewport.h);
 }
 
 static void changeViewport(GPU_Target* target)
@@ -1432,6 +1441,8 @@ static GPU_bool get_GLSL_version(int* version)
                     *version = major*100 + minor;
             }
         #endif
+	#else
+	(void)version;
     #endif
     return GPU_TRUE;
 }
@@ -1578,10 +1589,10 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
 
     target->renderer = renderer;
     target->context_target = renderer->current_context_target;
-    target->w = target->context->drawable_w;
-    target->h = target->context->drawable_h;
-    target->base_w = target->context->drawable_w;
-    target->base_h = target->context->drawable_h;
+    target->w = (Uint16)target->context->drawable_w;
+    target->h = (Uint16)target->context->drawable_h;
+    target->base_w = (Uint16)target->context->drawable_w;
+    target->base_h = (Uint16)target->context->drawable_h;
 
     target->use_clip_rect = GPU_FALSE;
     target->clip_rect.x = 0;
@@ -1590,7 +1601,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     target->clip_rect.h = target->h;
     target->use_color = GPU_FALSE;
 
-    target->viewport = GPU_MakeRect(0, 0, target->context->drawable_w, target->context->drawable_h);
+    target->viewport = GPU_MakeRect(0, 0, (float)target->context->drawable_w, (float)target->context->drawable_h);
     target->camera = GPU_GetDefaultCamera();
     target->use_camera = GPU_TRUE;
     
@@ -1691,7 +1702,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     glClearColor( 0.0f, 0.0f, 0.0f, 0.0f );
 
     // Viewport and Framebuffer
-    glViewport(0.0f, 0.0f, target->viewport.w, target->viewport.h);
+    glViewport(0, 0, (GLsizei)target->viewport.w, (GLsizei)target->viewport.h);
 
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
     #if defined(SDL_GPU_USE_FIXED_FUNCTION_PIPELINE) || defined(SDL_GPU_USE_ARRAY_PIPELINE)
@@ -1909,8 +1920,8 @@ static void MakeCurrent(GPU_Renderer* renderer, GPU_Target* target, Uint32 windo
             {
                 get_window_dimensions(window, &target->context->window_w, &target->context->window_h);
                 get_drawable_dimensions(window, &target->context->drawable_w, &target->context->drawable_h);
-                target->base_w = target->context->drawable_w;
-                target->base_h = target->context->drawable_h;
+                target->base_w = (Uint16)target->context->drawable_w;
+                target->base_h = (Uint16)target->context->drawable_h;
             }
 
             // Reset the camera for this window
@@ -2073,8 +2084,8 @@ static GPU_bool SetWindowResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
     update_stored_dimensions(target);
 
     // Update base dimensions
-    target->base_w = target->context->drawable_w;
-    target->base_h = target->context->drawable_h;
+    target->base_w = (Uint16)target->context->drawable_w;
+    target->base_h = (Uint16)target->context->drawable_h;
 
     // Resets virtual resolution
     target->w = target->base_w;
@@ -2202,12 +2213,12 @@ static GPU_bool SetFullscreen(GPU_Renderer* renderer, GPU_bool enable_fullscreen
         if(!target->using_virtual_resolution)
         {
             // Update dims
-            target->w = target->context->drawable_w;
-            target->h = target->context->drawable_h;
+            target->w = (Uint16)target->context->drawable_w;
+            target->h = (Uint16)target->context->drawable_h;
         }
 
         // Reset viewport
-        target->viewport = GPU_MakeRect(0, 0, target->context->drawable_w, target->context->drawable_h);
+        target->viewport = GPU_MakeRect(0, 0, (float)target->context->drawable_w, (float)target->context->drawable_h);
         changeViewport(target);
 
         // Reset clip
@@ -2218,8 +2229,8 @@ static GPU_bool SetFullscreen(GPU_Renderer* renderer, GPU_bool enable_fullscreen
             applyTargetCamera(target);
     }
 
-    target->base_w = target->context->drawable_w;
-    target->base_h = target->context->drawable_h;
+    target->base_w = (Uint16)target->context->drawable_w;
+    target->base_h = (Uint16)target->context->drawable_h;
 
     return is_fullscreen;
 }
@@ -2443,9 +2454,9 @@ static GPU_Image* CreateImage(GPU_Renderer* renderer, Uint16 w, Uint16 h, GPU_Fo
     if(!(renderer->enabled_features & GPU_FEATURE_NON_POWER_OF_TWO))
     {
         if(!isPowerOfTwo(w))
-            w = getNearestPowerOf2(w);
+            w = (Uint16)getNearestPowerOf2(w);
         if(!isPowerOfTwo(h))
-            h = getNearestPowerOf2(h);
+            h = (Uint16)getNearestPowerOf2(h);
     }
 
     // Initialize texture using a blank buffer
@@ -2662,13 +2673,13 @@ static GPU_Image* CreateImageUsingTexture(GPU_Renderer* renderer, GPU_TextureHan
     result->is_alias = GPU_FALSE;
 
     result->using_virtual_resolution = GPU_FALSE;
-    result->w = w;
-    result->h = h;
+    result->w = (Uint16)w;
+    result->h = (Uint16)h;
 
-    result->base_w = w;
-    result->base_h = h;
-    result->texture_w = w;
-    result->texture_h = h;
+    result->base_w = (Uint16)w;
+    result->base_h = (Uint16)h;
+    result->texture_w = (Uint16)w;
+    result->texture_h = (Uint16)h;
 
     return result;
     #endif
@@ -3117,7 +3128,7 @@ static int compareFormats(GPU_Renderer* renderer, GLenum glFormat, SDL_Surface* 
 static SDL_PixelFormat* AllocFormat(GLenum glFormat)
 {
     // Yes, I need to do the whole thing myself... :(
-    int channels;
+    Uint8 channels;
     Uint32 Rmask, Gmask, Bmask, Amask = 0, mask;
 	SDL_PixelFormat* result;
 
@@ -3303,7 +3314,7 @@ static GPU_Image* gpu_copy_image_pixels_only(GPU_Renderer* renderer, GPU_Image* 
                     GPU_UnsetImageVirtualResolution(image);
                 }
 
-				renderer->impl->Blit(renderer, image, NULL, target, image->w / 2, image->h / 2);
+				renderer->impl->Blit(renderer, image, NULL, target, (float)(image->w / 2), (float)(image->h / 2));
 
 				// Restore the saved settings
 				GPU_SetColor(image, color);
@@ -3354,12 +3365,12 @@ static GPU_Image* gpu_copy_image_pixels_only(GPU_Renderer* renderer, GPU_Image* 
                     h = getNearestPowerOf2(h);
             }
 
-            upload_new_texture(texture_data, GPU_MakeRect(0, 0, w, h), internal_format, 1, w, result->bytes_per_pixel);
+            upload_new_texture(texture_data, GPU_MakeRect(0, 0, (float)w, (float)h), internal_format, 1, w, result->bytes_per_pixel);
             
             
             // Tell SDL_gpu what we got.
-            result->texture_w = w;
-            result->texture_h = h;
+            result->texture_w = (Uint16)w;
+            result->texture_h = (Uint16)h;
 
             SDL_free(texture_data);
         }
@@ -3488,8 +3499,8 @@ static void UpdateImage(GPU_Renderer* renderer, GPU_Image* image, const GPU_Rect
     {
         sourceRect.x = 0;
         sourceRect.y = 0;
-        sourceRect.w = newSurface->w;
-        sourceRect.h = newSurface->h;
+        sourceRect.w = (float)newSurface->w;
+        sourceRect.h = (float)newSurface->h;
     }
 
 
@@ -3637,8 +3648,8 @@ static GPU_bool ReplaceImage(GPU_Renderer* renderer, GPU_Image* image, SDL_Surfa
     {
         sourceRect.x = 0;
         sourceRect.y = 0;
-        sourceRect.w = surface->w;
-        sourceRect.h = surface->h;
+        sourceRect.w = (float)surface->w;
+        sourceRect.h = (float)surface->h;
     }
     else
         sourceRect = *surface_rect;
@@ -3655,14 +3666,14 @@ static GPU_bool ReplaceImage(GPU_Renderer* renderer, GPU_Image* image, SDL_Surfa
         sourceRect.y = 0;
     }
     if(sourceRect.x >= surface->w)
-        sourceRect.x = surface->w - 1;
+        sourceRect.x = (float)surface->w - 1;
     if(sourceRect.y >= surface->h)
-        sourceRect.y = surface->h - 1;
+        sourceRect.y = (float)surface->h - 1;
 
     if(sourceRect.x + sourceRect.w > surface->w)
-        sourceRect.w = surface->w - sourceRect.x;
+        sourceRect.w = (float)surface->w - sourceRect.x;
     if(sourceRect.y + sourceRect.h > surface->h)
-        sourceRect.h = surface->h - sourceRect.y;
+        sourceRect.h = (float)surface->h - sourceRect.y;
 
     if(sourceRect.w <= 0 || sourceRect.h <= 0)
     {
@@ -3680,16 +3691,16 @@ static GPU_bool ReplaceImage(GPU_Renderer* renderer, GPU_Image* image, SDL_Surfa
     }
 
     // Update image members
-    w = sourceRect.w;
-    h = sourceRect.h;
+    w = (int)sourceRect.w;
+    h = (int)sourceRect.h;
 
     if(!image->using_virtual_resolution)
     {
-        image->w = w;
-        image->h = h;
+        image->w = (Uint16)w;
+        image->h = (Uint16)h;
     }
-    image->base_w = w;
-    image->base_h = h;
+    image->base_w = (Uint16)w;
+    image->base_h = (Uint16)h;
 
     if(!(renderer->enabled_features & GPU_FEATURE_NON_POWER_OF_TWO))
     {
@@ -3698,8 +3709,8 @@ static GPU_bool ReplaceImage(GPU_Renderer* renderer, GPU_Image* image, SDL_Surfa
         if(!isPowerOfTwo(h))
             h = getNearestPowerOf2(h);
     }
-    image->texture_w = w;
-    image->texture_h = h;
+    image->texture_w = (Uint16)w;
+    image->texture_h = (Uint16)h;
 
     image->has_mipmaps = GPU_FALSE;
 
@@ -3713,7 +3724,7 @@ static GPU_bool ReplaceImage(GPU_Renderer* renderer, GPU_Image* image, SDL_Surfa
     // Shift the pixels pointer to the proper source position
     pixels += (int)(newSurface->pitch * sourceRect.y + (newSurface->format->BytesPerPixel)*sourceRect.x);
 
-    upload_new_texture(pixels, GPU_MakeRect(0, 0, w, h), internal_format, alignment, (newSurface->pitch / newSurface->format->BytesPerPixel), newSurface->format->BytesPerPixel);
+    upload_new_texture(pixels, GPU_MakeRect(0, 0, (float)w, (float)h), internal_format, alignment, (newSurface->pitch / newSurface->format->BytesPerPixel), newSurface->format->BytesPerPixel);
     
 
     // Delete temporary surface
@@ -3834,7 +3845,7 @@ static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surf
         format = GPU_FORMAT_RGBA;
     }
 
-    image = renderer->impl->CreateImage(renderer, surface->w, surface->h, format);
+    image = renderer->impl->CreateImage(renderer, (Uint16)surface->w, (Uint16)surface->h, format);
     if(image == NULL)
         return NULL;
 
@@ -4007,7 +4018,7 @@ static void FreeTargetData(GPU_Renderer* renderer, GPU_TARGET_DATA* data)
 static void FreeContext(GPU_Context* context)
 {
     GPU_CONTEXT_DATA* cdata;
-    int i;
+    unsigned int i;
     
     if(context == NULL)
         return;
@@ -4154,10 +4165,10 @@ static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
     color_index += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX;
 
 #define SET_INDEXED_VERTEX(offset) \
-    index_buffer[cdata->index_buffer_num_vertices++] = blit_buffer_starting_index + (offset);
+    index_buffer[cdata->index_buffer_num_vertices++] = blit_buffer_starting_index + (unsigned short)(offset);
 
 #define SET_RELATIVE_INDEXED_VERTEX(offset) \
-    index_buffer[cdata->index_buffer_num_vertices++] = cdata->blit_buffer_num_vertices + (offset);
+    index_buffer[cdata->index_buffer_num_vertices++] = cdata->blit_buffer_num_vertices + (unsigned short)(offset);
 
 
 
@@ -4555,8 +4566,8 @@ static void BlitTransformX(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* s
     // Rotate about the anchor
     if(degrees != 0.0f)
     {
-        float cosA = cos(degrees*M_PI/180);
-        float sinA = sin(degrees*M_PI/180);
+        float cosA = cosf(degrees*RAD_PER_DEG);
+        float sinA = sinf(degrees*RAD_PER_DEG);
         float tempX = dx1;
         dx1 = dx1*cosA - dy1*sinA;
         dy1 = tempX*sinA + dy1*cosA;
@@ -4748,6 +4759,8 @@ static int get_lowest_attribute_num_values(GPU_CONTEXT_DATA* cdata, int cap)
                 lowest = a->num_values;
         }
     }
+#else
+	(void)cdata;
 #endif
 
     return lowest;
@@ -4781,6 +4794,8 @@ static_inline void submit_buffer_data(int bytes, float* values, int bytes_indice
         #else
             #error "SDL_gpu's VBO upload needs to choose SDL_GPU_USE_BUFFER_RESET, SDL_GPU_USE_BUFFER_MAPPING, or SDL_GPU_USE_BUFFER_UPDATE and none is defined!"
         #endif
+	#else
+	(void)indices;
     #endif
 }
 
@@ -5182,7 +5197,7 @@ static GPU_Rect SetClip(GPU_Renderer* renderer, GPU_Target* target, Sint16 x, Si
 	GPU_Rect r;
     if(target == NULL)
     {
-        GPU_Rect r = {0,0,0,0};
+        r.x = r.y = r.w = r.h = 0;
         return r;
     }
 
@@ -5423,6 +5438,7 @@ static void SetWrapMode(GPU_Renderer* renderer, GPU_Image* image, GPU_WrapEnum w
 
 static GPU_TextureHandle GetTextureHandle(GPU_Renderer* renderer, GPU_Image* image)
 {
+	(void)renderer;
     return ((GPU_IMAGE_DATA*)image->data)->handle;
 }
 
@@ -5690,9 +5706,9 @@ static void FlushBlitBuffer(GPU_Renderer* renderer)
                 num_vertices = MAX(cdata->blit_buffer_num_vertices, get_lowest_attribute_num_values(cdata, cdata->blit_buffer_num_vertices));
                 num_indices = num_vertices * 3 / 2;  // 6 indices per sprite / 4 vertices per sprite = 3/2
 
-                DoPartialFlush(renderer, dest, context, num_vertices, blit_buffer, num_indices, index_buffer);
+                DoPartialFlush(renderer, dest, context, (unsigned short)num_vertices, blit_buffer, (unsigned int)num_indices, index_buffer);
 
-                cdata->blit_buffer_num_vertices -= num_vertices;
+                cdata->blit_buffer_num_vertices -= (unsigned short)num_vertices;
                 // Move our pointers ahead
                 blit_buffer += GPU_BLIT_BUFFER_FLOATS_PER_VERTEX*num_vertices;
                 index_buffer += num_indices;

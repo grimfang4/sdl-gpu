@@ -103,6 +103,14 @@ endif()
 #	SET(CMAKE_BUILD_TYPE Release)
 #endif ( SDL_gpu_BUILD_DEBUG )
 
+if (CMAKE_VERSION VERSION_LESS "3.1")
+    if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
+        set (CMAKE_C_FLAGS "-std=c99 ${CMAKE_C_FLAGS}")
+    endif ()
+else ()
+    set (CMAKE_C_STANDARD 99)
+endif ()
+
 # Find the package for SDL or SDL2
 if ( SDL_gpu_USE_SDL1 )
 	find_package(SDL REQUIRED)
@@ -278,7 +286,7 @@ if(DOXYGEN_FOUND)
     )
 endif(DOXYGEN_FOUND)
 
-add_definitions("-Wall -std=c99 -pedantic")
+add_definitions("-Wall -pedantic")
 
 if (SDL_gpu_USE_BUFFER_RESET)
     add_definitions("-DSDL_GPU_USE_BUFFER_RESET")

@@ -1096,7 +1096,6 @@ static SDL_Surface* gpu_copy_raw_surface_data(unsigned char* data, int width, in
         // We'll at least create a grayscale one, but it's not ideal...
         // Better would be to get the palette from stbi, but stbi doesn't do that!
         SDL_Color colors[256];
-        int i;
 
         for(i = 0; i < 256; i++)
         {
@@ -1120,7 +1119,7 @@ SDL_Surface* GPU_LoadSurface_RW(SDL_RWops* rwops, GPU_bool free_rwops)
     unsigned char* data;
     SDL_Surface* result;
     
-    Sint64 data_bytes;
+    int data_bytes;
     unsigned char* c_data;
 
     if(rwops == NULL)
@@ -1131,7 +1130,7 @@ SDL_Surface* GPU_LoadSurface_RW(SDL_RWops* rwops, GPU_bool free_rwops)
 
     // Get count of bytes
     SDL_RWseek(rwops, 0, SEEK_SET);
-    data_bytes = SDL_RWseek(rwops, 0, SEEK_END);
+    data_bytes = (int)SDL_RWseek(rwops, 0, SEEK_END);
     SDL_RWseek(rwops, 0, SEEK_SET);
     
     // Read in the rwops data
@@ -1139,7 +1138,7 @@ SDL_Surface* GPU_LoadSurface_RW(SDL_RWops* rwops, GPU_bool free_rwops)
     SDL_RWread(rwops, c_data, 1, data_bytes);
     
     // Load image
-    data = stbi_load_from_memory(c_data, (int)data_bytes, &width, &height, &channels, 0);
+    data = stbi_load_from_memory(c_data, data_bytes, &width, &height, &channels, 0);
     
     // Clean up temp data
     SDL_free(c_data);
@@ -2558,15 +2557,14 @@ int gpu_strcasecmp(const char* s1, const char* s2)
 {
     unsigned char u1, u2;
 
-    for (;;)
+    do
     {
         u1 = (unsigned char) *s1++;
         u2 = (unsigned char) *s2++;
         if (caseless_charmap[u1] != caseless_charmap[u2])
             return caseless_charmap[u1] - caseless_charmap[u2];
-        if (u1 == '\0')
-            return 0;
-    }
+	} while (u1 != '\0');
+
     return 0;
 }
 

@@ -6,9 +6,12 @@
 #define __func__ __FUNCTION__
 #endif
 
-#ifndef M_PI
-#define M_PI 3.1415926f
+#ifndef PI
+#define PI 3.1415926f
 #endif
+
+#define RAD_PER_DEG 0.017453293f
+#define DEG_PER_RAD 57.2957795f
 
 
 // Visual C does not support static inline
@@ -220,7 +223,7 @@ void GPU_MatrixPerspective(float* result, float fovy, float aspect, float z_near
     fovy = -fovy;
     aspect = -aspect;
     
-	fH = tanf(fovy / 360 * M_PI) * z_near;
+	fH = tanf((fovy / 360) * PI) * z_near;
 	fW = fH * aspect;
 	GPU_MatrixFrustum(result, -fW, fW, -fH, fH, z_near, z_far);
 }
@@ -319,7 +322,7 @@ void GPU_MatrixRotate(float* result, float degrees, float x, float y, float z)
 
     p = 1/sqrtf(x*x + y*y + z*z);
     x *= p; y *= p; z *= p;
-    radians = degrees * (M_PI/180);
+    radians = degrees * RAD_PER_DEG;
     c = cosf(radians);
     s = sinf(radians);
     c_ = 1 - c;
@@ -479,7 +482,7 @@ void GPU_PushMatrix(void)
         // Alloc new one
         unsigned int new_storage_size = stack->storage_size*2 + 4;
         float** new_stack = (float**)SDL_malloc(sizeof(float*) * new_storage_size);
-        int i;
+        unsigned int i;
         for(i = 0; i < new_storage_size; ++i)
         {
             new_stack[i] = (float*)SDL_malloc(sizeof(float) * 16);

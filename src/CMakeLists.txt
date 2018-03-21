@@ -100,6 +100,9 @@ if(SDL_gpu_BUILD_SHARED)
 	target_link_libraries(SDL_gpu_shared ${SDL_gpu_GL_LIBRARIES})
 
 	if(SDL_gpu_BUILD_FRAMEWORK)
+        if(NOT CMAKE_VERSION VERSION_LESS "3.1")
+            set_property(TARGET SDL_gpu_shared PROPERTY C_STANDARD 99)
+        endif()
 		set_target_properties(SDL_gpu_shared PROPERTIES
 			FRAMEWORK TRUE
 			FRAMEWORK_VERSION "A"
@@ -155,6 +158,9 @@ if(SDL_gpu_BUILD_STATIC)
 		${SDL_gpu_HDRS}
 		${SDL_gpu_SRCS}
 	)
+    if(NOT CMAKE_VERSION VERSION_LESS "3.1")
+        set_property(TARGET SDL_gpu PROPERTY C_STANDARD 99)
+    endif()
 	set_target_properties(SDL_gpu PROPERTIES
 		OUTPUT_NAME ${SDL_gpu_OUTPUT_NAME}
 		CLEAN_DIRECT_OUTPUT 1
