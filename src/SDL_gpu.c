@@ -1806,9 +1806,8 @@ GPU_BlendMode GPU_GetBlendModeFromPreset(GPU_BlendPresetEnum preset)
     }
     break;
     case GPU_BLEND_SUBTRACT:
-        // FIXME: Use src alpha for source components?
     {
-        GPU_BlendMode b = {GPU_FUNC_ONE, GPU_FUNC_ONE, GPU_FUNC_ONE, GPU_FUNC_ONE, GPU_EQ_SUBTRACT, GPU_EQ_SUBTRACT};
+        GPU_BlendMode b = {GPU_FUNC_SRC_ALPHA, GPU_FUNC_ONE, GPU_FUNC_SRC_ALPHA, GPU_FUNC_ONE, GPU_EQ_REVERSE_SUBTRACT, GPU_EQ_ADD};
         return b;
     }
     break;
