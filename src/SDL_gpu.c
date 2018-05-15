@@ -1800,7 +1800,7 @@ GPU_BlendMode GPU_GetBlendModeFromPreset(GPU_BlendPresetEnum preset)
     }
     break;
     case GPU_BLEND_MULTIPLY_COLOR:
-        // Don't disturb the alpha, but multiply the dest alpha by the src color
+        // Don't disturb the alpha, but multiply the dest color by the src color
     {
         GPU_BlendMode b = {GPU_FUNC_DST_COLOR, GPU_FUNC_ZERO, GPU_FUNC_DST_ALPHA, GPU_FUNC_DST_ALPHA, GPU_EQ_ADD, GPU_BLEND_SET_ALPHA};
         return b;
