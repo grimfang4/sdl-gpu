@@ -32,7 +32,7 @@ else()
    set(SDL2_LIBRARY_PATH_SUFFIXES lib/x64)
 endif()
 
-find_library(SDL2_LIBRARY NAMES SDL2 sdl2 sdl2 sdl-2.0
+find_library(SDL2_LIBRARY NAMES SDL2 SDL2d sdl2 sdl2 sdl-2.0
           PATH_SUFFIXES ${SDL2_LIBRARY_PATH_SUFFIXES}
           DOC "The SDL library"
 )
