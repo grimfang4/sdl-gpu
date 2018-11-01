@@ -3911,7 +3911,7 @@ static void FreeImage(GPU_Renderer* renderer, GPU_Image* image)
     }
     else
     {
-        if(data->owns_handle)
+        if(data->owns_handle && image->renderer == GPU_GetCurrentRenderer())
         {
             GPU_MakeCurrent(image->context_target, image->context_target->context->windowID);
             glDeleteTextures( 1, &data->handle);
