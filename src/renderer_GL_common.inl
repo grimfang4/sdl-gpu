@@ -4814,10 +4814,12 @@ static void gpu_upload_modelviewprojection(GPU_Target* dest, GPU_Context* contex
         
         if(dest->use_camera)
         {
+            float temp[16];
             float cam_matrix[16];
             get_camera_matrix(cam_matrix);
-            
-            GPU_MultiplyAndAssign(mvp, cam_matrix);
+
+            GPU_MatrixMultiply(temp, cam_matrix, mvp);
+            GPU_MatrixCopy(mvp, temp);
         }
         
         glUniformMatrix4fv(context->current_shader_block.modelViewProjection_loc, 1, 0, mvp);
