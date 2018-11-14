@@ -100,11 +100,13 @@ int main(int argc, char* argv[])
             }
             if(keystates[KEY_MINUS])
             {
-                camera.zoom -= 1.0f*dt;
+                camera.zoom_x -= 1.0f*dt;
+                camera.zoom_y -= 1.0f*dt;
             }
             else if(keystates[KEY_EQUALS])
             {
-                camera.zoom += 1.0f*dt;
+                camera.zoom_x += 1.0f*dt;
+                camera.zoom_y += 1.0f*dt;
             }
             
             

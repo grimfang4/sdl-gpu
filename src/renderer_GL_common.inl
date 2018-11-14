@@ -1154,7 +1154,7 @@ static void applyTargetCamera(GPU_Target* target)
 
 static GPU_bool equal_cameras(GPU_Camera a, GPU_Camera b)
 {
-    return (a.x == b.x && a.y == b.y && a.z == b.z && a.angle == b.angle && a.zoom == b.zoom);
+    return (a.x == b.x && a.y == b.y && a.z == b.z && a.angle == b.angle && a.zoom_x == b.zoom_x && a.zoom_y == b.zoom_y && a.use_centered_origin == b.use_centered_origin);
 }
 
 static void changeCamera(GPU_Target* target)
@@ -1171,28 +1171,24 @@ static void get_camera_matrix(float* result)
 {
     GPU_CONTEXT_DATA* cdata = (GPU_CONTEXT_DATA*)GPU_GetContextTarget()->context->data;
     GPU_Target* target = cdata->last_target;
-    GPU_bool invert = cdata->last_camera_inverted;
 	float offsetX, offsetY;
 
     GPU_MatrixIdentity(result);
 
-    // Now multiply in the projection part
-    if(!invert ^ GPU_GetCoordinateMode())
-        GPU_MatrixOrtho(result, target->camera.x, target->w + target->camera.x, target->h + target->camera.y, target->camera.y, target->camera.z_near, target->camera.z_far);
-    else
-        GPU_MatrixOrtho(result, target->camera.x, target->w + target->camera.x, target->camera.y, target->h + target->camera.y, target->camera.z_near, target->camera.z_far);  // Special inverted orthographic projection because tex coords are inverted already for render-to-texture
-
-    // First the modelview part
-    offsetX = target->w/2.0f;
-    offsetY = target->h/2.0f;
-    GPU_MatrixTranslate(result, offsetX, offsetY, 0);
+    GPU_MatrixTranslate(result, -target->camera.x, -target->camera.y, -target->camera.z);
+    
+    if(target->camera.use_centered_origin)
+    {
+        offsetX = target->w/2.0f;
+        offsetY = target->h/2.0f;
+        GPU_MatrixTranslate(result, offsetX, offsetY, 0);
+    }
+    
     GPU_MatrixRotate(result, target->camera.angle, 0, 0, 1);
-    GPU_MatrixTranslate(result, -offsetX, -offsetY, 0);
-
-    GPU_MatrixTranslate(result, target->camera.x + offsetX, target->camera.y + offsetY, 0);
-    GPU_MatrixScale(result, target->camera.zoom, target->camera.zoom, 1.0f);
-    GPU_MatrixTranslate(result, -target->camera.x - offsetX, -target->camera.y - offsetY, 0);
-
+    GPU_MatrixScale(result, target->camera.zoom_x, target->camera.zoom_y, 1.0f);
+    
+    if(target->camera.use_centered_origin)
+        GPU_MatrixTranslate(result, -offsetX, -offsetY, 0);
 }
 
 
@@ -1206,7 +1202,7 @@ static void applyTransforms(void)
     float cam_matrix[16];
     get_camera_matrix(cam_matrix);
     
-    GPU_MultiplyAndAssign(m, cam_matrix);
+    GPU_MultiplyAndAssign(cam_matrix, m);
     
     glMatrixMode(GL_PROJECTION);
     glLoadMatrixf(p);
@@ -1605,6 +1601,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     target->camera = GPU_GetDefaultCamera();
     target->use_camera = GPU_TRUE;
     
+    
     target->use_depth_test = GPU_FALSE;
     target->use_depth_write = GPU_TRUE;
 
@@ -1708,9 +1705,19 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     #if defined(SDL_GPU_USE_FIXED_FUNCTION_PIPELINE) || defined(SDL_GPU_USE_ARRAY_PIPELINE)
     glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
     #endif
-
+    
+    
     // Set up camera
     applyTargetCamera(target);
+
+    // Set up default projection
+    // Maybe replace with GPU_ResetProjection()?
+    float* projection_matrix = target->context->projection_matrix.matrix[0];
+    if(!cdata->last_camera_inverted ^ GPU_GetCoordinateMode())
+        GPU_MatrixOrtho(projection_matrix, 0, target->w, target->h, 0, target->camera.z_near, target->camera.z_far);
+    else
+        GPU_MatrixOrtho(projection_matrix, 0, target->w, 0, target->h, target->camera.z_near, target->camera.z_far);  // Special inverted orthographic projection because tex coords are inverted already for render-to-texture
+    
 
     renderer->impl->SetLineThickness(renderer, 1.0f);
 
@@ -2234,7 +2241,6 @@ static GPU_bool SetFullscreen(GPU_Renderer* renderer, GPU_bool enable_fullscreen
 
     return is_fullscreen;
 }
-
 
 static GPU_Camera SetCamera(GPU_Renderer* renderer, GPU_Target* target, GPU_Camera* cam)
 {
@@ -4809,9 +4815,13 @@ static void gpu_upload_modelviewprojection(GPU_Target* dest, GPU_Context* contex
     {
         float mvp[16];
         
-        // MVP = P * MV
-        GPU_MatrixMultiply(mvp, GPU_GetProjection(), GPU_GetModelView());
+        // MVP = P * V * M
         
+        // P
+        GPU_MatrixCopy(mvp, GPU_GetProjection());
+        
+        
+        // V
         if(dest->use_camera)
         {
             float cam_matrix[16];
@@ -4819,6 +4829,9 @@ static void gpu_upload_modelviewprojection(GPU_Target* dest, GPU_Context* contex
             
             GPU_MultiplyAndAssign(mvp, cam_matrix);
         }
+        
+        // M
+        GPU_MultiplyAndAssign(mvp, GPU_GetModelView());
         
         glUniformMatrix4fv(context->current_shader_block.modelViewProjection_loc, 1, 0, mvp);
     }

@@ -158,5 +158,8 @@ target_link_libraries (reinit-test ${TEST_LIBS})
 add_executable(depth-test depth/main.c)
 target_link_libraries (depth-test ${TEST_LIBS})
 
+add_executable(camera-matrix-test camera-matrix/main.c)
+target_link_libraries (camera-matrix-test ${TEST_LIBS})
+
 add_executable(video-test video/main.c)
 target_link_libraries (video-test ${TEST_LIBS})

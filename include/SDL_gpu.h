@@ -328,8 +328,9 @@ typedef struct GPU_Camera
 {
 	float x, y, z;
 	float angle;
-	float zoom;
+	float zoom_x, zoom_y;
 	float z_near, z_far;  // z clipping planes
+	bool use_centered_origin;  // move rotation/scaling origin to the center of the camera's view
 } GPU_Camera;
 
 
@@ -1050,7 +1051,7 @@ DECLSPEC void SDLCALL GPU_SetViewport(GPU_Target* target, GPU_Rect viewport);
 /*! Resets the given target's viewport to the entire target area. */
 DECLSPEC void SDLCALL GPU_UnsetViewport(GPU_Target* target);
 
-/*! \return A GPU_Camera with position (0, 0, 0), angle of 0, zoom of 1, and near/far clipping planes of -100 and 100. */
+/*! \return A GPU_Camera with position (0, 0, 0), angle of 0, zoom of 1, centered origin, and near/far clipping planes of -100 and 100. */
 DECLSPEC GPU_Camera SDLCALL GPU_GetDefaultCamera(void);
 
 /*! \return The camera of the given render target.  If target is NULL, returns the default camera. */
@@ -1381,6 +1382,9 @@ DECLSPEC void SDLCALL GPU_GetModelViewProjection(float* result);
 
 /*! Allocate new matrices for the given stack. */
 DECLSPEC void SDLCALL GPU_InitMatrixStack(GPU_MatrixStack* stack);
+
+/*! Reapplies the default orthographic projection matrix, based on camera and coordinate settings. */
+DECLSPEC void SDLCALL GPU_ResetProjection(void);
 
 /*! Changes matrix mode to either GPU_PROJECTION or GPU_MODELVIEW.  Further matrix stack operations manipulate that particular stack. */
 DECLSPEC void SDLCALL GPU_MatrixMode(int matrix_mode);

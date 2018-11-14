@@ -894,7 +894,7 @@ void GPU_UnsetViewport(GPU_Target* target)
 
 GPU_Camera GPU_GetDefaultCamera(void)
 {
-    GPU_Camera cam = {0.0f, 0.0f, 0.0f, 0.0f, 1.0f, -100.0f, 100.0f};
+    GPU_Camera cam = {0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, -100.0f, 100.0f, true};
     return cam;
 }
 

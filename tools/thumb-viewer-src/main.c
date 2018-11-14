@@ -68,14 +68,16 @@ int main(int argc, char* argv[])
 			{
 				camera.x += 200 * dt;
 			}
-			if (keystates[KEY_MINUS])
-			{
-				camera.zoom -= 1.0f*dt;
-			}
-			else if (keystates[KEY_EQUALS])
-			{
-				camera.zoom += 1.0f*dt;
-			}
+            if(keystates[KEY_MINUS])
+            {
+                camera.zoom_x -= 1.0f*dt;
+                camera.zoom_y -= 1.0f*dt;
+            }
+            else if(keystates[KEY_EQUALS])
+            {
+                camera.zoom_x += 1.0f*dt;
+                camera.zoom_y += 1.0f*dt;
+            }
 
 			GPU_ClearRGBA(screen, 255, 255, 255, 255);
 

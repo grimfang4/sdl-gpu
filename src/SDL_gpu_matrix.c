@@ -68,6 +68,24 @@ void GPU_InitMatrixStack(GPU_MatrixStack* stack)
 }
 
 
+void GPU_ResetProjection(void)
+{
+    GPU_Target* target = GPU_GetContextTarget();
+    if(target == NULL)
+        return;
+    
+    GPU_bool invert = (target->image != NULL);
+    
+    // Set up default projection
+    float* projection_matrix = GPU_GetProjection();
+    GPU_MatrixIdentity(projection_matrix);
+    
+    if(!invert ^ GPU_GetCoordinateMode())
+        GPU_MatrixOrtho(projection_matrix, 0, target->w, target->h, 0, target->camera.z_near, target->camera.z_far);
+    else
+        GPU_MatrixOrtho(projection_matrix, 0, target->w, 0, target->h, target->camera.z_near, target->camera.z_far);  // Special inverted orthographic projection because tex coords are inverted already for render-to-texture
+}
+
 // Column-major
 #define INDEX(row,col) ((col)*4 + (row))
 

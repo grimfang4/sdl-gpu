@@ -18,16 +18,16 @@ void getScreenToWorld(float screenX, float screenY, float* worldX, float* worldY
 	if(worldX)
 	{
 		//if(camera.angle == 0.0f)
-			*worldX = (screenX - screen->w/2) / camera.zoom + camera.x + screen->w/2;
+			*worldX = (screenX - screen->w/2) / camera.zoom_x + camera.x + screen->w/2;
 		//else
-			//*worldX = (screenX - screen->w/2) / camera.zoom * cos(-camera.angle*PI/180) - (screenY - screen->h/2) / camera.zoom * sin(-camera.angle*PI/180) + camera.x + screen->w/2;
+			//*worldX = (screenX - screen->w/2) / camera.zoom_x * cos(-camera.angle*PI/180) - (screenY - screen->h/2) / camera.zoom * sin(-camera.angle*PI/180) + camera.x + screen->w/2;
 	}
 	if(worldY)
 	{
 		//if(camera.angle == 0.0f)
-			*worldY = (screenY - screen->h/2) / camera.zoom + camera.y + screen->h/2;
+			*worldY = (screenY - screen->h/2) / camera.zoom_y + camera.y + screen->h/2;
 		//else
-			//*worldY = (screenX - screen->w/2) / camera.zoom * sin(-camera.angle*PI/180) + (screenY - screen->h/2) / camera.zoom * cos(-camera.angle*PI/180) + camera.y + screen->h/2;
+			//*worldY = (screenX - screen->w/2) / camera.zoom_y * sin(-camera.angle*PI/180) + (screenY - screen->h/2) / camera.zoom * cos(-camera.angle*PI/180) + camera.y + screen->h/2;
 	}
 }
 
@@ -41,16 +41,16 @@ void getWorldToScreen(float worldX, float worldY, float* screenX, float* screenY
 	if(screenX)
 	{
 		//if(camera.angle == 0.0f)
-			*screenX = (worldX - camera.x - screen->w/2)*camera.zoom + screen->w/2;
+			*screenX = (worldX - camera.x - screen->w/2)*camera.zoom_x + screen->w/2;
 		//else
-			//*screenX = (worldX - camera.x - screen->w/2)*camera.zoom * cos(-camera.angle*PI/180) + screen->w/2;
+			//*screenX = (worldX - camera.x - screen->w/2)*camera.zoom_x * cos(-camera.angle*PI/180) + screen->w/2;
 	}
 	if(screenY)
 	{
 		//if(camera.angle == 0.0f)
-			*screenY = (worldY - camera.y - screen->h/2)*camera.zoom + screen->h/2;
+			*screenY = (worldY - camera.y - screen->h/2)*camera.zoom_y + screen->h/2;
 		//else
-			//*screenY = (worldY - camera.y - screen->h/2)*camera.zoom * sin(-camera.angle*PI/180) + screen->h/2;
+			//*screenY = (worldY - camera.y - screen->h/2)*camera.zoom_y * sin(-camera.angle*PI/180) + screen->h/2;
 	}
 }
 
@@ -122,11 +122,7 @@ int main(int argc, char* argv[])
 						done = 1;
 					else if (event.key.keysym.sym == SDLK_r)
 					{
-						camera.x = 0.0f;
-						camera.y = 0.0f;
-						camera.z = -10.0f;
-						camera.zoom = 1.0f;
-						camera.angle = 0.0f;
+					    camera = GPU_GetDefaultCamera();
 					}
 				}
 				else if (event.type == SDL_MOUSEBUTTONDOWN)
@@ -154,14 +150,16 @@ int main(int argc, char* argv[])
 			{
 				camera.x += 200 * dt;
 			}
-			if (keystates[KEY_MINUS])
-			{
-				camera.zoom -= 1.0f*dt;
-			}
-			else if (keystates[KEY_EQUALS])
-			{
-				camera.zoom += 1.0f*dt;
-			}
+            if(keystates[KEY_MINUS])
+            {
+                camera.zoom_x -= 1.0f*dt;
+                camera.zoom_y -= 1.0f*dt;
+            }
+            else if(keystates[KEY_EQUALS])
+            {
+                camera.zoom_x += 1.0f*dt;
+                camera.zoom_y += 1.0f*dt;
+            }
 
 			GPU_ClearRGBA(screen, 255, 255, 255, 255);
 

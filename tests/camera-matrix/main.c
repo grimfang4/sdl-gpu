@@ -7,73 +7,11 @@
 #define PI 3.14159265359
 
 
-void getScreenToWorld(float screenX, float screenY, float* worldX, float* worldY)
-{
-	GPU_Target* screen = GPU_GetContextTarget();
-	GPU_Camera camera = GPU_GetCamera(screen);
-	if(screen == NULL)
-		return;
-
-	if(worldX)
-	{
-		//if(camera.angle == 0.0f)
-			*worldX = (screenX - screen->w/2) / camera.zoom_x + camera.x + screen->w/2;
-		//else
-			//*worldX = (screenX - screen->w/2) / camera.zoom_x * cos(-camera.angle*PI/180) - (screenY - screen->h/2) / camera.zoom * sin(-camera.angle*PI/180) + camera.x + screen->w/2;
-	}
-	if(worldY)
-	{
-		//if(camera.angle == 0.0f)
-			*worldY = (screenY - screen->h/2) / camera.zoom_y + camera.y + screen->h/2;
-		//else
-			//*worldY = (screenX - screen->w/2) / camera.zoom_y * sin(-camera.angle*PI/180) + (screenY - screen->h/2) / camera.zoom * cos(-camera.angle*PI/180) + camera.y + screen->h/2;
-	}
-}
-
-void getWorldToScreen(float worldX, float worldY, float* screenX, float* screenY)
-{
-	GPU_Target* screen = GPU_GetContextTarget();
-	GPU_Camera camera = GPU_GetCamera(screen);
-	if(screen == NULL)
-		return;
-
-	if(screenX)
-	{
-		//if(camera.angle == 0.0f)
-			*screenX = (worldX - camera.x - screen->w/2)*camera.zoom_x + screen->w/2;
-		//else
-			//*screenX = (worldX - camera.x - screen->w/2)*camera.zoom_x * cos(-camera.angle*PI/180) + screen->w/2;
-	}
-	if(screenY)
-	{
-		//if(camera.angle == 0.0f)
-			*screenY = (worldY - camera.y - screen->h/2)*camera.zoom_y + screen->h/2;
-		//else
-			//*screenY = (worldY - camera.y - screen->h/2)*camera.zoom_y * sin(-camera.angle*PI/180) + screen->h/2;
-	}
-}
-
-void printScreenToWorld(float screenX, float screenY)
-{
-	float worldX, worldY;
-	getScreenToWorld(screenX, screenY, &worldX, &worldY);
-
-	printf("ScreenToWorld: (%.1f, %.1f) -> (%.1f, %.1f)\n", screenX, screenY, worldX, worldY);
-}
-
-void printWorldToScreen(float worldX, float worldY)
-{
-	float screenX, screenY;
-	getWorldToScreen(worldX, worldY, &screenX, &screenY);
-
-	printf("WorldToScreen: (%.1f, %.1f) -> (%.1f, %.1f)\n", worldX, worldY, screenX, screenY);
-}
-
-
 int main(int argc, char* argv[])
 {
 	GPU_Target* screen;
 
+	GPU_Log("Running \"%s\"\n", argv[0]);
 	printRenderers();
 
 	screen = GPU_Init(800, 600, GPU_DEFAULT_INIT_FLAGS);
@@ -157,17 +95,30 @@ int main(int argc, char* argv[])
                     {
                         camera.x += 100;
                     }
-                }
-                else if(event.type == SDL_MOUSEBUTTONDOWN)
-                {
-                    int mx, my;
-                    float x, y;
-                    SDL_GetMouseState(&mx, &my);
-                    GPU_GetVirtualCoords(screen, &x, &y, mx, my);
+                    else if(event.key.keysym.sym == SDLK_o)
+                    {
+                        GPU_MatrixMode(GPU_PROJECTION);
+                        GPU_LoadIdentity();
+                        
+                        camera.x = 0;
+                        camera.y = 0;
+                        camera.z = 0.0f;
+                        GPU_Ortho(0, target->w, target->h, 0, target->camera.z_near, target->camera.z_far);
 
-                    printf("Angle: %.1f\n", camera.angle);
-                    printScreenToWorld(x, y);
-                    printWorldToScreen(50, 50);
+                        GPU_MatrixMode(GPU_MODELVIEW);
+                    }
+                    else if(event.key.keysym.sym == SDLK_p)
+                    {
+                        GPU_MatrixMode(GPU_PROJECTION);
+                        GPU_LoadIdentity();
+                        
+                        camera.x = target->w/2;
+                        camera.y = target->h/2;
+                        camera.z = 1000.0f;
+                        GPU_Frustum(-400, 400, 300, -300, 1000.0f, 10000.0f);
+                        
+                        GPU_MatrixMode(GPU_MODELVIEW);
+                    }
                 }
             }
 
@@ -213,24 +164,30 @@ int main(int argc, char* argv[])
             {
                 camera.angle += 100*dt;
             }
-
-            GPU_ClearRGBA(screen, 255, 255, 255, 255);
+            
+            GPU_ClearRGBA(screen, 0, 0, 0, 255);
+            
+            // No camera view
             GPU_SetCamera(screen, NULL);
+            
+            GPU_Circle(target, 0, 0, 25, GPU_MakeColor(255, 255, 255, 255));
+            GPU_Circle(target, target->w, 0, 25, GPU_MakeColor(255, 0, 0, 255));
+            GPU_Circle(target, target->w, target->h, 25, GPU_MakeColor(0, 255, 0, 255));
+            GPU_Circle(target, 0, target->h, 25, GPU_MakeColor(0, 0, 255, 255));
+            
+            GPU_Rectangle(target, target->w/2 - 50, target->h/2 - 50, target->w/2 + 50, target->h/2 + 50, GPU_MakeColor(255, 255, 255, 255));
 
-            GPU_ClearRGBA(target, 255, 255, 255, 255);
-
+            // Camera's view
             GPU_SetCamera(target, &camera);
-
-            GPU_Rectangle(target, 0, 0, 800, 600, black);
-            GPU_Blit(img, NULL, target, 50, 50);
-            GPU_Blit(img, NULL, target, 320, 50);
-            GPU_Blit(img, NULL, target, 50, 500);
-
-            if(target != screen)
-            {
-                GPU_Blit(buffer, NULL, screen, buffer->w/2, buffer->h/2);
-                GPU_CircleFilled(screen, 0, 0, 20, red);
-            }
+            
+            GPU_Line(target, 0, target->h/2, target->w, target->h/2, GPU_MakeColor(255, 255, 255, 255));
+            
+            GPU_CircleFilled(target, 0, 0, 15, GPU_MakeColor(255, 255, 255, 255));
+            GPU_CircleFilled(target, target->w, 0, 15, GPU_MakeColor(255, 0, 0, 255));
+            GPU_CircleFilled(target, target->w, target->h, 15, GPU_MakeColor(0, 255, 0, 255));
+            GPU_CircleFilled(target, 0, target->h, 15, GPU_MakeColor(0, 0, 255, 255));
+            
+            GPU_RectangleFilled(target, target->w/2 - 20, target->h/2 - 20, target->w/2 + 20, target->h/2 + 20, GPU_MakeColor(255, 0, 0, 255));
 
             GPU_Flip(screen);
 

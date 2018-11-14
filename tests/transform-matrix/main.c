@@ -97,6 +97,7 @@ int main(int argc, char* argv[])
 					{
 						use_camera = 1;
 						GPU_EnableCamera(screen, use_camera);
+						GPU_ResetProjection();
 					}
 					
                 }
@@ -104,12 +105,11 @@ int main(int argc, char* argv[])
             
             GPU_Clear(screen);
             
-            
-			GPU_MatrixMode(GPU_PROJECTION);
-			GPU_LoadIdentity();
+            GPU_MatrixMode(GPU_PROJECTION);
 
 			if (!use_camera)
 			{
+                GPU_LoadIdentity();
                 // Apply projection matrix
 				GPU_MatrixIdentity(matrix);
 
@@ -150,20 +150,18 @@ int main(int argc, char* argv[])
 			}
             
             
+			
             // Apply model matrix
 			GPU_MatrixIdentity(matrix);
 			
 			GPU_MatrixTranslate(matrix, x, y, z);
 
-			if (!use_camera)
-			{
-				// Rotate
-				if(rotate_stuff)
-                {
-                    float a = SDL_GetTicks() / 10.0f;
-                    GPU_MatrixRotate(matrix, a, 0.57, 0.57, 0.57);
-                }
-			}
+            // Rotate
+            if(rotate_stuff)
+            {
+                float a = SDL_GetTicks() / 10.0f;
+                GPU_MatrixRotate(matrix, a, 0.57, 0.57, 0.57);
+            }
 
             GPU_MultMatrix(matrix);
             
