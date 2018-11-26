@@ -2,6 +2,8 @@ SDL_gpu, a library for making hardware-accelerated 2D graphics easy.
 by Jonathan Dearborn
 
 [![Build Status](https://travis-ci.org/grimfang4/sdl-gpu.svg?branch=master)](https://travis-ci.org/grimfang4/sdl-gpu)
+[![Code Quality: Cpp](https://img.shields.io/lgtm/grade/cpp/g/grimfang4/sdl-gpu.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/grimfang4/sdl-gpu/context:cpp)
+[![Total Alerts](https://img.shields.io/lgtm/alerts/g/grimfang4/sdl-gpu.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/grimfang4/sdl-gpu/alerts)
 
 SDL_gpu is licensed under the terms of the MIT License.
 See LICENSE.txt for details of the usage license granted to you for this code.
