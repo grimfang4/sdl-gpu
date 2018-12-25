@@ -104,6 +104,10 @@ void draw_ship(Ship* ship, GPU_Target* screen)
 int main(int argc, char* argv[])
 {
 	GPU_Target* screen;
+
+#if __APPLE__
+    GPU_SetPreInitFlags(GPU_INIT_REQUEST_COMPATIBILITY_PROFILE);
+#endif
     
     GPU_SetDebugLevel(GPU_DEBUG_LEVEL_MAX);
     

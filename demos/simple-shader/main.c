@@ -258,6 +258,10 @@ int main(int argc, char* argv[])
 {
 	GPU_Target* screen;
 	
+#if __APPLE__
+    GPU_SetPreInitFlags(GPU_INIT_REQUEST_COMPATIBILITY_PROFILE);
+#endif
+
 	screen = GPU_Init(800, 600, GPU_DEFAULT_INIT_FLAGS);
 	if(screen == NULL)
 		return -1;
