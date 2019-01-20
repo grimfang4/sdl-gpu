@@ -402,10 +402,6 @@ typedef struct GPU_Context
 	GPU_BlendMode shapes_blend_mode;
 	float line_thickness;
 	GPU_bool use_texturing;
-	
-    int matrix_mode;
-    GPU_MatrixStack projection_matrix;
-    GPU_MatrixStack modelview_matrix;
     
 	int refcount;
 	
@@ -440,8 +436,13 @@ struct GPU_Target
 	GPU_Rect viewport;
 	
 	/*! Perspective and object viewing transforms. */
+	int matrix_mode;
+	GPU_MatrixStack projection_matrix;
+	GPU_MatrixStack modelview_matrix;
+
 	GPU_Camera camera;
 	GPU_bool use_camera;
+
 	
 	GPU_bool use_depth_test;
 	GPU_bool use_depth_write;
@@ -1366,16 +1367,16 @@ DECLSPEC void SDLCALL GPU_MultiplyAndAssign(float* result, const float* B);
 DECLSPEC const char* SDLCALL GPU_GetMatrixString(const float* A);
 
 /*! Returns the current matrix from the top of the matrix stack.  Returns NULL if stack is empty. */
-DECLSPEC float* SDLCALL GPU_GetCurrentMatrix(void);
+DECLSPEC float* SDLCALL GPU_GetCurrentMatrix(GPU_Target* target);
 
 /*! Returns the current modelview matrix from the top of the matrix stack.  Returns NULL if stack is empty. */
-DECLSPEC float* SDLCALL GPU_GetModelView(void);
+DECLSPEC float* SDLCALL GPU_GetModelView(GPU_Target* target);
 
 /*! Returns the current projection matrix from the top of the matrix stack.  Returns NULL if stack is empty. */
-DECLSPEC float* SDLCALL GPU_GetProjection(void);
+DECLSPEC float* SDLCALL GPU_GetProjection(GPU_Target* target);
 
 /*! Copies the current modelview-projection matrix into the given 'result' matrix (result = P*M). */
-DECLSPEC void SDLCALL GPU_GetModelViewProjection(float* result);
+DECLSPEC void SDLCALL GPU_GetModelViewProjection(GPU_Target* target, float* result);
 
 
 // Matrix stack manipulators
@@ -1383,41 +1384,47 @@ DECLSPEC void SDLCALL GPU_GetModelViewProjection(float* result);
 /*! Allocate new matrices for the given stack. */
 DECLSPEC void SDLCALL GPU_InitMatrixStack(GPU_MatrixStack* stack);
 
+/*! Copies matrices from one stack to another. */
+DECLSPEC void SDLCALL GPU_CopyMatrixStack(GPU_MatrixStack* source, GPU_MatrixStack* dest);
+
+/*! Deletes matrices in the given stack. */
+DECLSPEC void SDLCALL GPU_ClearMatrixStack(GPU_MatrixStack* stack);
+
 /*! Reapplies the default orthographic projection matrix, based on camera and coordinate settings. */
-DECLSPEC void SDLCALL GPU_ResetProjection(void);
+DECLSPEC void SDLCALL GPU_ResetProjection(GPU_Target* target);
 
 /*! Changes matrix mode to either GPU_PROJECTION or GPU_MODELVIEW.  Further matrix stack operations manipulate that particular stack. */
-DECLSPEC void SDLCALL GPU_MatrixMode(int matrix_mode);
+DECLSPEC void SDLCALL GPU_MatrixMode(GPU_Target* target, int matrix_mode);
 
 /*! Pushes the current matrix as a new matrix stack item. */
-DECLSPEC void SDLCALL GPU_PushMatrix(void);
+DECLSPEC void SDLCALL GPU_PushMatrix(GPU_Target* target);
 
 /*! Removes the current matrix from the stack. */
-DECLSPEC void SDLCALL GPU_PopMatrix(void);
+DECLSPEC void SDLCALL GPU_PopMatrix(GPU_Target* target);
 
 /*! Fills current matrix with the identity matrix. */
-DECLSPEC void SDLCALL GPU_LoadIdentity(void);
+DECLSPEC void SDLCALL GPU_LoadIdentity(GPU_Target* target);
 
 /*! Copies a given matrix to be the current matrix. */
-DECLSPEC void SDLCALL GPU_LoadMatrix(const float* matrix4x4);
+DECLSPEC void SDLCALL GPU_LoadMatrix(GPU_Target* target, const float* matrix4x4);
 
 /*! Multiplies an orthographic projection matrix into the current matrix. */
-DECLSPEC void SDLCALL GPU_Ortho(float left, float right, float bottom, float top, float z_near, float z_far);
+DECLSPEC void SDLCALL GPU_Ortho(GPU_Target* target, float left, float right, float bottom, float top, float z_near, float z_far);
 
 /*! Multiplies a perspective projection matrix into the current matrix. */
-DECLSPEC void SDLCALL GPU_Frustum(float left, float right, float bottom, float top, float z_near, float z_far);
+DECLSPEC void SDLCALL GPU_Frustum(GPU_Target* target, float left, float right, float bottom, float top, float z_near, float z_far);
 
 /*! Adds a translation into the current matrix. */
-DECLSPEC void SDLCALL GPU_Translate(float x, float y, float z);
+DECLSPEC void SDLCALL GPU_Translate(GPU_Target* target, float x, float y, float z);
 
 /*! Multiplies a scaling matrix into the current matrix. */
-DECLSPEC void SDLCALL GPU_Scale(float sx, float sy, float sz);
+DECLSPEC void SDLCALL GPU_Scale(GPU_Target* target, float sx, float sy, float sz);
 
 /*! Multiplies a rotation matrix into the current matrix. */
-DECLSPEC void SDLCALL GPU_Rotate(float degrees, float x, float y, float z);
+DECLSPEC void SDLCALL GPU_Rotate(GPU_Target* target, float degrees, float x, float y, float z);
 
 /*! Multiplies a given matrix into the current matrix. */
-DECLSPEC void SDLCALL GPU_MultMatrix(const float* matrix4x4);
+DECLSPEC void SDLCALL GPU_MultMatrix(GPU_Target* target, const float* matrix4x4);
 
 // End of Matrix
 /*! @} */

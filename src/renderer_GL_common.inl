@@ -43,7 +43,7 @@ See a particular renderer's *.c file for specifics. */
     #endif
 #endif
 
-#if defined ( WIN32 )
+#if defined ( WIN32 ) && defined(_MSC_VER)
 #define __func__ __FUNCTION__
 #endif
 
@@ -1167,10 +1167,8 @@ static void changeCamera(GPU_Target* target)
     }
 }
 
-static void get_camera_matrix(float* result)
+static void get_camera_matrix(GPU_Target* target, float* result)
 {
-    GPU_CONTEXT_DATA* cdata = (GPU_CONTEXT_DATA*)GPU_GetContextTarget()->context->data;
-    GPU_Target* target = cdata->last_target;
 	float offsetX, offsetY;
 
     GPU_MatrixIdentity(result);
@@ -1194,13 +1192,13 @@ static void get_camera_matrix(float* result)
 
 
 #ifdef SDL_GPU_APPLY_TRANSFORMS_TO_GL_STACK
-static void applyTransforms(void)
+static void applyTransforms(GPU_Target* target)
 {
-    float* p = GPU_GetProjection();
-    float* m = GPU_GetModelView();
+    float* p = GPU_GetProjection(target);
+    float* m = GPU_GetModelView(target);
     
     float cam_matrix[16];
-    get_camera_matrix(cam_matrix);
+    get_camera_matrix(target, cam_matrix);
     
     GPU_MultiplyAndAssign(cam_matrix, m);
     
@@ -1340,8 +1338,10 @@ static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request,
         return NULL;
 
     // If the dimensions of the window don't match what we asked for, then set up a virtual resolution to pretend like they are.
-    if(!(GPU_flags & GPU_INIT_DISABLE_AUTO_VIRTUAL_RESOLUTION) && w != 0 && h != 0 && (w != renderer->current_context_target->w || h != renderer->current_context_target->h))
-        renderer->impl->SetVirtualResolution(renderer, renderer->current_context_target, w, h);
+	if (!(GPU_flags & GPU_INIT_DISABLE_AUTO_VIRTUAL_RESOLUTION) && w != 0 && h != 0 && (w != renderer->current_context_target->w || h != renderer->current_context_target->h))
+	{
+		renderer->impl->SetVirtualResolution(renderer, renderer->current_context_target, w, h);
+	}
 
     // Init glVertexAttrib workaround
     #ifdef SDL_GPU_USE_OPENGL
@@ -1505,11 +1505,6 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
         target->context->data = cdata;
         target->context->context = NULL;
         
-        GPU_InitMatrixStack(&target->context->projection_matrix);
-        GPU_InitMatrixStack(&target->context->modelview_matrix);
-
-        target->context->matrix_mode = GPU_MODELVIEW;
-        
         cdata->last_image = NULL;
         cdata->last_target = NULL;
         // Initialize the blit buffer
@@ -1598,6 +1593,12 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     target->use_color = GPU_FALSE;
 
     target->viewport = GPU_MakeRect(0, 0, (float)target->context->drawable_w, (float)target->context->drawable_h);
+    
+        
+    target->matrix_mode = GPU_MODELVIEW;
+    GPU_InitMatrixStack(&target->projection_matrix);
+    GPU_InitMatrixStack(&target->modelview_matrix);
+    
     target->camera = GPU_GetDefaultCamera();
     target->use_camera = GPU_TRUE;
     
@@ -1710,13 +1711,8 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     // Set up camera
     applyTargetCamera(target);
 
-    // Set up default projection
-    // Maybe replace with GPU_ResetProjection()?
-    float* projection_matrix = target->context->projection_matrix.matrix[0];
-    if(!cdata->last_camera_inverted ^ GPU_GetCoordinateMode())
-        GPU_MatrixOrtho(projection_matrix, 0, target->w, target->h, 0, target->camera.z_near, target->camera.z_far);
-    else
-        GPU_MatrixOrtho(projection_matrix, 0, target->w, 0, target->h, target->camera.z_near, target->camera.z_far);  // Special inverted orthographic projection because tex coords are inverted already for render-to-texture
+    // Set up default projection matrix
+    GPU_ResetProjection(target);
     
 
     renderer->impl->SetLineThickness(renderer, 1.0f);
@@ -1877,6 +1873,10 @@ static GPU_Target* CreateAliasTarget(GPU_Renderer* renderer, GPU_Target* target)
 
     // Copy the members
     *result = *target;
+
+	// Deep copies
+	GPU_CopyMatrixStack(&target->projection_matrix, &result->projection_matrix);
+	GPU_CopyMatrixStack(&target->modelview_matrix, &result->modelview_matrix);
 
     // Alias info
     if(target->image != NULL)
@@ -2108,6 +2108,8 @@ static GPU_bool SetWindowResolution(GPU_Renderer* renderer, Uint16 w, Uint16 h)
     if(isCurrent)
         applyTargetCamera(target);
 
+	GPU_ResetProjection(target);
+
     return 1;
 }
 
@@ -2128,6 +2130,8 @@ static void SetVirtualResolution(GPU_Renderer* renderer, GPU_Target* target, Uin
 
     if(isCurrent)
         applyTargetCamera(target);
+
+	GPU_ResetProjection(target);
 }
 
 static void UnsetVirtualResolution(GPU_Renderer* renderer, GPU_Target* target)
@@ -2148,6 +2152,8 @@ static void UnsetVirtualResolution(GPU_Renderer* renderer, GPU_Target* target)
 
     if(isCurrent)
         applyTargetCamera(target);
+
+	GPU_ResetProjection(target);
 }
 
 static void Quit(GPU_Renderer* renderer)
@@ -3981,6 +3987,10 @@ static GPU_Target* GetTarget(GPU_Renderer* renderer, GPU_Image* image)
 
     result->viewport = GPU_MakeRect(0, 0, result->w, result->h);
 
+	result->matrix_mode = GPU_MODELVIEW;
+	GPU_InitMatrixStack(&result->projection_matrix);
+	GPU_InitMatrixStack(&result->modelview_matrix);
+
     result->camera = GPU_GetDefaultCamera();
     result->use_camera = GPU_TRUE;
     
@@ -4024,7 +4034,6 @@ static void FreeTargetData(GPU_Renderer* renderer, GPU_TARGET_DATA* data)
 static void FreeContext(GPU_Context* context)
 {
     GPU_CONTEXT_DATA* cdata;
-    unsigned int i;
     
     if(context == NULL)
         return;
@@ -4057,18 +4066,6 @@ static void FreeContext(GPU_Context* context)
     if(context->context != 0)
         SDL_GL_DeleteContext(context->context);
     #endif
-    
-    for(i = 0; i < context->projection_matrix.storage_size; ++i)
-    {
-        SDL_free(context->projection_matrix.matrix[i]);
-    }
-    SDL_free(context->projection_matrix.matrix);
-    
-    for(i = 0; i < context->modelview_matrix.storage_size; ++i)
-    {
-        SDL_free(context->modelview_matrix.matrix[i]);
-    }
-    SDL_free(context->modelview_matrix.matrix);
     
 
     SDL_free(cdata);
@@ -4114,6 +4111,9 @@ static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
     if(target->image != NULL && target->image->target == target)
         target->image->target = NULL;
 
+	// Delete matrices
+	GPU_ClearMatrixStack(&target->projection_matrix);
+	GPU_ClearMatrixStack(&target->modelview_matrix);
     
     SDL_free(target);
 }
@@ -4818,20 +4818,20 @@ static void gpu_upload_modelviewprojection(GPU_Target* dest, GPU_Context* contex
         // MVP = P * V * M
         
         // P
-        GPU_MatrixCopy(mvp, GPU_GetProjection());
+        GPU_MatrixCopy(mvp, GPU_GetProjection(dest));
         
         
         // V
         if(dest->use_camera)
         {
             float cam_matrix[16];
-            get_camera_matrix(cam_matrix);
+            get_camera_matrix(dest, cam_matrix);
             
             GPU_MultiplyAndAssign(mvp, cam_matrix);
         }
         
         // M
-        GPU_MultiplyAndAssign(mvp, GPU_GetModelView());
+        GPU_MultiplyAndAssign(mvp, GPU_GetModelView(dest));
         
         glUniformMatrix4fv(context->current_shader_block.modelViewProjection_loc, 1, 0, mvp);
     }
@@ -4898,7 +4898,7 @@ static void PrimitiveBatchV(GPU_Renderer* renderer, GPU_Image* image, GPU_Target
 
     #ifdef SDL_GPU_APPLY_TRANSFORMS_TO_GL_STACK
     if(!IsFeatureEnabled(renderer, GPU_FEATURE_VERTEX_SHADER))
-        applyTransforms();
+        applyTransforms(target);
     #endif
 
     
@@ -5694,7 +5694,7 @@ static void FlushBlitBuffer(GPU_Renderer* renderer)
 
         #ifdef SDL_GPU_APPLY_TRANSFORMS_TO_GL_STACK
         if(!IsFeatureEnabled(renderer, GPU_FEATURE_VERTEX_SHADER))
-            applyTransforms();
+            applyTransforms(dest);
         #endif
 
         setClipRect(renderer, dest);

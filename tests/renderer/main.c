@@ -105,11 +105,6 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
         target->context->windowID = windowID;
         target->context->data = NULL;  // Allocate a data structure as needed for other context data
         target->context->context = NULL;
-
-        GPU_InitMatrixStack(&target->context->projection_matrix);
-        GPU_InitMatrixStack(&target->context->modelview_matrix);
-
-        target->context->matrix_mode = GPU_MODELVIEW;
     }
     else
     {
@@ -145,7 +140,11 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     target->context->shapes_use_blending = 1;
     target->context->shapes_blend_mode = GPU_GetBlendModeFromPreset(GPU_BLEND_NORMAL);
     
-    target->context->matrix_mode = GPU_MODELVIEW;
+
+    GPU_InitMatrixStack(&target->projection_matrix);
+    GPU_InitMatrixStack(&target->modelview_matrix);
+
+    target->matrix_mode = GPU_MODELVIEW;
     
     
     renderer->impl->SetLineThickness(renderer, 1.0f);
@@ -171,6 +170,10 @@ static GPU_Target* CreateAliasTarget(GPU_Renderer* renderer, GPU_Target* target)
     
     // Copy the members
     *result = *target;
+
+	// Deep copies
+	GPU_CopyMatrixStack(&target->projection_matrix, &result->projection_matrix);
+	GPU_CopyMatrixStack(&target->modelview_matrix, &result->modelview_matrix);
     
     // Alias info
     if(target->image != NULL)
@@ -641,6 +644,11 @@ static GPU_Target* GetTarget(GPU_Renderer* renderer, GPU_Image* image)
     result->base_h = image->texture_h;
     
     result->viewport = GPU_MakeRect(0, 0, result->w, result->h);
+    
+    GPU_InitMatrixStack(&result->projection_matrix);
+    GPU_InitMatrixStack(&result->modelview_matrix);
+
+    result->matrix_mode = GPU_MODELVIEW;
     
     result->camera = GPU_GetDefaultCamera();
     

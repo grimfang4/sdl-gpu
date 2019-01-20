@@ -97,7 +97,7 @@ int main(int argc, char* argv[])
 					{
 						use_camera = 1;
 						GPU_EnableCamera(screen, use_camera);
-						GPU_ResetProjection();
+						GPU_ResetProjection(screen);
 					}
 					
                 }
@@ -105,11 +105,11 @@ int main(int argc, char* argv[])
             
             GPU_Clear(screen);
             
-            GPU_MatrixMode(GPU_PROJECTION);
+            GPU_MatrixMode(screen, GPU_PROJECTION);
 
 			if (!use_camera)
 			{
-                GPU_LoadIdentity();
+                GPU_LoadIdentity(screen);
                 // Apply projection matrix
 				GPU_MatrixIdentity(matrix);
 
@@ -122,12 +122,12 @@ int main(int argc, char* argv[])
 					GPU_MatrixOrtho(matrix, 0, 800, 600, 0, -1000, 1000);
                 }
 
-				GPU_MultMatrix(matrix);
+				GPU_MultMatrix(screen, matrix);
 			}
             
             
-            GPU_MatrixMode(GPU_MODELVIEW);
-            GPU_LoadIdentity();
+            GPU_MatrixMode(screen, GPU_MODELVIEW);
+            GPU_LoadIdentity(screen);
             
 			if (!use_camera)
 			{
@@ -146,7 +146,7 @@ int main(int argc, char* argv[])
                                              0, 0, 0,  // target
                                              0, 1, 0);  // up
                 }
-				GPU_MultMatrix(matrix);
+				GPU_MultMatrix(screen, matrix);
 			}
             
             
@@ -163,7 +163,7 @@ int main(int argc, char* argv[])
                 GPU_MatrixRotate(matrix, a, 0.57, 0.57, 0.57);
             }
 
-            GPU_MultMatrix(matrix);
+            GPU_MultMatrix(screen, matrix);
             
             GPU_SetCamera(screen, &camera);
             
@@ -179,19 +179,19 @@ int main(int argc, char* argv[])
             GPU_BlitScale(image, NULL, screen, 200, 200, 0.5f, 0.5f);
             
             float scale = 200;
-            GPU_MatrixMode(GPU_MODELVIEW);
-            GPU_PushMatrix();
+            GPU_MatrixMode(screen, GPU_MODELVIEW);
+            GPU_PushMatrix(screen);
             GPU_SetLineThickness(4.0f);
-            GPU_Translate(40, 40, 0.0f);
-            GPU_Rotate(90, 0.0f, 0.0f, 1.0f);
-            //GPU_Translate(-screen->w/2, -screen->h/2, 0.0f);
-            GPU_Translate(-40, -40, 0.0f);
+            GPU_Translate(screen, 40, 40, 0.0f);
+            GPU_Rotate(screen, 90, 0.0f, 0.0f, 1.0f);
+            //GPU_Translate(screen, -screen->w/2, -screen->h/2, 0.0f);
+            GPU_Translate(screen, -40, -40, 0.0f);
             GPU_Line(screen, 0, 0, scale, 0, GPU_MakeColor(255, 0, 0, 255));
             GPU_CircleFilled(screen, 0, 0, scale/16, GPU_MakeColor(255, 0, 0, 255));
             GPU_Circle(screen, 0, 0, scale, GPU_MakeColor(255, 0, 0, 255));
             GPU_Circle(screen, 0, 0, scale*4, GPU_MakeColor(0, 255, 0, 255));
             GPU_SetLineThickness(1.0f);
-            GPU_PopMatrix();
+            GPU_PopMatrix(screen);
             
             GPU_Flip(screen);
             

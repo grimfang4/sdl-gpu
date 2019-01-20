@@ -59,6 +59,9 @@ void GPU_InitMatrixStack(GPU_MatrixStack* stack)
     if(stack == NULL)
         return;
     
+	if (stack->storage_size != 0)
+		GPU_ClearMatrixStack(stack);
+
     stack->storage_size = 1;
     stack->size = 1;
     
@@ -67,17 +70,46 @@ void GPU_InitMatrixStack(GPU_MatrixStack* stack)
     GPU_MatrixIdentity(stack->matrix[0]);
 }
 
-
-void GPU_ResetProjection(void)
+void GPU_CopyMatrixStack(GPU_MatrixStack* source, GPU_MatrixStack* dest)
 {
-    GPU_Target* target = GPU_GetContextTarget();
+	int i;
+	unsigned int matrix_size = sizeof(float) * 16;
+	if (source == NULL || dest == NULL)
+		return;
+
+	GPU_ClearMatrixStack(dest);
+	dest->matrix = (float**)SDL_malloc(sizeof(float*) * source->storage_size);
+	for (i = 0; i < source->storage_size; ++i)
+	{
+		dest->matrix[i] = (float*)SDL_malloc(matrix_size);
+		memcpy(dest->matrix[i], source->matrix[i], matrix_size);
+	}
+	dest->storage_size = source->storage_size;
+}
+
+void GPU_ClearMatrixStack(GPU_MatrixStack* stack)
+{
+	int i;
+	for (i = 0; i < stack->storage_size; ++i)
+	{
+		SDL_free(stack->matrix[i]);
+	}
+	SDL_free(stack->matrix);
+
+	stack->matrix = NULL;
+	stack->storage_size = 0;
+}
+
+
+void GPU_ResetProjection(GPU_Target* target)
+{
     if(target == NULL)
         return;
     
     GPU_bool invert = (target->image != NULL);
     
     // Set up default projection
-    float* projection_matrix = GPU_GetProjection();
+    float* projection_matrix = GPU_GetProjection(target);
     GPU_MatrixIdentity(projection_matrix);
     
     if(!invert ^ GPU_GetCoordinateMode())
@@ -432,67 +464,62 @@ const char* GPU_GetMatrixString(const float* A)
     return b;
 }
 
-void GPU_MatrixMode(int matrix_mode)
+void GPU_MatrixMode(GPU_Target* target, int matrix_mode)
 {
-    GPU_Target* target = GPU_GetContextTarget();
-    if(target == NULL || target->context == NULL)
+    if(target == NULL)
         return;
     
-    target->context->matrix_mode = matrix_mode;
+    target->matrix_mode = matrix_mode;
 }
 
-float* GPU_GetModelView(void)
+float* GPU_GetModelView(GPU_Target* target)
 {
-    GPU_Target* target = GPU_GetContextTarget();
 	GPU_MatrixStack* stack;
 
-    if(target == NULL || target->context == NULL)
+    if(target == NULL)
         return NULL;
-    stack = &target->context->modelview_matrix;
+    stack = &target->modelview_matrix;
     if(stack->size == 0)
         return NULL;
     return stack->matrix[stack->size-1];
 }
 
-float* GPU_GetProjection(void)
+float* GPU_GetProjection(GPU_Target* target)
 {
-    GPU_Target* target = GPU_GetContextTarget();
 	GPU_MatrixStack* stack;
 
-    if(target == NULL || target->context == NULL)
+    if(target == NULL)
         return NULL;
-    stack = &target->context->projection_matrix;
+    stack = &target->projection_matrix;
     if(stack->size == 0)
         return NULL;
     return stack->matrix[stack->size-1];
 }
 
-float* GPU_GetCurrentMatrix(void)
+float* GPU_GetCurrentMatrix(GPU_Target* target)
 {
-    GPU_Target* target = GPU_GetContextTarget();
     GPU_MatrixStack* stack;
 
-    if(target == NULL || target->context == NULL)
+    if(target == NULL)
         return NULL;
-    if(target->context->matrix_mode == GPU_MODELVIEW)
-        stack = &target->context->modelview_matrix;
+    if(target->matrix_mode == GPU_MODELVIEW)
+        stack = &target->modelview_matrix;
     else
-        stack = &target->context->projection_matrix;
+        stack = &target->projection_matrix;
     
     if(stack->size == 0)
         return NULL;
     return stack->matrix[stack->size-1];
 }
 
-void GPU_PushMatrix(void)
+void GPU_PushMatrix(GPU_Target* target)
 {
-    GPU_Target* target = GPU_GetContextTarget();
 	GPU_MatrixStack* stack;
 
-    if(target == NULL || target->context == NULL)
+    if(target == NULL)
         return;
     
-    stack = (target->context->matrix_mode == GPU_MODELVIEW? &target->context->modelview_matrix : &target->context->projection_matrix);
+    stack = (target->matrix_mode == GPU_MODELVIEW? &target->modelview_matrix : &target->projection_matrix);
     if(stack->size + 1 >= stack->storage_size)
     {
         // Grow matrix stack (1, 6, 16, 36, ...)
@@ -525,16 +552,16 @@ void GPU_PushMatrix(void)
     stack->size++;
 }
 
-void GPU_PopMatrix(void)
+void GPU_PopMatrix(GPU_Target* target)
 {
-    GPU_Target* target = GPU_GetContextTarget();
 	GPU_MatrixStack* stack;
 
-    if(target == NULL || target->context == NULL)
+    if(target == NULL)
         return;
-        
+    
+	// FIXME: Flushing here is not always necessary if this isn't the last target
 	GPU_FlushBlitBuffer();
-    stack = (target->context->matrix_mode == GPU_MODELVIEW? &target->context->modelview_matrix : &target->context->projection_matrix);
+    stack = (target->matrix_mode == GPU_MODELVIEW? &target->modelview_matrix : &target->projection_matrix);
     if(stack->size == 0)
     {
         GPU_PushErrorCode(__func__, GPU_ERROR_USER_ERROR, "Matrix stack is empty.");
@@ -547,9 +574,9 @@ void GPU_PopMatrix(void)
         stack->size--;
 }
 
-void GPU_LoadIdentity(void)
+void GPU_LoadIdentity(GPU_Target* target)
 {
-    float* result = GPU_GetCurrentMatrix();
+    float* result = GPU_GetCurrentMatrix(target);
     if(result == NULL)
 		return;
     
@@ -557,48 +584,48 @@ void GPU_LoadIdentity(void)
     GPU_MatrixIdentity(result);
 }
 
-void GPU_LoadMatrix(const float* A)
+void GPU_LoadMatrix(GPU_Target* target, const float* A)
 {
-    float* result = GPU_GetCurrentMatrix();
+    float* result = GPU_GetCurrentMatrix(target);
     if(result == NULL)
         return;
 	GPU_FlushBlitBuffer();
     GPU_MatrixCopy(result, A);
 }
 
-void GPU_Ortho(float left, float right, float bottom, float top, float z_near, float z_far)
+void GPU_Ortho(GPU_Target* target, float left, float right, float bottom, float top, float z_near, float z_far)
 {
 	GPU_FlushBlitBuffer();
-    GPU_MatrixOrtho(GPU_GetCurrentMatrix(), left, right, bottom, top, z_near, z_far);
+    GPU_MatrixOrtho(GPU_GetCurrentMatrix(target), left, right, bottom, top, z_near, z_far);
 }
 
-void GPU_Frustum(float left, float right, float bottom, float top, float z_near, float z_far)
+void GPU_Frustum(GPU_Target* target, float left, float right, float bottom, float top, float z_near, float z_far)
 {
 	GPU_FlushBlitBuffer();
-    GPU_MatrixFrustum(GPU_GetCurrentMatrix(), left, right, bottom, top, z_near, z_far);
+    GPU_MatrixFrustum(GPU_GetCurrentMatrix(target), left, right, bottom, top, z_near, z_far);
 }
 
-void GPU_Translate(float x, float y, float z)
+void GPU_Translate(GPU_Target* target, float x, float y, float z)
 {
 	GPU_FlushBlitBuffer();
-    GPU_MatrixTranslate(GPU_GetCurrentMatrix(), x, y, z);
+    GPU_MatrixTranslate(GPU_GetCurrentMatrix(target), x, y, z);
 }
 
-void GPU_Scale(float sx, float sy, float sz)
+void GPU_Scale(GPU_Target* target, float sx, float sy, float sz)
 {
 	GPU_FlushBlitBuffer();
-    GPU_MatrixScale(GPU_GetCurrentMatrix(), sx, sy, sz);
+    GPU_MatrixScale(GPU_GetCurrentMatrix(target), sx, sy, sz);
 }
 
-void GPU_Rotate(float degrees, float x, float y, float z)
+void GPU_Rotate(GPU_Target* target, float degrees, float x, float y, float z)
 {
 	GPU_FlushBlitBuffer();
-    GPU_MatrixRotate(GPU_GetCurrentMatrix(), degrees, x, y, z);
+    GPU_MatrixRotate(GPU_GetCurrentMatrix(target), degrees, x, y, z);
 }
 
-void GPU_MultMatrix(const float* A)
+void GPU_MultMatrix(GPU_Target* target, const float* A)
 {
-    float* result = GPU_GetCurrentMatrix();
+    float* result = GPU_GetCurrentMatrix(target);
     if(result == NULL)
         return;
 	GPU_FlushBlitBuffer();
@@ -607,8 +634,8 @@ void GPU_MultMatrix(const float* A)
     GPU_MultiplyAndAssign(result, A);
 }
 
-void GPU_GetModelViewProjection(float* result)
+void GPU_GetModelViewProjection(GPU_Target* target, float* result)
 {
     // MVP = P * MV
-    GPU_MatrixMultiply(result, GPU_GetProjection(), GPU_GetModelView());
+    GPU_MatrixMultiply(result, GPU_GetProjection(target), GPU_GetModelView(target));
 }

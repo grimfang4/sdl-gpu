@@ -418,11 +418,11 @@ int do_indexed(GPU_Target* screen)
                                   1, 3, 7,
                                   3, 5, 7};
             
-            GPU_MatrixMode(GPU_MODELVIEW);
-            GPU_PushMatrix();
-            GPU_Translate(300, 300, 0);
+            GPU_MatrixMode(screen, GPU_MODELVIEW);
+            GPU_PushMatrix(screen);
+            GPU_Translate(screen, 300, 300, 0);
             GPU_TriangleBatch(image, screen, n_v, v, n_i, i, GPU_BATCH_XY_ST);
-            GPU_PopMatrix();
+            GPU_PopMatrix(screen);
         }
 		
 		GPU_Flip(screen);

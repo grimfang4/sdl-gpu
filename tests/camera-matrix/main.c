@@ -97,27 +97,27 @@ int main(int argc, char* argv[])
                     }
                     else if(event.key.keysym.sym == SDLK_o)
                     {
-                        GPU_MatrixMode(GPU_PROJECTION);
-                        GPU_LoadIdentity();
+                        GPU_MatrixMode(screen, GPU_PROJECTION);
+                        GPU_LoadIdentity(screen);
                         
                         camera.x = 0;
                         camera.y = 0;
                         camera.z = 0.0f;
-                        GPU_Ortho(0, target->w, target->h, 0, target->camera.z_near, target->camera.z_far);
+                        GPU_Ortho(screen, 0, target->w, target->h, 0, target->camera.z_near, target->camera.z_far);
 
-                        GPU_MatrixMode(GPU_MODELVIEW);
+                        GPU_MatrixMode(screen, GPU_MODELVIEW);
                     }
                     else if(event.key.keysym.sym == SDLK_p)
                     {
-                        GPU_MatrixMode(GPU_PROJECTION);
-                        GPU_LoadIdentity();
+                        GPU_MatrixMode(screen, GPU_PROJECTION);
+                        GPU_LoadIdentity(screen);
                         
                         camera.x = target->w/2;
                         camera.y = target->h/2;
                         camera.z = 1000.0f;
-                        GPU_Frustum(-400, 400, 300, -300, 1000.0f, 10000.0f);
+                        GPU_Frustum(screen, -400, 400, 300, -300, 1000.0f, 10000.0f);
                         
-                        GPU_MatrixMode(GPU_MODELVIEW);
+                        GPU_MatrixMode(screen, GPU_MODELVIEW);
                     }
                 }
             }

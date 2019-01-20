@@ -17,32 +17,32 @@ void begin_3d(GPU_Target* screen)
     GPU_FlushBlitBuffer();
     
     
-    GPU_MatrixMode(GPU_MODELVIEW);
-    GPU_PushMatrix();
-    GPU_LoadIdentity();
-    GPU_MatrixMode(GPU_PROJECTION);
-    GPU_PushMatrix();
-    GPU_LoadIdentity();
+    GPU_MatrixMode(screen, GPU_MODELVIEW);
+    GPU_PushMatrix(screen);
+    GPU_LoadIdentity(screen);
+    GPU_MatrixMode(screen, GPU_PROJECTION);
+    GPU_PushMatrix(screen);
+    GPU_LoadIdentity(screen);
 }
 
 void end_3d(GPU_Target* screen)
 {
     GPU_ResetRendererState();
     
-    GPU_MatrixMode(GPU_MODELVIEW);
-    GPU_PopMatrix();
-    GPU_MatrixMode(GPU_PROJECTION);
-    GPU_PopMatrix();
+    GPU_MatrixMode(screen, GPU_MODELVIEW);
+    GPU_PopMatrix(screen);
+    GPU_MatrixMode(screen, GPU_PROJECTION);
+    GPU_PopMatrix(screen);
 }
 
-void draw_spinning_triangle()
+void draw_spinning_triangle(GPU_Target* screen)
 {
     GLfloat gldata[21];
     float mvp[16];
     float t = SDL_GetTicks()/1000.0f;
 
-    GPU_Rotate(100*t, 0, 0.707, 0.707);
-    GPU_Rotate(20*t, 0.707, 0.707, 0);
+    GPU_Rotate(screen, 100*t, 0, 0.707, 0.707);
+    GPU_Rotate(screen, 20*t, 0.707, 0.707, 0);
 
 
     gldata[0] = 0;
@@ -75,7 +75,7 @@ void draw_spinning_triangle()
     
     glUseProgram(p);
     
-    GPU_GetModelViewProjection(mvp);
+    GPU_GetModelViewProjection(screen, mvp);
     glUniformMatrix4fv(modelViewProjection_loc, 1, 0, mvp);
     
     
@@ -113,7 +113,7 @@ void draw_3d_stuff(GPU_Target* screen)
 {
     begin_3d(screen);
     
-    draw_spinning_triangle();
+    draw_spinning_triangle(screen);
     
     end_3d(screen);
 }
@@ -124,9 +124,9 @@ void draw_more_3d_stuff(GPU_Target* screen)
     begin_3d(screen);
     
     t = SDL_GetTicks()/1000.0f;
-    GPU_Rotate(t*60, 0, 0, 1);
-    GPU_Translate(0.4f, 0.4f, 0);
-    draw_spinning_triangle();
+    GPU_Rotate(screen, t*60, 0, 0, 1);
+    GPU_Translate(screen, 0.4f, 0.4f, 0);
+    draw_spinning_triangle(screen);
     
     end_3d(screen);
 }
