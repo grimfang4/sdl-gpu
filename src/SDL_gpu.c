@@ -483,6 +483,8 @@ GPU_Target* GPU_CreateTargetFromWindow(Uint32 windowID)
     return _gpu_current_renderer->impl->CreateTargetFromWindow(_gpu_current_renderer, windowID, NULL);
 }
 
+
+
 GPU_Target* GPU_CreateAliasTarget(GPU_Target* target)
 {
     if(!CHECK_RENDERER)
@@ -524,6 +526,23 @@ GPU_bool GPU_GetFullscreen(void)
         return GPU_FALSE;
     return (surf->flags & SDL_FULLSCREEN) != 0;
 #endif
+}
+
+GPU_Target* GPU_GetActiveTarget(void)
+{
+    GPU_Target* context_target = GPU_GetContextTarget();
+    if(context_target == NULL)
+        return NULL;
+
+    return context_target->context->active_target;
+}
+
+GPU_bool GPU_SetActiveTarget(GPU_Target* target)
+{
+    if(_gpu_current_renderer == NULL)
+        return GPU_FALSE;
+
+    return _gpu_current_renderer->impl->SetActiveTarget(_gpu_current_renderer, target);
 }
 
 GPU_bool GPU_AddDepthBuffer(GPU_Target* target)

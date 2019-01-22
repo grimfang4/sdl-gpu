@@ -237,7 +237,6 @@ typedef struct ContextData_OpenGL_1
 	GPU_ComparisonEnum last_depth_function;
 	
 	GPU_Image* last_image;
-	GPU_Target* last_target;
 	float* blit_buffer;  // Holds sets of 4 vertices and 4 tex coords interleaved (e.g. [x0, y0, z0, s0, t0, ...]).
 	unsigned short blit_buffer_num_vertices;
 	unsigned short blit_buffer_max_num_vertices;

@@ -26,7 +26,6 @@ int main(int argc, char* argv[])
 		SDL_Event event;
 		
 		GPU_Camera camera = GPU_GetDefaultCamera();
-		float matrix[16];
         
         GPU_Image* image = GPU_LoadImage("data/test.bmp");
         if(image == NULL)
@@ -41,7 +40,6 @@ int main(int argc, char* argv[])
 		Uint8 rotate_stuff = 0;
         
 		GPU_EnableCamera(screen, use_camera);
-		GPU_MatrixIdentity(matrix);
         
         startTime = SDL_GetTicks();
         frameCount = 0;
@@ -109,62 +107,56 @@ int main(int argc, char* argv[])
 
 			if (!use_camera)
 			{
-                GPU_LoadIdentity(screen);
+                GPU_LoadIdentity();
                 // Apply projection matrix
-				GPU_MatrixIdentity(matrix);
 
 				if (use_perspective)
 				{
-					GPU_MatrixPerspective(matrix, 90, screen->w / (float)screen->h, 0.1, 2000);
+					GPU_Perspective(90, screen->w / (float)screen->h, 0.1, 2000);
 				}
 				else
                 {
-					GPU_MatrixOrtho(matrix, 0, 800, 600, 0, -1000, 1000);
+					GPU_Ortho(0, 800, 600, 0, -1000, 1000);
                 }
-
-				GPU_MultMatrix(screen, matrix);
 			}
             
             
-            GPU_MatrixMode(screen, GPU_MODELVIEW);
-            GPU_LoadIdentity(screen);
+            GPU_MatrixMode(screen, GPU_VIEW);
+            GPU_LoadIdentity();
             
 			if (!use_camera)
 			{
                 // Apply view matrix
-				GPU_MatrixIdentity(matrix);
                 
                 if(use_perspective)
                 {
-                    GPU_MatrixLookAt(matrix, screen->w/2, screen->h/2, 300,  // eye
+                    GPU_LookAt(screen->w/2, screen->h/2, 300,  // eye
                                              screen->w/2, screen->h/2, 0,  // target
                                              0, 1, 0);  // up
                 }
                 else
                 {
-                    GPU_MatrixLookAt(matrix, 0, 0, 0.1,  // eye
+                    GPU_LookAt(0, 0, 0.1,  // eye
                                              0, 0, 0,  // target
                                              0, 1, 0);  // up
                 }
-				GPU_MultMatrix(screen, matrix);
 			}
             
             
 			
             // Apply model matrix
-			GPU_MatrixIdentity(matrix);
+            GPU_MatrixMode(screen, GPU_MODEL);
+            GPU_LoadIdentity();
 			
-			GPU_MatrixTranslate(matrix, x, y, z);
+			GPU_Translate(x, y, z);
 
             // Rotate
             if(rotate_stuff)
             {
                 float a = SDL_GetTicks() / 10.0f;
-                GPU_MatrixRotate(matrix, a, 0.57, 0.57, 0.57);
+                GPU_Rotate(a, 0.57, 0.57, 0.57);
             }
 
-            GPU_MultMatrix(screen, matrix);
-            
             GPU_SetCamera(screen, &camera);
             
             GPU_Blit(image, NULL, screen, 0, 0);
@@ -179,19 +171,22 @@ int main(int argc, char* argv[])
             GPU_BlitScale(image, NULL, screen, 200, 200, 0.5f, 0.5f);
             
             float scale = 200;
-            GPU_MatrixMode(screen, GPU_MODELVIEW);
-            GPU_PushMatrix(screen);
+            GPU_MatrixMode(screen, GPU_MODEL);
+            GPU_PushMatrix();
             GPU_SetLineThickness(4.0f);
-            GPU_Translate(screen, 40, 40, 0.0f);
-            GPU_Rotate(screen, 90, 0.0f, 0.0f, 1.0f);
-            //GPU_Translate(screen, -screen->w/2, -screen->h/2, 0.0f);
-            GPU_Translate(screen, -40, -40, 0.0f);
+            GPU_Translate(40, 40, 0.0f);
+            GPU_Rotate(90, 0.0f, 0.0f, 1.0f);
+            //GPU_Translate(-screen->w/2, -screen->h/2, 0.0f);
+            GPU_Translate(-40, -40, 0.0f);
+            
+            
             GPU_Line(screen, 0, 0, scale, 0, GPU_MakeColor(255, 0, 0, 255));
             GPU_CircleFilled(screen, 0, 0, scale/16, GPU_MakeColor(255, 0, 0, 255));
             GPU_Circle(screen, 0, 0, scale, GPU_MakeColor(255, 0, 0, 255));
             GPU_Circle(screen, 0, 0, scale*4, GPU_MakeColor(0, 255, 0, 255));
             GPU_SetLineThickness(1.0f);
-            GPU_PopMatrix(screen);
+            
+            GPU_PopMatrix();
             
             GPU_Flip(screen);
             

@@ -64,6 +64,7 @@ int main(int argc, char* argv[])
             
             GPU_ClearRGB(screen, 200, 200, 200);
             
+            GPU_MatrixMode(screen, GPU_MODEL);
             if(!mode)
             {
                 // Draw to screen directly
@@ -71,16 +72,16 @@ int main(int argc, char* argv[])
                 // Images drawn left to right, but layered alternating.  Positive z values are on top.
                 GPU_Blit(image, NULL, screen, 150, 300);
                 
-                GPU_PushMatrix(screen);
-                GPU_Translate(screen, 0, 0, 5);
+                GPU_PushMatrix();
+                GPU_Translate(0, 0, 5);
                 GPU_Blit(image, NULL, screen, 300, 300);
                 
-                GPU_Translate(screen, 0, 0, -10);
+                GPU_Translate(0, 0, -10);
                 GPU_Blit(image, NULL, screen, 450, 300);
                 
-                GPU_Translate(screen, 0, 0, 10);
+                GPU_Translate(0, 0, 10);
                 GPU_Blit(image, NULL, screen, 600, 300);
-                GPU_PopMatrix(screen);
+                GPU_PopMatrix();
             }
             else
             {
@@ -90,16 +91,16 @@ int main(int argc, char* argv[])
                 // Images drawn left to right, but layered alternating.  Positive z values are on top.
                 GPU_Blit(image, NULL, target, 150, 300);
                 
-                GPU_PushMatrix(screen);
-                GPU_Translate(screen, 0, 0, 5);
+                GPU_PushMatrix();
+                GPU_Translate(0, 0, 5);
                 GPU_Blit(image, NULL, target, 300, 300);
                 
-                GPU_Translate(screen, 0, 0, -10);
+                GPU_Translate(0, 0, -10);
                 GPU_Blit(image, NULL, target, 450, 300);
                 
-                GPU_Translate(screen, 0, 0, 10);
+                GPU_Translate(0, 0, 10);
                 GPU_Blit(image, NULL, target, 600, 300);
-                GPU_PopMatrix(screen);
+                GPU_PopMatrix();
                 
                 GPU_Blit(target_image, NULL, screen, 0, 0);
             }

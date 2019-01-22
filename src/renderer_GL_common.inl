@@ -637,13 +637,13 @@ static_inline void flushAndBindTexture(GPU_Renderer* renderer, GLuint handle)
     ((GPU_CONTEXT_DATA*)renderer->current_context_target->context->data)->last_image = NULL;
 }
 
-// Returns false if it can't be bound
-static GPU_bool bindFramebuffer(GPU_Renderer* renderer, GPU_Target* target)
+// Binds the target's framebuffer.  Returns false if it can't be bound.
+static GPU_bool SetActiveTarget(GPU_Renderer* renderer, GPU_Target* target)
 {
     if(renderer->enabled_features & GPU_FEATURE_RENDER_TARGETS)
     {
         // Bind the FBO
-        if(target != ((GPU_CONTEXT_DATA*)renderer->current_context_target->context->data)->last_target)
+        if(target != renderer->current_context_target->context->active_target)
         {
             GLuint handle = 0;
             if(target != NULL)
@@ -651,7 +651,7 @@ static GPU_bool bindFramebuffer(GPU_Renderer* renderer, GPU_Target* target)
             renderer->impl->FlushBlitBuffer(renderer);
 
             extBindFramebuffer(renderer, handle);
-            ((GPU_CONTEXT_DATA*)renderer->current_context_target->context->data)->last_target = target;
+            renderer->current_context_target->context->active_target = target;
         }
         return GPU_TRUE;
     }
@@ -661,7 +661,7 @@ static GPU_bool bindFramebuffer(GPU_Renderer* renderer, GPU_Target* target)
         // Note: Could check against the default framebuffer value (((GPU_TARGET_DATA*)target->data)->handle versus result of GL_FRAMEBUFFER_BINDING)...
         if(target != NULL)
         {
-            ((GPU_CONTEXT_DATA*)renderer->current_context_target->context->data)->last_target = target;
+            renderer->current_context_target->context->active_target = target;
             return GPU_TRUE;
         }
         return GPU_FALSE;
@@ -674,7 +674,7 @@ static_inline void flushAndBindFramebuffer(GPU_Renderer* renderer, GLuint handle
     renderer->impl->FlushBlitBuffer(renderer);
 
     extBindFramebuffer(renderer, handle);
-    ((GPU_CONTEXT_DATA*)renderer->current_context_target->context->data)->last_target = NULL;
+    renderer->current_context_target->context->active_target = NULL;
 }
 
 static_inline void flushBlitBufferIfCurrentTexture(GPU_Renderer* renderer, GPU_Image* image)
@@ -696,17 +696,17 @@ static_inline void flushAndClearBlitBufferIfCurrentTexture(GPU_Renderer* rendere
 
 static_inline GPU_bool isCurrentTarget(GPU_Renderer* renderer, GPU_Target* target)
 {
-    return (target == ((GPU_CONTEXT_DATA*)renderer->current_context_target->context->data)->last_target
-            || ((GPU_CONTEXT_DATA*)renderer->current_context_target->context->data)->last_target == NULL);
+    return (target == renderer->current_context_target->context->active_target
+            || renderer->current_context_target->context->active_target == NULL);
 }
 
 static_inline void flushAndClearBlitBufferIfCurrentFramebuffer(GPU_Renderer* renderer, GPU_Target* target)
 {
-    if(target == ((GPU_CONTEXT_DATA*)renderer->current_context_target->context->data)->last_target
-            || ((GPU_CONTEXT_DATA*)renderer->current_context_target->context->data)->last_target == NULL)
+    if(target == renderer->current_context_target->context->active_target
+            || renderer->current_context_target->context->active_target == NULL)
     {
         renderer->impl->FlushBlitBuffer(renderer);
-        ((GPU_CONTEXT_DATA*)renderer->current_context_target->context->data)->last_target = NULL;
+        renderer->current_context_target->context->active_target = NULL;
     }
 }
 
@@ -1194,18 +1194,29 @@ static void get_camera_matrix(GPU_Target* target, float* result)
 #ifdef SDL_GPU_APPLY_TRANSFORMS_TO_GL_STACK
 static void applyTransforms(GPU_Target* target)
 {
-    float* p = GPU_GetProjection(target);
-    float* m = GPU_GetModelView(target);
+    float* p = GPU_GetTopMatrix(&target->projection_matrix);
+    float* m = GPU_GetTopMatrix(&target->model_matrix);
+    float mv[16];
+    GPU_MatrixIdentity(mv);
     
-    float cam_matrix[16];
-    get_camera_matrix(target, cam_matrix);
+    if(target->use_camera)
+    {
+        float cam_matrix[16];
+        get_camera_matrix(target, cam_matrix);
+        
+        GPU_MultiplyAndAssign(mv, cam_matrix);
+    }
+    else
+    {
+        GPU_MultiplyAndAssign(mv, GPU_GetTopMatrix(&target->view_matrix));
+    }
     
-    GPU_MultiplyAndAssign(cam_matrix, m);
+    GPU_MultiplyAndAssign(mv, m);
     
     glMatrixMode(GL_PROJECTION);
     glLoadMatrixf(p);
     glMatrixMode(GL_MODELVIEW);
-    glLoadMatrixf(m);
+    glLoadMatrixf(mv);
 }
 #endif
 
@@ -1506,7 +1517,6 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
         target->context->context = NULL;
         
         cdata->last_image = NULL;
-        cdata->last_target = NULL;
         // Initialize the blit buffer
         cdata->blit_buffer_max_num_vertices = GPU_BLIT_BUFFER_INIT_MAX_NUM_VERTICES;
         cdata->blit_buffer_num_vertices = 0;
@@ -1579,7 +1589,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     ((GPU_TARGET_DATA*)target->data)->format = GL_RGBA;
 
     target->renderer = renderer;
-    target->context_target = renderer->current_context_target;
+    target->context_target = target;  // This target is a context target
     target->w = (Uint16)target->context->drawable_w;
     target->h = (Uint16)target->context->drawable_h;
     target->base_w = (Uint16)target->context->drawable_w;
@@ -1595,9 +1605,10 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
     target->viewport = GPU_MakeRect(0, 0, (float)target->context->drawable_w, (float)target->context->drawable_h);
     
         
-    target->matrix_mode = GPU_MODELVIEW;
+    target->matrix_mode = GPU_MODEL;
     GPU_InitMatrixStack(&target->projection_matrix);
-    GPU_InitMatrixStack(&target->modelview_matrix);
+    GPU_InitMatrixStack(&target->view_matrix);
+    GPU_InitMatrixStack(&target->model_matrix);
     
     target->camera = GPU_GetDefaultCamera();
     target->use_camera = GPU_TRUE;
@@ -1875,8 +1886,15 @@ static GPU_Target* CreateAliasTarget(GPU_Renderer* renderer, GPU_Target* target)
     *result = *target;
 
 	// Deep copies
+	result->projection_matrix.matrix = NULL;
+	result->view_matrix.matrix = NULL;
+	result->model_matrix.matrix = NULL;
+	result->projection_matrix.size = result->projection_matrix.storage_size = 0;
+	result->view_matrix.size = result->view_matrix.storage_size = 0;
+	result->model_matrix.size = result->model_matrix.storage_size = 0;
 	GPU_CopyMatrixStack(&target->projection_matrix, &result->projection_matrix);
-	GPU_CopyMatrixStack(&target->modelview_matrix, &result->modelview_matrix);
+	GPU_CopyMatrixStack(&target->view_matrix, &result->view_matrix);
+	GPU_CopyMatrixStack(&target->model_matrix, &result->model_matrix);
 
     // Alias info
     if(target->image != NULL)
@@ -1932,7 +1950,7 @@ static void MakeCurrent(GPU_Renderer* renderer, GPU_Target* target, Uint32 windo
             }
 
             // Reset the camera for this window
-            applyTargetCamera(((GPU_CONTEXT_DATA*)renderer->current_context_target->context->data)->last_target);
+            applyTargetCamera(renderer->current_context_target->context->active_target);
         }
     }
 }
@@ -1997,8 +2015,8 @@ static void ResetRendererState(GPU_Renderer* renderer)
     if(cdata->last_image != NULL)
         glBindTexture(GL_TEXTURE_2D, ((GPU_IMAGE_DATA*)(cdata->last_image)->data)->handle);
 
-    if(cdata->last_target != NULL)
-        extBindFramebuffer(renderer, ((GPU_TARGET_DATA*)cdata->last_target->data)->handle);
+    if(target->context->active_target != NULL)
+        extBindFramebuffer(renderer, ((GPU_TARGET_DATA*)target->context->active_target->data)->handle);
     else
         extBindFramebuffer(renderer, ((GPU_TARGET_DATA*)target->data)->handle);
 }
@@ -2023,7 +2041,7 @@ static GPU_bool AddDepthBuffer(GPU_Renderer* renderer, GPU_Target* target)
     if(isCurrentTarget(renderer, target))
         renderer->impl->FlushBlitBuffer(renderer);
 
-    if(!bindFramebuffer(renderer, target))
+    if(!SetActiveTarget(renderer, target))
     {
         GPU_PushErrorCode("GPU_AddDepthBuffer", GPU_ERROR_BACKEND_ERROR, "Failed to bind target framebuffer.");
         return GPU_FALSE;
@@ -2727,7 +2745,7 @@ static GPU_bool readTargetPixels(GPU_Renderer* renderer, GPU_Target* source, GLi
     if(isCurrentTarget(renderer, source))
         renderer->impl->FlushBlitBuffer(renderer);
 
-    if(bindFramebuffer(renderer, source))
+    if(SetActiveTarget(renderer, source))
     {
         glReadPixels(0, 0, source->base_w, source->base_h, format, GL_UNSIGNED_BYTE, pixels);
         return GPU_TRUE;
@@ -3987,12 +4005,16 @@ static GPU_Target* GetTarget(GPU_Renderer* renderer, GPU_Image* image)
 
     result->viewport = GPU_MakeRect(0, 0, result->w, result->h);
 
-	result->matrix_mode = GPU_MODELVIEW;
+	result->matrix_mode = GPU_MODEL;
 	GPU_InitMatrixStack(&result->projection_matrix);
-	GPU_InitMatrixStack(&result->modelview_matrix);
+	GPU_InitMatrixStack(&result->view_matrix);
+	GPU_InitMatrixStack(&result->model_matrix);
 
     result->camera = GPU_GetDefaultCamera();
     result->use_camera = GPU_TRUE;
+
+    // Set up default projection matrix
+    GPU_ResetProjection(result);
     
     result->use_depth_test = GPU_FALSE;
     result->use_depth_write = GPU_TRUE;
@@ -4110,10 +4132,11 @@ static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
 
     if(target->image != NULL && target->image->target == target)
         target->image->target = NULL;
-
+    
 	// Delete matrices
 	GPU_ClearMatrixStack(&target->projection_matrix);
-	GPU_ClearMatrixStack(&target->modelview_matrix);
+	GPU_ClearMatrixStack(&target->view_matrix);
+	GPU_ClearMatrixStack(&target->model_matrix);
     
     SDL_free(target);
 }
@@ -4252,7 +4275,7 @@ static void Blit(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, G
     bindTexture(renderer, image);
 
     // Bind the FBO
-    if(!bindFramebuffer(renderer, target))
+    if(!SetActiveTarget(renderer, target))
     {
         GPU_PushErrorCode("GPU_Blit", GPU_ERROR_BACKEND_ERROR, "Failed to bind framebuffer.");
         return;
@@ -4475,7 +4498,7 @@ static void BlitTransformX(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* s
     bindTexture(renderer, image);
 
     // Bind the FBO
-    if(!bindFramebuffer(renderer, target))
+    if(!SetActiveTarget(renderer, target))
     {
         GPU_PushErrorCode("GPU_BlitTransformX", GPU_ERROR_BACKEND_ERROR, "Failed to bind framebuffer.");
         return;
@@ -4818,7 +4841,7 @@ static void gpu_upload_modelviewprojection(GPU_Target* dest, GPU_Context* contex
         // MVP = P * V * M
         
         // P
-        GPU_MatrixCopy(mvp, GPU_GetProjection(dest));
+        GPU_MatrixCopy(mvp, GPU_GetTopMatrix(&dest->projection_matrix));
         
         
         // V
@@ -4829,9 +4852,13 @@ static void gpu_upload_modelviewprojection(GPU_Target* dest, GPU_Context* contex
             
             GPU_MultiplyAndAssign(mvp, cam_matrix);
         }
+        else
+        {
+            GPU_MultiplyAndAssign(mvp, GPU_GetTopMatrix(&dest->view_matrix));
+        }
         
         // M
-        GPU_MultiplyAndAssign(mvp, GPU_GetModelView(dest));
+        GPU_MultiplyAndAssign(mvp, GPU_GetTopMatrix(&dest->model_matrix));
         
         glUniformMatrix4fv(context->current_shader_block.modelViewProjection_loc, 1, 0, mvp);
     }
@@ -4877,7 +4904,7 @@ static void PrimitiveBatchV(GPU_Renderer* renderer, GPU_Image* image, GPU_Target
         bindTexture(renderer, image);
 
     // Bind the FBO
-    if(!bindFramebuffer(renderer, target))
+    if(!SetActiveTarget(renderer, target))
     {
         GPU_PushErrorCode("GPU_PrimitiveBatchX", GPU_ERROR_BACKEND_ERROR, "Failed to bind framebuffer.");
         return;
@@ -5311,7 +5338,7 @@ static SDL_Color GetPixel(GPU_Renderer* renderer, GPU_Target* target, Sint16 x, 
 
     if(isCurrentTarget(renderer, target))
         renderer->impl->FlushBlitBuffer(renderer);
-    if(bindFramebuffer(renderer, target))
+    if(SetActiveTarget(renderer, target))
     {
         unsigned char pixels[4];
         GLenum format = ((GPU_TARGET_DATA*)target->data)->format;
@@ -5462,7 +5489,7 @@ static void ClearRGBA(GPU_Renderer* renderer, GPU_Target* target, Uint8 r, Uint8
 
     if(isCurrentTarget(renderer, target))
         renderer->impl->FlushBlitBuffer(renderer);
-    if(bindFramebuffer(renderer, target))
+    if(SetActiveTarget(renderer, target))
     {
         setClipRect(renderer, target);
 
@@ -5679,9 +5706,9 @@ static void FlushBlitBuffer(GPU_Renderer* renderer)
 
     context = renderer->current_context_target->context;
     cdata = (GPU_CONTEXT_DATA*)context->data;
-    if(cdata->blit_buffer_num_vertices > 0 && cdata->last_target != NULL)
+    if(cdata->blit_buffer_num_vertices > 0 && context->active_target != NULL)
     {
-		GPU_Target* dest = cdata->last_target;
+		GPU_Target* dest = context->active_target;
 		int num_vertices;
 		int num_indices;
 		float* blit_buffer;
@@ -6893,6 +6920,7 @@ static void SetAttributeSource(GPU_Renderer* renderer, int num_values, GPU_Attri
 #define SET_COMMON_FUNCTIONS(impl) \
     impl->Init = &Init; \
     impl->CreateTargetFromWindow = &CreateTargetFromWindow; \
+    impl->SetActiveTarget = &SetActiveTarget; \
     impl->CreateAliasTarget = &CreateAliasTarget; \
     impl->MakeCurrent = &MakeCurrent; \
     impl->SetAsCurrent = &SetAsCurrent; \

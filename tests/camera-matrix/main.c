@@ -97,27 +97,35 @@ int main(int argc, char* argv[])
                     }
                     else if(event.key.keysym.sym == SDLK_o)
                     {
-                        GPU_MatrixMode(screen, GPU_PROJECTION);
-                        GPU_LoadIdentity(screen);
+                        GPU_MatrixMode(target, GPU_PROJECTION);
+                        GPU_LoadIdentity();
                         
                         camera.x = 0;
                         camera.y = 0;
                         camera.z = 0.0f;
-                        GPU_Ortho(screen, 0, target->w, target->h, 0, target->camera.z_near, target->camera.z_far);
+                        
+                        if(target->image == NULL)
+                            GPU_Ortho(0, target->w, target->h, 0, target->camera.z_near, target->camera.z_far);
+                        else
+                            GPU_Ortho(0, target->w, 0, target->h, target->camera.z_near, target->camera.z_far);
 
-                        GPU_MatrixMode(screen, GPU_MODELVIEW);
+                        GPU_MatrixMode(target, GPU_MODEL);
                     }
                     else if(event.key.keysym.sym == SDLK_p)
                     {
-                        GPU_MatrixMode(screen, GPU_PROJECTION);
-                        GPU_LoadIdentity(screen);
+                        GPU_MatrixMode(target, GPU_PROJECTION);
+                        GPU_LoadIdentity();
                         
                         camera.x = target->w/2;
                         camera.y = target->h/2;
                         camera.z = 1000.0f;
-                        GPU_Frustum(screen, -400, 400, 300, -300, 1000.0f, 10000.0f);
                         
-                        GPU_MatrixMode(screen, GPU_MODELVIEW);
+                        if(target->image == NULL)
+                            GPU_Frustum(-400, 400, 300, -300, 1000.0f, 10000.0f);
+                        else
+                            GPU_Frustum(-400, 400, -300, 300, 1000.0f, 10000.0f);
+                        
+                        GPU_MatrixMode(target, GPU_MODEL);
                     }
                 }
             }
@@ -165,10 +173,10 @@ int main(int argc, char* argv[])
                 camera.angle += 100*dt;
             }
             
-            GPU_ClearRGBA(screen, 0, 0, 0, 255);
+            GPU_ClearRGBA(target, 0, 0, 0, 255);
             
             // No camera view
-            GPU_SetCamera(screen, NULL);
+            GPU_SetCamera(target, NULL);
             
             GPU_Circle(target, 0, 0, 25, GPU_MakeColor(255, 255, 255, 255));
             GPU_Circle(target, target->w, 0, 25, GPU_MakeColor(255, 0, 0, 255));
@@ -188,7 +196,16 @@ int main(int argc, char* argv[])
             GPU_CircleFilled(target, 0, target->h, 15, GPU_MakeColor(0, 0, 255, 255));
             
             GPU_RectangleFilled(target, target->w/2 - 20, target->h/2 - 20, target->w/2 + 20, target->h/2 + 20, GPU_MakeColor(255, 0, 0, 255));
-
+            
+            if(target != screen)
+            {
+                GPU_ResetProjection(screen);
+                GPU_SetCamera(screen, NULL);
+                
+                GPU_ClearRGBA(screen, 0, 0, 0, 255);
+                GPU_BlitRect(buffer, NULL, screen, NULL);
+            }
+            
             GPU_Flip(screen);
 
             frameCount++;

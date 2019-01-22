@@ -37,7 +37,7 @@ See a particular renderer's *.c file for specifics. */
         return; \
     } \
      \
-    if(!bindFramebuffer(renderer, target)) \
+    if(!SetActiveTarget(renderer, target)) \
     { \
         GPU_PushErrorCode(function_name, GPU_ERROR_BACKEND_ERROR, "Failed to bind framebuffer."); \
         return; \
