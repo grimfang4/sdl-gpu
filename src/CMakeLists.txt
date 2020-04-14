@@ -207,10 +207,10 @@ if(SDL_gpu_INSTALL)
 	endif(SDL_gpu_USE_SDL1)
 
 	if(SDL_gpu_BUILD_SHARED)
-		install(TARGETS SDL_gpu_shared EXPORT SDL_gpu-targets DESTINATION ${OUTPUT_DIR}/lib)
+		install(TARGETS SDL_gpu_shared EXPORT SDL_gpu-targets DESTINATION lib)
 	endif()
 	if(SDL_gpu_BUILD_STATIC)
-		install(TARGETS SDL_gpu EXPORT SDL_gpu-targets DESTINATION ${OUTPUT_DIR}/lib)
+		install(TARGETS SDL_gpu EXPORT SDL_gpu-targets DESTINATION lib)
 	endif()
 
 endif(SDL_gpu_INSTALL)

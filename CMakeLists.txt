@@ -204,13 +204,21 @@ if (SDL_gpu_DISABLE_GLES)
 else (SDL_gpu_DISABLE_GLES)
 
 	if(ANDROID)
-		find_library( ANDROID_LOG_LIBRARY log )
-		find_library( ANDROID_GLES2_LIBRARY GLESv2 )
-		find_library( ANDROID_GLES1_LIBRARY GLESv1_CM )
+	
+		if (NOT SDL_gpu_DISABLE_GLES_1)
+			find_library( ANDROID_GLES1_LIBRARY GLESv1_CM )
+			link_libraries(
+				${ANDROID_GLES1_LIBRARY}
+			)
+		endif()
+		if (NOT SDL_gpu_DISABLE_GLES_2)
+			find_library( ANDROID_GLES2_LIBRARY GLESv2 )
+			link_libraries(
+				${ANDROID_GLES2_LIBRARY}
+			)
+		endif()
 		link_libraries(
 			${ANDROID_LOG_LIBRARY}
-			${ANDROID_GLES2_LIBRARY}
-			${ANDROID_GLES1_LIBRARY}
 		)
 	else()
 		find_package(OpenGLES REQUIRED)
@@ -329,3 +337,4 @@ endif(SDL_gpu_BUILD_TESTS)
 if(SDL_gpu_BUILD_TOOLS)
   add_subdirectory(tools)
 endif(SDL_gpu_BUILD_TOOLS)
+
