@@ -31,7 +31,7 @@
 	symbols in library are missing the OES suffix,
 	even though the headers seem to be named right.
 */
-#ifdef SDL_GPU_USE_BROADCOM_RASPBERRYPI_WORKAROUND
+#ifdef ADD_MISSING_OES_FUNCTIONS
 	extern void glBlendEquation(GLenum mode);
 	extern void glBlendEquationSeparate(GLenum modeRGB, GLenum modeAlpha);
 	extern void glBlendFuncSeparate(GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum dstAlpha);

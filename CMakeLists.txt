@@ -21,10 +21,12 @@ if(IOS)
   set(SDL_gpu_DEFAULT_BUILD_SHARED OFF)
   set(SDL_gpu_DEFAULT_BUILD_STATIC ON)
 elseif(APPLE)
+  message(" Using Apple defaults.")
   set(SDL_gpu_DEFAULT_BUILD_SHARED ON)
   option(SDL_gpu_BUILD_FRAMEWORK "Build SDL_gpu as Apple framework" ON)
   set(SDL_gpu_DEFAULT_BUILD_STATIC ON)
 elseif(ANDROID)
+  message(" Using Android defaults.")
   set(SDL_gpu_INSTALL_BY_DEFAULT OFF)
   set(SDL_gpu_DEFAULT_BUILD_DEMOS OFF)
   set(SDL_gpu_DEFAULT_DISABLE_OPENGL ON)
@@ -32,24 +34,31 @@ elseif(ANDROID)
   set(SDL_gpu_DEFAULT_BUILD_SHARED ON)
   set(SDL_gpu_DEFAULT_BUILD_STATIC OFF)
 elseif(WIN32)
+  message(" Using Windows defaults.")
   set(SDL_gpu_INSTALL_BY_DEFAULT OFF)
 elseif(("${CMAKE_SYSTEM}" MATCHES "Linux") AND ("${CMAKE_SYSTEM_PROCESSOR}" MATCHES "arm"))
-  
-  # Assuming Raspberry Pi 2 for now.
-  # There is a bug with the shipping GLES v1 library where 3 of the symbols are misnamed.
-  # If you have an arm/ES device without this problem, don't enable this macro.
-  # TODO: Need way to identify Raspberry Pi/Broadcom
-  add_definitions(-DSDL_GPU_USE_BROADCOM_RASPBERRYPI_WORKAROUND)
+  message(" Using Linux ARM defaults.")
+
+  # Check specifically for Raspberry Pi (somewhat hacky).
+  if(NOT SKIP_BCM_HOST_H_CHECK AND EXISTS /opt/vc/include/bcm_host.h)
+    message("Defining ADD_MISSING_OES_FUNCTIONS")
+    # There is a bug with the GLES v1 library shipping with the Raspberry Pi 2 where 3 of the symbols are misnamed.
+    # If you have an arm/ES device without this problem, don't enable this macro.
+    add_definitions(-DADD_MISSING_OES_FUNCTIONS)
+  endif()
 
   set(SDL_gpu_DEFAULT_BUILD_DEMOS OFF)
   set(SDL_gpu_DEFAULT_DISABLE_OPENGL ON)
   set(SDL_gpu_DEFAULT_DISABLE_GLES OFF)
 elseif(EMSCRIPTEN)
+  message(" Using Emscripten defaults.")
   set(SDL_gpu_INSTALL_BY_DEFAULT OFF)
   set(SDL_gpu_DEFAULT_BUILD_DEMOS OFF)
   set(SDL_gpu_DEFAULT_DISABLE_OPENGL ON)
   set(SDL_gpu_DEFAULT_DISABLE_GLES OFF)
   set(SDL_gpu_DEFAULT_BUILD_SHARED OFF)
+else()
+  message(" Using generic defaults.")
 endif()
 
 
