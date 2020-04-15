@@ -9,13 +9,11 @@ version: 0.11.{build}
 
 image:
 - Visual Studio 2019
-- Visual Studio 2017
 
 init:
   - git config --global core.autocrlf input
   - echo %APPVEYOR_BUILD_WORKER_IMAGE%
-  - if "%APPVEYOR_BUILD_WORKER_IMAGE%"=="Visual Studio 2019" ( set generator="Visual Studio 16 2019%arch%" )
-  - if "%APPVEYOR_BUILD_WORKER_IMAGE%"=="Visual Studio 2017" ( set generator="Visual Studio 15 2017%arch%" )
+  - if "%APPVEYOR_BUILD_WORKER_IMAGE%"=="Visual Studio 2019" ( set generator="Visual Studio 16 2019" )
   - echo %generator%
 
 
@@ -25,10 +23,10 @@ clone_folder: c:\projects\SDL_gpu
 install:
   - mkdir c:\projects\libs
   # Download SDL.
-  - ps: Start-FileDownload 'https://www.libsdl.org/release/SDL2-devel-2.0.5-VC.zip' 'c:/projects/libs/SDL.zip'
+  - ps: Start-FileDownload 'https://www.libsdl.org/release/SDL2-devel-2.0.12-VC.zip' 'c:/projects/libs/SDL.zip'
   
   # Extract it, put it in the right place, and rename it.
-  - cd c:\projects\libs && 7z x SDL.zip && ren SDL2-2.0.5 SDL2 && cd c:\projects\SDL_gpu
+  - cd c:\projects\libs && 7z x SDL.zip && ren SDL2-2.0.12 SDL2 && cd c:\projects\SDL_gpu
 
 
 platform:
@@ -47,7 +45,11 @@ before_build:
   - cd c:\projects\SDL_gpu
   - mkdir build
   - cd build
-  - cmd: cmake -G %generator% -A %platform% -DCMAKE_INSTALL_PREFIX=c:\projects\libs\SDL2 -DSDL_gpu_BUILD_DEMOS=ON -DSDL_gpu_BUILD_TESTS=ON -DSDL_gpu_BUILD_TOOLS=ON -DSDL_gpu_BUILD_SHARED=ON -DSDL_gpu_BUILD_STATIC=ON ..
+  - if "%configuration%"=="Debug" ( set build_tests=ON )
+  - if "%configuration%"=="Debug" ( set build_demos=OFF )
+  - if "%configuration%"=="Release" ( set build_tests=OFF )
+  - if "%configuration%"=="Release" ( set build_demos=ON )
+  - cmd: cmake -G %generator% -A %platform% -DCMAKE_INSTALL_PREFIX=c:\projects\libs\SDL2 -DSDL_gpu_BUILD_DEMOS=%build_demos% -DSDL_gpu_BUILD_TESTS=%build_tests% -DSDL_gpu_BUILD_TOOLS=%build_demos% -DSDL_gpu_BUILD_SHARED=ON -DSDL_gpu_BUILD_STATIC=ON ..
 
 # scripts to run after build
 after_build:
