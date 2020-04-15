@@ -1,17 +1,20 @@
 environment:
   P: "c:/projects/libs"
-#  ACCOUNT:
-#      secure: 
 
 branches:
   only:
-    - master
+    - appveyor-prep
 
-os: Visual Studio 2015
+image:
+- Visual Studio 2019
+- Visual Studio 2017
 
 init:
   - git config --global core.autocrlf input
-
+  - echo %APPVEYOR_BUILD_WORKER_IMAGE%
+  - if "%APPVEYOR_BUILD_WORKER_IMAGE%"=="Visual Studio 2019" ( set generator="Visual Studio 16 2019%arch%" )
+  - if "%APPVEYOR_BUILD_WORKER_IMAGE%"=="Visual Studio 2017" ( set generator="Visual Studio 15 2017%arch%" )
+  - echo %generator%
 
 
 shallow_clone: true
@@ -43,7 +46,7 @@ before_build:
   - cd c:\projects\SDL_gpu
   - mkdir build
   - cd build
-  - cmake -G "Visual Studio 14 2015" -DCMAKE_INSTALL_PREFIX=c:\projects\libs\SDL2 -DSDL_gpu_BUILD_DEMOS=ON -DSDL_gpu_BUILD_TESTS=ON -DSDL_gpu_BUILD_TOOLS=ON -DSDL_gpu_BUILD_SHARED=ON -DSDL_gpu_BUILD_STATIC=ON ..
+  - cmd: cmake -G %generator% -DCMAKE_INSTALL_PREFIX=c:\projects\libs\SDL2 -DSDL_gpu_BUILD_DEMOS=ON -DSDL_gpu_BUILD_TESTS=ON -DSDL_gpu_BUILD_TOOLS=ON -DSDL_gpu_BUILD_SHARED=ON -DSDL_gpu_BUILD_STATIC=ON ..
 
 # scripts to run after build
 after_build:
