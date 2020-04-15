@@ -18,6 +18,8 @@
 
 	// Disable warning: selection for inlining
 	#pragma warning(disable: 4514 4711)
+	// Disable warning: Spectre mitigation
+	#pragma warning(disable: 5045)
 #endif
 
 #include "stb_image.h"

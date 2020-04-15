@@ -5,6 +5,8 @@
 #ifdef _MSC_VER
 // Disable warning: selection for inlining
 #pragma warning(disable: 4514 4711)
+// Disable warning: Spectre mitigation
+#pragma warning(disable: 5045)
 #endif
 
 #define CHECK_RENDERER() \
