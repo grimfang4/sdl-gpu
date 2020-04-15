@@ -4110,8 +4110,10 @@ static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
     // Prepare to work in this target's context, if it has one
     if(target == renderer->current_context_target)
         renderer->impl->FlushBlitBuffer(renderer);
-    else if(target->context_target != NULL)
+    else if (target->context_target != NULL)
+    {
         GPU_MakeCurrent(target->context_target, target->context_target->context->windowID);
+    }
 
     
     // Release renderer data reference
@@ -4130,8 +4132,24 @@ static void FreeTarget(GPU_Renderer* renderer, GPU_Target* target)
     if(target == renderer->current_context_target)
         renderer->current_context_target = NULL;
 
-    if(target->image != NULL && target->image->target == target)
-        target->image->target = NULL;
+    // Make sure this target is not referenced by the context
+    if (renderer->current_context_target != NULL)
+    {
+        GPU_CONTEXT_DATA* cdata = ((GPU_CONTEXT_DATA*)renderer->current_context_target->context_target->context->data);
+        // Clear reference to image
+        if (cdata->last_image == target->image)
+            cdata->last_image = NULL;
+
+        if(target == renderer->current_context_target->context->active_target)
+            renderer->current_context_target->context->active_target = NULL;
+    }
+
+    if (target->image != NULL)
+    {
+        // Make sure this is not targeted by an image that will persist
+        if (target->image->target == target)
+            target->image->target = NULL;
+    }
     
 	// Delete matrices
 	GPU_ClearMatrixStack(&target->projection_matrix);
