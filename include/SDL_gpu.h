@@ -81,27 +81,27 @@ extern "C" {
 
 // Struct padding for 32 or 64 bit alignment
 #if SDL_GPU_BITNESS == 32
-#define GPU_PAD_1_TO_32 1
-#define GPU_PAD_2_TO_32 2
-#define GPU_PAD_3_TO_32 3
-#define GPU_PAD_1_TO_64 1
-#define GPU_PAD_2_TO_64 2
-#define GPU_PAD_3_TO_64 3
-#define GPU_PAD_4_TO_64 0
-#define GPU_PAD_5_TO_64 1
-#define GPU_PAD_6_TO_64 2
-#define GPU_PAD_7_TO_64 3
+#define GPU_PAD_1_TO_32 char _padding[1];
+#define GPU_PAD_2_TO_32 char _padding[2];
+#define GPU_PAD_3_TO_32 char _padding[3];
+#define GPU_PAD_1_TO_64 char _padding[1];
+#define GPU_PAD_2_TO_64 char _padding[2];
+#define GPU_PAD_3_TO_64 char _padding[3];
+#define GPU_PAD_4_TO_64 
+#define GPU_PAD_5_TO_64 char _padding[1];
+#define GPU_PAD_6_TO_64 char _padding[2];
+#define GPU_PAD_7_TO_64 char _padding[3];
 #elif SDL_GPU_BITNESS == 64
-#define GPU_PAD_1_TO_32 1
-#define GPU_PAD_2_TO_32 2
-#define GPU_PAD_3_TO_32 3
-#define GPU_PAD_1_TO_64 1
-#define GPU_PAD_2_TO_64 2
-#define GPU_PAD_3_TO_64 3
-#define GPU_PAD_4_TO_64 4
-#define GPU_PAD_5_TO_64 5
-#define GPU_PAD_6_TO_64 6
-#define GPU_PAD_7_TO_64 7
+#define GPU_PAD_1_TO_32 char _padding[1];
+#define GPU_PAD_2_TO_32 char _padding[2];
+#define GPU_PAD_3_TO_32 char _padding[3];
+#define GPU_PAD_1_TO_64 char _padding[1];
+#define GPU_PAD_2_TO_64 char _padding[2];
+#define GPU_PAD_3_TO_64 char _padding[3];
+#define GPU_PAD_4_TO_64 char _padding[4];
+#define GPU_PAD_5_TO_64 char _padding[5];
+#define GPU_PAD_6_TO_64 char _padding[6];
+#define GPU_PAD_7_TO_64 char _padding[7];
 #endif
 
 #define GPU_FALSE 0
@@ -167,6 +167,8 @@ typedef struct GPU_RendererID
     GPU_RendererEnum renderer;
     int major_version;
     int minor_version;
+	
+	GPU_PAD_4_TO_64
 } GPU_RendererID;
 
 
@@ -330,6 +332,8 @@ typedef struct GPU_Image
 	struct GPU_Renderer* renderer;
 	GPU_Target* context_target;
 	GPU_Target* target;
+	void* data;
+	
 	Uint16 w, h;
 	GPU_FormatEnum format;
 	int num_layers;
@@ -347,7 +351,6 @@ typedef struct GPU_Image
 	GPU_WrapEnum wrap_mode_x;
 	GPU_WrapEnum wrap_mode_y;
 	
-	void* data;
 	int refcount;
 	
 	GPU_bool using_virtual_resolution;
@@ -377,7 +380,8 @@ typedef struct GPU_Camera
 	float zoom_x, zoom_y;
 	float z_near, z_far;  // z clipping planes
 	GPU_bool use_centered_origin;  // move rotation/scaling origin to the center of the camera's view
-	char _padding[GPU_PAD_7_TO_64];
+	
+	GPU_PAD_7_TO_64
 } GPU_Camera;
 
 
@@ -420,6 +424,14 @@ typedef struct GPU_Context
 {
     /*! SDL_GLContext */
     void* context;
+	
+	/*! Last target used */
+	GPU_Target* active_target;
+	
+    GPU_ShaderBlock current_shader_block;
+    GPU_ShaderBlock default_textured_shader_block;
+    GPU_ShaderBlock default_untextured_shader_block;
+	
     
     /*! SDL window ID */
 	Uint32 windowID;
@@ -437,17 +449,11 @@ typedef struct GPU_Context
 	int stored_window_h;
 	
 	
-	/*! Last target used */
-	GPU_Target* active_target;
 	
 	/*! Internal state */
 	Uint32 current_shader_program;
 	Uint32 default_textured_shader_program;
 	Uint32 default_untextured_shader_program;
-	
-    GPU_ShaderBlock current_shader_block;
-    GPU_ShaderBlock default_textured_shader_block;
-    GPU_ShaderBlock default_untextured_shader_block;
 	
 	GPU_BlendMode shapes_blend_mode;
 	float line_thickness;
@@ -459,7 +465,8 @@ typedef struct GPU_Context
     GPU_bool failed;
 	GPU_bool use_texturing;
 	GPU_bool shapes_use_blending;
-	char _padding[GPU_PAD_5_TO_64];
+	
+	GPU_PAD_5_TO_64
 } GPU_Context;
 
 
@@ -509,7 +516,8 @@ struct GPU_Target
 	GPU_bool use_depth_test;
 	GPU_bool use_depth_write;
 	GPU_bool is_alias;
-	char _padding[GPU_PAD_1_TO_64];
+	
+	GPU_PAD_1_TO_64
 };
 
 /*! \ingroup Initialization
@@ -674,30 +682,35 @@ typedef struct GPU_AttributeFormat
     int offset_bytes;  // Number of bytes to skip at the beginning of 'values'
     GPU_bool is_per_sprite;  // Per-sprite values are expanded to 4 vertices
     GPU_bool normalize;
-	char _padding[GPU_PAD_2_TO_32];
+	
+	GPU_PAD_2_TO_32
 } GPU_AttributeFormat;
 
 /*! \ingroup ShaderInterface */
 typedef struct GPU_Attribute
 {
-    int location;
     void* values;  // Expect 4 values for each sprite
     GPU_AttributeFormat format;
+    int location;
+	
+	GPU_PAD_4_TO_64
 } GPU_Attribute;
 
 /*! \ingroup ShaderInterface */
 typedef struct GPU_AttributeSource
 {
-    int num_values;
     void* next_value;
+    void* per_vertex_storage;  // Could point to the attribute's values or to allocated storage
+	
+    int num_values;
     // Automatic storage format
     int per_vertex_storage_stride_bytes;
     int per_vertex_storage_offset_bytes;
     int per_vertex_storage_size;  // Over 0 means that the per-vertex storage has been automatically allocated
-    void* per_vertex_storage;  // Could point to the attribute's values or to allocated storage
     GPU_Attribute attribute;
     GPU_bool enabled;
-	char _padding[GPU_PAD_7_TO_64];
+	
+	GPU_PAD_7_TO_64
 } GPU_AttributeSource;
 
 
@@ -720,8 +733,10 @@ typedef enum {
 typedef struct GPU_ErrorObject
 {
     char* function;
-    GPU_ErrorEnum error;
     char* details;
+    GPU_ErrorEnum error;
+	
+	GPU_PAD_4_TO_64
 } GPU_ErrorObject;
 
 
@@ -778,7 +793,8 @@ struct GPU_Renderer
 	
 	/*! 0 for inverted, 1 for mathematical */
 	GPU_bool coordinate_mode;
-	char _padding[GPU_PAD_7_TO_64];
+	
+	GPU_PAD_7_TO_64
 };
 
 

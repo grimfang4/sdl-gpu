@@ -94,7 +94,7 @@ void GPU_InitMatrixStack(GPU_MatrixStack* stack)
 
 void GPU_CopyMatrixStack(const GPU_MatrixStack* source, GPU_MatrixStack* dest)
 {
-	int i;
+	unsigned int i;
 	unsigned int matrix_size = sizeof(float) * 16;
 	if (source == NULL || dest == NULL)
 		return;
@@ -111,7 +111,7 @@ void GPU_CopyMatrixStack(const GPU_MatrixStack* source, GPU_MatrixStack* dest)
 
 void GPU_ClearMatrixStack(GPU_MatrixStack* stack)
 {
-	int i;
+	unsigned int i;
 	for (i = 0; i < stack->storage_size; ++i)
 	{
 		SDL_free(stack->matrix[i]);

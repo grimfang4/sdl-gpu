@@ -788,7 +788,7 @@ void GPU_PushErrorCode(const char* function, GPU_ErrorEnum error, const char* de
 GPU_ErrorObject GPU_PopErrorCode(void)
 {
     unsigned int i;
-    GPU_ErrorObject result = {NULL, GPU_ERROR_NONE, NULL};
+    GPU_ErrorObject result = {NULL, NULL, GPU_ERROR_NONE};
 
     gpu_init_error_queue();
 
