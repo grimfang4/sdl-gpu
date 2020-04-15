@@ -15,6 +15,7 @@ init:
   - echo %APPVEYOR_BUILD_WORKER_IMAGE%
   - if "%APPVEYOR_BUILD_WORKER_IMAGE%"=="Visual Studio 2019" ( set generator="Visual Studio 16 2019" )
   - echo %generator%
+  - set zip_name=SDL_gpu_%version%-%configuration%-VC-%platform%.zip
 
 
 shallow_clone: true
@@ -54,7 +55,6 @@ before_build:
 # scripts to run after build
 after_build:
   - cd c:\projects\SDL_gpu\build
-  - set zip_name=SDL_gpu_%version%-%configuration%-VC-%platform%.zip
   - 7z a c:\projects\SDL_gpu\%zip_name% * -tzip
   - cd c:\projects\SDL_gpu
 
