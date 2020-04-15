@@ -59,6 +59,51 @@ extern "C" {
     #define GPU_bool int
 #endif
 
+#if defined(_MSC_VER) || (defined(__INTEL_COMPILER) && defined(_WIN32))
+   #if defined(_M_X64)
+      #define SDL_GPU_BITNESS 64
+   #else
+      #define SDL_GPU_BITNESS 32
+   #endif
+   #define SDL_GPU_LONG_SIZE 4
+#elif defined(__clang__) || defined(__INTEL_COMPILER) || defined(__GNUC__)
+   #if defined(__x86_64)
+      #define SDL_GPU_BITNESS 64
+   #else
+      #define SDL_GPU_BITNESS 32
+   #endif
+   #if __LONG_MAX__ == 2147483647L
+      #define SDL_GPU_LONG_SIZE 4
+   #else
+      #define SDL_GPU_LONG_SIZE 8
+   #endif
+#endif
+
+// Struct padding for 32 or 64 bit alignment
+#if SDL_GPU_BITNESS == 32
+#define GPU_PAD_1_TO_32 1
+#define GPU_PAD_2_TO_32 2
+#define GPU_PAD_3_TO_32 3
+#define GPU_PAD_1_TO_64 1
+#define GPU_PAD_2_TO_64 2
+#define GPU_PAD_3_TO_64 3
+#define GPU_PAD_4_TO_64 0
+#define GPU_PAD_5_TO_64 1
+#define GPU_PAD_6_TO_64 2
+#define GPU_PAD_7_TO_64 3
+#elif SDL_GPU_BITNESS == 64
+#define GPU_PAD_1_TO_32 1
+#define GPU_PAD_2_TO_32 2
+#define GPU_PAD_3_TO_32 3
+#define GPU_PAD_1_TO_64 1
+#define GPU_PAD_2_TO_64 2
+#define GPU_PAD_3_TO_64 3
+#define GPU_PAD_4_TO_64 4
+#define GPU_PAD_5_TO_64 5
+#define GPU_PAD_6_TO_64 6
+#define GPU_PAD_7_TO_64 7
+#endif
+
 #define GPU_FALSE 0
 #define GPU_TRUE 1
 
@@ -332,7 +377,7 @@ typedef struct GPU_Camera
 	float zoom_x, zoom_y;
 	float z_near, z_far;  // z clipping planes
 	GPU_bool use_centered_origin;  // move rotation/scaling origin to the center of the camera's view
-	char _padding[3];
+	char _padding[GPU_PAD_7_TO_64];
 } GPU_Camera;
 
 
@@ -414,7 +459,7 @@ typedef struct GPU_Context
     GPU_bool failed;
 	GPU_bool use_texturing;
 	GPU_bool shapes_use_blending;
-	char _padding[1];
+	char _padding[GPU_PAD_5_TO_64];
 } GPU_Context;
 
 
@@ -464,7 +509,7 @@ struct GPU_Target
 	GPU_bool use_depth_test;
 	GPU_bool use_depth_write;
 	GPU_bool is_alias;
-	char _padding[1];
+	char _padding[GPU_PAD_1_TO_64];
 };
 
 /*! \ingroup Initialization
@@ -629,7 +674,7 @@ typedef struct GPU_AttributeFormat
     int offset_bytes;  // Number of bytes to skip at the beginning of 'values'
     GPU_bool is_per_sprite;  // Per-sprite values are expanded to 4 vertices
     GPU_bool normalize;
-	char _padding[2];
+	char _padding[GPU_PAD_2_TO_32];
 } GPU_AttributeFormat;
 
 /*! \ingroup ShaderInterface */
@@ -652,7 +697,7 @@ typedef struct GPU_AttributeSource
     void* per_vertex_storage;  // Could point to the attribute's values or to allocated storage
     GPU_Attribute attribute;
     GPU_bool enabled;
-	char _padding[3];
+	char _padding[GPU_PAD_7_TO_64];
 } GPU_AttributeSource;
 
 
@@ -733,7 +778,7 @@ struct GPU_Renderer
 	
 	/*! 0 for inverted, 1 for mathematical */
 	GPU_bool coordinate_mode;
-	char _padding[3];
+	char _padding[GPU_PAD_7_TO_64];
 };
 
 
