@@ -331,7 +331,8 @@ typedef struct GPU_Camera
 	float angle;
 	float zoom_x, zoom_y;
 	float z_near, z_far;  // z clipping planes
-	bool use_centered_origin;  // move rotation/scaling origin to the center of the camera's view
+	GPU_bool use_centered_origin;  // move rotation/scaling origin to the center of the camera's view
+	char _padding[3];
 } GPU_Camera;
 
 
@@ -374,7 +375,6 @@ typedef struct GPU_Context
 {
     /*! SDL_GLContext */
     void* context;
-    GPU_bool failed;
     
     /*! SDL window ID */
 	Uint32 windowID;
@@ -404,14 +404,17 @@ typedef struct GPU_Context
     GPU_ShaderBlock default_textured_shader_block;
     GPU_ShaderBlock default_untextured_shader_block;
 	
-	GPU_bool shapes_use_blending;
 	GPU_BlendMode shapes_blend_mode;
 	float line_thickness;
-	GPU_bool use_texturing;
     
 	int refcount;
 	
 	void* data;
+	
+    GPU_bool failed;
+	GPU_bool use_texturing;
+	GPU_bool shapes_use_blending;
+	char _padding[1];
 } GPU_Context;
 
 
@@ -432,11 +435,8 @@ struct GPU_Target
 	GPU_Image* image;
 	void* data;
 	Uint16 w, h;
-	GPU_bool using_virtual_resolution;
 	Uint16 base_w, base_h;  // The true dimensions of the underlying image or window
-	GPU_bool use_clip_rect;
 	GPU_Rect clip_rect;
-	GPU_bool use_color;
 	SDL_Color color;
 	
 	GPU_Rect viewport;
@@ -448,17 +448,23 @@ struct GPU_Target
 	GPU_MatrixStack model_matrix;
 
 	GPU_Camera camera;
+	
+	GPU_bool using_virtual_resolution;
+	GPU_bool use_clip_rect;
+	GPU_bool use_color;
 	GPU_bool use_camera;
 
 	
-	GPU_bool use_depth_test;
-	GPU_bool use_depth_write;
 	GPU_ComparisonEnum depth_function;
 	
 	/*! Renderer context data.  NULL if the target does not represent a window or rendering context. */
 	GPU_Context* context;
 	int refcount;
+	
+	GPU_bool use_depth_test;
+	GPU_bool use_depth_write;
 	GPU_bool is_alias;
+	char _padding[1];
 };
 
 /*! \ingroup Initialization
@@ -617,12 +623,13 @@ typedef enum {
 /*! \ingroup ShaderInterface */
 typedef struct GPU_AttributeFormat
 {
-    GPU_bool is_per_sprite;  // Per-sprite values are expanded to 4 vertices
     int num_elems_per_value;
     GPU_TypeEnum type;  // GPU_TYPE_FLOAT, GPU_TYPE_INT, GPU_TYPE_UNSIGNED_INT, etc.
-    GPU_bool normalize;
     int stride_bytes;  // Number of bytes between two vertex specifications
     int offset_bytes;  // Number of bytes to skip at the beginning of 'values'
+    GPU_bool is_per_sprite;  // Per-sprite values are expanded to 4 vertices
+    GPU_bool normalize;
+	char _padding[2];
 } GPU_AttributeFormat;
 
 /*! \ingroup ShaderInterface */
@@ -636,7 +643,6 @@ typedef struct GPU_Attribute
 /*! \ingroup ShaderInterface */
 typedef struct GPU_AttributeSource
 {
-    GPU_bool enabled;
     int num_values;
     void* next_value;
     // Automatic storage format
@@ -645,6 +651,8 @@ typedef struct GPU_AttributeSource
     int per_vertex_storage_size;  // Over 0 means that the per-vertex storage has been automatically allocated
     void* per_vertex_storage;  // Could point to the attribute's values or to allocated storage
     GPU_Attribute attribute;
+    GPU_bool enabled;
+	char _padding[3];
 } GPU_AttributeSource;
 
 
@@ -717,14 +725,15 @@ struct GPU_Renderer
 	/*! Current display target */
 	GPU_Target* current_context_target;
 	
-	/*! 0 for inverted, 1 for mathematical */
-	GPU_bool coordinate_mode;
-	
 	/*! Default is (0.5, 0.5) - images draw centered. */
 	float default_image_anchor_x;
 	float default_image_anchor_y;
 	
 	struct GPU_RendererImpl* impl;
+	
+	/*! 0 for inverted, 1 for mathematical */
+	GPU_bool coordinate_mode;
+	char _padding[3];
 };
 
 
