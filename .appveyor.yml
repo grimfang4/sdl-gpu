@@ -4,6 +4,8 @@ environment:
 branches:
   only:
     - appveyor-prep
+    
+version: 0.11.{build}
 
 image:
 - Visual Studio 2019
