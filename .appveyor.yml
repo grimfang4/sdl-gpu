@@ -39,9 +39,6 @@ configuration:
   - Debug
   - Release
 
-build:
-  project: build\INSTALL.vcxproj
-
 # scripts to run before build
 before_build:
   - echo Running cmake...
