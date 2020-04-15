@@ -4,7 +4,10 @@
 
 #ifdef _MSC_VER
 #define __func__ __FUNCTION__
+// Disable warning: selection for inlining
+#pragma warning(disable: 4514 4711)
 #endif
+
 
 #ifndef PI
 #define PI 3.1415926f

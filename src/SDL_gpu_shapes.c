@@ -2,6 +2,11 @@
 #include "SDL_gpu_RendererImpl.h"
 #include <string.h>
 
+#ifdef _MSC_VER
+// Disable warning: selection for inlining
+#pragma warning(disable: 4514 4711)
+#endif
+
 #define CHECK_RENDERER() \
 GPU_Renderer* renderer = GPU_GetCurrentRenderer(); \
 if(renderer == NULL) \

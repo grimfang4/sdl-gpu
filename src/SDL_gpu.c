@@ -15,6 +15,9 @@
 	#pragma warning(push)
 	// Visual Studio wants to complain about while(0)
 	#pragma warning(disable: 4127)
+
+	// Disable warning: selection for inlining
+	#pragma warning(disable: 4514 4711)
 #endif
 
 #include "stb_image.h"

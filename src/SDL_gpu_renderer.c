@@ -6,6 +6,8 @@
 	#include <strings.h>
 #else
 	#define __func__ __FUNCTION__
+	// Disable warning: selection for inlining
+	#pragma warning(disable: 4514 4711)
 #endif
 
 #define GPU_MAX_ACTIVE_RENDERERS 20

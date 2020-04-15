@@ -1,6 +1,11 @@
 /* This is an implementation file to be included after certain #defines have been set.
 See a particular renderer's *.c file for specifics. */
 
+#ifdef _MSC_VER
+// Disable warning: selection for inlining
+#pragma warning(disable: 4514 4711)
+#endif
+
 #if !defined(GLAPIENTRY)
     #if defined(GL_APIENTRY)
         #define GLAPIENTRY GL_APIENTRY
