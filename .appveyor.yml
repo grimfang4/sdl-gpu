@@ -59,8 +59,8 @@ after_build:
   - cd c:\projects\SDL_gpu
 
 artifacts:
-  - path: %zip_name%
-    name: %zip_name%
+  - path: "%zip_name%"
+    name: "%zip_name%"
 
 deploy_script:
   - cd c:\projects\SDL_gpu
