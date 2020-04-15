@@ -41,11 +41,13 @@ configuration:
 
 # scripts to run before build
 before_build:
+  - echo Platform: %platform%
+  - echo generator: %generator%
   - echo Running cmake...
   - cd c:\projects\SDL_gpu
   - mkdir build
   - cd build
-  - cmd: cmake -G %generator% -DCMAKE_INSTALL_PREFIX=c:\projects\libs\SDL2 -DSDL_gpu_BUILD_DEMOS=ON -DSDL_gpu_BUILD_TESTS=ON -DSDL_gpu_BUILD_TOOLS=ON -DSDL_gpu_BUILD_SHARED=ON -DSDL_gpu_BUILD_STATIC=ON ..
+  - cmd: cmake -G %generator% -A %platform% -DCMAKE_INSTALL_PREFIX=c:\projects\libs\SDL2 -DSDL_gpu_BUILD_DEMOS=ON -DSDL_gpu_BUILD_TESTS=ON -DSDL_gpu_BUILD_TOOLS=ON -DSDL_gpu_BUILD_SHARED=ON -DSDL_gpu_BUILD_STATIC=ON ..
 
 # scripts to run after build
 after_build:
