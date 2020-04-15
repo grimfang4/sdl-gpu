@@ -52,8 +52,8 @@ before_build:
   - cmd: cmake -G %generator% -A %platform% -DCMAKE_INSTALL_PREFIX=c:\projects\libs\SDL2 -DSDL_gpu_BUILD_DEMOS=%build_demos% -DSDL_gpu_BUILD_TESTS=%build_tests% -DSDL_gpu_BUILD_TOOLS=%build_demos% -DSDL_gpu_BUILD_SHARED=ON -DSDL_gpu_BUILD_STATIC=ON ..
 
 after_build:
-  - cmd: cmake -P cmake_install.cmake
   - cd c:\projects\SDL_gpu\build
+  - cmd: cmake -P cmake_install.cmake
   - 7z a c:\projects\SDL_gpu\%zip_name% * -tzip
   - cd c:\projects\libs\SDL2
   - 7z a c:\projects\SDL_gpu\install.zip * -tzip
