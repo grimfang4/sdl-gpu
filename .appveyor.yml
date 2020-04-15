@@ -41,8 +41,8 @@ configuration:
 
 # scripts to run before build
 before_build:
-  - echo "Platform: %platform%"
-  - echo "generator: %generator%"
+  - echo "Platform %platform%"
+  - echo "generator %generator%"
   - echo Running cmake...
   - cd c:\projects\SDL_gpu
   - mkdir build
