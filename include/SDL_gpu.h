@@ -286,19 +286,16 @@ typedef struct GPU_Image
 	GPU_Target* context_target;
 	GPU_Target* target;
 	Uint16 w, h;
-	GPU_bool using_virtual_resolution;
 	GPU_FormatEnum format;
 	int num_layers;
 	int bytes_per_pixel;
 	Uint16 base_w, base_h;  // Original image dimensions
 	Uint16 texture_w, texture_h;  // Underlying texture dimensions
-	GPU_bool has_mipmaps;
 	
 	float anchor_x; // Normalized coords for the point at which the image is blitted.  Default is (0.5, 0.5), that is, the image is drawn centered.
 	float anchor_y; // These are interpreted according to GPU_SetCoordinateMode() and range from (0.0 - 1.0) normally.
 	
 	SDL_Color color;
-	GPU_bool use_blending;
 	GPU_BlendMode blend_mode;
 	GPU_FilterEnum filter_mode;
 	GPU_SnapEnum snap_mode;
@@ -307,6 +304,10 @@ typedef struct GPU_Image
 	
 	void* data;
 	int refcount;
+	
+	GPU_bool using_virtual_resolution;
+	GPU_bool has_mipmaps;
+	GPU_bool use_blending;
 	GPU_bool is_alias;
 } GPU_Image;
 
