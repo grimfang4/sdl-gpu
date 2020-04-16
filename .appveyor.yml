@@ -12,7 +12,6 @@ image:
 - Visual Studio 2019
 
 init:
-  - echo off
   - git config --global core.autocrlf input
   - echo %APPVEYOR_BUILD_WORKER_IMAGE%
   - if "%APPVEYOR_BUILD_WORKER_IMAGE%"=="Visual Studio 2019" ( set generator="Visual Studio 16 2019" )
