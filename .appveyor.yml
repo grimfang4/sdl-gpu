@@ -12,6 +12,7 @@ image:
 - Visual Studio 2019
 
 init:
+  - @echo off
   - git config --global core.autocrlf input
   - echo %APPVEYOR_BUILD_WORKER_IMAGE%
   - if "%APPVEYOR_BUILD_WORKER_IMAGE%"=="Visual Studio 2019" ( set generator="Visual Studio 16 2019" )
@@ -39,12 +40,13 @@ configuration:
   - Release
 
 before_build:
+  - cd c:\projects\SDL_gpu
   - set /p project_version=<version.txt
   - set zip_name=SDL_gpu-%project_version%-VS-%platform%-%configuration%.zip
+  - echo "Building %zip_name%"
   - echo "Platform %platform%"
   - echo "generator %generator%"
   - echo Running cmake...
-  - cd c:\projects\SDL_gpu
   - mkdir build
   - cd build
   - if "%configuration%"=="Debug" ( set build_tests=ON )
