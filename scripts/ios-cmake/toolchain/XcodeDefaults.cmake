@@ -1,6 +1,6 @@
 # This file is here to initial Xcode to better default settings.
 
-macro(SDL_gpu_CONFIGURE_XCODE_DEFAULTS _EXE_NAME)
+macro(CONFIGURE_XCODE_DEFAULTS _EXE_NAME)
 
 # This iOS toolchain provides this convenience macro, but this is not in the mainline Mac, so let's define it.
 if(APPLE AND NOT IOS)
@@ -52,4 +52,4 @@ if(APPLE)
 	set_xcode_property(${_EXE_NAME} DEBUG_INFORMATION_FORMAT "dwarf-with-dsym")
 
 endif(APPLE)
-endmacro(SDL_gpu_CONFIGURE_XCODE_DEFAULTS)
+endmacro(CONFIGURE_XCODE_DEFAULTS)

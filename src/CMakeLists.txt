@@ -63,18 +63,18 @@ set(SDL_gpu_public_HDRS
 )
 
 # Set the appropriate library name for the version of SDL used
-if ( SDL_gpu_USE_SDL1)
-	set (SDL_gpu_OUTPUT_NAME "SDL_gpu")
-else ( SDL_gpu_USE_SDL1)
-	set (SDL_gpu_OUTPUT_NAME "SDL2_gpu")
-endif ( SDL_gpu_USE_SDL1)
+if ( USE_SDL1)
+	set (LIBRARY_OUTPUT_NAME "SDL_gpu")
+else ( USE_SDL1)
+	set (LIBRARY_OUTPUT_NAME "SDL2_gpu")
+endif ( USE_SDL1)
 
-set (SDL_gpu_SHARED_OUTPUT ${SDL_gpu_OUTPUT_NAME})
+set (SHARED_OUTPUT ${LIBRARY_OUTPUT_NAME})
 
 if(WIN32)
-    set (SDL_gpu_STATIC_OUTPUT ${SDL_gpu_OUTPUT_NAME}_s)
+    set (STATIC_OUTPUT ${LIBRARY_OUTPUT_NAME}_s)
 else(WIN32)
-    set (SDL_gpu_STATIC_OUTPUT ${SDL_gpu_OUTPUT_NAME})
+    set (STATIC_OUTPUT ${LIBRARY_OUTPUT_NAME})
 endif(WIN32)
 
 if(MSVC)
@@ -114,15 +114,15 @@ configure_file(${CMAKE_SOURCE_DIR}/LICENSE.txt ${CMAKE_BINARY_DIR}/${OUTPUT_DIR}
 configure_file(${CMAKE_SOURCE_DIR}/README.md ${CMAKE_BINARY_DIR}/${OUTPUT_DIR}/README.md COPYONLY)
 
 # Build the shared library (.so or .dll)
-if(SDL_gpu_BUILD_SHARED)
+if(BUILD_SHARED)
 	add_library(SDL_gpu_shared SHARED
 		${SDL_gpu_HDRS}
 		${SDL_gpu_SRCS}
 	)
 	
-	target_link_libraries(SDL_gpu_shared ${SDL_gpu_GL_LIBRARIES})
+	target_link_libraries(SDL_gpu_shared ${GL_LIBRARIES})
 
-	if(SDL_gpu_BUILD_FRAMEWORK)
+	if(BUILD_FRAMEWORK)
         if(NOT CMAKE_VERSION VERSION_LESS "3.1")
             set_property(TARGET SDL_gpu_shared PROPERTY C_STANDARD 99)
         endif()
@@ -131,18 +131,18 @@ if(SDL_gpu_BUILD_SHARED)
 			FRAMEWORK_VERSION "A"
 			PUBLIC_HEADER "${SDL_gpu_public_HDRS}"
 			#RESOURCE "${RESOURCE_FILES}"
-			VERSION ${SDL_gpu_VERSION}
-			SOVERSION ${SDL_gpu_VERSION}
-			OUTPUT_NAME ${SDL_gpu_SHARED_OUTPUT}
+			VERSION ${SDL_GPU_VERSION}
+			SOVERSION ${SDL_GPU_VERSION}
+			OUTPUT_NAME ${SHARED_OUTPUT}
 			ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${OUTPUT_DIR}/lib"
 			LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${OUTPUT_DIR}/lib"
 			RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${OUTPUT_DIR}/bin"
 		)
 		# Short Version is the "marketing version". It is the version
 		# the user sees in an information panel.
-		SET(MACOSX_FRAMEWORK_SHORT_VERSION_STRING "${SDL_gpu_VERSION}")
+		SET(MACOSX_FRAMEWORK_SHORT_VERSION_STRING "${SDL_GPU_VERSION}")
 		# Bundle version is the version the OS looks at.
-		SET(MACOSX_FRAMEWORK_BUNDLE_VERSION "${SDL_gpu_VERSION}")
+		SET(MACOSX_FRAMEWORK_BUNDLE_VERSION "${SDL_GPU_VERSION}")
 		SET(MACOSX_FRAMEWORK_IDENTIFIER "com.dinomage.sdl-gpu")
 
 
@@ -150,7 +150,7 @@ if(SDL_gpu_BUILD_SHARED)
 	else()
 		if(ANDROID)
 			set_target_properties(SDL_gpu_shared PROPERTIES
-				OUTPUT_NAME ${SDL_gpu_SHARED_OUTPUT}
+				OUTPUT_NAME ${SHARED_OUTPUT}
 				CLEAN_DIRECT_OUTPUT 1
 				ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${OUTPUT_DIR}/lib"
 				LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${OUTPUT_DIR}/lib"
@@ -158,9 +158,9 @@ if(SDL_gpu_BUILD_SHARED)
 			)
 		else()
 			set_target_properties(SDL_gpu_shared PROPERTIES
-				OUTPUT_NAME ${SDL_gpu_SHARED_OUTPUT}
+				OUTPUT_NAME ${SHARED_OUTPUT}
 				CLEAN_DIRECT_OUTPUT 1
-#				VERSION ${SDL_gpu_VERSION}
+#				VERSION ${SDL_GPU_VERSION}
 				ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${OUTPUT_DIR}/lib"
 				LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${OUTPUT_DIR}/lib"
 				RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${OUTPUT_DIR}/bin"
@@ -170,12 +170,12 @@ if(SDL_gpu_BUILD_SHARED)
 	endif()
 	set_target_properties(SDL_gpu_shared PROPERTIES LINKER_LANGUAGE C)
 	if(APPLE)
-		SDL_gpu_CONFIGURE_XCODE_DEFAULTS(SDL_gpu_shared)
+		CONFIGURE_XCODE_DEFAULTS(SDL_gpu_shared)
 	endif()
 endif()
 
 # Build the static library (.a or .lib)
-if(SDL_gpu_BUILD_STATIC)
+if(BUILD_STATIC)
 	add_library(SDL_gpu STATIC
 		${SDL_gpu_HDRS}
 		${SDL_gpu_SRCS}
@@ -184,16 +184,16 @@ if(SDL_gpu_BUILD_STATIC)
         set_property(TARGET SDL_gpu PROPERTY C_STANDARD 99)
     endif()
 	set_target_properties(SDL_gpu PROPERTIES
-		OUTPUT_NAME ${SDL_gpu_STATIC_OUTPUT}
+		OUTPUT_NAME ${STATIC_OUTPUT}
 		CLEAN_DIRECT_OUTPUT 1
-		VERSION ${SDL_gpu_VERSION}
+		VERSION ${SDL_GPU_VERSION}
 		ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${OUTPUT_DIR}/lib"
 		LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${OUTPUT_DIR}/lib"
 		RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${OUTPUT_DIR}/bin"
 	)
 	set_target_properties(SDL_gpu PROPERTIES LINKER_LANGUAGE C)
 	if(APPLE)
-		SDL_gpu_CONFIGURE_XCODE_DEFAULTS(SDL_gpu)	
+		CONFIGURE_XCODE_DEFAULTS(SDL_gpu)	
 	endif()
 endif()
 
@@ -201,18 +201,18 @@ endif()
 source_group(Common FILES ${SDL_gpu_SRCS} ${SDL_gpu_HDRS})
 
 # Install the headers and library
-if(SDL_gpu_INSTALL)
-	if(SDL_gpu_USE_SDL1)
+if(INSTALL_LIBRARY)
+	if(USE_SDL1)
 		install(FILES ${SDL_gpu_public_HDRS} DESTINATION include/SDL)
-	else(SDL_gpu_USE_SDL1)
+	else(USE_SDL1)
 		install(FILES ${SDL_gpu_public_HDRS} DESTINATION include/SDL2)
-	endif(SDL_gpu_USE_SDL1)
+	endif(USE_SDL1)
 
-	if(SDL_gpu_BUILD_SHARED)
+	if(BUILD_SHARED)
 		install(TARGETS SDL_gpu_shared EXPORT SDL_gpu-targets DESTINATION lib)
 	endif()
-	if(SDL_gpu_BUILD_STATIC)
+	if(BUILD_STATIC)
 		install(TARGETS SDL_gpu EXPORT SDL_gpu-targets DESTINATION lib)
 	endif()
 
-endif(SDL_gpu_INSTALL)
+endif(INSTALL_LIBRARY)
