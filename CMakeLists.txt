@@ -23,9 +23,9 @@ if(NOT DEFINED VERSION_BUGFIX)
 	string(REGEX MATCH "[0-9]+$" VERSION_BUGFIX ${VERSION_FILE_CONTENTS})
 endif()
 
-set(SDL_gpu_VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BUGFIX}")
+set(SDL_GPU_VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BUGFIX}")
 
-message("Writing version header for v${SDL_gpu_VERSION}")
+message("Writing version header for v${SDL_GPU_VERSION}")
 string(CONCAT VERSION_HEADER_CONTENTS "#ifndef _SDL_GPU_VERSION_H__
 #define _SDL_GPU_VERSION_H__
 
@@ -124,7 +124,6 @@ option(USE_BUFFER_MAPPING "Upload VBOs by mapping to client memory" OFF)
 option(BUILD_SHARED "Build SDL_gpu shared libraries" ${DEFAULT_BUILD_SHARED})
 option(BUILD_STATIC "Build SDL_gpu static libraries" ${DEFAULT_BUILD_STATIC})
 
-set(SDL_GPU_VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BUGFIX})
 
 if (USE_SDL1)
     set(SDL_GPU_LIBRARY SDL_gpu)
