@@ -17,6 +17,7 @@ set(SDL_gpu_SRCS
 set(SDL_gpu_HDRS
 	${SDL_gpu_HDRS}
 	../include/SDL_gpu.h
+	../include/SDL_gpu_version.h
 	../include/SDL_gpu_RendererImpl.h
 	../include/SDL_gpu_OpenGL_1_BASE.h
 	../include/SDL_gpu_OpenGL_1.h
@@ -49,6 +50,7 @@ endif(STBI_WRITE_FOUND)
 
 set(SDL_gpu_public_HDRS
 	../include/SDL_gpu.h
+	../include/SDL_gpu_version.h
 	../include/SDL_gpu_RendererImpl.h
 	../include/SDL_gpu_OpenGL_1_BASE.h
 	../include/SDL_gpu_OpenGL_1.h
