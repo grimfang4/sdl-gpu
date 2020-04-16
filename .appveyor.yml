@@ -6,7 +6,7 @@ branches:
   only:
     - appveyor-prep
     
-version: 0.11.0-{build}
+version: {build}
 
 image:
 - Visual Studio 2019
@@ -16,7 +16,6 @@ init:
   - echo %APPVEYOR_BUILD_WORKER_IMAGE%
   - if "%APPVEYOR_BUILD_WORKER_IMAGE%"=="Visual Studio 2019" ( set generator="Visual Studio 16 2019" )
   - echo %generator%
-  - set zip_name=SDL_gpu-%APPVEYOR_BUILD_VERSION%-VS-%platform%-%configuration%.zip
 
 
 shallow_clone: true
@@ -40,6 +39,8 @@ configuration:
   - Release
 
 before_build:
+  - set /p project_version=<version.txt
+  - set zip_name=SDL_gpu-%project_version%-VS-%platform%-%configuration%.zip
   - echo "Platform %platform%"
   - echo "generator %generator%"
   - echo Running cmake...
@@ -61,8 +62,6 @@ after_build:
 artifacts:
   - path: "%zip_name%"
     name: "%zip_name%"
-  - path: install.zip
-    name: install.zip
 
 deploy_script:
   - cd c:\projects\SDL_gpu
