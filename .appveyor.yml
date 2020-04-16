@@ -1,17 +1,21 @@
+# If this file isn't being read correctly by Appveyor, make sure the Github connection is correct/reset.
 environment:
   P: "c:/projects/libs"
-#  ACCOUNT:
-#      secure: 
 
 branches:
   only:
-    - master
+    - appveyor-prep
+    
+version: '{build}'
 
-os: Visual Studio 2015
+image:
+- Visual Studio 2019
 
 init:
   - git config --global core.autocrlf input
-
+  - echo %APPVEYOR_BUILD_WORKER_IMAGE%
+  - if "%APPVEYOR_BUILD_WORKER_IMAGE%"=="Visual Studio 2019" ( set generator="Visual Studio 16 2019" )
+  - echo %generator%
 
 
 shallow_clone: true
@@ -20,40 +24,45 @@ clone_folder: c:\projects\SDL_gpu
 install:
   - mkdir c:\projects\libs
   # Download SDL.
-  - ps: Start-FileDownload 'https://www.libsdl.org/release/SDL2-devel-2.0.5-VC.zip' 'c:/projects/libs/SDL.zip'
+  - ps: Start-FileDownload 'https://www.libsdl.org/release/SDL2-devel-2.0.12-VC.zip' 'c:/projects/libs/SDL.zip'
   
   # Extract it, put it in the right place, and rename it.
-  - cd c:\projects\libs && 7z x SDL.zip && ren SDL2-2.0.5 SDL2 && cd c:\projects\SDL_gpu
+  - cd c:\projects\libs && 7z x SDL.zip && ren SDL2-2.0.12 SDL2 && cd c:\projects\SDL_gpu
 
 
 platform:
-  - x86
+  - Win32
   - x64
 
 configuration:
   - Debug
   - Release
 
-build:
-  project: build\INSTALL.vcxproj
-
-# scripts to run before build
 before_build:
-  - echo Running cmake...
   - cd c:\projects\SDL_gpu
+  - set /p project_version=<version.txt
+  - set zip_name=SDL_gpu-%project_version%-VS-%platform%-%configuration%.zip
+  - echo "Building %zip_name%"
+  - echo "Platform %platform%"
+  - echo "generator %generator%"
+  - echo Running cmake...
   - mkdir build
   - cd build
-  - cmake -G "Visual Studio 14 2015" -DCMAKE_INSTALL_PREFIX=c:\projects\libs\SDL2 -DSDL_gpu_BUILD_DEMOS=ON -DSDL_gpu_BUILD_TESTS=ON -DSDL_gpu_BUILD_TOOLS=ON -DSDL_gpu_BUILD_SHARED=ON -DSDL_gpu_BUILD_STATIC=ON ..
+  - if "%configuration%"=="Debug" ( set build_tests=ON )
+  - if "%configuration%"=="Debug" ( set build_demos=OFF )
+  - if "%configuration%"=="Release" ( set build_tests=OFF )
+  - if "%configuration%"=="Release" ( set build_demos=ON )
+  - cmd: cmake -G %generator% -A %platform% -DCMAKE_INSTALL_PREFIX=c:\projects\libs\SDL2 -DSDL_gpu_BUILD_DEMOS=%build_demos% -DSDL_gpu_BUILD_TESTS=%build_tests% -DSDL_gpu_BUILD_TOOLS=%build_demos% -DSDL_gpu_BUILD_SHARED=ON -DSDL_gpu_BUILD_STATIC=ON ..
 
-# scripts to run after build
 after_build:
-  - cd c:\projects\SDL_gpu\build
-  - 7z a c:\projects\SDL_gpu\SDL_gpu.zip * -tzip
+  - cd c:\projects\SDL_gpu\build\SDL_gpu-VS
+#  - cmd: cmake -P cmake_install.cmake
+  - 7z a c:\projects\SDL_gpu\%zip_name% * -tzip
   - cd c:\projects\SDL_gpu
 
 artifacts:
-  - path: SDL_gpu.zip
-    name: SDL_gpu.zip
+  - path: "%zip_name%"
+    name: "%zip_name%"
 
 deploy_script:
   - cd c:\projects\SDL_gpu

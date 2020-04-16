@@ -12,10 +12,8 @@
 extern "C" {
 #endif
 
-// Compile-time versions
-#define SDL_GPU_VERSION_MAJOR 0
-#define SDL_GPU_VERSION_MINOR 11
-#define SDL_GPU_VERSION_PATCH 0
+// Compile-time version info
+#include "SDL_gpu_version.h"
 
 /* Auto-detect if we're using the SDL2 API by the headers available. */
 #if SDL_VERSION_ATLEAST(2,0,0)
@@ -57,6 +55,51 @@ extern "C" {
     #define GPU_bool bool
 #else
     #define GPU_bool int
+#endif
+
+#if defined(_MSC_VER) || (defined(__INTEL_COMPILER) && defined(_WIN32))
+   #if defined(_M_X64)
+      #define SDL_GPU_BITNESS 64
+   #else
+      #define SDL_GPU_BITNESS 32
+   #endif
+   #define SDL_GPU_LONG_SIZE 4
+#elif defined(__clang__) || defined(__INTEL_COMPILER) || defined(__GNUC__)
+   #if defined(__x86_64)
+      #define SDL_GPU_BITNESS 64
+   #else
+      #define SDL_GPU_BITNESS 32
+   #endif
+   #if __LONG_MAX__ == 2147483647L
+      #define SDL_GPU_LONG_SIZE 4
+   #else
+      #define SDL_GPU_LONG_SIZE 8
+   #endif
+#endif
+
+// Struct padding for 32 or 64 bit alignment
+#if SDL_GPU_BITNESS == 32
+#define GPU_PAD_1_TO_32 char _padding[1];
+#define GPU_PAD_2_TO_32 char _padding[2];
+#define GPU_PAD_3_TO_32 char _padding[3];
+#define GPU_PAD_1_TO_64 char _padding[1];
+#define GPU_PAD_2_TO_64 char _padding[2];
+#define GPU_PAD_3_TO_64 char _padding[3];
+#define GPU_PAD_4_TO_64 
+#define GPU_PAD_5_TO_64 char _padding[1];
+#define GPU_PAD_6_TO_64 char _padding[2];
+#define GPU_PAD_7_TO_64 char _padding[3];
+#elif SDL_GPU_BITNESS == 64
+#define GPU_PAD_1_TO_32 char _padding[1];
+#define GPU_PAD_2_TO_32 char _padding[2];
+#define GPU_PAD_3_TO_32 char _padding[3];
+#define GPU_PAD_1_TO_64 char _padding[1];
+#define GPU_PAD_2_TO_64 char _padding[2];
+#define GPU_PAD_3_TO_64 char _padding[3];
+#define GPU_PAD_4_TO_64 char _padding[4];
+#define GPU_PAD_5_TO_64 char _padding[5];
+#define GPU_PAD_6_TO_64 char _padding[6];
+#define GPU_PAD_7_TO_64 char _padding[7];
 #endif
 
 #define GPU_FALSE 0
@@ -122,6 +165,8 @@ typedef struct GPU_RendererID
     GPU_RendererEnum renderer;
     int major_version;
     int minor_version;
+	
+	GPU_PAD_4_TO_64
 } GPU_RendererID;
 
 
@@ -285,28 +330,30 @@ typedef struct GPU_Image
 	struct GPU_Renderer* renderer;
 	GPU_Target* context_target;
 	GPU_Target* target;
+	void* data;
+	
 	Uint16 w, h;
-	GPU_bool using_virtual_resolution;
 	GPU_FormatEnum format;
 	int num_layers;
 	int bytes_per_pixel;
 	Uint16 base_w, base_h;  // Original image dimensions
 	Uint16 texture_w, texture_h;  // Underlying texture dimensions
-	GPU_bool has_mipmaps;
 	
 	float anchor_x; // Normalized coords for the point at which the image is blitted.  Default is (0.5, 0.5), that is, the image is drawn centered.
 	float anchor_y; // These are interpreted according to GPU_SetCoordinateMode() and range from (0.0 - 1.0) normally.
 	
 	SDL_Color color;
-	GPU_bool use_blending;
 	GPU_BlendMode blend_mode;
 	GPU_FilterEnum filter_mode;
 	GPU_SnapEnum snap_mode;
 	GPU_WrapEnum wrap_mode_x;
 	GPU_WrapEnum wrap_mode_y;
 	
-	void* data;
 	int refcount;
+	
+	GPU_bool using_virtual_resolution;
+	GPU_bool has_mipmaps;
+	GPU_bool use_blending;
 	GPU_bool is_alias;
 } GPU_Image;
 
@@ -330,7 +377,9 @@ typedef struct GPU_Camera
 	float angle;
 	float zoom_x, zoom_y;
 	float z_near, z_far;  // z clipping planes
-	bool use_centered_origin;  // move rotation/scaling origin to the center of the camera's view
+	GPU_bool use_centered_origin;  // move rotation/scaling origin to the center of the camera's view
+	
+	GPU_PAD_7_TO_64
 } GPU_Camera;
 
 
@@ -373,7 +422,14 @@ typedef struct GPU_Context
 {
     /*! SDL_GLContext */
     void* context;
-    GPU_bool failed;
+	
+	/*! Last target used */
+	GPU_Target* active_target;
+	
+    GPU_ShaderBlock current_shader_block;
+    GPU_ShaderBlock default_textured_shader_block;
+    GPU_ShaderBlock default_untextured_shader_block;
+	
     
     /*! SDL window ID */
 	Uint32 windowID;
@@ -391,26 +447,24 @@ typedef struct GPU_Context
 	int stored_window_h;
 	
 	
-	/*! Last target used */
-	GPU_Target* active_target;
 	
 	/*! Internal state */
 	Uint32 current_shader_program;
 	Uint32 default_textured_shader_program;
 	Uint32 default_untextured_shader_program;
 	
-    GPU_ShaderBlock current_shader_block;
-    GPU_ShaderBlock default_textured_shader_block;
-    GPU_ShaderBlock default_untextured_shader_block;
-	
-	GPU_bool shapes_use_blending;
 	GPU_BlendMode shapes_blend_mode;
 	float line_thickness;
-	GPU_bool use_texturing;
     
 	int refcount;
 	
 	void* data;
+	
+    GPU_bool failed;
+	GPU_bool use_texturing;
+	GPU_bool shapes_use_blending;
+	
+	GPU_PAD_5_TO_64
 } GPU_Context;
 
 
@@ -431,11 +485,8 @@ struct GPU_Target
 	GPU_Image* image;
 	void* data;
 	Uint16 w, h;
-	GPU_bool using_virtual_resolution;
 	Uint16 base_w, base_h;  // The true dimensions of the underlying image or window
-	GPU_bool use_clip_rect;
 	GPU_Rect clip_rect;
-	GPU_bool use_color;
 	SDL_Color color;
 	
 	GPU_Rect viewport;
@@ -447,17 +498,24 @@ struct GPU_Target
 	GPU_MatrixStack model_matrix;
 
 	GPU_Camera camera;
+	
+	GPU_bool using_virtual_resolution;
+	GPU_bool use_clip_rect;
+	GPU_bool use_color;
 	GPU_bool use_camera;
 
 	
-	GPU_bool use_depth_test;
-	GPU_bool use_depth_write;
 	GPU_ComparisonEnum depth_function;
 	
 	/*! Renderer context data.  NULL if the target does not represent a window or rendering context. */
 	GPU_Context* context;
 	int refcount;
+	
+	GPU_bool use_depth_test;
+	GPU_bool use_depth_write;
 	GPU_bool is_alias;
+	
+	GPU_PAD_1_TO_64
 };
 
 /*! \ingroup Initialization
@@ -616,34 +674,41 @@ typedef enum {
 /*! \ingroup ShaderInterface */
 typedef struct GPU_AttributeFormat
 {
-    GPU_bool is_per_sprite;  // Per-sprite values are expanded to 4 vertices
     int num_elems_per_value;
     GPU_TypeEnum type;  // GPU_TYPE_FLOAT, GPU_TYPE_INT, GPU_TYPE_UNSIGNED_INT, etc.
-    GPU_bool normalize;
     int stride_bytes;  // Number of bytes between two vertex specifications
     int offset_bytes;  // Number of bytes to skip at the beginning of 'values'
+    GPU_bool is_per_sprite;  // Per-sprite values are expanded to 4 vertices
+    GPU_bool normalize;
+	
+	GPU_PAD_2_TO_32
 } GPU_AttributeFormat;
 
 /*! \ingroup ShaderInterface */
 typedef struct GPU_Attribute
 {
-    int location;
     void* values;  // Expect 4 values for each sprite
     GPU_AttributeFormat format;
+    int location;
+	
+	GPU_PAD_4_TO_64
 } GPU_Attribute;
 
 /*! \ingroup ShaderInterface */
 typedef struct GPU_AttributeSource
 {
-    GPU_bool enabled;
-    int num_values;
     void* next_value;
+    void* per_vertex_storage;  // Could point to the attribute's values or to allocated storage
+	
+    int num_values;
     // Automatic storage format
     int per_vertex_storage_stride_bytes;
     int per_vertex_storage_offset_bytes;
     int per_vertex_storage_size;  // Over 0 means that the per-vertex storage has been automatically allocated
-    void* per_vertex_storage;  // Could point to the attribute's values or to allocated storage
     GPU_Attribute attribute;
+    GPU_bool enabled;
+	
+	GPU_PAD_7_TO_64
 } GPU_AttributeSource;
 
 
@@ -666,8 +731,10 @@ typedef enum {
 typedef struct GPU_ErrorObject
 {
     char* function;
-    GPU_ErrorEnum error;
     char* details;
+    GPU_ErrorEnum error;
+	
+	GPU_PAD_4_TO_64
 } GPU_ErrorObject;
 
 
@@ -716,14 +783,16 @@ struct GPU_Renderer
 	/*! Current display target */
 	GPU_Target* current_context_target;
 	
-	/*! 0 for inverted, 1 for mathematical */
-	GPU_bool coordinate_mode;
-	
 	/*! Default is (0.5, 0.5) - images draw centered. */
 	float default_image_anchor_x;
 	float default_image_anchor_y;
 	
 	struct GPU_RendererImpl* impl;
+	
+	/*! 0 for inverted, 1 for mathematical */
+	GPU_bool coordinate_mode;
+	
+	GPU_PAD_7_TO_64
 };
 
 

@@ -1,8 +1,40 @@
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 3.0)
 
 project(SDL_gpu)
 
+file(READ ${CMAKE_CURRENT_SOURCE_DIR}/version.txt VERSION_FILE_CONTENTS)
 
+if((NOT DEFINED VERSION_MAJOR OR NOT DEFINED VERSION_MINOR OR NOT DEFINED VERSION_BUGFIX) AND VERSION_FILE_CONTENTS STREQUAL "")
+	message(ERROR "Missing version.txt, VERSION_MAJOR, VERSION_MINOR, and VERSION_BUGFIX.")
+	message(FATAL_ERROR "Failed to read version.txt and cannot proceed without a version number for SDL_gpu.")
+endif()
+
+if(NOT DEFINED VERSION_MAJOR)
+	string(REGEX MATCH "^[0-9]+" VERSION_MAJOR ${VERSION_FILE_CONTENTS})
+endif()
+if(NOT DEFINED VERSION_MINOR)
+	string(REGEX MATCH "[.][0-9]+[.]" VERSION_MINOR ${VERSION_FILE_CONTENTS})
+	# Chop off the dots
+	string(LENGTH ${VERSION_MINOR} VERSION_MINOR_LENGTH)
+	math(EXPR VERSION_MINOR_LENGTH_MINUS_2 "${VERSION_MINOR_LENGTH}-2")
+	string(SUBSTRING ${VERSION_MINOR} 1 ${VERSION_MINOR_LENGTH_MINUS_2} VERSION_MINOR)
+endif()
+if(NOT DEFINED VERSION_BUGFIX)
+	string(REGEX MATCH "[0-9]+$" VERSION_BUGFIX ${VERSION_FILE_CONTENTS})
+endif()
+
+set(SDL_gpu_VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BUGFIX}")
+
+message("Writing version header for v${SDL_gpu_VERSION}")
+string(CONCAT VERSION_HEADER_CONTENTS "#ifndef _SDL_GPU_VERSION_H__
+#define _SDL_GPU_VERSION_H__
+
+#define SDL_GPU_VERSION_MAJOR ${VERSION_MAJOR}
+#define SDL_GPU_VERSION_MINOR ${VERSION_MINOR}
+#define SDL_GPU_VERSION_PATCH ${VERSION_BUGFIX}
+
+#endif")
+file(WRITE ${CMAKE_CURRENT_SOURCE_DIR}/include/SDL_gpu_version.h ${VERSION_HEADER_CONTENTS})
 
 set(SDL_gpu_INSTALL_BY_DEFAULT ON)
 set(SDL_gpu_DEFAULT_BUILD_SHARED ON)
@@ -92,7 +124,7 @@ option(SDL_gpu_USE_BUFFER_MAPPING "Upload VBOs by mapping to client memory" OFF)
 option(SDL_gpu_BUILD_SHARED "Build SDL_gpu shared libraries" ${SDL_gpu_DEFAULT_BUILD_SHARED})
 option(SDL_gpu_BUILD_STATIC "Build SDL_gpu static libraries" ${SDL_gpu_DEFAULT_BUILD_STATIC})
 
-set(SDL_gpu_VERSION 0.11.0)
+set(SDL_gpu_VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BUGFIX})
 
 if (SDL_gpu_USE_SDL1)
     set(SDL_gpu_LIBRARY SDL_gpu)

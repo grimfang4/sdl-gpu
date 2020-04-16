@@ -1,6 +1,13 @@
 /* This is an implementation file to be included after certain #defines have been set.
 See a particular renderer's *.c file for specifics. */
 
+#ifdef _MSC_VER
+// Disable warning: selection for inlining
+#pragma warning(disable: 4514 4711 4710)
+// Disable warning: Spectre mitigation
+#pragma warning(disable: 5045)
+#endif
+
 #if !defined(GLAPIENTRY)
     #if defined(GL_APIENTRY)
         #define GLAPIENTRY GL_APIENTRY
@@ -18,7 +25,7 @@ See a particular renderer's *.c file for specifics. */
 
 // Check for C99 support
 // We'll use it for intptr_t which is used to suppress warnings about converting an int to a ptr for GL calls.
-#if __STDC_VERSION__ >= 199901L
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
     #include <stdint.h>
 #else
     #define intptr_t long
@@ -393,27 +400,40 @@ static_inline void upload_new_texture(void* pixels, GPU_Rect update_rect, Uint32
 #else
     static void GLAPIENTRY glBindFramebufferNOOP(GLenum target, GLuint framebuffer)
     {
+        (void)target;
+        (void)framebuffer;
         GPU_LogError("%s: Unsupported operation\n", __func__);
     }
     static GLenum GLAPIENTRY glCheckFramebufferStatusNOOP(GLenum target)
     {
+        (void)target;
         GPU_LogError("%s: Unsupported operation\n", __func__);
         return 0;
     }
     static void GLAPIENTRY glDeleteFramebuffersNOOP(GLsizei n, const GLuint* framebuffers)
     {
+        (void)n;
+        (void)framebuffers;
         GPU_LogError("%s: Unsupported operation\n", __func__);
     }
     static void GLAPIENTRY glFramebufferTexture2DNOOP(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level)
     {
+        (void)target;
+        (void)attachment;
+        (void)textarget;
+        (void)texture;
+        (void)level;
         GPU_LogError("%s: Unsupported operation\n", __func__);
     }
     static void GLAPIENTRY glGenFramebuffersNOOP(GLsizei n, GLuint *ids)
     {
+        (void)n;
+        (void)ids;
         GPU_LogError("%s: Unsupported operation\n", __func__);
     }
     static void GLAPIENTRY glGenerateMipmapNOOP(GLenum target)
     {
+        (void)target;
         GPU_LogError("%s: Unsupported operation\n", __func__);
     }
     
@@ -5522,6 +5542,7 @@ static void DoPartialFlush(GPU_Renderer* renderer, GPU_Target* dest, GPU_Context
 {
     GPU_CONTEXT_DATA* cdata = (GPU_CONTEXT_DATA*)context->data;
 	(void)renderer;
+    (void)num_vertices;
 #ifdef SDL_GPU_USE_ARRAY_PIPELINE
     glEnableClientState(GL_VERTEX_ARRAY);
     glEnableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -5627,7 +5648,7 @@ static void DoUntexturedFlush(GPU_Renderer* renderer, GPU_Target* dest, GPU_Cont
 {
     GPU_CONTEXT_DATA* cdata = (GPU_CONTEXT_DATA*)context->data;
 	(void)renderer;
-
+    (void)num_vertices;
 #ifdef SDL_GPU_USE_ARRAY_PIPELINE
     glEnableClientState(GL_VERTEX_ARRAY);
     glEnableClientState(GL_COLOR_ARRAY);

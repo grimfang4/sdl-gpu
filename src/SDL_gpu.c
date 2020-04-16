@@ -15,6 +15,11 @@
 	#pragma warning(push)
 	// Visual Studio wants to complain about while(0)
 	#pragma warning(disable: 4127)
+
+	// Disable warning: selection for inlining
+	#pragma warning(disable: 4514 4711)
+	// Disable warning: Spectre mitigation
+	#pragma warning(disable: 5045)
 #endif
 
 #include "stb_image.h"
@@ -783,7 +788,7 @@ void GPU_PushErrorCode(const char* function, GPU_ErrorEnum error, const char* de
 GPU_ErrorObject GPU_PopErrorCode(void)
 {
     unsigned int i;
-    GPU_ErrorObject result = {NULL, GPU_ERROR_NONE, NULL};
+    GPU_ErrorObject result = {NULL, NULL, GPU_ERROR_NONE};
 
     gpu_init_error_queue();
 

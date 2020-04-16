@@ -4,7 +4,12 @@
 
 #ifdef _MSC_VER
 #define __func__ __FUNCTION__
+// Disable warning: selection for inlining
+#pragma warning(disable: 4514 4711)
+// Disable warning: Spectre mitigation
+#pragma warning(disable: 5045)
 #endif
+
 
 #ifndef PI
 #define PI 3.1415926f
@@ -89,7 +94,7 @@ void GPU_InitMatrixStack(GPU_MatrixStack* stack)
 
 void GPU_CopyMatrixStack(const GPU_MatrixStack* source, GPU_MatrixStack* dest)
 {
-	int i;
+	unsigned int i;
 	unsigned int matrix_size = sizeof(float) * 16;
 	if (source == NULL || dest == NULL)
 		return;
@@ -106,7 +111,7 @@ void GPU_CopyMatrixStack(const GPU_MatrixStack* source, GPU_MatrixStack* dest)
 
 void GPU_ClearMatrixStack(GPU_MatrixStack* stack)
 {
-	int i;
+	unsigned int i;
 	for (i = 0; i < stack->storage_size; ++i)
 	{
 		SDL_free(stack->matrix[i]);
