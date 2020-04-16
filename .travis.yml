@@ -72,6 +72,6 @@ before_script:
       fi
     - mkdir build
     - cd build
-    - cmake -DSDL_gpu_BUILD_DEMOS=ON -DSDL_gpu_BUILD_TESTS=ON -DSDL_gpu_BUILD_TOOLS=ON -DSDL_gpu_BUILD_SHARED=ON -DSDL_gpu_BUILD_STATIC=ON ..
+    - cmake -DBUILD_DEMOS=ON -DBUILD_TESTS=ON -DBUILD_TOOLS=ON -DBUILD_SHARED=ON -DBUILD_STATIC=ON ..
 
 script: make
