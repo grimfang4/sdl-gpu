@@ -6,7 +6,7 @@ branches:
   only:
     - appveyor-prep
     
-version: {build}
+version: '{build}'
 
 image:
 - Visual Studio 2019
