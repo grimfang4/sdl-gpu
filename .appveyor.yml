@@ -48,10 +48,10 @@ before_build:
   - echo Running cmake...
   - mkdir build
   - cd build
-  - if "%configuration%"=="Debug" ( set build_tests=ON )
+  - if "%configuration%"=="Debug" ( set build_tests=OFF )
   - if "%configuration%"=="Debug" ( set build_demos=OFF )
   - if "%configuration%"=="Release" ( set build_tests=OFF )
-  - if "%configuration%"=="Release" ( set build_demos=ON )
+  - if "%configuration%"=="Release" ( set build_demos=OFF )
   - cmd: cmake -G %generator% -A %platform% -DCMAKE_INSTALL_PREFIX=c:\projects\libs\SDL2 -DSDL_gpu_BUILD_DEMOS=%build_demos% -DSDL_gpu_BUILD_TESTS=%build_tests% -DSDL_gpu_BUILD_TOOLS=%build_demos% -DSDL_gpu_BUILD_SHARED=ON -DSDL_gpu_BUILD_STATIC=ON ..
 
 after_build:
