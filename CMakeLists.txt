@@ -101,8 +101,8 @@ option(BUILD_TESTS "Build SDL_gpu test programs" OFF)
 option(BUILD_VIDEO_TEST "Build SDL_gpu video test program (requires FFMPEG)" OFF)
 option(BUILD_TOOLS "Build SDL_gpu tool programs" OFF)
 option(USE_SDL1 "Use SDL 1.2 headers and library instead of SDL 2" OFF)
-option(DISABLE_OPENGL "Disable OpenGL renderers.  Overrides specific OpenGL renderer flags." ${SDL_gpu_DEFAULT_DISABLE_OPENGL})
-option(DISABLE_GLES "Disable OpenGLES renderers.  Overrides specific GLES renderer flags." ${SDL_gpu_DEFAULT_DISABLE_GLES})
+option(DISABLE_OPENGL "Disable OpenGL renderers.  Overrides specific OpenGL renderer flags." ${DEFAULT_DISABLE_OPENGL})
+option(DISABLE_GLES "Disable OpenGLES renderers.  Overrides specific GLES renderer flags." ${DEFAULT_DISABLE_GLES})
 option(DISABLE_OPENGL_1_BASE "Disable OpenGL 1 BASE renderer" OFF)
 option(DISABLE_OPENGL_1 "Disable OpenGL 1.X renderer" OFF)
 option(DISABLE_OPENGL_2 "Disable OpenGL 2.X renderer" OFF)
@@ -122,7 +122,7 @@ option(USE_BUFFER_MAPPING "Upload VBOs by mapping to client memory" OFF)
 
 
 option(BUILD_SHARED "Build SDL_gpu shared libraries" ${DEFAULT_BUILD_SHARED})
-option(BUILD_STATIC "Build SDL_gpu static libraries" ${SDL_gpu_DEFAULT_BUILD_STATIC})
+option(BUILD_STATIC "Build SDL_gpu static libraries" ${DEFAULT_BUILD_STATIC})
 
 set(SDL_GPU_VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BUGFIX})
 
