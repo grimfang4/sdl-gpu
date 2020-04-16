@@ -56,11 +56,14 @@ A rendering backend
 BUILDING
 ========
 
-You can see automated build status at the project page on Travis CI:
+Automated Windows build status and prebuilt library files can be found at the Appveyor page:
+
+[![Appveyor Status](https://ci.appveyor.com/api/projects/status/32r7s2skrgm9ubva?svg=true)](https://ci.appveyor.com/api/projects/status/32r7s2skrgm9ubva?svg=true)
+
+Automated build status for Linux and MacOS can be found at the project page on Travis CI:
 
 [![Build Status](https://travis-ci.org/grimfang4/sdl-gpu.svg?branch=master)](https://travis-ci.org/grimfang4/sdl-gpu)
 
-Automated builds will soon be available on the Github.io page.
 
 SDL_gpu uses CMake (www.cmake.org) to coordinate the library build process.  CMake is available as a GUI program or on the command line.
 
