@@ -2,7 +2,27 @@ cmake_minimum_required(VERSION 2.6)
 
 project(SDL_gpu)
 
+file(READ version.txt SDL_GPU_VERSION)
 
+if((NOT DEFINED VERSION_MAJOR OR NOT DEFINED VERSION_MINOR OR NOT DEFINED VERSION_BUGFIX) AND SDL_GPU_VERSION STREQUAL "")
+	message(ERROR "Missing version.txt, VERSION_MAJOR, VERSION_MINOR, and VERSION_BUGFIX.")
+	message(FATAL_ERROR "Failed to read version.txt and cannot proceed without a version number for SDL_gpu.")
+endif()
+
+if(NOT DEFINED VERSION_MAJOR)
+	string(REGEX MATCH "^[0-9]*" VERSION_MAJOR ${SDL_GPU_VERSION})
+endif()
+if(NOT DEFINED VERSION_MINOR)
+	string(REGEX MATCH "[.][0-9]*[.]" VERSION_MINOR ${SDL_GPU_VERSION})
+	# Chop off the dots
+	string(LENGTH ${VERSION_MINOR} VERSION_MINOR_LENGTH)
+	string(SUBSTRING ${VERSION_MINOR} 1 ${VERSION_MINOR_LENGTH}-2 VERSION_MINOR)
+endif()
+if(NOT DEFINED VERSION_BUGFIX)
+	string(REGEX MATCH "[0-9]*$" VERSION_MAJOR ${SDL_GPU_VERSION})
+endif()
+
+set(SDL_gpu_VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BUGFIX})
 
 set(SDL_gpu_INSTALL_BY_DEFAULT ON)
 set(SDL_gpu_DEFAULT_BUILD_SHARED ON)
@@ -92,7 +112,7 @@ option(SDL_gpu_USE_BUFFER_MAPPING "Upload VBOs by mapping to client memory" OFF)
 option(SDL_gpu_BUILD_SHARED "Build SDL_gpu shared libraries" ${SDL_gpu_DEFAULT_BUILD_SHARED})
 option(SDL_gpu_BUILD_STATIC "Build SDL_gpu static libraries" ${SDL_gpu_DEFAULT_BUILD_STATIC})
 
-set(SDL_gpu_VERSION 0.11.0)
+set(SDL_gpu_VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BUGFIX})
 
 if (SDL_gpu_USE_SDL1)
     set(SDL_gpu_LIBRARY SDL_gpu)
