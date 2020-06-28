@@ -100,6 +100,7 @@ option(BUILD_DEMOS "Build SDL_gpu demo programs" ${DEFAULT_BUILD_DEMOS})
 option(BUILD_TESTS "Build SDL_gpu test programs" OFF)
 option(BUILD_VIDEO_TEST "Build SDL_gpu video test program (requires FFMPEG)" OFF)
 option(BUILD_TOOLS "Build SDL_gpu tool programs" OFF)
+option(BUILD_DOCS "Build SDL_gpu documentation" OFF)
 option(USE_SDL1 "Use SDL 1.2 headers and library instead of SDL 2" OFF)
 option(DISABLE_OPENGL "Disable OpenGL renderers.  Overrides specific OpenGL renderer flags." ${DEFAULT_DISABLE_OPENGL})
 option(DISABLE_GLES "Disable OpenGLES renderers.  Overrides specific GLES renderer flags." ${DEFAULT_DISABLE_GLES})
@@ -323,16 +324,18 @@ if(NOT STBI_FOUND OR NOT STBI_WRITE_FOUND)
 endif(NOT STBI_FOUND OR NOT STBI_WRITE_FOUND)
 
 # add a target to generate API documentation with Doxygen
-find_package(Doxygen)
-if(DOXYGEN_FOUND)
-    set(DOXYGEN_INPUT ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/src)
-    configure_file(${CMAKE_SOURCE_DIR}/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
-    add_custom_target(doc
-        ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        COMMENT "Generating API documentation with Doxygen" VERBATIM
-    )
-endif(DOXYGEN_FOUND)
+if (BUILD_DOCS)
+    find_package(Doxygen)
+    if(DOXYGEN_FOUND)
+        set(DOXYGEN_INPUT ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/src)
+        configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
+        add_custom_target(doc
+    `        ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+            COMMENT "Generating API documentation with Doxygen" VERBATIM
+        )
+    endif(DOXYGEN_FOUND)
+endif (BUILD_DOCS)
 
 add_definitions("-Wall -pedantic")
 

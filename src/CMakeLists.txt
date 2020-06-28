@@ -110,8 +110,8 @@ foreach(INC_FILE ${SDL_gpu_public_HDRS})
     configure_file(${INC_FILE} ${CMAKE_BINARY_DIR}/${OUTPUT_DIR}/include/${BASE} COPYONLY)
 endforeach(INC_FILE)
 
-configure_file(${CMAKE_SOURCE_DIR}/LICENSE.txt ${CMAKE_BINARY_DIR}/${OUTPUT_DIR}/LICENSE.txt COPYONLY)
-configure_file(${CMAKE_SOURCE_DIR}/README.md ${CMAKE_BINARY_DIR}/${OUTPUT_DIR}/README.md COPYONLY)
+configure_file(../LICENSE.txt ${CMAKE_BINARY_DIR}/${OUTPUT_DIR}/LICENSE.txt COPYONLY)
+configure_file(../README.md ${CMAKE_BINARY_DIR}/${OUTPUT_DIR}/README.md COPYONLY)
 
 # Build the shared library (.so or .dll)
 if(BUILD_SHARED)
