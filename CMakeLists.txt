@@ -25,8 +25,12 @@ endif()
 
 set(SDL_GPU_VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BUGFIX}")
 
-message("Writing version header for v${SDL_GPU_VERSION}")
-string(CONCAT VERSION_HEADER_CONTENTS "#ifndef _SDL_GPU_VERSION_H__
+if(${CMAKE_CURRENT_SOURCE_DIR}/version.txt IS_NEWER_THAN ${CMAKE_CURRENT_SOURCE_DIR}/include/SDL_gpu_version.h)
+    # This is to prevent CMake from rebuilding SDL_gpu, which is important when it is an external project in another project.
+    # This works since whenever version.txt is changed, it will be newer than SDL_gpu_version.h. The only time SDL_gpu_version.h
+    # will be newer than version.txt is when it is created or modified after the latter file.
+    message("Writing version header for v${SDL_GPU_VERSION}")
+    string(CONCAT VERSION_HEADER_CONTENTS "#ifndef _SDL_GPU_VERSION_H__
 #define _SDL_GPU_VERSION_H__
 
 #define SDL_GPU_VERSION_MAJOR ${VERSION_MAJOR}
@@ -34,7 +38,9 @@ string(CONCAT VERSION_HEADER_CONTENTS "#ifndef _SDL_GPU_VERSION_H__
 #define SDL_GPU_VERSION_PATCH ${VERSION_BUGFIX}
 
 #endif")
-file(WRITE ${CMAKE_CURRENT_SOURCE_DIR}/include/SDL_gpu_version.h ${VERSION_HEADER_CONTENTS})
+
+    file(WRITE ${CMAKE_CURRENT_SOURCE_DIR}/include/SDL_gpu_version.h ${VERSION_HEADER_CONTENTS})
+endif()
 
 set(DEFAULT_INSTALL_LIBRARY ON)
 set(DEFAULT_BUILD_SHARED ON)
