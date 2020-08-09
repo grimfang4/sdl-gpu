@@ -1,7 +1,9 @@
 #ifndef _SDL_GPU_H__
 #define _SDL_GPU_H__
 
+#ifndef _USE_MATH_DEFINES
 #define _USE_MATH_DEFINES // So M_PI and company get defined on MSVC when we include math.h
+#endif
 #include <math.h> // Must be included before SDL.h, otherwise both try to define M_PI and we get a warning
 
 #include "SDL.h"
