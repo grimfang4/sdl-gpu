@@ -2,14 +2,6 @@
 See a particular renderer's *.c file for specifics. */
 
 
-#ifndef M_PI
-    #define M_PI 3.14159265358979323846
-#endif
-
-
-
-
-
 // All shapes start this way for setup and so they can access the blit buffer properly
 #define BEGIN_UNTEXTURED(function_name, shape, num_additional_vertices, num_additional_indices) \
 	GPU_CONTEXT_DATA* cdata; \
