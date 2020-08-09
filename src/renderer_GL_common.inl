@@ -6,6 +6,8 @@ See a particular renderer's *.c file for specifics. */
 #pragma warning(disable: 4514 4711 4710)
 // Disable warning: Spectre mitigation
 #pragma warning(disable: 5045)
+// Disable warning: 'type cast': conversion from 'long' to 'void *' of greater size
+#pragma warning (disable: 4312)
 #endif
 
 #if !defined(GLAPIENTRY)
