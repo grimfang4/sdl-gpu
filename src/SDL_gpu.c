@@ -2017,7 +2017,7 @@ void GPU_GetAnchor(GPU_Image* image, float* anchor_x, float* anchor_y)
 GPU_SnapEnum GPU_GetSnapMode(GPU_Image* image)
 {
     if(image == NULL)
-        return 0;
+        return GPU_SNAP_NONE;
 
     return image->snap_mode;
 }
