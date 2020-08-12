@@ -4835,7 +4835,7 @@ static int get_lowest_attribute_num_values(GPU_CONTEXT_DATA* cdata, int cap)
     return lowest;
 }
 
-static_inline void submit_buffer_data(int bytes, float* values, int bytes_indices, unsigned short* indices)
+static_inline void submit_buffer_data(int bytes, void* values, int bytes_indices, unsigned short* indices)
 {
     #ifdef SDL_GPU_USE_BUFFER_PIPELINE
         #if defined(SDL_GPU_USE_BUFFER_RESET)
@@ -4844,7 +4844,7 @@ static_inline void submit_buffer_data(int bytes, float* values, int bytes_indice
             glBufferData(GL_ELEMENT_ARRAY_BUFFER, bytes_indices, indices, GL_DYNAMIC_DRAW);
         #elif defined(SDL_GPU_USE_BUFFER_MAPPING)
         // NOTE: On the Raspberry Pi, you may have to use GL_DYNAMIC_DRAW instead of GL_STREAM_DRAW for buffers to work with glMapBuffer().
-        float* data = (float*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+        void* data = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
         unsigned short* data_i = (indices == NULL? NULL : (unsigned short*)glMapBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_WRITE_ONLY));
         if(data != NULL)
         {
