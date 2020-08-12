@@ -1681,7 +1681,7 @@ GPU_bool GPU_IntersectClipRect(GPU_Target* target, GPU_Rect B, GPU_Rect* result)
     
     if(!target->use_clip_rect)
     {
-        GPU_Rect A = {0, 0, target->w, target->h};
+        GPU_Rect A = {0, 0, (float)target->w, (float)target->h};
         return GPU_IntersectRect(A, B, result);
     }
     
