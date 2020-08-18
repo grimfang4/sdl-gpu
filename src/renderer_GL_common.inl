@@ -1814,6 +1814,8 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
             return NULL;
         }
 
+        target->context->default_textured_vertex_shader_id = v;
+        target->context->default_textured_fragment_shader_id = f;
         target->context->default_textured_shader_program = p;
 
         // Get locations of the attributes in the shader
@@ -1853,6 +1855,8 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
 
         glUseProgram(p);
 
+        target->context->default_untextured_vertex_shader_id = v;
+        target->context->default_untextured_fragment_shader_id = f;
         target->context->default_untextured_shader_program = target->context->current_shader_program = p;
 
         // Get locations of the attributes in the shader
