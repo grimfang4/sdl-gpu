@@ -451,6 +451,12 @@ typedef struct GPU_Context
 	int stored_window_w;
 	int stored_window_h;
 	
+	/*! Shader handles used in the default shader programs */
+	Uint32 default_textured_vertex_shader_id;
+	Uint32 default_textured_fragment_shader_id;
+	Uint32 default_untextured_vertex_shader_id;
+	Uint32 default_untextured_fragment_shader_id;
+	
 	
 	
 	/*! Internal state */
