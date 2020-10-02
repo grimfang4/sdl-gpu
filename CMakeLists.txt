@@ -94,6 +94,7 @@ elseif(EMSCRIPTEN)
   set(DEFAULT_BUILD_DEMOS OFF)
   set(DEFAULT_DISABLE_OPENGL ON)
   set(DEFAULT_DISABLE_GLES OFF)
+  set(DEFAULT_DISABLE_GLES_1 ON)
   set(DEFAULT_BUILD_SHARED OFF)
 else()
   message(" Using generic defaults.")
@@ -159,7 +160,9 @@ else ()
 endif ()
 
 # Find the package for SDL or SDL2
-if ( USE_SDL1 )
+if ( EMSCRIPTEN )
+	add_definitions ("-s USE_SDL=2")
+elseif ( USE_SDL1 )
 	find_package(SDL REQUIRED)
 
 	if ( NOT SDL_FOUND )
@@ -168,7 +171,7 @@ if ( USE_SDL1 )
 
 	include_directories(${SDL_INCLUDE_DIR})
 	link_libraries(${SDL_LIBRARY})
-else ( USE_SDL1 )
+else ( )
 	find_package(SDL2 REQUIRED)
 
 	if ( NOT SDL2_FOUND )
@@ -182,7 +185,7 @@ else ( USE_SDL1 )
 
 	include_directories(${SDL2_INCLUDE_DIR})
 	link_libraries(${SDL2MAIN_LIBRARY} ${SDL2_LIBRARY})
-endif( USE_SDL1 )
+endif ()
 
 # Find the package for OpenGL
 if (DISABLE_OPENGL)
