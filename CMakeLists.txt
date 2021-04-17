@@ -145,6 +145,10 @@ if(APPLE)
 	include(ios-cmake/toolchain/XcodeDefaults)
 endif()
 
+# Make local includes look in the right places
+include_directories(include)
+include_directories(src)
+
 #if ( BUILD_DEBUG )
 #	SET(CMAKE_BUILD_TYPE Debug)
 #else ( BUILD_DEBUG )
@@ -309,10 +313,6 @@ if(NOT WIN32 AND NOT EMSCRIPTEN)
   find_library(M_LIB m)
   link_libraries(${M_LIB})
 endif (NOT WIN32 AND NOT EMSCRIPTEN)
-
-# Make local includes look in the right places
-include_directories(include)
-include_directories(src)
 
 if(NOT GLEW_FOUND)
   include_directories(src/externals/glew)
