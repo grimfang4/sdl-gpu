@@ -1073,6 +1073,9 @@ DECLSPEC GPU_Target* SDLCALL GPU_GetActiveTarget(void);
 /*! \return Sets the currently active target for matrix modification functions. */
 DECLSPEC GPU_bool SDLCALL GPU_SetActiveTarget(GPU_Target* target);
 
+/*! \return Returns the SDL_Window object from current context target. */
+DECLSPEC SDL_Window* SDLCALL GPU_GetContextTargetSDLWindow(); 
+
 /*! Enables/disables alpha blending for shape rendering on the current window. */
 DECLSPEC void SDLCALL GPU_SetShapeBlending(GPU_bool enable);
 

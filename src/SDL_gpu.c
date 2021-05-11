@@ -1800,6 +1800,12 @@ void GPU_SetBlending(GPU_Image* image, GPU_bool enable)
     image->use_blending = enable;
 }
 
+SDL_Window* GPU_GetContextTargetSDLWindow()
+{
+    GPU_Target* t = GPU_GetContextTarget();
+    return SDL_GetWindowFromID(t->context->windowID);
+}
+
 void GPU_SetShapeBlending(GPU_bool enable)
 {
     if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL)
