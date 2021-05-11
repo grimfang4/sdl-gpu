@@ -1,7 +1,9 @@
 #include "SDL_gpu.h"
 #include "SDL_gpu_RendererImpl.h"
 #include "SDL_platform.h"
+#define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+#define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 #include <stdlib.h>
 #include <string.h>
@@ -21,8 +23,6 @@
 	// Disable warning: Spectre mitigation
 	#pragma warning(disable: 5045)
 #endif
-
-#include "stb_image.h"
 
 #ifdef SDL_GPU_USE_SDL2
     #define GET_ALPHA(sdl_color) ((sdl_color).a)
