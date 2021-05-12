@@ -3470,14 +3470,14 @@ static GPU_Image* CopyImage(GPU_Renderer* renderer, GPU_Image* image)
 
 static void UpdateImage(GPU_Renderer* renderer, GPU_Image* image, const GPU_Rect* image_rect, SDL_Surface* surface, const GPU_Rect* surface_rect)
 {
-	GPU_IMAGE_DATA* data;
-	GLenum original_format;
+    GPU_IMAGE_DATA* data;
+    GLenum original_format;
 
-	SDL_Surface* newSurface;
-	GPU_Rect updateRect;
-	GPU_Rect sourceRect;
-	int alignment;
-	Uint8* pixels;
+    SDL_Surface* newSurface;
+    GPU_Rect updateRect;
+    GPU_Rect sourceRect;
+    int alignment;
+    Uint8* pixels;
 
     if(image == NULL || surface == NULL)
         return;
@@ -3870,16 +3870,19 @@ static_inline Uint32 getPixel(SDL_Surface *Surface, int x, int y)
     return 0;  // FIXME: Handle errors better
 }
 
-static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surface)
+static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surface, const GPU_Rect* surface_rect)
 {
     GPU_FormatEnum format;
-	GPU_Image* image;
+    GPU_Image* image;
+    int sw, sh;
 
     if(surface == NULL)
     {
         GPU_PushErrorCode("GPU_CopyImageFromSurface", GPU_ERROR_NULL_ARGUMENT, "surface");
         return NULL;
     }
+    sw = surface_rect == NULL ? surface->w : surface_rect->w;
+    sh = surface_rect == NULL ? surface->h : surface_rect->h;
 
     if(surface->w == 0 || surface->h == 0)
     {
@@ -3901,11 +3904,11 @@ static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surf
         format = GPU_FORMAT_RGBA;
     }
 
-    image = renderer->impl->CreateImage(renderer, (Uint16)surface->w, (Uint16)surface->h, format);
+    image = renderer->impl->CreateImage(renderer, (Uint16)sw, (Uint16)sh, format);
     if(image == NULL)
         return NULL;
 
-    renderer->impl->UpdateImage(renderer, image, NULL, surface, NULL);
+    renderer->impl->UpdateImage(renderer, image, NULL, surface, surface_rect);
 
     return image;
 }
@@ -3913,11 +3916,11 @@ static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surf
 
 static GPU_Image* CopyImageFromTarget(GPU_Renderer* renderer, GPU_Target* target)
 {
-	GPU_Image* result;
+    GPU_Image* result;
 
     if(target == NULL)
         return NULL;
-    
+
     if(target->image != NULL)
     {
         result = gpu_copy_image_pixels_only(renderer, target->image);
@@ -3925,7 +3928,7 @@ static GPU_Image* CopyImageFromTarget(GPU_Renderer* renderer, GPU_Target* target
     else
     {
         SDL_Surface* surface = renderer->impl->CopySurfaceFromTarget(renderer, target);
-        result = renderer->impl->CopyImageFromSurface(renderer, surface);
+        result = renderer->impl->CopyImageFromSurface(renderer, surface, NULL);
         SDL_FreeSurface(surface);
     }
 
