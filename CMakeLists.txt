@@ -102,7 +102,7 @@ endif()
 
 
 option(INSTALL_LIBRARY "Install SDL_gpu libs, includes, and CMake scripts" ${DEFAULT_INSTALL_LIBRARY})
-#option(BUILD_DEBUG "Build with debugging symbols" ON)
+option(BUILD_EXPLICIT_DEBUG "Build with debugging symbols if your build tool does not support multiple configurations" OFF)
 option(BUILD_DEMOS "Build SDL_gpu demo programs" ${DEFAULT_BUILD_DEMOS})
 option(BUILD_TESTS "Build SDL_gpu test programs" OFF)
 option(BUILD_VIDEO_TEST "Build SDL_gpu video test program (requires FFMPEG)" OFF)
@@ -145,6 +145,9 @@ if(APPLE)
 	include(ios-cmake/toolchain/XcodeDefaults)
 endif()
 
+if ( BUILD_EXPLICIT_DEBUG )
+	SET(CMAKE_BUILD_TYPE Debug)
+endif ( BUILD_EXPLICIT_DEBUG )
 # Make local includes look in the right places
 include_directories(include)
 include_directories(src)
@@ -357,6 +360,12 @@ endif (USE_BUFFER_UPDATE)
 if (USE_BUFFER_MAPPING)
     add_definitions("-DSDL_GPU_USE_BUFFER_MAPPING")
 endif (USE_BUFFER_MAPPING)
+
+
+if(BUILD_DEMOS OR BUILD_TESTS OR BUILD_TOOLS)
+	# The executables link to the static library, so force build it.
+	set(BUILD_STATIC ON)
+endif(BUILD_DEMOS OR BUILD_TESTS OR BUILD_TOOLS)
 
 # Build the SDL_gpu library.
 add_subdirectory(src)
