@@ -562,14 +562,18 @@ static GPU_bool ReplaceImage(GPU_Renderer* renderer, GPU_Image* image, SDL_Surfa
     return 0;
 }
 
-static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surface)
+static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surface, SDL_Rect* rect)
 {
     GPU_Log(" %s (dummy)\n", __func__);
     
     if(surface == NULL)
         return NULL;
     
-    return renderer->impl->CreateImage(renderer, surface->w, surface->h, GPU_FORMAT_RGBA);
+    int sw, sh;
+    sw = rect == NULL ? surface->w : rect->w;
+    sh = rect == NULL ? surface->h : rect->h;
+
+    return renderer->impl->CreateImage(renderer, sw, sh, GPU_FORMAT_RGBA);
 }
 
 
