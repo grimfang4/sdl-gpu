@@ -990,7 +990,7 @@ GPU_Image* GPU_LoadImage_RW(SDL_RWops* rwops, GPU_bool free_rwops)
         return NULL;
     }
 
-    result = _gpu_current_renderer->impl->CopyImageFromSurface(_gpu_current_renderer, surface);
+    result = _gpu_current_renderer->impl->CopyImageFromSurface(_gpu_current_renderer, surface, NULL);
     SDL_FreeSurface(surface);
 
     return result;
@@ -1307,7 +1307,15 @@ GPU_Image* GPU_CopyImageFromSurface(SDL_Surface* surface)
     if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL)
         return NULL;
 
-    return _gpu_current_renderer->impl->CopyImageFromSurface(_gpu_current_renderer, surface);
+    return _gpu_current_renderer->impl->CopyImageFromSurface(_gpu_current_renderer, surface, NULL);
+}
+
+GPU_Image* GPU_CopyImageFromSurfaceRect(SDL_Surface* surface, GPU_Rect* surface_rect)
+{
+    if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL)
+        return NULL;
+
+    return _gpu_current_renderer->impl->CopyImageFromSurface(_gpu_current_renderer, surface, surface_rect);
 }
 
 GPU_Image* GPU_CopyImageFromTarget(GPU_Target* target)

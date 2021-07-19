@@ -86,7 +86,7 @@ typedef struct GPU_RendererImpl
 	GPU_bool (SDLCALL *ReplaceImage)(GPU_Renderer* renderer, GPU_Image* image, SDL_Surface* surface, const GPU_Rect* surface_rect);
 	
 	/*! \see GPU_CopyImageFromSurface() */
-	GPU_Image* (SDLCALL *CopyImageFromSurface)(GPU_Renderer* renderer, SDL_Surface* surface);
+	GPU_Image* (SDLCALL *CopyImageFromSurface)(GPU_Renderer* renderer, SDL_Surface* surface, GPU_Rect *surface_rect);
 	
 	/*! \see GPU_CopyImageFromTarget() */
 	GPU_Image* (SDLCALL *CopyImageFromTarget)(GPU_Renderer* renderer, GPU_Target* target);
