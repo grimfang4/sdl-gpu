@@ -119,6 +119,12 @@ if(BUILD_SHARED)
 		${SDL_gpu_HDRS}
 		${SDL_gpu_SRCS}
 	)
+
+	if(WIN32)
+		# Don't add a prefix to DLLs built with MinGW
+		set(CMAKE_SHARED_LIBRARY_PREFIX )
+		target_compile_definitions(SDL_gpu_shared PUBLIC DLL_EXPORT)
+	endif(WIN32)
 	
 	target_link_libraries(SDL_gpu_shared ${GL_LIBRARIES})
 
@@ -209,7 +215,13 @@ if(INSTALL_LIBRARY)
 	endif(USE_SDL1)
 
 	if(BUILD_SHARED)
-		install(TARGETS SDL_gpu_shared EXPORT SDL_gpu-targets DESTINATION lib)
+		if(WIN32)
+			install(TARGETS SDL_gpu_shared
+					EXPORT SDL_gpu-targets
+					LIBRARY DESTINATION lib)
+		else()
+			install(TARGETS SDL_gpu_shared EXPORT SDL_gpu-targets DESTINATION lib)
+		endif(WIN32)
 	endif()
 	if(BUILD_STATIC)
 		install(TARGETS SDL_gpu EXPORT SDL_gpu-targets DESTINATION lib)
