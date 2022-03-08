@@ -9,6 +9,76 @@
 #define M_PI 3.14159f
 #endif
 
+#define RANDOMIZE_SHAPE_DATA() \
+    for(i = 0; i < NUM_COLORS; i++) \
+    { \
+        colors[i].r = rand() % 256; \
+        colors[i].g = rand() % 256; \
+        colors[i].b = rand() % 256; \
+        GET_ALPHA(colors[i]) = rand() % 256; \
+    } \
+ \
+    for (i = 0; i < NUM_PIXELS; i++) \
+    { \
+        px[i] = rand() % screen->w; \
+        py[i] = rand() % screen->h; \
+    } \
+ \
+    for (i = 0; i < NUM_LINES; i++) \
+    { \
+        lx1[i] = rand() % screen->w; \
+        ly1[i] = rand() % screen->h; \
+        lx2[i] = rand() % screen->w; \
+        ly2[i] = rand() % screen->h; \
+    } \
+ \
+    for (i = 0; i < NUM_TRIS; i++) \
+    { \
+        tx1[i] = rand() % screen->w; \
+        ty1[i] = rand() % screen->h; \
+        tx2[i] = rand() % screen->w; \
+        ty2[i] = rand() % screen->h; \
+        tx3[i] = rand() % screen->w; \
+        ty3[i] = rand() % screen->h; \
+    } \
+ \
+    for (i = 0; i < NUM_RECTS; i++) \
+    { \
+        rx1[i] = rand() % screen->w; \
+        ry1[i] = rand() % screen->h; \
+        rx2[i] = rand() % screen->w; \
+        ry2[i] = rand() % screen->h; \
+        rr[i] = rand() % 10 + 2; \
+    } \
+ \
+    for (i = 0; i < NUM_ARCS; i++) \
+    { \
+        ax[i] = rand() % screen->w; \
+        ay[i] = rand() % screen->h; \
+        ar[i] = (rand() % screen->h) / 10.0f; \
+        ar2[i] = ((rand() % 101) / 100.0f) * ar[i]; \
+        aa1[i] = rand() % 360; \
+        aa2[i] = rand() % 360; \
+    } \
+ \
+    for (i = 0; i < NUM_POLYS; i++) \
+    { \
+        float cx = rand() % screen->w; \
+        float cy = rand() % screen->h; \
+        float radius = 20 + rand() % (screen->w / 8); \
+ \
+        int j; \
+ \
+        pn[i] = rand() % 8 + 3; \
+        pv[i] = (float*)malloc(2 * pn[i] * sizeof(float)); \
+ \
+        for (j = 0; j < pn[i] * 2; j += 2) \
+        { \
+            pv[i][j] = cx + radius * cos(2 * M_PI * (((float)j) / (pn[i] * 2))) + rand() % ((int)radius / 2); \
+            pv[i][j + 1] = cy + radius * sin(2 * M_PI * (((float)j) / (pn[i] * 2))) + rand() % ((int)radius / 2); \
+        } \
+    }
+
 int main(int argc, char* argv[])
 {
 	GPU_Target* screen;
@@ -79,77 +149,7 @@ int main(int argc, char* argv[])
         shapeType = 0;
         numShapeTypes = 18;
         
-        for(i = 0; i < NUM_COLORS; i++)
-        {
-            colors[i].r = rand()%256;
-            colors[i].g = rand()%256;
-            colors[i].b = rand()%256;
-            GET_ALPHA(colors[i]) = rand()%256;
-        }
-        
-        
-        
-        for(i = 0; i < NUM_PIXELS; i++)
-        {
-            px[i] = rand()%screen->w;
-            py[i] = rand()%screen->h;
-        }
-        
-        for(i = 0; i < NUM_LINES; i++)
-        {
-            lx1[i] = rand()%screen->w;
-            ly1[i] = rand()%screen->h;
-            lx2[i] = rand()%screen->w;
-            ly2[i] = rand()%screen->h;
-        }
-        
-        for(i = 0; i < NUM_TRIS; i++)
-        {
-            tx1[i] = rand()%screen->w;
-            ty1[i] = rand()%screen->h;
-            tx2[i] = rand()%screen->w;
-            ty2[i] = rand()%screen->h;
-            tx3[i] = rand()%screen->w;
-            ty3[i] = rand()%screen->h;
-        }
-        
-        
-        for(i = 0; i < NUM_RECTS; i++)
-        {
-            rx1[i] = rand()%screen->w;
-            ry1[i] = rand()%screen->h;
-            rx2[i] = rand()%screen->w;
-            ry2[i] = rand()%screen->h;
-            rr[i] = rand()%10 + 2;
-        }
-        
-        for(i = 0; i < NUM_ARCS; i++)
-        {
-            ax[i] = rand()%screen->w;
-            ay[i] = rand()%screen->h;
-            ar[i] = (rand()%screen->h)/10.0f;
-            ar2[i] = ((rand()%101)/100.0f)*ar[i];
-            aa1[i] = rand()%360;
-            aa2[i] = rand()%360;
-        }
-        
-        for(i = 0; i < NUM_POLYS; i++)
-        {
-            float cx = rand()%screen->w;
-            float cy = rand()%screen->h;
-            float radius = 20 + rand()%(screen->w/8);
-            
-            int j;
-            
-            pn[i] = rand()%8 + 3;
-            pv[i] = (float*)malloc(2*pn[i]*sizeof(float));
-            
-            for(j = 0; j < pn[i]*2; j+=2)
-            {
-                pv[i][j] = cx + radius*cos(2*M_PI*(((float)j)/(pn[i]*2))) + rand()%((int)radius/2);
-                pv[i][j+1] = cy + radius*sin(2*M_PI*(((float)j)/(pn[i]*2))) + rand()%((int)radius/2);
-            }
-        }
+        RANDOMIZE_SHAPE_DATA();
         
         blend = 0;
         thickness = 1.0f;
@@ -183,6 +183,10 @@ int main(int argc, char* argv[])
                     {
                         blend = !blend;
                         GPU_SetShapeBlending(blend);
+                    }
+                    else if(event.key.keysym.sym == SDLK_RETURN)
+                    {
+                        RANDOMIZE_SHAPE_DATA();
                     }
                     else if(event.key.keysym.sym == SDLK_UP || event.key.keysym.sym == SDLK_EQUALS)
                     {
