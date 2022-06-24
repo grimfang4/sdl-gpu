@@ -99,6 +99,8 @@ if(APPLE)
 	set(CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE)
 endif()
 
+add_definitions(-DDLL_EXPORT)
+
 
 # Copy includes to output ${OUTPUT_DIR}/include
 file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/${OUTPUT_DIR})
