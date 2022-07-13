@@ -97,6 +97,12 @@ typedef struct GPU_RendererImpl
 	/*! \see GPU_CopySurfaceFromImage() */
 	SDL_Surface* (SDLCALL *CopySurfaceFromImage)(GPU_Renderer* renderer, GPU_Image* image);
 	
+	/*! \see GPU_CopySurfaceFromTarget() */
+	SDL_Surface* (SDLCALL *CopySurfaceFromTarget2)(GPU_Renderer* renderer, GPU_Target* target, SDL_Surface* pre);
+	
+	/*! \see GPU_CopySurfaceFromImage() */
+	SDL_Surface* (SDLCALL *CopySurfaceFromImage2)(GPU_Renderer* renderer, GPU_Image* image, SDL_Surface*  pre, GPU_bool force_bgra);
+
 	/*! \see GPU_FreeImage() */
 	void (SDLCALL *FreeImage)(GPU_Renderer* renderer, GPU_Image* image);
 	

@@ -256,7 +256,7 @@ static GPU_bool vendor_is_Intel = GPU_FALSE;
 #endif
 
 
-
+static int GetBytesPerPixel(GLenum glFormat);
 static SDL_PixelFormat* AllocFormat(GLenum glFormat);
 static void FreeFormat(SDL_PixelFormat* format);
 
@@ -2779,7 +2779,7 @@ static GPU_bool readTargetPixels(GPU_Renderer* renderer, GPU_Target* source, GLi
     return GPU_FALSE;
 }
 
-static GPU_bool readImagePixels(GPU_Renderer* renderer, GPU_Image* source, GLint format, GLubyte* pixels)
+static GPU_bool readImagePixels(GPU_Renderer* renderer, GPU_Image* source, GLint format, GLubyte* pixels,GPU_bool as_bgra)
 {
 #ifdef SDL_GPU_USE_GLES
 	GPU_bool created_target;
@@ -2809,8 +2809,18 @@ static GPU_bool readImagePixels(GPU_Renderer* renderer, GPU_Image* source, GLint
     #else
     // Bind the texture temporarily
     glBindTexture(GL_TEXTURE_2D, ((GPU_IMAGE_DATA*)source->data)->handle);
-    // Get the data
-    glGetTexImage(GL_TEXTURE_2D, 0, format, GL_UNSIGNED_BYTE, pixels);
+    #if defined(GL_BGRA) && defined(GL_UNSIGNED_INT_8_8_8_8_REV)
+    // native version no swap on little endian
+    if(as_bgra && format == GL_RGBA)
+    {
+        // enforce data as GL_BGRA
+        glGetTexImage(GL_TEXTURE_2D, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, pixels);
+    }    
+    else
+    #endif
+    {
+        glGetTexImage(GL_TEXTURE_2D, 0, format, GL_UNSIGNED_BYTE, pixels);
+    }
     // Rebind the last texture
     if(((GPU_CONTEXT_DATA*)renderer->current_context_target->context->data)->last_image != NULL)
         glBindTexture(GL_TEXTURE_2D, ((GPU_IMAGE_DATA*)(((GPU_CONTEXT_DATA*)renderer->current_context_target->context->data)->last_image)->data)->handle);
@@ -2868,7 +2878,7 @@ static unsigned char* getRawImageData(GPU_Renderer* renderer, GPU_Image* image)
     data = (unsigned char*)SDL_malloc(image->texture_w * image->texture_h * image->bytes_per_pixel);
 
     // FIXME: Sometimes the texture is stored and read in RGBA even when I specify RGB.  getRawImageData() might need to return the stored format or Bpp.
-    if(!readImagePixels(renderer, image, ((GPU_IMAGE_DATA*)image->data)->format, data))
+    if(!readImagePixels(renderer, image, ((GPU_IMAGE_DATA*)image->data)->format, data, GPU_FALSE))
     {
         SDL_free(data);
         return NULL;
@@ -2876,6 +2886,44 @@ static unsigned char* getRawImageData(GPU_Renderer* renderer, GPU_Image* image)
 
     return data;
 }
+
+/**
+ * no allocation variant of getRawTargetData (shall have checked before)
+ * no flip
+ */
+static GPU_bool getRawTargetData2(GPU_Renderer* renderer, GPU_Target* target, unsigned char* data)
+{
+    if(isCurrentTarget(renderer, target))
+        renderer->impl->FlushBlitBuffer(renderer);
+
+    // This can take regions of pixels, so using base_w and base_h with an image target should be fine.
+    if(!readTargetPixels(renderer, target, ((GPU_TARGET_DATA*)target->data)->format, data))
+    {
+        return GPU_FALSE;
+    }
+    else
+    {
+        return GPU_TRUE;
+    }
+}
+
+
+/**
+ * get data on preallocated
+ */
+static GPU_bool getRawImageData2(GPU_Renderer* renderer, GPU_Image* image,unsigned char*data, GPU_bool bgra )
+{
+    if(image->target != NULL && isCurrentTarget(renderer, image->target))
+        renderer->impl->FlushBlitBuffer(renderer);
+
+    if(!readImagePixels(renderer, image, ((GPU_IMAGE_DATA*)image->data)->format, data, bgra))
+    {
+        return GPU_FALSE;
+    }
+    return GPU_TRUE;
+}
+
+
 
 static GPU_bool SaveImage(GPU_Renderer* renderer, GPU_Image* image, const char* filename, GPU_FileFormatEnum format)
 {
@@ -3016,16 +3064,156 @@ static SDL_Surface* CopySurfaceFromImage(GPU_Renderer* renderer, GPU_Image* imag
 }
 
 
+/**
+ * New CopySurface with following features:
+ * - no vertical flip
+ * - no pitch adjustment
+ * - reuse user memory
+ */
+static SDL_Surface* CopySurfaceFromTarget2(GPU_Renderer* renderer, GPU_Target* target, SDL_Surface* pre)
+{
+    SDL_Surface* result;
 
+    if(target == NULL)
+    {
+        GPU_PushErrorCode("GPU_CopySurfaceFromTarget2", GPU_ERROR_NULL_ARGUMENT, "target");
+        return NULL;
+    }
+    if(target->base_w < 1 || target->base_h < 1)
+    {
+        GPU_PushErrorCode("GPU_CopySurfaceFromTarget2", GPU_ERROR_DATA_ERROR, "Invalid target dimensions (%dx%d)", target->base_w, target->base_h);
+        return NULL;
+    }
 
+    // if existing surface is not matching the same memory size then deallocate it
+    int bpp = GetBytesPerPixel(((GPU_TARGET_DATA*)target->data)->format);
+    int source_pitch = target->base_w*bpp;
+    if(pre != 0)
+    {
+        if(source_pitch != pre->pitch || target->base_h != pre->h)
+        {
+            SDL_FreeSurface(pre);
+            pre = 0;
+        }
+    }
+    if(!pre)
+    {
+        GLenum e =         ((GPU_TARGET_DATA*)target->data)->format;
+        SDL_PixelFormat*    format = AllocFormat(e);
+        result = SDL_CreateRGBSurface(SDL_SWSURFACE, target->base_w, target->base_h, format->BitsPerPixel, format->Rmask, format->Gmask, format->Bmask, format->Amask);
+        FreeFormat(format);
+        if(result == NULL)
+        {
+            GPU_PushErrorCode("GPU_CopySurfaceFromTarget", GPU_ERROR_DATA_ERROR, "Failed to create new %dx%d surface", target->base_w, target->base_h);
+            return NULL;
+        }
+        if(source_pitch != result->pitch)
+        {
+            GPU_PushErrorCode("GPU_CopySurfaceFromTarget", GPU_ERROR_DATA_ERROR, "Pitch Mismatch GPU:%d SDL:%d FIXME", source_pitch, result->pitch);
+            SDL_FreeSurface(result);
+            return NULL;
+        }
+    }
+    else
+    {
+        result = pre;
+    }
 
+    if(!getRawTargetData2(renderer, target, result->pixels))
+    {
+        GPU_PushErrorCode("GPU_CopySurfaceFromTarget", GPU_ERROR_DATA_ERROR, "Failed to copy data");
+        SDL_FreeSurface(result);
+        return NULL;
+    }
 
+    return result;
+}
 
+/**
+ * New CopySurface with following features:
+ * - no vertical flip
+ * - no pitch adjusment
+ * - reuse user memory
+ * - no virtual resolution
+ */
+static SDL_Surface* CopySurfaceFromImage2(GPU_Renderer* renderer, GPU_Image* image, SDL_Surface* pre, GPU_bool force_bgra)
+{
+    //unsigned char* data;
+    SDL_Surface* result;    
+    //SDL_PixelFormat* format;
+    int w, h;
 
+    if(image == NULL)
+    {
+        GPU_PushErrorCode("GPU_CopySurfaceFromImage2", GPU_ERROR_NULL_ARGUMENT, "image");
+        return NULL;
+    }
+    if(image->w < 1 || image->h < 1)
+    {
+        GPU_PushErrorCode("GPU_CopySurfaceFromImage2", GPU_ERROR_DATA_ERROR, "Invalid image dimensions (%dx%d)", image->base_w, image->base_h);
+        return NULL;
+    }
 
+    w = image->w;
+    h = image->h;
 
+    // if existing surface is not matching the same memory size then deallocate it
+    int bpp = GetBytesPerPixel(((GPU_IMAGE_DATA*)image->data)->format);
+    int source_pitch = w*bpp;
+    GPU_bool use_bgra = force_bgra;
+    if(pre != 0)
+    {
+        if(source_pitch != pre->pitch || h != pre->h)
+        {
+            SDL_FreeSurface(pre);
+            pre = 0;
+        }        
+    }
+    if(!pre)
+    {
+        GLenum e =         ((GPU_IMAGE_DATA*)image->data)->format;
+        #if defined(GL_BGRA) && defined(GL_UNSIGNED_INT_8_8_8_8_REV)
+         if(e == GL_RGBA && use_bgra)
+         {
+            e = GL_BGRA;
+           }
+           else
+           {
+               use_bgra = false;
+           }
+        #endif
+        SDL_PixelFormat*    format = AllocFormat(e);
+        
+        result = SDL_CreateRGBSurface(SDL_SWSURFACE, w, h, format->BitsPerPixel, format->Rmask, format->Gmask, format->Bmask, format->Amask);
+        FreeFormat(format);
+        if(result == NULL)
+        {
+            GPU_PushErrorCode("GPU_CopySurfaceFromImage2", GPU_ERROR_DATA_ERROR, "Failed to create new %dx%d surface",w, h);
+            return NULL;
+        }
+        if(source_pitch != result->pitch)
+        {
+            GPU_PushErrorCode("GPU_CopySurfaceFromImage2", GPU_ERROR_DATA_ERROR, "Pitch Mismatch GPU:%d SDL:%d FIXME", source_pitch, result->pitch);
+            SDL_FreeSurface(result);
+            return NULL;
+        }
+    }
+    else
+    {
+        result = pre;
+    }
 
-
+    if(!getRawImageData2(renderer, image,result->pixels,use_bgra))
+    {
+        GPU_PushErrorCode("GPU_CopySurfaceFromImage2", GPU_ERROR_DATA_ERROR, "Failed to copy data");
+        SDL_FreeSurface(result);
+        return NULL;
+    }
+    else
+    {
+        return result;
+    }
+}
 
 
 
@@ -3282,6 +3470,53 @@ static SDL_PixelFormat* AllocFormat(GLenum glFormat)
     }
 
     return result;
+}
+
+// Adapted from SDL_AllocFormat()
+static int GetBytesPerPixel(GLenum glFormat)
+{
+    // Yes, I need to do the whole thing myself... :(
+    Uint8 channels;
+    switch(glFormat)
+    {
+    case GL_RGB:
+        channels = 3;
+        break;
+#ifdef GL_BGR
+    case GL_BGR:
+        channels = 3;
+        break;
+#endif
+#ifdef GL_RED
+    case GL_RED:
+        channels = 1;
+        break;
+#endif
+#ifdef GL_RG
+    case GL_RG:
+        channels = 2;
+        break;
+#endif
+    case GL_RGBA:
+        channels = 4;
+        break;
+#ifdef GL_BGRA
+    case GL_BGRA:
+        channels = 4;
+        break;
+#endif
+#ifdef GL_ABGR
+    case GL_ABGR:
+        channels = 4;
+        break;
+#endif
+    default:
+        return 0;
+    }
+
+    return channels;
+
+
 }
 
 static void FreeFormat(SDL_PixelFormat* format)
@@ -6994,6 +7229,8 @@ static void SetAttributeSource(GPU_Renderer* renderer, int num_values, GPU_Attri
     impl->CopyImageFromTarget = &CopyImageFromTarget; \
     impl->CopySurfaceFromTarget = &CopySurfaceFromTarget; \
     impl->CopySurfaceFromImage = &CopySurfaceFromImage; \
+    impl->CopySurfaceFromTarget2 = &CopySurfaceFromTarget2; \
+    impl->CopySurfaceFromImage2 = &CopySurfaceFromImage2; \
     impl->FreeImage = &FreeImage; \
  \
     impl->GetTarget = &GetTarget; \
