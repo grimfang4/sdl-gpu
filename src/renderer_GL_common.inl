@@ -659,35 +659,49 @@ static_inline void flushAndBindTexture(GPU_Renderer* renderer, GLuint handle)
     ((GPU_CONTEXT_DATA*)renderer->current_context_target->context->data)->last_image = NULL;
 }
 
-// Binds the target's framebuffer.  Returns false if it can't be bound.
+
+
+// Only for window targets, which have their own contexts.
+static void makeContextCurrent(GPU_Renderer* renderer, GPU_Target* target)
+{
+    if (target == NULL || target->context == NULL || renderer->current_context_target == target)
+        return;
+
+    renderer->impl->FlushBlitBuffer(renderer);
+
+#ifdef SDL_GPU_USE_SDL2
+    SDL_GL_MakeCurrent(SDL_GetWindowFromID(target->context->windowID), target->context->context);
+#endif
+    renderer->current_context_target = target;
+}
+
+// Binds the target's framebuffer.  Returns false if it can't be bound, true if it is bound or already bound.
 static GPU_bool SetActiveTarget(GPU_Renderer* renderer, GPU_Target* target)
 {
+    makeContextCurrent(renderer, target);
+
+    if (target == NULL || renderer->current_context_target == NULL)
+        return GPU_FALSE;
+
     if(renderer->enabled_features & GPU_FEATURE_RENDER_TARGETS)
     {
         // Bind the FBO
         if(target != renderer->current_context_target->context->active_target)
         {
-            GLuint handle = 0;
-            if(target != NULL)
-                handle = ((GPU_TARGET_DATA*)target->data)->handle;
+            GLuint handle = ((GPU_TARGET_DATA*)target->data)->handle;
             renderer->impl->FlushBlitBuffer(renderer);
 
             extBindFramebuffer(renderer, handle);
             renderer->current_context_target->context->active_target = target;
         }
-        return GPU_TRUE;
     }
     else
     {
         // There's only one possible render target, the default framebuffer.
         // Note: Could check against the default framebuffer value (((GPU_TARGET_DATA*)target->data)->handle versus result of GL_FRAMEBUFFER_BINDING)...
-        if(target != NULL)
-        {
-            renderer->current_context_target->context->active_target = target;
-            return GPU_TRUE;
-        }
-        return GPU_FALSE;
+        renderer->current_context_target->context->active_target = target;
     }
+    return GPU_TRUE;
 }
 
 static_inline void flushAndBindFramebuffer(GPU_Renderer* renderer, GLuint handle)
@@ -820,20 +834,6 @@ static GPU_bool growIndexBuffer(GPU_CONTEXT_DATA* cdata, unsigned int minimum_ve
     return GPU_TRUE;
 }
 
-
-// Only for window targets, which have their own contexts.
-static void makeContextCurrent(GPU_Renderer* renderer, GPU_Target* target)
-{
-    if(target == NULL || target->context == NULL || renderer->current_context_target == target)
-        return;
-
-    renderer->impl->FlushBlitBuffer(renderer);
-
-    #ifdef SDL_GPU_USE_SDL2
-    SDL_GL_MakeCurrent(SDL_GetWindowFromID(target->context->windowID), target->context->context);
-    #endif
-    renderer->current_context_target = target;
-}
 
 static void setClipRect(GPU_Renderer* renderer, GPU_Target* target)
 {
