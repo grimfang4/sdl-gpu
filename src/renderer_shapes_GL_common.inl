@@ -117,12 +117,19 @@ static void Pixel(GPU_Renderer* renderer, GPU_Target* target, float x, float y, 
 {
     BEGIN_UNTEXTURED("GPU_Pixel", GL_POINTS, 1, 1);
     
-    SET_UNTEXTURED_VERTEX(x, y, r, g, b, a);
+    // Offset coordinate to render from center of pixel.
+    SET_UNTEXTURED_VERTEX(x + 0.5, y + 0.5, r, g, b, a);
 }
 
 static void Line(GPU_Renderer* renderer, GPU_Target* target, float x1, float y1, float x2, float y2, SDL_Color color)
 {
-	float thickness = GetLineThickness(renderer);
+    // Offset coords to render from center of pixels.
+    x1 += 0.5;
+    x2 += 0.5;
+    y1 += 0.5;
+    y2 += 0.5;
+
+    float thickness = GetLineThickness(renderer);
 
     float t = thickness/2;
     float line_angle = atan2f(y2 - y1, x2 - x1);
