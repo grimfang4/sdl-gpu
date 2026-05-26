@@ -1976,7 +1976,8 @@ static void MakeCurrent(GPU_Renderer* renderer, GPU_Target* target, Uint32 windo
             }
 
             // Reset the camera for this window
-            applyTargetCamera(renderer->current_context_target->context->active_target);
+            if(renderer->current_context_target->context->active_target != NULL)
+                applyTargetCamera(renderer->current_context_target->context->active_target);
         }
     }
 }

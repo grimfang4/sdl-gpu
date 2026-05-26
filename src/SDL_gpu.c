@@ -867,7 +867,7 @@ void GPU_GetVirtualCoords(GPU_Target* target, float* x, float* y, float displayX
     }
     
     // Invert coordinates to math coords
-    if(_gpu_current_renderer->coordinate_mode)
+    if(_gpu_current_renderer->coordinate_mode && y != NULL)
         *y = target->h - *y;
 }
 
@@ -1090,10 +1090,10 @@ static SDL_Surface* gpu_copy_raw_surface_data(unsigned char* data, int width, in
         break;
     case 4:
 #if SDL_BYTEORDER == SDL_BIG_ENDIAN
-        rmask = 0xff000000;
-        gmask = 0x00ff0000;
-        bmask = 0x0000ff00;
-        amask = 0x000000ff;
+        Rmask = 0xff000000;
+        Gmask = 0x00ff0000;
+        Bmask = 0x0000ff00;
+        Amask = 0x000000ff;
 #else
         Rmask = 0x000000ff;
         Gmask = 0x0000ff00;
@@ -1162,11 +1162,28 @@ SDL_Surface* GPU_LoadSurface_RW(SDL_RWops* rwops, GPU_bool free_rwops)
 
     // Get count of bytes
     SDL_RWseek(rwops, 0, SEEK_SET);
-    data_bytes = (int)SDL_RWseek(rwops, 0, SEEK_END);
+    {
+        Sint64 size = SDL_RWseek(rwops, 0, SEEK_END);
+        if(size <= 0)
+        {
+            GPU_PushErrorCode(__func__, GPU_ERROR_DATA_ERROR, "Failed to get rwops size");
+            if(free_rwops)
+                SDL_RWclose(rwops);
+            return NULL;
+        }
+        data_bytes = (int)size;
+    }
     SDL_RWseek(rwops, 0, SEEK_SET);
-    
+
     // Read in the rwops data
     c_data = (unsigned char*)SDL_malloc(data_bytes);
+    if(c_data == NULL)
+    {
+        GPU_PushErrorCode(__func__, GPU_ERROR_DATA_ERROR, "Failed to allocate buffer for rwops data");
+        if(free_rwops)
+            SDL_RWclose(rwops);
+        return NULL;
+    }
     SDL_RWread(rwops, c_data, 1, data_bytes);
     
     // Load image
@@ -1297,7 +1314,7 @@ GPU_bool GPU_SaveSurface_RW(SDL_Surface* surface, SDL_RWops* rwops, GPU_bool fre
         break;
     }
 
-    if(result && free_rwops)
+    if(free_rwops)
         SDL_RWclose(rwops);
     return result;
 }

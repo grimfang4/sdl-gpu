@@ -107,6 +107,7 @@ void GPU_CopyMatrixStack(const GPU_MatrixStack* source, GPU_MatrixStack* dest)
 		memcpy(dest->matrix[i], source->matrix[i], matrix_size);
 	}
 	dest->storage_size = source->storage_size;
+	dest->size = source->size;
 }
 
 void GPU_ClearMatrixStack(GPU_MatrixStack* stack)
@@ -119,6 +120,7 @@ void GPU_ClearMatrixStack(GPU_MatrixStack* stack)
 	SDL_free(stack->matrix);
 
 	stack->matrix = NULL;
+	stack->size = 0;
 	stack->storage_size = 0;
 }
 
