@@ -1,3 +1,4 @@
+.vscode/
 CMakeCache.txt
 CMakeFiles
 Makefile
@@ -8,4 +9,6 @@ build/
 *.a
 *.so
 *.o
+*.dll
+*.obj
 
