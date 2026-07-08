@@ -1385,6 +1385,12 @@ DECLSPEC SDL_Surface* SDLCALL GPU_CopySurfaceFromTarget(GPU_Target* target);
 /*! Copy GPU_Image data into a new SDL_Surface.  Don't forget to SDL_FreeSurface() the surface and GPU_FreeImage() the image.*/
 DECLSPEC SDL_Surface* SDLCALL GPU_CopySurfaceFromImage(GPU_Image* image);
 
+/*! Copy GPU_Target data into a new SDL_Surface.  Don't forget to SDL_FreeSurface() the surface.*/
+DECLSPEC SDL_Surface* SDLCALL GPU_CopySurfaceFromTarget2(GPU_Target* target, SDL_Surface*pre);
+
+/*! Copy GPU_Image data into a new SDL_Surface.  Don't forget to SDL_FreeSurface() the surface and GPU_FreeImage() the image.*/
+DECLSPEC SDL_Surface* SDLCALL GPU_CopySurfaceFromImage2(GPU_Image* image, SDL_Surface* pre, GPU_bool force_bgra);
+
 // End of Conversions
 /*! @} */
 
