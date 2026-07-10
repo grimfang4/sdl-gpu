@@ -69,7 +69,7 @@ extern "C" {
       #define SDL_GPU_BITNESS 32
    #endif
    #define SDL_GPU_LONG_SIZE 4
-#elif defined(__clang__) || defined(__INTEL_COMPILER) || defined(__GNUC__)
+#elif defined(__clang__) || defined(__INTEL_COMPILER) || defined(__GNUC__) || defined(__TINYC__)
    #if defined(__x86_64)
       #define SDL_GPU_BITNESS 64
    #else
